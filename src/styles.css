@@ -598,7 +598,8 @@ body {
 }
 
 /* Staff-controlled spoiler mask (see src/lib/spoiler-mask.tsx) */
-html[data-spoil-characters] [data-spoiler="char"] {
+html[data-spoil-characters] [data-spoiler="char"],
+html[data-spoil-archive] [data-spoiler="archive"] {
   filter: blur(7px);
   user-select: none;
   pointer-events: none;
