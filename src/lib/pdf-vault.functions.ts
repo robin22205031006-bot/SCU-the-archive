@@ -35,6 +35,6 @@ export const embedVaultTexts = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId, claimEmail(context.claims));
-    const { embedGemini } = await import("./gemini.server");
-    return { embeddings: await embedGemini(process.env["GOOGLE_API_KEY"], data.texts) };
+    const { embedGemini, pickGeminiKey } = await import("./gemini.server");
+    return { embeddings: await embedGemini(pickGeminiKey("admin"), data.texts) };
   });

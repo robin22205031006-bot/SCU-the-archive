@@ -49,8 +49,8 @@ export const askLore = createServerFn({ method: "POST" })
     try {
       const lastUser = [...data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
       if (lastUser) {
-        const { embedGemini } = await import("./gemini.server");
-        const [vec] = await embedGemini(process.env["GOOGLE_API_KEY"], [lastUser.slice(0, 2000)]);
+        const { embedGemini, pickGeminiKey } = await import("./gemini.server");
+        const [vec] = await embedGemini(pickGeminiKey("chat"), [lastUser.slice(0, 2000)]);
         if (vec?.length === 1536) {
           const { data: hits, error: matchErr } = await sb.rpc("match_pdf_chunks", {
             query_embedding: `[${vec.join(",")}]`,
@@ -73,8 +73,8 @@ export const askLore = createServerFn({ method: "POST" })
       // Vault retrieval is best-effort; fall back to archive-only answers.
     }
 
-    const { generateGemini } = await import("./gemini.server");
-    const reply = await generateGemini(process.env["GOOGLE_API_KEY"], {
+    const { generateGemini, pickGeminiKey } = await import("./gemini.server");
+    const reply = await generateGemini(pickGeminiKey("chat"), {
       contents: data.messages.map((m) => ({
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],

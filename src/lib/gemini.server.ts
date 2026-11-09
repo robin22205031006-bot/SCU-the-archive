@@ -1,6 +1,20 @@
 import { GoogleGenAI } from "@google/genai/web";
 import type { GenerateContentParameters } from "@google/genai/web";
 
+/**
+ * Key pools: admin ingestion uses keys 1-2, public chat uses keys 3-4, so
+ * visitor traffic never exhausts the admin quota. Call inside handlers only.
+ */
+export function pickGeminiKey(pool: "admin" | "chat"): string | undefined {
+  const env = process.env;
+  const keys = (
+    pool === "admin"
+      ? [env["GOOGLE_API_KEY"], env["GOOGLE_API_KEY_2"]]
+      : [env["GOOGLE_API_KEY_3"], env["GOOGLE_API_KEY_4"], env["GOOGLE_API_KEY"]]
+  ).filter((k): k is string => !!k);
+  return keys.length ? keys[Math.floor(Math.random() * keys.length)] : undefined;
+}
+
 /** The caller reads credentials inside its authenticated server handler. */
 export async function generateGemini(
   apiKey: string | undefined,
