@@ -636,23 +636,24 @@ html[data-spoil-archive] [data-spoiler="archive"] {
 }
 
 html[data-ui="nexus"] {
-  --background: var(--nexus-bg);
-  --foreground: var(--nexus-fg);
-  --card: var(--nexus-surface);
+  --background: var(--nexus-bg) !important;
+  --foreground: var(--nexus-fg) !important;
+  --card: var(--nexus-surface) !important;
   --card-foreground: var(--nexus-fg);
-  --popover: var(--nexus-surface);
+  --popover: var(--nexus-surface) !important;
   --popover-foreground: var(--nexus-fg);
-  --accent: var(--nexus-glow);
+  --accent: var(--nexus-glow) !important;
   --accent-foreground: var(--nexus-bg);
-  --muted: var(--nexus-surface);
-  --muted-foreground: var(--nexus-muted);
-  --border: var(--nexus-border);
+  --muted: var(--nexus-surface) !important;
+  --muted-foreground: var(--nexus-muted) !important;
+  --border: var(--nexus-border) !important;
   --input: var(--nexus-border);
   --ring: var(--nexus-glow);
   --secondary: var(--nexus-surface);
   --secondary-foreground: var(--nexus-fg);
-  --font-display: "Manrope", system-ui, sans-serif;
+  --font-display: "Manrope", system-ui, sans-serif !important;
 }
+.nexus-shell > button[aria-label="Appearance"] { display: none; }
 html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { letter-spacing: 0; }
 .nexus-command { border-radius: 4px; box-shadow: var(--nexus-shadow); }
 .nexus-nav-link { transition: background-color .3s, transform .4s; }
@@ -674,6 +675,11 @@ html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { l
 .nexus-role-field {
   background: linear-gradient(125deg, color-mix(in oklab, var(--nexus-role) 16%, var(--background)), var(--background) 70%);
 }
+.nexus-role-field[data-role="hero"] { --nexus-role: var(--nexus-role-hero); }
+.nexus-role-field[data-role="villain"] { --nexus-role: var(--nexus-role-villain); }
+.nexus-role-field[data-role="antihero"] { --nexus-role: var(--nexus-role-antihero); }
+.nexus-role-field[data-role="support"] { --nexus-role: var(--nexus-role-support); }
+.nexus-role-field[data-role="neutral"] { --nexus-role: var(--nexus-role-neutral); }
 .nexus-shell [role="tablist"] { border-radius: 0; background: transparent; border-bottom: 1px solid var(--border); }
 .nexus-shell [role="tab"] { border-radius: 0; transition: color .4s, background-color .4s, transform .4s; }
 .nexus-shell [role="tab"][data-state="active"] { border-bottom: 2px solid var(--accent); background: color-mix(in oklab, var(--accent) 10%, transparent); transform: translateY(-2px); }

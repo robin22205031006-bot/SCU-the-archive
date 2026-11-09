@@ -124,7 +124,7 @@ export function NexusDossier({ e }: { e: Entity }) {
     <MotionConfig reducedMotion={moving ? "user" : "always"} transition={{ duration: moving ? 0.7 : 0, ease: EASE }}>
     <div data-role={roleTone} className="nexus-dossier relative min-h-dvh overflow-x-hidden bg-background text-foreground">
       <AnimatePresence initial={false}>
-        <motion.div key={roleTone} aria-hidden className="nexus-role-field pointer-events-none fixed inset-0"
+        <motion.div key={roleTone} data-role={roleTone} aria-hidden className="nexus-role-field pointer-events-none fixed inset-0"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: moving ? 2.2 : 0 }} />
       </AnimatePresence>
