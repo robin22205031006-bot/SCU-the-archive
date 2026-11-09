@@ -41,7 +41,7 @@ export const analyzeLore = createServerFn({ method: "POST" })
     const names = (existing ?? []).map((e) => `${e.name} (${e.kind})`).join("; ") || "none";
 
     const { generateGemini } = await import("./gemini.server");
-    const raw = await generateGemini(process.env["GOOGLE_API_KEY"], {
+    const raw = await generateGemini(pickGeminiKey("admin"), {
       contents: [
         {
           role: "user",
