@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, getRouteApi } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Minus, Plus, Repeat, Search, X } from "lucide-react";
 import { matchesSearch, type Entity } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { sfx } from "@/lib/scu-audio";
+import { seriesQuery, seriesCharactersQuery } from "@/lib/series";
+import { supabase } from "@/integrations/supabase/client";
+import { NEXUS_ROLES, normalizeNexusRole, nexusDotRole, projectSeasonRoster } from "@/lib/nexus-roster";
+import { readDossier } from "@/lib/nexus-season";
+import { NexusRosterEditor } from "@/components/nexus-roster-editor";
+import { Button } from "@/components/ui/button";
+const charactersRoute = getRouteApi("/_authenticated/characters");
 
 const PALETTE = [
   "var(--nexus-c1)",
@@ -32,7 +40,7 @@ function stat(e: Entity, k: string): string | null {
 
 /** Second interface: characters as a living constellation sphere with camera zoom. */
 export function NexusView({
-  data,
+  data: originalData,
   categories,
   isAdmin,
   onEdit,
@@ -43,17 +51,36 @@ export function NexusView({
   onEdit: (e: Entity) => void;
 }) {
   const masked = useSpoilerMask("characters");
+  const search = charactersRoute.useSearch();
+  const navigate = charactersRoute.useNavigate();
+  const seriesId = search.series ?? "";
+  const seasonNumber = search.season ?? null;
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const { data: series = [] } = useQuery(seriesQuery);
+  const { data: memberships = [] } = useQuery(seriesCharactersQuery(seriesId));
+  const { data: abilityRows = [] } = useQuery({ queryKey: ["nexus-series-abilities", seriesId], enabled: !!seriesId, queryFn: async () => {
+    const { data, error } = await supabase.from("character_abilities").select("*").eq("series_id", seriesId);
+    if (error) throw error;
+    return data;
+  }});
+  const selectedSeries = series.find(s => s.id === seriesId);
+  const seasonNames = Array.from({ length: Math.max(selectedSeries?.season_count ?? 0, selectedSeries?.season_names.length ?? 0, 1) }, (_, i) => selectedSeries?.season_names[i] || `Season ${i+1}`);
+  const data = useMemo(() => projectSeasonRoster(originalData, seriesId, seasonNumber, memberships).map(e => {
+    if (!seriesId) return { ...e, category: normalizeNexusRole(e.category) };
+    const profile = readDossier(e.stats)[`${seriesId}:${seasonNumber ?? "all"}`];
+    const rows = abilityRows.filter(a => a.entity_id === e.id && (seasonNumber == null || a.season_number == null || a.season_number === seasonNumber));
+    return { ...e, abilities: [...new Set(rows.map(a => a.ability_key))], stats: { ...(e.stats as Record<string, unknown>), ...(profile?.bloodline !== undefined ? { bloodline: profile.bloodline } : {}) } as Entity["stats"] };
+  }), [originalData, seriesId, seasonNumber, memberships, abilityRows]);
   const [cluster, setCluster] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const colorOf = useMemo(() => {
-    const m = new Map<string, string>();
-    categories.forEach((c, i) => m.set(c, PALETTE[i % PALETTE.length]!));
-    return (c: string | null) => (masked ? "var(--nexus-c5)" : (m.get(c ?? "") ?? PALETTE[5]!));
-  }, [categories, masked]);
+    return (c: string | null) => `var(--nexus-dot-${nexusDotRole(c, masked)})`;
+  }, [masked]);
 
   const clusters = useMemo(() => {
-    const present = categories.filter((c) => data.some((e) => e.category === c));
+    const available = [...new Set([...NEXUS_ROLES, ...categories.map(normalizeNexusRole), ...data.map(e => e.category ?? "Unclassified")])];
+    const present = available.filter((c) => data.some((e) => e.category === c));
     return ["all", ...present];
   }, [categories, data]);
 
@@ -67,6 +94,11 @@ export function NexusView({
         }}
       />
       <LayoutGroup>
+        <div className="relative mb-5 flex flex-wrap items-end gap-3">
+          <label className="grid min-w-0 flex-1 gap-1 text-xs">Series<select aria-label="Character series" value={seriesId} onChange={ev => { setCluster(null); void navigate({ search: prev => ({ ...prev, series: ev.target.value || undefined, season: undefined }) }); }} className="h-10 w-full rounded-md border border-border bg-background px-3"><option value="">All series</option>{series.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
+          <label className="grid min-w-0 flex-1 gap-1 text-xs">Season<select aria-label="Character season" disabled={!seriesId} value={seasonNumber ?? ""} onChange={ev => { setCluster(null); void navigate({ search: prev => ({ ...prev, season: ev.target.value ? Number(ev.target.value) : undefined }) }); }} className="h-10 w-full rounded-md border border-border bg-background px-3"><option value="">All seasons</option>{seriesId && seasonNames.map((s,i) => <option key={i} value={i+1}>{s}</option>)}</select></label>
+          {isAdmin && <Button variant="outline" disabled={!seriesId || !seasonNumber} onClick={() => setRosterOpen(true)}>Season roster</Button>}
+        </div>
         <AnimatePresence mode="popLayout" initial={false}>
           {cluster === null ? (
             <motion.div
@@ -77,25 +109,21 @@ export function NexusView({
               transition={{ duration: 0.55, ease: EASE }}
               className="relative"
             >
-              <p className="mb-4 text-sm font-medium tracking-wide">Select a constellation</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {clusters.map((c, i) => {
                   const members = c === "all" ? data : data.filter((e) => e.category === c);
                   const label = c === "all" ? "All characters" : masked ? `Cluster ${i}` : c;
                   return (
-                    <motion.button
+                    <motion.div
                       key={c}
                       layoutId={`cluster-${c}`}
-                      onClick={() => {
-                        sfx.tierReveal?.(null);
-                        setCluster(c);
-                      }}
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0, transition: { delay: i * 0.05, ease: EASE } }}
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
-                      className="group relative overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-fg/[0.03] p-3 text-left"
+                      className="group relative overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-fg/[0.03] text-left"
                     >
+                      <Button variant="ghost" className="block h-auto w-full p-3 text-left hover:bg-transparent" onClick={() => { sfx.tierReveal?.(null); setCluster(c); }} aria-label={`${label}, ${members.length}`}>
                       <span className="text-[11px] font-medium">{label}</span>
                       <MiniConstellation
                         members={members}
@@ -105,7 +133,8 @@ export function NexusView({
                       <span className="absolute bottom-2 right-3 font-display text-lg text-nexus-glow">
                         {members.length}
                       </span>
-                    </motion.button>
+                      </Button>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -144,11 +173,15 @@ export function NexusView({
                 masked={masked}
                 isAdmin={isAdmin}
                 onEdit={onEdit}
+                seriesId={seriesId}
+                seasonNumber={seasonNumber}
               />
             </motion.div>
           )}
         </AnimatePresence>
       </LayoutGroup>
+      {!data.length && <p className="relative py-8 text-center text-sm text-muted-foreground">No characters recorded for this selection.</p>}
+      {isAdmin && seriesId && seasonNumber && <NexusRosterEditor open={rosterOpen} onClose={() => setRosterOpen(false)} entities={originalData} seriesId={seriesId} season={seasonNumber} label={`${selectedSeries?.title ?? ""} · ${seasonNames[seasonNumber-1] ?? ""}`} />}
     </div>
   );
 }
@@ -165,7 +198,7 @@ function MiniConstellation({
   const pts = members.slice(0, 26).map((e) => {
     const a = hash(e.id) * Math.PI * 2;
     const r = Math.sqrt(hash(e.id + "r")) * 38;
-    return { x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, c: color ?? colorOf(e.category) };
+    return { x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, c: color ?? colorOf(e.category), role: nexusDotRole(e.category, colorOf(e.category) === "var(--nexus-dot-neutral)") };
   });
   return (
     <svg
@@ -176,8 +209,8 @@ function MiniConstellation({
       {pts.slice(1).map((p, i) => (
         <line
           key={i}
-          x1={pts[i]!.x}
-          y1={pts[i]!.y}
+          x1={pts[i]?.x ?? p.x}
+          y1={pts[i]?.y ?? p.y}
           x2={p.x}
           y2={p.y}
           stroke="var(--nexus-line)"
@@ -186,7 +219,7 @@ function MiniConstellation({
         />
       ))}
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="2.2" fill={p.c} />
+        <circle key={i} cx={p.x} cy={p.y} r="2.2" fill={p.c} data-dot-role={p.role} className="nexus-role-dot" />
       ))}
     </svg>
   );
@@ -201,6 +234,8 @@ function Sphere({
   masked,
   isAdmin,
   onEdit,
+  seriesId,
+  seasonNumber,
 }: {
   cluster: string;
   members: Entity[];
@@ -210,6 +245,8 @@ function Sphere({
   masked: boolean;
   isAdmin: boolean;
   onEdit: (e: Entity) => void;
+  seriesId: string;
+  seasonNumber: number | null;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState(560);
@@ -390,12 +427,14 @@ function Sphere({
                       <polygon
                         points={hexPts(r)}
                         fill={p.color}
+                        data-dot-role={nexusDotRole(p.e.category, masked)}
+                        className="nexus-role-dot"
                         stroke="var(--nexus-fg)"
                         strokeOpacity="0.5"
                         strokeWidth={0.6}
                       />
                     ) : (
-                      <circle r={r} fill={p.color} />
+                      <circle r={r} fill={p.color} data-dot-role={nexusDotRole(p.e.category, masked)} className="nexus-role-dot" />
                     )}
                     {isSel && (
                       <motion.circle
@@ -459,6 +498,8 @@ function Sphere({
             masked={masked}
             isAdmin={isAdmin}
             onEdit={onEdit}
+            seriesId={seriesId}
+            seasonNumber={seasonNumber}
             onClose={release}
             onJump={(e) => (members.some((m) => m.id === e.id) ? focus(e) : setSelected(e))}
           />
@@ -489,6 +530,8 @@ function DossierPanel({
   onEdit,
   onClose,
   onJump,
+  seriesId,
+  seasonNumber,
 }: {
   e: Entity;
   color: string;
@@ -498,6 +541,8 @@ function DossierPanel({
   onEdit: (e: Entity) => void;
   onClose: () => void;
   onJump: (e: Entity) => void;
+  seriesId: string;
+  seasonNumber: number | null;
 }) {
   const alterName = ALTER_EGOS[e.name.trim().toLowerCase()];
   const alter = alterName
@@ -626,7 +671,7 @@ function DossierPanel({
           )}
           <Link
             to="/character"
-            search={{ e: e.id }}
+            search={{ e: e.id, series: seriesId || undefined, season: seasonNumber ?? undefined }}
             className="ml-auto inline-flex items-center gap-1 rounded-full bg-nexus-glow px-3 py-1.5 text-xs font-semibold text-nexus-bg"
           >
             Full dossier <ArrowRight className="h-3.5 w-3.5" />

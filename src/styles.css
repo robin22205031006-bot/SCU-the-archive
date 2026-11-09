@@ -630,6 +630,15 @@ html[data-spoil-archive] [data-spoiler="archive"] {
   --nexus-wheel-label: oklch(0.86 0.07 220);
   --nexus-wheel-track: oklch(0.28 0.025 220 / 65%);
   --nexus-wheel-line: oklch(0.68 0.045 220 / 35%);
+  --nexus-dot-main-protagonist: oklch(1 0 0);
+  --nexus-dot-protagonist: oklch(0.96 0 0);
+  --nexus-dot-main-antagonist: oklch(0.43 0.18 25);
+  --nexus-dot-antagonist: oklch(0.63 0.24 25);
+  --nexus-dot-support: oklch(0.76 0.2 145);
+  --nexus-dot-impactful: oklch(0.92 0.18 100);
+  --nexus-dot-anti-hero: oklch(0.61 0 0);
+  --nexus-dot-anti-villain: oklch(0 0 0);
+  --nexus-dot-neutral: var(--nexus-c5);
 }
 @theme inline {
   --color-nexus-bg: var(--nexus-bg);
@@ -673,6 +682,11 @@ html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { l
 }
 .nexus-dossier { --nexus-role: var(--nexus-role-neutral); }
 .nexus-wheel-option { color: var(--nexus-muted); }
+.nexus-role-dot { transition: fill 1s, stroke 1s; }
+.nexus-role-dot[data-dot-role="main-protagonist"] { filter: drop-shadow(0 0 3px var(--nexus-dot-main-protagonist)); }
+.nexus-role-dot[data-dot-role="main-antagonist"] { filter: drop-shadow(0 0 3px var(--nexus-dot-antagonist)); }
+.nexus-role-dot[data-dot-role="impactful"] { filter: drop-shadow(0 0 3px var(--nexus-dot-impactful)); }
+.nexus-role-dot[data-dot-role="anti-villain"] { stroke: var(--nexus-muted); stroke-width: 0.8px; }
 .nexus-wheel-option[aria-pressed="true"] { color: var(--nexus-wheel-label); }
 .nexus-wheel-option:hover { background: color-mix(in oklab, var(--nexus-wheel-blue) 20%, transparent); }
 .nexus-dossier[data-role="hero"] { --nexus-role: var(--nexus-role-hero); }
