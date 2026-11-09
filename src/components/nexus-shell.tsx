@@ -10,6 +10,7 @@ import { TABS, STAFF_TAB } from "@/lib/nav";
 import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { ThemeDrawer } from "@/components/theme-drawer";
+import { NexusSectionRail } from "@/components/nexus-section-rail";
 
 export function NexusShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -53,7 +54,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
         </motion.nav>}
       </AnimatePresence>
       <ThemeDrawer open={themeOpen} onOpenChange={setThemeOpen} />
-      <motion.div key={pathname} initial={{ opacity: moving ? 0 : 1, y: moving ? 12 : 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: moving ? 0.65 : 0 }} className="relative">{children}</motion.div>
+      <motion.div key={pathname} data-nexus-page={pathname.slice(1) || "home"} initial={{ opacity: moving ? 0 : 1, y: moving ? 12 : 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: moving ? 0.45 : 0 }} className="nexus-page relative">{["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? <NexusSectionRail>{children}</NexusSectionRail> : children}</motion.div>
     </div>
   </MotionConfig>;
 }
