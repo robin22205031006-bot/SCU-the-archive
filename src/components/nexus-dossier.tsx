@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
@@ -12,7 +12,6 @@ import {
   NEXUS_STATS,
   readDossier,
   resolveNexusStats,
-  highestStatRadius,
   nexusRole,
   type SeasonDossier,
 } from "@/lib/nexus-season";
@@ -23,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { NexusStatWheel } from "@/components/nexus-stat-wheel";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -42,7 +42,6 @@ export function NexusDossier({ e }: { e: Entity }) {
   const [openSeries, setOpenSeries] = useState<string | null>(null);
   const [season, setSeason] = useState<{ seriesId: string; n: number } | null>(null);
   const [menu, setMenu] = useState<Menu>("story");
-  const [statFocus, setStatFocus] = useState(0);
   const [editing, setEditing] = useState(false);
   const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
   const moving = useNexusMotion();
@@ -259,21 +258,7 @@ export function NexusDossier({ e }: { e: Entity }) {
               <p className="mb-2 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
                 {abilitySelection ? abilityDef(abilitySelection).label : "Character stats"} · {seasonLabel}
               </p>
-              <StatWheel stats={statVals} focus={statFocus} onFocus={setStatFocus} color={coreColor} />
-              <div className="mt-3 flex flex-wrap justify-center gap-1" role="group" aria-label="Stats profile">
-                <StatPill on={!abilitySelection} onClick={() => setSelectedAbility(null)}>
-                  Character
-                </StatPill>
-                {abilities.map((a) => (
-                  <StatPill
-                    key={a.name}
-                    on={abilitySelection === a.name}
-                    onClick={() => setSelectedAbility(a.name)}
-                  >
-                    {a.def.label}
-                  </StatPill>
-                ))}
-              </div>
+              <NexusStatWheel stats={statVals} abilities={abilities} selected={abilitySelection} onSelect={setSelectedAbility} />
             </div>
           </div>
 
@@ -542,101 +527,6 @@ export function NexusDossier({ e }: { e: Entity }) {
         )}
       </div>
     </MotionConfig>
-  );
-}
-
-function StatPill({
-  on,
-  onClick,
-  children,
-}: {
-  on: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      aria-pressed={on}
-      className={`rounded-sm px-2 py-0.5 text-[10px] uppercase tracking-wider transition ${
-        on ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function StatWheel({
-  stats,
-  focus,
-  onFocus,
-  color,
-}: {
-  stats: Array<{ key: string; label: string; value: number }>;
-  focus: number;
-  onFocus: (i: number) => void;
-  color: string;
-}) {
-  const n = stats.length;
-  const R = 92;
-  const total = Math.round(stats.reduce((s, x) => s + x.value, 0) / Math.max(n, 1));
-  const rotate = -(360 / n) * focus;
-  const arc = (i: number, r: number) => {
-    const a0 = ((i / n) * 360 - 90 - 360 / n / 2 + 3) * (Math.PI / 180);
-    const a1 = (((i + 1) / n) * 360 - 90 - 360 / n / 2 - 3) * (Math.PI / 180);
-    const p = (a: number, rr: number) => `${110 + rr * Math.cos(a)} ${110 + rr * Math.sin(a)}`;
-    return `M ${p(a0, 30)} L ${p(a0, r)} A ${r} ${r} 0 0 1 ${p(a1, r)} L ${p(a1, 30)} A 30 30 0 0 0 ${p(a0, 30)} Z`;
-  };
-  return (
-    <div className="mx-auto w-full max-w-[280px]">
-      <svg viewBox="0 0 220 220" className="w-full">
-        <motion.circle
-          aria-label="Highest stat ring"
-          data-radius={highestStatRadius(stats)}
-          cx="110"
-          cy="110"
-          initial={false}
-          animate={{ r: highestStatRadius(stats) }}
-          transition={{ type: "spring", stiffness: 65, damping: 19 }}
-          fill="none"
-          stroke={color}
-          strokeDasharray="2 6"
-        />
-        <motion.g
-          animate={{ rotate }}
-          transition={{ type: "spring", stiffness: 60, damping: 14 }}
-          style={{ originX: "110px", originY: "110px" }}
-        >
-          {stats.map((s, i) => (
-            <g key={s.key} onClick={() => onFocus(i)} className="cursor-pointer">
-              <path d={arc(i, R)} fill="var(--muted)" opacity={0.35} />
-              <motion.path
-                initial={false}
-                animate={{ d: arc(i, 30 + (R - 30) * (s.value / 100)) }}
-                transition={{ duration: 0.8, ease: EASE }}
-                fill={color}
-                opacity={i === focus ? 0.95 : 0.45}
-              />
-            </g>
-          ))}
-        </motion.g>
-        <circle cx="110" cy="110" r="27" fill="var(--background)" stroke={color} />
-        <text x="110" y="106" textAnchor="middle" fontSize="7" fill="var(--muted-foreground)" letterSpacing="2">
-          AVG
-        </text>
-        <text x="110" y="120" textAnchor="middle" fontSize="16" fill="var(--foreground)">
-          {total}
-        </text>
-      </svg>
-      <div className="mt-2 flex flex-wrap justify-center gap-1">
-        {stats.map((s, i) => (
-          <StatPill key={s.key} on={i === focus} onClick={() => onFocus(i)}>
-            {s.label} {s.value}
-          </StatPill>
-        ))}
-      </div>
-    </div>
   );
 }
 
