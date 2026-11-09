@@ -24,8 +24,11 @@ import { useUiStyle } from "@/lib/ui-style";
 import { NexusDossier } from "@/components/nexus-dossier";
 
 export const Route = createFileRoute("/_authenticated/character")({
-  validateSearch: (s: Record<string, unknown>): { e?: string } =>
-    typeof s["e"] === "string" ? { e: s["e"] } : {},
+  validateSearch: (s: Record<string, unknown>): { e?: string; series?: string; season?: number } => ({
+    ...(typeof s["e"] === "string" ? { e: s["e"] } : {}),
+    ...(typeof s["series"] === "string" ? { series: s["series"] } : {}),
+    ...(Number.isInteger(Number(s["season"])) && Number(s["season"]) > 0 ? { season: Number(s["season"]) } : {}),
+  }),
   head: () => ({ meta: [
     { title: "Character Dossier — SCU" },
     { name: "description", content: "Explore SCU character stories, season identities, abilities and stats in Classic or Nexus." },
@@ -336,9 +339,9 @@ function JourneyBars({
 
 function CharacterDossier() {
   const style = useUiStyle();
-  const { e: id } = Route.useSearch();
+  const { e: id, series, season } = Route.useSearch();
   const { data } = useQuery({ ...entityByIdQuery(id ?? ""), enabled: !!id && style === "nexus" });
-  if (style === "nexus" && data && data.kind === "character") return <NexusDossier key={data.id} e={data} />;
+  if (style === "nexus" && data && data.kind === "character") return <NexusDossier key={`${data.id}:${series ?? ""}:${season ?? ""}`} e={data} initialSeason={series && season ? { seriesId: series, n: season } : null} />;
   return <ClassicDossier />;
 }
 
