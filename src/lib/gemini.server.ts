@@ -41,10 +41,13 @@ export async function generateGemini(
         break;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        const transient = /\b(503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|overloaded|high demand)\b/i.test(
-          msg,
-        );
-        if (!transient) break;
+        const transient =
+          /\b(503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|overloaded|high demand)\b/i.test(msg);
+        if (!transient) {
+          throw new Error(
+            "Gemini could not complete this request. Your input is preserved; please try again later.",
+          );
+        }
         await new Promise((r) => setTimeout(r, 800 * 2 ** attempt));
       }
     }
