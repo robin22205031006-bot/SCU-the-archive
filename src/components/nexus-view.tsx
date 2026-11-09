@@ -117,7 +117,7 @@ export function NexusView({
                       whileTap={{ scale: 0.97 }}
                       className="group relative overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-fg/[0.03] text-left"
                     >
-                      <Button variant="ghost" className="block h-auto w-full p-3 text-left hover:bg-transparent" onClick={() => { sfx.tierReveal?.(null); setCluster(c); }} aria-label={`${label}, ${members.length}`}>
+                      <Button variant="ghost" className="block h-auto min-h-40 w-full whitespace-normal p-3 text-left hover:bg-transparent" onClick={() => { sfx.tierReveal?.(null); setCluster(c); }} aria-label={`${label}, ${members.length}`}>
                       <span className="text-[11px] font-medium">{label}</span>
                       <MiniConstellation
                         members={members}
@@ -198,7 +198,7 @@ function MiniConstellation({
   return (
     <svg
       viewBox="0 0 100 100"
-      className="mx-auto mt-1 h-24 w-24 transition-transform duration-700 group-hover:rotate-12 group-hover:scale-110"
+      className="mx-auto mt-1 h-24! w-24! shrink-0 transition-transform duration-700 group-hover:rotate-12 group-hover:scale-110"
     >
       <circle cx="50" cy="50" r="46" fill="none" stroke="var(--nexus-glow)" strokeOpacity="0.25" />
       {pts.slice(1).map((p, i) => (
