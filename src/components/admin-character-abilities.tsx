@@ -26,14 +26,24 @@ export function AdminCharacterAbilities() {
   const { data: rows } = useQuery({
     queryKey: ["character-abilities"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("character_abilities").select("*").order("created_at", { ascending: false }).limit(300);
+      const { data, error } = await supabase
+        .from("character_abilities")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(300);
       if (error) return [];
       return data;
     },
   });
-  const entityName = useMemo(() => new Map((entities ?? []).map((e) => [e.id, e.name])), [entities]);
+  const entityName = useMemo(
+    () => new Map((entities ?? []).map((e) => [e.id, e.name])),
+    [entities],
+  );
   const seriesTitle = useMemo(() => new Map((series ?? []).map((s) => [s.id, s.title])), [series]);
-  const filtered = useMemo(() => (rows ?? []).filter((r) => !entityId || r.entity_id === entityId), [rows, entityId]);
+  const filtered = useMemo(
+    () => (rows ?? []).filter((r) => !entityId || r.entity_id === entityId),
+    [rows, entityId],
+  );
 
   const add = async () => {
     if (!entityId || !abilityKey.trim() || busy) return;
@@ -66,38 +76,93 @@ export function AdminCharacterAbilities() {
   return (
     <section className="glass rounded-2xl p-5">
       <h2 className="mb-1 text-2xl">Ability assignments</h2>
-      <p className="mb-3 text-xs text-muted-foreground">Assign abilities per character, scoped to a series/season with a power level (1–5).</p>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Assign abilities per character, scoped to a series/season with a power level (1–5).
+      </p>
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <select className="h-9 rounded-md border bg-background px-2 text-xs" value={entityId} onChange={(e) => setEntityId(e.target.value)}>
+        <select
+          className="h-9 rounded-md border bg-background px-2 text-xs"
+          value={entityId}
+          onChange={(e) => setEntityId(e.target.value)}
+        >
           <option value="">Character…</option>
-          {(entities ?? []).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          {(entities ?? []).map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.name}
+            </option>
+          ))}
         </select>
-        <select className="h-9 rounded-md border bg-background px-2 text-xs" value={abilityKey} onChange={(e) => setAbilityKey(e.target.value)}>
+        <select
+          className="h-9 rounded-md border bg-background px-2 text-xs"
+          value={abilityKey}
+          onChange={(e) => setAbilityKey(e.target.value)}
+        >
           <option value="">Ability…</option>
-          {ABILITY_REGISTRY.map((a) => <option key={a.key} value={a.key}>{a.label} ({a.tier})</option>)}
+          {ABILITY_REGISTRY.map((a) => (
+            <option key={a.key} value={a.key}>
+              {a.label} ({a.tier})
+            </option>
+          ))}
         </select>
-        <select className="h-9 rounded-md border bg-background px-2 text-xs" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
+        <select
+          className="h-9 rounded-md border bg-background px-2 text-xs"
+          value={seriesId}
+          onChange={(e) => setSeriesId(e.target.value)}
+        >
           <option value="">All series</option>
-          {(series ?? []).map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+          {(series ?? []).map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.title}
+            </option>
+          ))}
         </select>
-        <Input className="h-9 text-xs" placeholder="Season #" value={season} onChange={(e) => setSeason(e.target.value)} />
+        <Input
+          className="h-9 text-xs"
+          placeholder="Season #"
+          value={season}
+          onChange={(e) => setSeason(e.target.value)}
+        />
         <div className="flex gap-1">
-          <select className="h-9 flex-1 rounded-md border bg-background px-2 text-xs" value={level} onChange={(e) => setLevel(Number(e.target.value))}>
-            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>Lv {n}</option>)}
+          <select
+            className="h-9 flex-1 rounded-md border bg-background px-2 text-xs"
+            value={level}
+            onChange={(e) => setLevel(Number(e.target.value))}
+          >
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                Lv {n}
+              </option>
+            ))}
           </select>
-          <Button size="sm" className="h-9" disabled={!entityId || !abilityKey.trim() || busy} onClick={add}><Plus className="h-4 w-4" /></Button>
+          <Button
+            size="sm"
+            className="h-9"
+            disabled={!entityId || !abilityKey.trim() || busy}
+            onClick={add}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       <ul className="grid gap-1 text-sm">
-        {filtered.length === 0 && <li className="text-xs text-muted-foreground">No assignments yet.</li>}
+        {filtered.length === 0 && (
+          <li className="text-xs text-muted-foreground">No assignments yet.</li>
+        )}
         {filtered.map((r) => (
           <li key={r.id} className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-1.5">
             <span className="font-medium">{entityName.get(r.entity_id) ?? "—"}</span>
             <span className="text-accent">{abilityDef(r.ability_key).label}</span>
             <span className="text-xs text-muted-foreground">
-              {r.series_id ? seriesTitle.get(r.series_id) ?? "?" : "Global"}{r.season_number ? ` S${r.season_number}` : ""} · Lv{r.level}
+              {r.series_id ? (seriesTitle.get(r.series_id) ?? "?") : "Global"}
+              {r.season_number ? ` S${r.season_number}` : ""} · Lv{r.level}
             </span>
-            <button aria-label="Remove" onClick={() => remove(r.id)} className="ml-auto text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button
+              aria-label="Remove"
+              onClick={() => remove(r.id)}
+              className="ml-auto text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </li>
         ))}
       </ul>

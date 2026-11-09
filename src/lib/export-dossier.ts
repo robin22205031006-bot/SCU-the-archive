@@ -48,9 +48,16 @@ export async function exportDossierPdf(entity: Entity, groups: DossierGroup[] = 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor("#d4d4d8");
-  const sub = [entity.kind.toUpperCase(), entity.category, entity.status, entity.role].filter(Boolean).join("  ·  ");
+  const sub = [entity.kind.toUpperCase(), entity.category, entity.status, entity.role]
+    .filter(Boolean)
+    .join("  ·  ");
   doc.text(sub.slice(0, 110), M, 28);
-  doc.text(`DOSSIER ${entity.id.slice(0, 8).toUpperCase()}  ·  ${new Date().toISOString().slice(0, 10)}`, W - M, 10, { align: "right" });
+  doc.text(
+    `DOSSIER ${entity.id.slice(0, 8).toUpperCase()}  ·  ${new Date().toISOString().slice(0, 10)}`,
+    W - M,
+    10,
+    { align: "right" },
+  );
   doc.setTextColor(INK);
   y = 44;
 
@@ -90,9 +97,16 @@ export async function exportDossierPdf(entity: Entity, groups: DossierGroup[] = 
   // ---- Combat stats ----
   const combat = getCombatStats(entity.stats);
   const canonKeys = new Set<string>(COMBAT_STATS.map((s) => s.key));
-  const statsObj = (entity.stats && typeof entity.stats === "object" ? entity.stats : {}) as Record<string, unknown>;
+  const statsObj = (entity.stats && typeof entity.stats === "object" ? entity.stats : {}) as Record<
+    string,
+    unknown
+  >;
   const customStats = Object.entries(statsObj).filter(([k]) => {
-    const nk = k.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const nk = k
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
     return !canonKeys.has(nk);
   });
   if (combat || customStats.length) {
@@ -163,10 +177,19 @@ export async function exportDossierPdf(entity: Entity, groups: DossierGroup[] = 
   doc.rect(0, doc.internal.pageSize.getHeight() - 14, W, 14, "F");
   doc.setDrawColor(ACCENT);
   doc.setLineWidth(0.5);
-  doc.line(M, doc.internal.pageSize.getHeight() - 14, W - M, doc.internal.pageSize.getHeight() - 14);
+  doc.line(
+    M,
+    doc.internal.pageSize.getHeight() - 14,
+    W - M,
+    doc.internal.pageSize.getHeight() - 14,
+  );
   doc.setFontSize(7);
   doc.setTextColor(MUTED);
-  doc.text("SCU ARCHIVE — OFFICIAL DOSSIER — UNAUTHORIZED DISTRIBUTION PROHIBITED", M, doc.internal.pageSize.getHeight() - 5);
+  doc.text(
+    "SCU ARCHIVE — OFFICIAL DOSSIER — UNAUTHORIZED DISTRIBUTION PROHIBITED",
+    M,
+    doc.internal.pageSize.getHeight() - 5,
+  );
   doc.text("PAGE 1 / 1", W - M, doc.internal.pageSize.getHeight() - 5, { align: "right" });
 
   doc.save(`${entity.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-dossier.pdf`);

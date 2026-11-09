@@ -17,7 +17,8 @@ import { AbilityBadge } from "./ability-badge";
  * previews (legendary glow, beast colors, tier tooltips).
  */
 export function AbilityPicker({
-  value, onChange,
+  value,
+  onChange,
 }: {
   value: string[];
   onChange: (next: string[]) => void;
@@ -63,8 +64,12 @@ export function AbilityPicker({
   return (
     <div className="grid gap-3 rounded-xl border border-white/10 bg-secondary/30 p-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Abilities, powers &amp; traits</span>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{value.length} assigned</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          Abilities, powers &amp; traits
+        </span>
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          {value.length} assigned
+        </span>
       </div>
 
       {/* Selected tags with reorder + remove */}
@@ -77,14 +82,36 @@ export function AbilityPicker({
               <span
                 key={name}
                 className="inline-flex items-center gap-1 rounded-full border py-0.5 pl-1.5 pr-1 text-[10px] font-medium uppercase tracking-wider"
-                style={{ color: def.color, borderColor: `${def.color}55`, background: `${def.color}14` }}
+                style={{
+                  color: def.color,
+                  borderColor: `${def.color}55`,
+                  background: `${def.color}14`,
+                }}
                 title={`${def.label} — ${def.tier}`}
               >
                 <def.icon className="h-3 w-3" style={{ color: def.color }} />
                 {name}
-                <button aria-label={`Move ${name} up`} onClick={() => move(name, -1)} className="text-muted-foreground hover:text-foreground"><ArrowUp className="h-2.5 w-2.5" /></button>
-                <button aria-label={`Move ${name} down`} onClick={() => move(name, 1)} className="text-muted-foreground hover:text-foreground"><ArrowDown className="h-2.5 w-2.5" /></button>
-                <button aria-label={`Remove ${name}`} onClick={() => remove(name)} className="text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
+                <button
+                  aria-label={`Move ${name} up`}
+                  onClick={() => move(name, -1)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowUp className="h-2.5 w-2.5" />
+                </button>
+                <button
+                  aria-label={`Move ${name} down`}
+                  onClick={() => move(name, 1)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowDown className="h-2.5 w-2.5" />
+                </button>
+                <button
+                  aria-label={`Remove ${name}`}
+                  onClick={() => remove(name)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </span>
             );
           })}
@@ -94,9 +121,15 @@ export function AbilityPicker({
       {/* Live badge preview */}
       {selected.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-background/50 p-2">
-          <span className="text-[9px] uppercase tracking-widest text-muted-foreground">Preview</span>
-          {selected.slice(0, 8).map((n) => <AbilityBadge key={n} name={n} />)}
-          {selected.length > 8 && <span className="text-[10px] text-muted-foreground">+{selected.length - 8}</span>}
+          <span className="text-[9px] uppercase tracking-widest text-muted-foreground">
+            Preview
+          </span>
+          {selected.slice(0, 8).map((n) => (
+            <AbilityBadge key={n} name={n} />
+          ))}
+          {selected.length > 8 && (
+            <span className="text-[10px] text-muted-foreground">+{selected.length - 8}</span>
+          )}
         </div>
       )}
 
@@ -128,7 +161,9 @@ export function AbilityPicker({
         </div>
       )}
       {needle && suggestions.length === 0 && !custom.trim() && (
-        <p className="text-[11px] text-muted-foreground">No registry match — add it as a custom tag below.</p>
+        <p className="text-[11px] text-muted-foreground">
+          No registry match — add it as a custom tag below.
+        </p>
       )}
 
       {/* Custom tag */}
@@ -140,7 +175,13 @@ export function AbilityPicker({
           placeholder='Custom tag, e.g. "Architect Cube Guardian"'
           className="h-9 text-sm"
         />
-        <Button type="button" size="sm" variant="secondary" disabled={!custom.trim()} onClick={() => add(custom)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={!custom.trim()}
+          onClick={() => add(custom)}
+        >
           <Plus className="h-4 w-4" /> Add
         </Button>
       </div>

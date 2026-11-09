@@ -9,9 +9,7 @@ const outDir = existsSync("dist/client") ? "dist/client" : ".output/public";
 
 const { count, size, warnings } = await generateSW({
   globDirectory: outDir,
-  globPatterns: [
-    "**/*.{js,css,html,png,svg,ico,webmanifest,json,woff,woff2,ttf,otf}",
-  ],
+  globPatterns: ["**/*.{js,css,html,png,svg,ico,webmanifest,json,woff,woff2,ttf,otf}"],
   globIgnores: ["sw.js", "registerSW.js", "_headers", "**/*.map"],
   swDest: `${outDir}/sw.js`,
   // No navigateFallback: this is an SSR app with no SPA shell HTML to fall back

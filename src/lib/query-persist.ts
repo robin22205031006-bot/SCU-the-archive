@@ -17,11 +17,17 @@ function snapshot(qc: QueryClient) {
     if (q.state.status !== "success" || q.state.data === undefined) continue;
     try {
       out[key] = q.state.data;
-    } catch { /* unserializable */ }
+    } catch {
+      /* unserializable */
+    }
   }
   const json = JSON.stringify(out);
   if (json.length < MAX_BYTES) {
-    try { localStorage.setItem(KEY, json); } catch { /* quota */ }
+    try {
+      localStorage.setItem(KEY, json);
+    } catch {
+      /* quota */
+    }
   }
 }
 
@@ -31,9 +37,15 @@ export function restoreQueries(qc: QueryClient) {
     if (!raw) return;
     const entries = JSON.parse(raw) as Record<string, unknown>;
     for (const [key, data] of Object.entries(entries)) {
-      try { qc.setQueryData(JSON.parse(key), data); } catch { /* bad key */ }
+      try {
+        qc.setQueryData(JSON.parse(key), data);
+      } catch {
+        /* bad key */
+      }
     }
-  } catch { /* corrupt cache */ }
+  } catch {
+    /* corrupt cache */
+  }
 }
 
 export function persistQueries(qc: QueryClient) {

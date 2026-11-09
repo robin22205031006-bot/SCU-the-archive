@@ -34,7 +34,9 @@ let ctx: AudioContext | null = null;
 
 function ac(): AudioContext | null {
   if (typeof window === "undefined") return null;
-  const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  const AC =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
   if (!ctx) ctx = new AC();
   if (ctx.state === "suspended") void ctx.resume();
@@ -51,7 +53,15 @@ interface ToneOpts {
   attack?: number;
 }
 
-function tone({ freq, freqEnd, type = "sine", dur = 0.08, vol = 0.08, delay = 0, attack = 0.004 }: ToneOpts): void {
+function tone({
+  freq,
+  freqEnd,
+  type = "sine",
+  dur = 0.08,
+  vol = 0.08,
+  delay = 0,
+  attack = 0.004,
+}: ToneOpts): void {
   const c = ac();
   if (!c) return;
   const t0 = c.currentTime + delay;
@@ -77,7 +87,14 @@ interface NoiseOpts {
   type?: BiquadFilterType;
 }
 
-function noise({ dur = 0.06, vol = 0.05, freq = 3000, q = 1, delay = 0, type = "bandpass" }: NoiseOpts): void {
+function noise({
+  dur = 0.06,
+  vol = 0.05,
+  freq = 3000,
+  q = 1,
+  delay = 0,
+  type = "bandpass",
+}: NoiseOpts): void {
   const c = ac();
   if (!c) return;
   const t0 = c.currentTime + delay;
@@ -113,7 +130,10 @@ let ambientFileAudio: HTMLAudioElement | null = null;
 
 export function setAudioFiles(map: Record<string, string> | null | undefined) {
   audioFiles = map ?? {};
-  if (ambientFileAudio && !audioFiles["ambient"]) { ambientFileAudio.pause(); ambientFileAudio = null; }
+  if (ambientFileAudio && !audioFiles["ambient"]) {
+    ambientFileAudio.pause();
+    ambientFileAudio = null;
+  }
 }
 
 /** Play an uploaded file by key ("welcome", "ambient", "sfx:click", …). Returns true if played. */
@@ -156,9 +176,13 @@ export function ambientStart() {
       ambientFileAudio = new Audio(audioFiles["ambient"]);
       ambientFileAudio.loop = true;
       ambientFileAudio.volume = 0.5;
-      void ambientFileAudio.play().catch(() => { ambientFileAudio = null; });
+      void ambientFileAudio.play().catch(() => {
+        ambientFileAudio = null;
+      });
       return;
-    } catch { /* fall through to synth */ }
+    } catch {
+      /* fall through to synth */
+    }
   }
   const c = ac();
   if (!c) return;
@@ -174,11 +198,7 @@ export function ambientStart() {
       osc.start();
       return { osc, gain };
     };
-    ambientNodes = [
-      mk(55, "sine", 0.035),
-      mk(82.4, "sine", 0.022),
-      mk(110, "triangle", 0.012),
-    ];
+    ambientNodes = [mk(55, "sine", 0.035), mk(82.4, "sine", 0.022), mk(110, "triangle", 0.012)];
     // Slow breathing LFO on the master-ish gain.
     const lfo = c.createOscillator();
     const lfoGain = c.createGain();
@@ -194,14 +214,19 @@ export function ambientStart() {
 }
 
 export function ambientStop() {
-  if (ambientFileAudio) { ambientFileAudio.pause(); ambientFileAudio = null; }
+  if (ambientFileAudio) {
+    ambientFileAudio.pause();
+    ambientFileAudio = null;
+  }
   if (!ambientNodes) return;
   const c = ctx;
   for (const n of ambientNodes) {
     try {
       n.gain.gain.linearRampToValueAtTime(0, (c?.currentTime ?? 0) + 0.8);
       n.osc.stop((c?.currentTime ?? 0) + 1);
-    } catch { /* already stopped */ }
+    } catch {
+      /* already stopped */
+    }
   }
   ambientNodes = null;
 }
@@ -307,13 +332,17 @@ export const sfx = {
   /** Play the SFX matching a character's tier. */
   tierReveal(tier: string | null | undefined) {
     switch ((tier ?? "").toLowerCase()) {
-      case "mythic": return this.mythic();
+      case "mythic":
+        return this.mythic();
       case "angle":
-      case "angel": return this.angel();
+      case "angel":
+        return this.angel();
       case "legendary":
       case "guardian":
-      case "heroic": return this.hud();
-      default: return this.whoosh();
+      case "heroic":
+        return this.hud();
+      default:
+        return this.whoosh();
     }
   },
 

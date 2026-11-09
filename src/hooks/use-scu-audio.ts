@@ -37,11 +37,17 @@ export function useScuAudioGlobal() {
     let welcomed = false;
     try {
       welcomed = sessionStorage.getItem("scu-welcomed") === "1";
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     const greet = () => {
       if (welcomed) return;
       welcomed = true;
-      try { sessionStorage.setItem("scu-welcomed", "1"); } catch { /* ignore */ }
+      try {
+        sessionStorage.setItem("scu-welcomed", "1");
+      } catch {
+        /* ignore */
+      }
       sfx.welcome();
     };
     const onGesture = () => {

@@ -27,7 +27,10 @@ export const Route = createFileRoute("/_authenticated/vault")({
       { title: "PDF Vault — Sentinels Cinematic Universe" },
       { name: "description", content: "Scripts, lore books and documents from the SCU archive." },
       { property: "og:title", content: "PDF Vault — SCU" },
-      { property: "og:description", content: "Scripts, lore books and documents from the SCU archive." },
+      {
+        property: "og:description",
+        content: "Scripts, lore books and documents from the SCU archive.",
+      },
     ],
   }),
   component: Vault,
@@ -41,7 +44,10 @@ function Vault() {
   const { data, isLoading } = useQuery({
     queryKey: ["vault"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("vault_documents").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("vault_documents")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
@@ -62,9 +68,13 @@ function Vault() {
     enabled: isAdmin,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("pdf_vault").select("*").order("uploaded_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("pdf_vault")
+        .select("*")
+        .order("uploaded_at", { ascending: false });
       if (error) {
-        if (/pdf_vault|schema cache|does not exist/i.test(error.message)) return [] as PdfVaultDoc[];
+        if (/pdf_vault|schema cache|does not exist/i.test(error.message))
+          return [] as PdfVaultDoc[];
         throw error;
       }
       return data ?? [];
@@ -75,15 +85,30 @@ function Vault() {
     if (!file) return;
     setBusy(true);
     const path = `${crypto.randomUUID()}-${file.name.replace(/[^\w.-]/g, "_")}`;
-    const up = await supabase.storage.from("vault").upload(path, file, { contentType: file.type || "application/pdf" });
-    if (up.error) { setBusy(false); toast.error(up.error.message); return; }
-    const { error } = await supabase.from("vault_documents").insert({ title: title.trim() || file.name, file_path: path, is_public: isPublic, downloadable });
+    const up = await supabase.storage
+      .from("vault")
+      .upload(path, file, { contentType: file.type || "application/pdf" });
+    if (up.error) {
+      setBusy(false);
+      toast.error(up.error.message);
+      return;
+    }
+    const { error } = await supabase
+      .from("vault_documents")
+      .insert({
+        title: title.trim() || file.name,
+        file_path: path,
+        is_public: isPublic,
+        downloadable,
+      });
     setBusy(false);
     if (error) {
       await supabase.storage.from("vault").remove([path]);
-      toast.error(error.message); return;
+      toast.error(error.message);
+      return;
     }
-    setFile(null); setTitle("");
+    setFile(null);
+    setTitle("");
     qc.invalidateQueries({ queryKey: ["vault"] });
     qc.invalidateQueries({ queryKey: ["search-index"] });
     toast.success("Uploaded");
@@ -115,12 +140,16 @@ function Vault() {
       if (docErr || !doc) throw new Error(docErr?.message ?? "Could not register the document.");
 
       // Best-effort file archival into the existing vault bucket.
-      const up = await supabase.storage.from("vault").upload(storagePath, ragFile, { contentType: "application/pdf" });
+      const up = await supabase.storage
+        .from("vault")
+        .upload(storagePath, ragFile, { contentType: "application/pdf" });
       if (up.error) console.warn("[pdf-vault] storage upload failed:", up.error.message);
 
       for (let i = 0; i < chunks.length; i += EMBED_BATCH) {
         const batch = chunks.slice(i, i + EMBED_BATCH);
-        setRagProgress(`Embedding chunks ${i + 1}–${Math.min(i + EMBED_BATCH, chunks.length)} of ${chunks.length}…`);
+        setRagProgress(
+          `Embedding chunks ${i + 1}–${Math.min(i + EMBED_BATCH, chunks.length)} of ${chunks.length}…`,
+        );
         const { embeddings } = await embed({ data: { texts: batch } });
         const rows = batch.map((content_text, j) => ({
           pdf_id: doc.id,
@@ -132,7 +161,10 @@ function Vault() {
         if (chunkErr) throw new Error(`Chunk insert failed: ${chunkErr.message}`);
       }
 
-      await supabase.from("pdf_vault").update({ status: "ready", chunk_count: chunks.length }).eq("id", doc.id);
+      await supabase
+        .from("pdf_vault")
+        .update({ status: "ready", chunk_count: chunks.length })
+        .eq("id", doc.id);
       sfx.add();
       toast.success(`Indexed ${ragFile.name} — ${chunks.length} chunks ready for the AI Box.`);
       setRagFile(null);
@@ -157,20 +189,28 @@ function Vault() {
 
   const open = async (path: string) => {
     const { data: s, error } = await supabase.storage.from("vault").createSignedUrl(path, 600);
-    if (error || !s) { toast.error("This document isn't available for download."); return; }
+    if (error || !s) {
+      toast.error("This document isn't available for download.");
+      return;
+    }
     window.open(s.signedUrl, "_blank", "noopener");
   };
 
   const toggle = async (id: string, patch: { is_public?: boolean; downloadable?: boolean }) => {
     const { error } = await supabase.from("vault_documents").update(patch).eq("id", id);
-    if (error) toast.error(error.message); else qc.invalidateQueries({ queryKey: ["vault"] });
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ["vault"] });
   };
 
   const del = async (id: string, path: string) => {
     const removal = await supabase.storage.from("vault").remove([path]);
-    if (removal.error) { toast.error(removal.error.message); return; }
+    if (removal.error) {
+      toast.error(removal.error.message);
+      return;
+    }
     const { error } = await supabase.from("vault_documents").delete().eq("id", id);
-    if (error) toast.error(error.message); else qc.invalidateQueries({ queryKey: ["vault"] });
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ["vault"] });
     qc.invalidateQueries({ queryKey: ["search-index"] });
   };
 
@@ -183,12 +223,29 @@ function Vault() {
 
       {isAdmin && (
         <section className="glass mb-8 grid gap-3 rounded-2xl p-5">
-          <Input placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <Input
+            placeholder="Title (optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <Input
+            type="file"
+            accept="application/pdf"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
           <div className="flex flex-wrap items-center gap-5 text-sm">
-            <Label className="flex items-center gap-2"><Switch checked={isPublic} onCheckedChange={setIsPublic} />Visible to members</Label>
-            <Label className="flex items-center gap-2"><Switch checked={downloadable} onCheckedChange={setDownloadable} />Downloadable</Label>
-            <Button className="ml-auto" size="sm" disabled={!file || busy} onClick={upload}><Upload className="h-4 w-4" />{busy ? "Uploading…" : "Upload"}</Button>
+            <Label className="flex items-center gap-2">
+              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+              Visible to members
+            </Label>
+            <Label className="flex items-center gap-2">
+              <Switch checked={downloadable} onCheckedChange={setDownloadable} />
+              Downloadable
+            </Label>
+            <Button className="ml-auto" size="sm" disabled={!file || busy} onClick={upload}>
+              <Upload className="h-4 w-4" />
+              {busy ? "Uploading…" : "Upload"}
+            </Button>
           </div>
         </section>
       )}
@@ -200,7 +257,8 @@ function Vault() {
             <h2 className="text-lg font-medium">AI knowledge index</h2>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            Index a PDF for the AI Box: text is extracted, chunked, embedded, and cited as an official SCU source.
+            Index a PDF for the AI Box: text is extracted, chunked, embedded, and cited as an
+            official SCU source.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Input
@@ -211,7 +269,11 @@ function Vault() {
               onChange={(e) => setRagFile(e.target.files?.[0] ?? null)}
             />
             <Button size="sm" disabled={!ragFile || ragBusy} onClick={() => void indexForAi()}>
-              {ragBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+              {ragBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Database className="h-4 w-4" />
+              )}
               {ragBusy ? "Indexing…" : "Index for AI"}
             </Button>
           </div>
@@ -220,13 +282,21 @@ function Vault() {
           {(ragDocs?.length ?? 0) > 0 && (
             <ul className="mt-4 grid gap-2">
               {ragDocs!.map((d) => (
-                <li key={d.id} className="flex items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2 text-sm">
+                <li
+                  key={d.id}
+                  className="flex items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2 text-sm"
+                >
                   <FileText className="h-4 w-4 shrink-0 text-accent" />
                   <span className="min-w-0 flex-1 truncate">{d.file_name}</span>
                   <span className="text-xs text-muted-foreground">
                     {d.status === "ready" ? `${d.chunk_count} chunks` : d.status}
                   </span>
-                  <Button size="icon" variant="ghost" aria-label="Delete index" onClick={() => void deleteRagDoc(d)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Delete index"
+                    onClick={() => void deleteRagDoc(d)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </li>
@@ -236,7 +306,9 @@ function Vault() {
         </section>
       )}
 
-      {isLoading ? <ListSkeleton /> : !data?.length ? (
+      {isLoading ? (
+        <ListSkeleton />
+      ) : !data?.length ? (
         <p className="text-muted-foreground">No documents in the vault yet.</p>
       ) : (
         <ul className="grid gap-3">
@@ -245,18 +317,47 @@ function Vault() {
               <FileText className="h-5 w-5 shrink-0 text-accent" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{d.title}</p>
-                {isAdmin && <p className="text-xs text-muted-foreground">{d.is_public ? "Visible" : "Hidden"} · {d.downloadable ? "Downloadable" : "View locked"}</p>}
+                {isAdmin && (
+                  <p className="text-xs text-muted-foreground">
+                    {d.is_public ? "Visible" : "Hidden"} ·{" "}
+                    {d.downloadable ? "Downloadable" : "View locked"}
+                  </p>
+                )}
               </div>
               {isAdmin && (
                 <>
-                  <Switch aria-label="Visible" checked={d.is_public} onCheckedChange={(v) => toggle(d.id, { is_public: v })} />
-                  <Switch aria-label="Downloadable" checked={d.downloadable} onCheckedChange={(v) => toggle(d.id, { downloadable: v })} />
+                  <Switch
+                    aria-label="Visible"
+                    checked={d.is_public}
+                    onCheckedChange={(v) => toggle(d.id, { is_public: v })}
+                  />
+                  <Switch
+                    aria-label="Downloadable"
+                    checked={d.downloadable}
+                    onCheckedChange={(v) => toggle(d.id, { downloadable: v })}
+                  />
                 </>
               )}
               {(isAdmin || d.downloadable) && (
-                <Button size="icon" variant="ghost" aria-label="Download" onClick={() => open(d.file_path)}><Download className="h-4 w-4" /></Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Download"
+                  onClick={() => open(d.file_path)}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
               )}
-              {isAdmin && <Button size="icon" variant="ghost" aria-label="Delete" onClick={() => del(d.id, d.file_path)}><Trash2 className="h-4 w-4" /></Button>}
+              {isAdmin && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Delete"
+                  onClick={() => del(d.id, d.file_path)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </li>
           ))}
         </ul>

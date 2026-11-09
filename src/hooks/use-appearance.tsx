@@ -26,7 +26,9 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       const rawScale = localStorage.getItem("scu-scale");
       const s = Number(rawScale);
       if (rawScale && Number.isInteger(s) && s >= 0 && s < FONT_SCALES.length) setScale(s);
-    } catch { /* Appearance remains usable when browser storage is disabled. */ }
+    } catch {
+      /* Appearance remains usable when browser storage is disabled. */
+    }
     setLoaded(true);
   }, []);
 
@@ -45,12 +47,19 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("scu-theme-id", t.id);
       localStorage.setItem("scu-theme", dark ? "dark" : "light");
       localStorage.setItem("scu-scale", String(scaleIndex));
-    } catch { /* Storage is optional. */ }
+    } catch {
+      /* Storage is optional. */
+    }
   }, [theme, dark, scaleIndex, loaded]);
 
-  const zoom = (dir: 1 | -1) => setScale((i) => Math.min(FONT_SCALES.length - 1, Math.max(0, i + dir)));
+  const zoom = (dir: 1 | -1) =>
+    setScale((i) => Math.min(FONT_SCALES.length - 1, Math.max(0, i + dir)));
 
-  return <Ctx.Provider value={{ theme, dark, scaleIndex, setTheme, setDark, zoom }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ theme, dark, scaleIndex, setTheme, setDark, zoom }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useAppearance() {

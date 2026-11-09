@@ -6,7 +6,9 @@ export type MapLocation = Tables<"map_locations">;
 export type Episode = Tables<"episodes">;
 
 function isMissingTable(error: { message?: string } | null, table: string) {
-  return !!error && new RegExp(`${table}|schema cache|does not exist`, "i").test(error.message ?? "");
+  return (
+    !!error && new RegExp(`${table}|schema cache|does not exist`, "i").test(error.message ?? "")
+  );
 }
 
 /** All tactical map pins, ordered by name. */

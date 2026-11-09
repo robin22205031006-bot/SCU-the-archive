@@ -25,8 +25,14 @@ interface LinkedRow {
 }
 
 /** Fetch the entities on the "other side" of a set of memberships. */
-function useLinkedEntities(memberships: EntityMembership[] | undefined, otherKey: "character_id" | "group_id") {
-  const ids = useMemo(() => [...new Set((memberships ?? []).map((m) => m[otherKey]))].sort(), [memberships, otherKey]);
+function useLinkedEntities(
+  memberships: EntityMembership[] | undefined,
+  otherKey: "character_id" | "group_id",
+) {
+  const ids = useMemo(
+    () => [...new Set((memberships ?? []).map((m) => m[otherKey]))].sort(),
+    [memberships, otherKey],
+  );
   return useQuery({
     queryKey: ["entity-link-targets", ids.join(",")],
     enabled: ids.length > 0,
@@ -41,7 +47,10 @@ function useLinkedEntities(memberships: EntityMembership[] | undefined, otherKey
 
 /** Admin dialog to link an existing entity to `entity` via entity_memberships. */
 function LinkEntityDialog({
-  open, onOpenChange, entity, linkedIds,
+  open,
+  onOpenChange,
+  entity,
+  linkedIds,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -102,9 +111,16 @@ function LinkEntityDialog({
         </DialogHeader>
         <div className="grid gap-3 text-sm">
           <p className="text-muted-foreground">
-            Pick an existing {isCharacterSide ? "organization, clan, bloodline, or faction" : "character"} to link to {entity.name}.
+            Pick an existing{" "}
+            {isCharacterSide ? "organization, clan, bloodline, or faction" : "character"} to link to{" "}
+            {entity.name}.
           </p>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="glass h-10 rounded-full" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search…"
+            className="glass h-10 rounded-full"
+          />
           <div className="grid max-h-72 gap-1 overflow-y-auto">
             {list.length === 0 ? (
               <p className="py-6 text-center text-xs text-muted-foreground">No matching entries.</p>
@@ -139,7 +155,9 @@ function LinkEntityDialog({
  * entities see their characters. Names navigate to the linked dossier.
  */
 export function EntityLinks({
-  entity, isAdmin, onOpen,
+  entity,
+  isAdmin,
+  onOpen,
 }: {
   entity: Entity;
   isAdmin: boolean;
@@ -193,7 +211,12 @@ export function EntityLinks({
           {isCharacter ? "Affiliations" : "Members"}
         </h4>
         {isAdmin && (
-          <Button size="sm" variant="secondary" className="h-7 gap-1 px-2 text-xs" onClick={() => setAdding(true)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => setAdding(true)}
+          >
             <Plus className="h-3.5 w-3.5" />
             {isCharacter ? "Add organization / bloodline" : "Add character"}
           </Button>
@@ -204,7 +227,10 @@ export function EntityLinks({
       ) : (
         <div className="grid gap-2">
           {rows.map(({ membership: m, entity: linked }) => (
-            <div key={m.id} className="flex items-center gap-3 rounded-xl bg-secondary/40 px-3 py-2">
+            <div
+              key={m.id}
+              className="flex items-center gap-3 rounded-xl bg-secondary/40 px-3 py-2"
+            >
               <button
                 onClick={() => onOpen(linked)}
                 className="min-w-0 flex-1 text-left hover:text-accent"
@@ -222,10 +248,16 @@ export function EntityLinks({
                   className="h-7 rounded-md border bg-background px-1.5 text-xs"
                   aria-label={`Membership status for ${linked.name}`}
                 >
-                  {statusOptions(m.status).map((s) => <option key={s} value={s}>{s}</option>)}
+                  {statusOptions(m.status).map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
                 </select>
               ) : (
-                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">{m.status}</span>
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  {m.status}
+                </span>
               )}
               {isAdmin && (
                 <button

@@ -23,7 +23,11 @@ export function useUiToggles(): UiToggles {
     queryKey: ["app-settings", KEY],
     staleTime: 120_000,
     queryFn: async () => {
-      const { data } = await supabase.from("app_settings").select("value").eq("key", KEY).maybeSingle();
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", KEY)
+        .maybeSingle();
       return { ...UI_TOGGLE_DEFAULTS, ...((data?.value as Partial<UiToggles>) ?? {}) };
     },
   });

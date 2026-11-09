@@ -15,10 +15,20 @@ const KEY_SET = new Set<string>(COMBAT_STATS.map((s) => s.key));
 
 /** "Tactical IQ" / "tactical-iq" / "tactical_iq" all normalize to tactical_iq. */
 function normalizeKey(k: string): string {
-  return k.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return k
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
-const ZERO: CombatStats = { power: 0, agility: 0, tactical_iq: 0, clan_mastery: 0, weapon_proficiency: 0 };
+const ZERO: CombatStats = {
+  power: 0,
+  agility: 0,
+  tactical_iq: 0,
+  clan_mastery: 0,
+  weapon_proficiency: 0,
+};
 
 /**
  * Pulls the five canonical combat stats out of entities.stats (JSONB).
@@ -47,13 +57,17 @@ export function hasCombatStats(e: Pick<Entity, "stats">): boolean {
 }
 
 /** Splits parsed custom stats into { combat, custom } — canonical keys go to sliders. */
-export function splitStats(raw: Record<string, unknown>): { combat: CombatStats; custom: Record<string, string> } {
+export function splitStats(raw: Record<string, unknown>): {
+  combat: CombatStats;
+  custom: Record<string, string>;
+} {
   const combat = { ...ZERO };
   const custom: Record<string, string> = {};
   for (const [k, v] of Object.entries(raw)) {
     const key = normalizeKey(k);
     const n = typeof v === "number" ? v : Number(v);
-    if (KEY_SET.has(key) && Number.isFinite(n)) combat[key as CombatStatKey] = Math.max(0, Math.min(100, Math.round(n)));
+    if (KEY_SET.has(key) && Number.isFinite(n))
+      combat[key as CombatStatKey] = Math.max(0, Math.min(100, Math.round(n)));
     else custom[k] = String(v);
   }
   return { combat, custom };

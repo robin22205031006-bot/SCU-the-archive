@@ -6,7 +6,10 @@ import { isSuperadminEmail } from "@/lib/roles";
 const SESSION_TIMEOUT_MS = 5_000;
 
 function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | "__timeout__"> {
-  return Promise.race([p, new Promise<"__timeout__">((r) => setTimeout(() => r("__timeout__"), ms))]);
+  return Promise.race([
+    p,
+    new Promise<"__timeout__">((r) => setTimeout(() => r("__timeout__"), ms)),
+  ]);
 }
 
 export function useSession() {
@@ -46,7 +49,10 @@ export function useRoles() {
       // Elevated status must survive a user_roles failure (RLS, offline, missing row).
       let roles: string[] = [];
       try {
-        const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
         if (error) throw error;
         roles = (data ?? []).map((r) => r.role as string);
       } catch {

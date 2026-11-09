@@ -52,7 +52,13 @@ export interface SyncPlan {
   }>;
   loreNoteInserts: Array<{ entity_id: string; text: string; source: string }>;
   entityUpdates: Array<{ id: string; patch: Record<string, string>; locked_fields?: string[] }>;
-  timelineInserts: Array<{ title: string; era: string | null; description: string; source: string; sort_order: number }>;
+  timelineInserts: Array<{
+    title: string;
+    era: string | null;
+    description: string;
+    source: string;
+    sort_order: number;
+  }>;
   /** Non-blocking notices: alias redirects, stub creations, merges. */
   warnings: string[];
 }
@@ -64,14 +70,14 @@ const ALIAS_MAP: Record<string, string> = {
   "khalid el mansur": "khalid",
   "alt ethan": "ethan",
   "ethan thorne": "ethan",
-  "elizah": "ethan",
-  "robin": "ethan",
+  elizah: "ethan",
+  robin: "ethan",
   "zaynab al-ahd": "issabela",
-  "zaynab": "issabela",
+  zaynab: "issabela",
   "nasab ibn khalil": "ramiz",
   "alter david": "alt david",
-  "ayman": "ayaan",
-  "echan": "ethan",
+  ayman: "ayaan",
+  echan: "ethan",
 };
 
 export interface SyncInput {
@@ -86,8 +92,18 @@ export function canSyncLore(email: string | null | undefined, roles: string[]): 
   return isSuperadminEmail(email) || roles.includes("admin");
 }
 
-export function planLoreSync(archive: ArchiveEntity[], inputs: SyncInput[], lastSortOrder = 0): SyncPlan {
-  const plan: SyncPlan = { entityInserts: [], loreNoteInserts: [], entityUpdates: [], timelineInserts: [], warnings: [] };
+export function planLoreSync(
+  archive: ArchiveEntity[],
+  inputs: SyncInput[],
+  lastSortOrder = 0,
+): SyncPlan {
+  const plan: SyncPlan = {
+    entityInserts: [],
+    loreNoteInserts: [],
+    entityUpdates: [],
+    timelineInserts: [],
+    warnings: [],
+  };
   const byName = new Map<string, ArchiveEntity[]>();
   for (const entry of archive) {
     const key = normalize(entry.name);
@@ -95,7 +111,8 @@ export function planLoreSync(archive: ArchiveEntity[], inputs: SyncInput[], last
   }
   const find = (name: string) => {
     const matches = byName.get(normalize(name)) ?? [];
-    if (matches.length > 1) throw new Error(`Multiple entries named ${name}. Resolve them before importing.`);
+    if (matches.length > 1)
+      throw new Error(`Multiple entries named ${name}. Resolve them before importing.`);
     return matches[0];
   };
   /** Resolve a referenced name: direct → alias map → canonical lookup. */
@@ -106,7 +123,9 @@ export function planLoreSync(archive: ArchiveEntity[], inputs: SyncInput[], last
     if (canon) {
       const target = find(canon);
       if (target) {
-        plan.warnings.push(`[Auto-Merged]: Redirected reference from '${name}' to canonical entity '${target.name}'`);
+        plan.warnings.push(
+          `[Auto-Merged]: Redirected reference from '${name}' to canonical entity '${target.name}'`,
+        );
         return { entity: target, via: name };
       }
     }
@@ -128,31 +147,40 @@ export function planLoreSync(archive: ArchiveEntity[], inputs: SyncInput[], last
 
     for (const e of input.new_entities) {
       const conflictNotes = (e.conflicts ?? []).map((c) => `[conflict] ${c}`);
-      let dup = find(e.name);
+      const dup = find(e.name);
       if (!dup) {
         const canon = ALIAS_MAP[normalize(e.name)];
         const aliased = canon ? find(canon) : undefined;
         if (aliased && !aliased.id.startsWith("pending:")) {
-          plan.warnings.push(`[Auto-Merged]: Redirected new entity '${e.name}' to canonical entity '${aliased.name}'`);
+          plan.warnings.push(
+            `[Auto-Merged]: Redirected new entity '${e.name}' to canonical entity '${aliased.name}'`,
+          );
           plan.loreNoteInserts.push({ entity_id: aliased.id, text: e.description, source: src });
-          for (const c of conflictNotes) plan.loreNoteInserts.push({ entity_id: aliased.id, text: c, source: src });
+          for (const c of conflictNotes)
+            plan.loreNoteInserts.push({ entity_id: aliased.id, text: c, source: src });
           continue;
         }
       }
       if (dup) {
         if (dup.id.startsWith("pending:")) {
           // Same name inserted earlier in this plan: fold facts into that insert.
-          const pendingInsert = plan.entityInserts.find((i) => normalize(i.name) === normalize(e.name));
+          const pendingInsert = plan.entityInserts.find(
+            (i) => normalize(i.name) === normalize(e.name),
+          );
           if (pendingInsert) {
             if (e.description && !pendingInsert.description.includes(e.description)) {
               pendingInsert.description = `${pendingInsert.description} ${e.description}`.trim();
             }
             if (e.kind !== pendingInsert.kind) {
-              pendingInsert.notes.push(`[conflict] kind: kept '${pendingInsert.kind}' but also extracted as '${e.kind}'`);
+              pendingInsert.notes.push(
+                `[conflict] kind: kept '${pendingInsert.kind}' but also extracted as '${e.kind}'`,
+              );
             }
             const eCat = validEntityCategory(e.kind, e.category);
             if (eCat && pendingInsert.category && eCat !== pendingInsert.category) {
-              pendingInsert.notes.push(`[conflict] category: kept '${pendingInsert.category}' but also extracted as '${eCat}'`);
+              pendingInsert.notes.push(
+                `[conflict] category: kept '${pendingInsert.category}' but also extracted as '${eCat}'`,
+              );
             }
             pendingInsert.notes.push(...conflictNotes);
           }
@@ -161,13 +189,22 @@ export function planLoreSync(archive: ArchiveEntity[], inputs: SyncInput[], last
         // Name already archived: keep the entry, append the new facts as a note.
         plan.loreNoteInserts.push({ entity_id: dup.id, text: e.description, source: src });
         if (dup.kind && e.kind !== dup.kind) {
-          plan.loreNoteInserts.push({ entity_id: dup.id, text: `[conflict] kind: archived '${dup.kind}' vs extracted '${e.kind}'`, source: src });
+          plan.loreNoteInserts.push({
+            entity_id: dup.id,
+            text: `[conflict] kind: archived '${dup.kind}' vs extracted '${e.kind}'`,
+            source: src,
+          });
         }
         const eCat = validEntityCategory(e.kind, e.category);
         if (eCat && dup.category && eCat !== dup.category) {
-          plan.loreNoteInserts.push({ entity_id: dup.id, text: `[conflict] category: archived '${dup.category}' vs extracted '${eCat}'`, source: src });
+          plan.loreNoteInserts.push({
+            entity_id: dup.id,
+            text: `[conflict] category: archived '${dup.category}' vs extracted '${eCat}'`,
+            source: src,
+          });
         }
-        for (const c of conflictNotes) plan.loreNoteInserts.push({ entity_id: dup.id, text: c, source: src });
+        for (const c of conflictNotes)
+          plan.loreNoteInserts.push({ entity_id: dup.id, text: c, source: src });
         continue;
       }
       const isChar = e.kind === "character";
@@ -184,7 +221,14 @@ export function planLoreSync(archive: ArchiveEntity[], inputs: SyncInput[], last
         notes: conflictNotes,
       });
       byName.set(normalize(e.name), [
-        { id: `pending:${normalize(e.name)}`, name: e.name, kind: e.kind, status: plan.entityInserts.at(-1)!.status ?? "", category: plan.entityInserts.at(-1)!.category, locked_fields: [] },
+        {
+          id: `pending:${normalize(e.name)}`,
+          name: e.name,
+          kind: e.kind,
+          status: plan.entityInserts.at(-1)!.status ?? "",
+          category: plan.entityInserts.at(-1)!.category,
+          locked_fields: [],
+        },
       ]);
     }
   }
@@ -202,19 +246,37 @@ export function planLoreSync(archive: ArchiveEntity[], inputs: SyncInput[], last
           // Unknown reference: create a light stub instead of aborting the sync.
           const stubName = u.existing_name;
           plan.entityInserts.push({
-            kind: "character", name: stubName, alias: null, role: "Unclassified", status: "Alive",
-            category: "Support", description: "", image_url: null, source: src,
+            kind: "character",
+            name: stubName,
+            alias: null,
+            role: "Unclassified",
+            status: "Alive",
+            category: "Support",
+            description: "",
+            image_url: null,
+            source: src,
             notes: [`[Auto-Stub]: created placeholder for unresolved sync reference '${stubName}'`],
           });
           byName.set(normalize(stubName), [
-            { id: `pending:${normalize(stubName)}`, name: stubName, kind: "character", status: "Alive", category: "Support", locked_fields: [] },
+            {
+              id: `pending:${normalize(stubName)}`,
+              name: stubName,
+              kind: "character",
+              status: "Alive",
+              category: "Support",
+              locked_fields: [],
+            },
           ]);
-          plan.warnings.push(`[Auto-Stub]: Created placeholder entity '${stubName}' — no alias mapping or archive match found`);
+          plan.warnings.push(
+            `[Auto-Stub]: Created placeholder entity '${stubName}' — no alias mapping or archive match found`,
+          );
           target = find(stubName);
         }
       }
       if (!target) throw new Error(`The entry ${u.existing_name} could not be resolved.`);
-      const pendingInsert = plan.entityInserts.find((i) => normalize(i.name) === normalize(target.name));
+      const pendingInsert = plan.entityInserts.find(
+        (i) => normalize(i.name) === normalize(target.name),
+      );
       if (u.new_facts.trim() && !target.id.startsWith("pending:")) {
         plan.loreNoteInserts.push({ entity_id: target.id, text: u.new_facts, source: src });
       } else if (u.new_facts.trim() && pendingInsert) {

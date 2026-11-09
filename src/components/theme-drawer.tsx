@@ -5,7 +5,10 @@ import { useAppearance } from "@/hooks/use-appearance";
 import { navMode, setNavMode, type NavMode } from "@/components/floating-nav";
 import { THEMES } from "@/lib/themes";
 
-export function ThemeDrawer({ open, onOpenChange }: { open?: boolean; onOpenChange?: (o: boolean) => void } = {}) {
+export function ThemeDrawer({
+  open,
+  onOpenChange,
+}: { open?: boolean; onOpenChange?: (o: boolean) => void } = {}) {
   const { theme, setTheme, zoom, scaleIndex } = useAppearance();
   const [tab, setTab] = useState<"live" | "plain">("live");
   const liveThemes = THEMES.filter((t) => t.live);
@@ -14,14 +17,24 @@ export function ThemeDrawer({ open, onOpenChange }: { open?: boolean; onOpenChan
   return (
     <Sheet {...(open !== undefined ? { open } : {})} {...(onOpenChange ? { onOpenChange } : {})}>
       <SheetTrigger asChild>
-        <button aria-label="Appearance" className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-accent hover:glow-ring">
+        <button
+          aria-label="Appearance"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-accent hover:glow-ring"
+        >
           <Palette className="h-3.5 w-3.5" />
         </button>
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
-        <SheetHeader><SheetTitle className="font-display text-2xl">Appearance</SheetTitle></SheetHeader>
+        <SheetHeader>
+          <SheetTitle className="font-display text-2xl">Appearance</SheetTitle>
+        </SheetHeader>
         <div className="flex gap-1.5 px-4 pt-1">
-          {([["live", "Live 3D"], ["plain", "Plain"]] as const).map(([t, label]) => (
+          {(
+            [
+              ["live", "Live 3D"],
+              ["plain", "Plain"],
+            ] as const
+          ).map(([t, label]) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -40,7 +53,9 @@ export function ThemeDrawer({ open, onOpenChange }: { open?: boolean; onOpenChan
             >
               <span
                 className="h-8 w-8 shrink-0 rounded-full"
-                style={{ background: `conic-gradient(oklch(0.72 ${t.chroma} ${t.hue}), oklch(0.65 ${t.chroma} ${t.glow}), oklch(0.2 0.02 ${t.hue}), oklch(0.72 ${t.chroma} ${t.hue}))` }}
+                style={{
+                  background: `conic-gradient(oklch(0.72 ${t.chroma} ${t.hue}), oklch(0.65 ${t.chroma} ${t.glow}), oklch(0.2 0.02 ${t.hue}), oklch(0.72 ${t.chroma} ${t.hue}))`,
+                }}
               />
               <span>{t.label}</span>
             </button>
@@ -48,14 +63,31 @@ export function ThemeDrawer({ open, onOpenChange }: { open?: boolean; onOpenChan
         </div>
         <div className="flex items-center gap-3 px-4 pb-6 text-sm">
           <span className="text-muted-foreground">Text size</span>
-          <button className="rounded-full border px-3 py-1" onClick={() => zoom(-1)} aria-label="Zoom out">A−</button>
+          <button
+            className="rounded-full border px-3 py-1"
+            onClick={() => zoom(-1)}
+            aria-label="Zoom out"
+          >
+            A−
+          </button>
           <span className="w-8 text-center text-xs">{scaleIndex + 1}/6</span>
-          <button className="rounded-full border px-3 py-1" onClick={() => zoom(1)} aria-label="Zoom in">A+</button>
+          <button
+            className="rounded-full border px-3 py-1"
+            onClick={() => zoom(1)}
+            aria-label="Zoom in"
+          >
+            A+
+          </button>
         </div>
         <div className="flex items-center justify-between border-t border-border px-4 pb-6 pt-4 text-sm">
           <span className="text-muted-foreground">Navigation mode</span>
           <div className="flex gap-1.5">
-            {([["standard", "Header"], ["hud", "HUD"]] as [NavMode, string][]).map(([m, label]) => (
+            {(
+              [
+                ["standard", "Header"],
+                ["hud", "HUD"],
+              ] as [NavMode, string][]
+            ).map(([m, label]) => (
               <button
                 key={m}
                 onClick={() => setNavMode(m)}

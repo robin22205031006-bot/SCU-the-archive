@@ -35,7 +35,12 @@ function Ingest() {
   const running = useRef(false);
   const input = useRef<HTMLInputElement>(null);
 
-  if (!isAdmin) return <main className="mx-auto max-w-xl px-5 pt-32 text-sm text-muted-foreground">Only the admin can use this page.</main>;
+  if (!isAdmin)
+    return (
+      <main className="mx-auto max-w-xl px-5 pt-32 text-sm text-muted-foreground">
+        Only the admin can use this page.
+      </main>
+    );
 
   const run = async (selected: File) => {
     if (running.current) return;
@@ -47,12 +52,13 @@ function Ingest() {
         analyze,
         apply,
         onStage: setStage,
-        refresh: () => Promise.all([
-          qc.invalidateQueries({ queryKey: ["entities"] }),
-          qc.invalidateQueries({ queryKey: ["notes"] }),
-          qc.invalidateQueries({ queryKey: ["timeline"] }),
-          qc.invalidateQueries({ queryKey: ["search-index"] }),
-        ]),
+        refresh: () =>
+          Promise.all([
+            qc.invalidateQueries({ queryKey: ["entities"] }),
+            qc.invalidateQueries({ queryKey: ["notes"] }),
+            qc.invalidateQueries({ queryKey: ["timeline"] }),
+            qc.invalidateQueries({ queryKey: ["search-index"] }),
+          ]),
       });
       toast.success(`Added ${r.created}, updated ${r.updated}, ${r.events} timeline events`);
       setFile(null);
@@ -71,16 +77,43 @@ function Ingest() {
       <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Admin</p>
       <h1 className="mt-2 text-5xl font-medium">Lore Ingest</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Upload a story PDF. Names and facts supported by the text are saved automatically. Pictures and fields you edited by hand are never overwritten.
+        Upload a story PDF. Names and facts supported by the text are saved automatically. Pictures
+        and fields you edited by hand are never overwritten.
       </p>
 
       <label className="mt-10 flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed bg-card p-6">
         <FileText className="h-6 w-6 text-muted-foreground" />
         <span className="flex-1 text-sm">{file ? file.name : "Choose a PDF"}</span>
-        <input ref={input} type="file" accept="application/pdf,.pdf" aria-label="Choose a PDF" className="hidden" disabled={stage !== "idle"} onChange={(e) => { const selected = e.target.files?.[0]; if (selected) void run(selected); }} />
+        <input
+          ref={input}
+          type="file"
+          accept="application/pdf,.pdf"
+          aria-label="Choose a PDF"
+          className="hidden"
+          disabled={stage !== "idle"}
+          onChange={(e) => {
+            const selected = e.target.files?.[0];
+            if (selected) void run(selected);
+          }}
+        />
       </label>
-      <Button className="mt-4" disabled={stage !== "idle"} onClick={() => { if (retry && file) void run(file); else input.current?.click(); }}>
-        {stage === "reading" ? "Reading PDF…" : stage === "analyzing" ? "Analyzing lore…" : stage === "saving" ? "Saving…" : retry ? "Retry import" : "Upload PDF"}
+      <Button
+        className="mt-4"
+        disabled={stage !== "idle"}
+        onClick={() => {
+          if (retry && file) void run(file);
+          else input.current?.click();
+        }}
+      >
+        {stage === "reading"
+          ? "Reading PDF…"
+          : stage === "analyzing"
+            ? "Analyzing lore…"
+            : stage === "saving"
+              ? "Saving…"
+              : retry
+                ? "Retry import"
+                : "Upload PDF"}
       </Button>
     </main>
   );

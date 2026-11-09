@@ -13,7 +13,9 @@ export function spoilersHidden(): boolean {
 export function setSpoilersHidden(hidden: boolean) {
   try {
     localStorage.setItem(KEY, hidden ? "1" : "0");
-  } catch { /* storage optional */ }
+  } catch {
+    /* storage optional */
+  }
   window.dispatchEvent(new Event(EVENT));
 }
 

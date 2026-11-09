@@ -11,17 +11,21 @@ function point(i: number, value: number) {
 }
 
 function ringPath(scale: number) {
-  return COMBAT_STATS.map((_, i) => {
-    const p = point(i, 100 * scale);
-    return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-  }).join(" ") + " Z";
+  return (
+    COMBAT_STATS.map((_, i) => {
+      const p = point(i, 100 * scale);
+      return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    }).join(" ") + " Z"
+  );
 }
 
 function seriesPath(stats: CombatStats) {
-  return COMBAT_STATS.map((s, i) => {
-    const p = point(i, stats[s.key]);
-    return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-  }).join(" ") + " Z";
+  return (
+    COMBAT_STATS.map((s, i) => {
+      const p = point(i, stats[s.key]);
+      return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    }).join(" ") + " Z"
+  );
 }
 
 const SERIES_COLORS = ["#fb4d6d", "#f5b942"] as const;
@@ -46,18 +50,54 @@ export function StatRadar({
   const labelR = R + 20;
   return (
     <div className="grid justify-items-center gap-2">
-      <svg viewBox="0 0 220 215" width={size} height={size * (215 / 220)} role="img" aria-label="Combat stats radar">
+      <svg
+        viewBox="0 0 220 215"
+        width={size}
+        height={size * (215 / 220)}
+        role="img"
+        aria-label="Combat stats radar"
+      >
         {[0.25, 0.5, 0.75, 1].map((s) => (
-          <path key={s} d={ringPath(s)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={s === 1 ? 1.2 : 0.7} />
+          <path
+            key={s}
+            d={ringPath(s)}
+            fill="none"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={s === 1 ? 1.2 : 0.7}
+          />
         ))}
         {COMBAT_STATS.map((_, i) => {
           const p = point(i, 100);
-          return <line key={i} x1={CX} y1={CY} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.07)" strokeWidth={0.7} />;
+          return (
+            <line
+              key={i}
+              x1={CX}
+              y1={CY}
+              x2={p.x}
+              y2={p.y}
+              stroke="rgba(255,255,255,0.07)"
+              strokeWidth={0.7}
+            />
+          );
         })}
         {b && (
-          <path d={seriesPath(b)} fill={SERIES_COLORS[1]} fillOpacity={0.12} stroke={SERIES_COLORS[1]} strokeWidth={1.6} strokeLinejoin="round" />
+          <path
+            d={seriesPath(b)}
+            fill={SERIES_COLORS[1]}
+            fillOpacity={0.12}
+            stroke={SERIES_COLORS[1]}
+            strokeWidth={1.6}
+            strokeLinejoin="round"
+          />
         )}
-        <path d={seriesPath(a)} fill={SERIES_COLORS[0]} fillOpacity={0.16} stroke={SERIES_COLORS[0]} strokeWidth={2} strokeLinejoin="round" />
+        <path
+          d={seriesPath(a)}
+          fill={SERIES_COLORS[0]}
+          fillOpacity={0.16}
+          stroke={SERIES_COLORS[0]}
+          strokeWidth={2}
+          strokeLinejoin="round"
+        />
         {COMBAT_STATS.map((s, i) => {
           const p = point(i, 100);
           const lp = {
@@ -93,12 +133,14 @@ export function StatRadar({
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-widest">
           {nameA && (
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ background: SERIES_COLORS[0] }} />{nameA}
+              <span className="h-2 w-2 rounded-full" style={{ background: SERIES_COLORS[0] }} />
+              {nameA}
             </span>
           )}
           {nameB && (
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ background: SERIES_COLORS[1] }} />{nameB}
+              <span className="h-2 w-2 rounded-full" style={{ background: SERIES_COLORS[1] }} />
+              {nameB}
             </span>
           )}
         </div>

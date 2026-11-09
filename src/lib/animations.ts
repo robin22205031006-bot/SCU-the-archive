@@ -12,7 +12,9 @@ export function animationsEnabled(): boolean {
 export function setAnimationsEnabled(on: boolean): void {
   try {
     localStorage.setItem(KEY, on ? "1" : "0");
-  } catch { /* storage unavailable */ }
+  } catch {
+    /* storage unavailable */
+  }
   window.dispatchEvent(new Event(EVENT));
 }
 

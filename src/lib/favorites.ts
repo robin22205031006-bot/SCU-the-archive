@@ -18,7 +18,11 @@ export function favorites(): FavoriteEntry[] {
 }
 
 function save(list: FavoriteEntry[]) {
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* noop */ }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(list));
+  } catch {
+    /* noop */
+  }
   listeners.forEach((fn) => fn());
 }
 
@@ -41,5 +45,7 @@ export function removeFavorite(id: string) {
 
 export function onFavoritesChange(fn: () => void) {
   listeners.add(fn);
-  return () => { listeners.delete(fn); };
+  return () => {
+    listeners.delete(fn);
+  };
 }

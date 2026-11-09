@@ -40,7 +40,9 @@ export function SeriesAppearances({ entity }: { entity: Entity }) {
                   {r.arc_role}
                 </span>
               )}
-              <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider ${statusClass}`}>
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider ${statusClass}`}
+              >
                 <span className="h-1 w-1 rounded-full bg-current" />
                 {r.status}
               </span>
@@ -48,13 +50,15 @@ export function SeriesAppearances({ entity }: { entity: Entity }) {
           );
         })}
       </div>
-      {(list.some((r) => r.role_in_series)) && (
+      {list.some((r) => r.role_in_series) && (
         <ul className="grid gap-1 text-xs text-muted-foreground">
-          {list.filter((r) => r.role_in_series && r.series).map((r) => (
-            <li key={r.id}>
-              <span className="text-foreground/80">{r.series!.title}:</span> {r.role_in_series}
-            </li>
-          ))}
+          {list
+            .filter((r) => r.role_in_series && r.series)
+            .map((r) => (
+              <li key={r.id}>
+                <span className="text-foreground/80">{r.series!.title}:</span> {r.role_in_series}
+              </li>
+            ))}
         </ul>
       )}
     </div>

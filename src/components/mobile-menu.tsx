@@ -3,10 +3,23 @@ import { Menu } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-type Tool = { label: string; icon: ComponentType<{ className?: string }>; onClick: () => void; on?: boolean };
+type Tool = {
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  onClick: () => void;
+  on?: boolean;
+};
 type Item = { to: string; label: string; icon: ComponentType<{ className?: string }> };
 
-export function MobileMenu({ main, extra, tools = [] }: { main: Item[]; extra: Item[]; tools?: Tool[] }) {
+export function MobileMenu({
+  main,
+  extra,
+  tools = [],
+}: {
+  main: Item[];
+  extra: Item[];
+  tools?: Tool[];
+}) {
   const [open, setOpen] = useState(false);
   const row = (t: Item) => {
     const Icon = t.icon;
@@ -28,21 +41,41 @@ export function MobileMenu({ main, extra, tools = [] }: { main: Item[]; extra: I
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button aria-label="Open menu" className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground md:hidden">
+        <button
+          aria-label="Open menu"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground md:hidden"
+        >
           <Menu className="h-4 w-4" />
         </button>
       </SheetTrigger>
       <SheetContent side="left" className="w-72 overflow-y-auto">
-        <SheetHeader><SheetTitle>Sentinels</SheetTitle></SheetHeader>
+        <SheetHeader>
+          <SheetTitle>Sentinels</SheetTitle>
+        </SheetHeader>
         <nav className="mt-4 flex flex-col gap-1">
           {main.map(row)}
-          <p className="mt-4 px-3 text-xs uppercase tracking-wider text-muted-foreground">Explore</p>
+          <p className="mt-4 px-3 text-xs uppercase tracking-wider text-muted-foreground">
+            Explore
+          </p>
           {extra.map(row)}
-          {tools.length > 0 && <p className="mt-4 px-3 text-xs uppercase tracking-wider text-muted-foreground">Settings</p>}
-          {tools.map((t) => { const I = t.icon; return (
-            <button key={t.label} onClick={t.onClick} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:text-foreground ${t.on ? "text-accent" : "text-muted-foreground"}`}>
-              <I className="h-4 w-4 text-accent" />{t.label}
-            </button>); })}
+          {tools.length > 0 && (
+            <p className="mt-4 px-3 text-xs uppercase tracking-wider text-muted-foreground">
+              Settings
+            </p>
+          )}
+          {tools.map((t) => {
+            const I = t.icon;
+            return (
+              <button
+                key={t.label}
+                onClick={t.onClick}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:text-foreground ${t.on ? "text-accent" : "text-muted-foreground"}`}
+              >
+                <I className="h-4 w-4 text-accent" />
+                {t.label}
+              </button>
+            );
+          })}
         </nav>
       </SheetContent>
     </Sheet>

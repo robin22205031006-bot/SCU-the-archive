@@ -56,12 +56,20 @@ const VIEWS: { id: ViewMode; label: string; icon: typeof GitBranch }[] = [
 
 function statusTag(e: Entity): { label: string; cls: string } {
   switch (e.status) {
-    case "Alive": case "Active": return { label: "Active", cls: "fill-emerald-400/90" };
-    case "Missing": return { label: "MIA", cls: "fill-amber-400/90" };
-    case "Dead": case "Inactive": return { label: "Deceased", cls: "fill-rose-400/90" };
-    case "Retired": return { label: "Retired", cls: "fill-slate-400/90" };
-    case "Legend": return { label: "Legend", cls: "fill-amber-300/90" };
-    default: return { label: e.status, cls: "fill-zinc-400/90" };
+    case "Alive":
+    case "Active":
+      return { label: "Active", cls: "fill-emerald-400/90" };
+    case "Missing":
+      return { label: "MIA", cls: "fill-amber-400/90" };
+    case "Dead":
+    case "Inactive":
+      return { label: "Deceased", cls: "fill-rose-400/90" };
+    case "Retired":
+      return { label: "Retired", cls: "fill-slate-400/90" };
+    case "Legend":
+      return { label: "Legend", cls: "fill-amber-300/90" };
+    default:
+      return { label: e.status, cls: "fill-zinc-400/90" };
   }
 }
 
@@ -74,7 +82,10 @@ function signatureWeapon(e: Entity): string | null {
   return null;
 }
 
-interface Pos { x: number; y: number }
+interface Pos {
+  x: number;
+  y: number;
+}
 
 export function ClanGraph() {
   const nav = useNavigate();
@@ -85,7 +96,12 @@ export function ClanGraph() {
   const [quick, setQuick] = useState<{ e: Entity; x: number; y: number } | null>(null);
   const [editingLinks, setEditingLinks] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [linkForm, setLinkForm] = useState({ source: "", target: "", rel: "ally" as RelType, label: "" });
+  const [linkForm, setLinkForm] = useState({
+    source: "",
+    target: "",
+    rel: "ally" as RelType,
+    label: "",
+  });
 
   const { data: entities } = useQuery(entitiesQuery(ALL_KINDS));
   const { data: memberships } = useQuery({
@@ -94,7 +110,8 @@ export function ClanGraph() {
     queryFn: async () => {
       const { data, error } = await supabase.from("entity_memberships").select("*");
       if (error) {
-        if (/entity_memberships|schema cache|does not exist/i.test(error.message)) return [] as EntityMembership[];
+        if (/entity_memberships|schema cache|does not exist/i.test(error.message))
+          return [] as EntityMembership[];
         throw error;
       }
       return data;
@@ -129,7 +146,8 @@ export function ClanGraph() {
   // ---- layout per view ----
   const { nodes, edges } = useMemo(() => {
     const pos = new Map<string, Pos>();
-    const eds: { a: string; b: string; kind: "member" | RelType; label?: string | undefined }[] = [];
+    const eds: { a: string; b: string; kind: "member" | RelType; label?: string | undefined }[] =
+      [];
 
     if (view === "hierarchy" || view === "squad") {
       if (!activeGroup) return { nodes: [] as { e: Entity; p: Pos }[], edges: eds };
@@ -155,13 +173,19 @@ export function ClanGraph() {
       const ids = new Set([activeGroup.id, ...members.map((m) => m.id)]);
       for (const r of relations ?? []) {
         if (ids.has(r.source_id) && ids.has(r.target_id) && r.rel !== "ally" && r.rel !== "rival") {
-          eds.push({ a: r.source_id, b: r.target_id, kind: r.rel as RelType, label: r.label ?? undefined });
+          eds.push({
+            a: r.source_id,
+            b: r.target_id,
+            kind: r.rel as RelType,
+            label: r.label ?? undefined,
+          });
         }
       }
     } else {
       // network: every group with members, clusters on a ring
       const gs = groups.filter((g) => (membersOf.get(g.id) ?? []).length > 0);
-      const cx = W / 2, cy = H / 2;
+      const cx = W / 2,
+        cy = H / 2;
       const R = Math.min(W, H) / 2 - 90;
       gs.forEach((g, gi) => {
         const angle = (Math.PI * 2 * gi) / Math.max(gs.length, 1) - Math.PI / 2;
@@ -178,19 +202,24 @@ export function ClanGraph() {
       const ids = new Set(pos.keys());
       for (const r of relations ?? []) {
         if (ids.has(r.source_id) && ids.has(r.target_id)) {
-          eds.push({ a: r.source_id, b: r.target_id, kind: r.rel as RelType, label: r.label ?? undefined });
+          eds.push({
+            a: r.source_id,
+            b: r.target_id,
+            kind: r.rel as RelType,
+            label: r.label ?? undefined,
+          });
         }
       }
     }
 
-    const nodes = [...pos.entries()]
-      .map(([id, p]) => ({ e: byId.get(id)!, p }))
-      .filter((n) => n.e);
+    const nodes = [...pos.entries()].map(([id, p]) => ({ e: byId.get(id)!, p })).filter((n) => n.e);
     return { nodes, edges: eds };
   }, [view, activeGroup, membersOf, relations, byId, groups]);
 
-  const edgeColor = (k: string) => (k === "member" ? "rgba(255,255,255,0.14)" : REL_COLOR[k as RelType]);
-  const edgeDash = (k: string) => (k === "rival" || k === "commands" ? "5 4" : k === "member" ? "2 4" : undefined);
+  const edgeColor = (k: string) =>
+    k === "member" ? "rgba(255,255,255,0.14)" : REL_COLOR[k as RelType];
+  const edgeDash = (k: string) =>
+    k === "rival" || k === "commands" ? "5 4" : k === "member" ? "2 4" : undefined;
 
   const openDossier = (e: Entity) => {
     nav({ to: e.kind === "character" ? "/characters" : "/orgs", search: { open: e.id } });
@@ -207,7 +236,10 @@ export function ClanGraph() {
       rel: linkForm.rel,
       label: linkForm.label || null,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Link added");
     setLinkForm({ source: "", target: "", rel: "ally", label: "" });
     qc.invalidateQueries({ queryKey: ["entity-relations"] });
@@ -233,7 +265,8 @@ export function ClanGraph() {
               onClick={() => setView(id)}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors ${view === id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <Icon className="h-3.5 w-3.5" />{label}
+              <Icon className="h-3.5 w-3.5" />
+              {label}
             </button>
           ))}
         </div>
@@ -243,12 +276,17 @@ export function ClanGraph() {
             value={activeGroupId}
             onChange={(e) => setGroupId(e.target.value)}
           >
-            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
           </select>
         )}
         {isAdmin && (
           <Button size="sm" variant="secondary" onClick={() => setEditingLinks((v) => !v)}>
-            <Link2 className="h-4 w-4" />{editingLinks ? "Done" : "Edit links"}
+            <Link2 className="h-4 w-4" />
+            {editingLinks ? "Done" : "Edit links"}
           </Button>
         )}
       </div>
@@ -256,21 +294,53 @@ export function ClanGraph() {
       {/* admin link editor */}
       {isAdmin && editingLinks && (
         <div className="glass grid gap-3 rounded-2xl p-4">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Entity relations (commands / ally / rival / mentor / kin)</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            Entity relations (commands / ally / rival / mentor / kin)
+          </p>
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_8rem_1fr_auto]">
-            <select className="h-9 rounded-md border bg-background px-2 text-sm" value={linkForm.source} onChange={(e) => setLinkForm({ ...linkForm, source: e.target.value })}>
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              value={linkForm.source}
+              onChange={(e) => setLinkForm({ ...linkForm, source: e.target.value })}
+            >
               <option value="">Source…</option>
-              {(entities ?? []).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {(entities ?? []).map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
             </select>
-            <select className="h-9 rounded-md border bg-background px-2 text-sm" value={linkForm.target} onChange={(e) => setLinkForm({ ...linkForm, target: e.target.value })}>
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              value={linkForm.target}
+              onChange={(e) => setLinkForm({ ...linkForm, target: e.target.value })}
+            >
               <option value="">Target…</option>
-              {(entities ?? []).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {(entities ?? []).map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
             </select>
-            <select className="h-9 rounded-md border bg-background px-2 text-sm capitalize" value={linkForm.rel} onChange={(e) => setLinkForm({ ...linkForm, rel: e.target.value as RelType })}>
-              {REL_TYPES.map((r) => <option key={r} value={r}>{REL_LABEL[r]}</option>)}
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm capitalize"
+              value={linkForm.rel}
+              onChange={(e) => setLinkForm({ ...linkForm, rel: e.target.value as RelType })}
+            >
+              {REL_TYPES.map((r) => (
+                <option key={r} value={r}>
+                  {REL_LABEL[r]}
+                </option>
+              ))}
             </select>
-            <Input placeholder="Label (optional)" value={linkForm.label} onChange={(e) => setLinkForm({ ...linkForm, label: e.target.value })} />
-            <Button size="sm" onClick={addLink}>Add</Button>
+            <Input
+              placeholder="Label (optional)"
+              value={linkForm.label}
+              onChange={(e) => setLinkForm({ ...linkForm, label: e.target.value })}
+            />
+            <Button size="sm" onClick={addLink}>
+              Add
+            </Button>
           </div>
           {(relations ?? []).length > 0 && (
             <div className="grid max-h-40 gap-1 overflow-y-auto">
@@ -278,10 +348,22 @@ export function ClanGraph() {
                 const s = byId.get(r.source_id);
                 const t = byId.get(r.target_id);
                 return (
-                  <div key={r.id} className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-1.5 text-xs">
-                    <span className="font-medium" style={{ color: REL_COLOR[r.rel as RelType] }}>{REL_LABEL[r.rel as RelType] ?? r.rel}</span>
-                    <span className="truncate">{s?.name ?? "?"} → {t?.name ?? "?"}{r.label ? ` (${r.label})` : ""}</span>
-                    <button aria-label="Delete link" className="ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeLink(r.id)}>
+                  <div
+                    key={r.id}
+                    className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-1.5 text-xs"
+                  >
+                    <span className="font-medium" style={{ color: REL_COLOR[r.rel as RelType] }}>
+                      {REL_LABEL[r.rel as RelType] ?? r.rel}
+                    </span>
+                    <span className="truncate">
+                      {s?.name ?? "?"} → {t?.name ?? "?"}
+                      {r.label ? ` (${r.label})` : ""}
+                    </span>
+                    <button
+                      aria-label="Delete link"
+                      className="ml-auto text-muted-foreground hover:text-destructive"
+                      onClick={() => removeLink(r.id)}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -296,10 +378,15 @@ export function ClanGraph() {
       <div className="glass relative overflow-hidden rounded-2xl">
         {nodes.length === 0 ? (
           <p className="grid h-72 place-items-center text-sm text-muted-foreground">
-            {groups.length === 0 ? "No clans or organizations with members yet." : "Nothing to display for this view."}
+            {groups.length === 0
+              ? "No clans or organizations with members yet."
+              : "Nothing to display for this view."}
           </p>
         ) : (
-          <svg viewBox={`${W / 2 - W / (2 * zoom)} ${H / 2 - H / (2 * zoom)} ${W / zoom} ${H / zoom}`} className="h-auto w-full">
+          <svg
+            viewBox={`${W / 2 - W / (2 * zoom)} ${H / 2 - H / (2 * zoom)} ${W / zoom} ${H / zoom}`}
+            className="h-auto w-full"
+          >
             {edges.map((e2, i) => {
               const a = nodes.find((n) => n.e.id === e2.a)?.p;
               const b = nodes.find((n) => n.e.id === e2.b)?.p;
@@ -318,16 +405,26 @@ export function ClanGraph() {
                 />
               );
             })}
-            {edges.filter((e2) => e2.kind !== "member" && e2.label).map((e2, i) => {
-              const a = nodes.find((n) => n.e.id === e2.a)?.p;
-              const b = nodes.find((n) => n.e.id === e2.b)?.p;
-              if (!a || !b) return null;
-              return (
-                <text key={`lbl${i}`} x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 30} textAnchor="middle" fontSize={10} fill={edgeColor(e2.kind)} opacity={0.85}>
-                  {e2.label}
-                </text>
-              );
-            })}
+            {edges
+              .filter((e2) => e2.kind !== "member" && e2.label)
+              .map((e2, i) => {
+                const a = nodes.find((n) => n.e.id === e2.a)?.p;
+                const b = nodes.find((n) => n.e.id === e2.b)?.p;
+                if (!a || !b) return null;
+                return (
+                  <text
+                    key={`lbl${i}`}
+                    x={(a.x + b.x) / 2}
+                    y={(a.y + b.y) / 2 - 30}
+                    textAnchor="middle"
+                    fontSize={10}
+                    fill={edgeColor(e2.kind)}
+                    opacity={0.85}
+                  >
+                    {e2.label}
+                  </text>
+                );
+              })}
             {nodes.map(({ e, p }) => {
               const isGroup = GROUP_KINDS.has(e.kind);
               const r = isGroup ? 34 : 24;
@@ -339,19 +436,61 @@ export function ClanGraph() {
                   onClick={() => setQuick({ e, x: p.x, y: p.y })}
                 >
                   <circle r={r + 5} fill="transparent" />
-                  <circle r={r} fill="#0d1117" stroke={KIND_COLOR[e.kind]} strokeWidth={isGroup ? 2.4 : 1.6} />
+                  <circle
+                    r={r}
+                    fill="#0d1117"
+                    stroke={KIND_COLOR[e.kind]}
+                    strokeWidth={isGroup ? 2.4 : 1.6}
+                  />
                   {e.image_url ? (
-                    <image href={e.image_url} x={-r + 4} y={-r + 4} width={(r - 4) * 2} height={(r - 4) * 2} preserveAspectRatio="xMidYMid slice" clipPath={`circle(${r - 4}px at ${r - 4}px ${r - 4}px)`} />
+                    <image
+                      href={e.image_url}
+                      x={-r + 4}
+                      y={-r + 4}
+                      width={(r - 4) * 2}
+                      height={(r - 4) * 2}
+                      preserveAspectRatio="xMidYMid slice"
+                      clipPath={`circle(${r - 4}px at ${r - 4}px ${r - 4}px)`}
+                    />
                   ) : (
-                    <text textAnchor="middle" dy={5} fontSize={isGroup ? 22 : 15} fill={KIND_COLOR[e.kind]} fontFamily="serif">
+                    <text
+                      textAnchor="middle"
+                      dy={5}
+                      fontSize={isGroup ? 22 : 15}
+                      fill={KIND_COLOR[e.kind]}
+                      fontFamily="serif"
+                    >
                       {e.name[0]?.toUpperCase()}
                     </text>
                   )}
-                  <rect x={-r} y={r - 6} width={r * 2} height={11} rx={5.5} fill="#000" opacity={0.72} />
-                  <text y={r + 2} textAnchor="middle" fontSize={8.5} fill="#e4e4e7" letterSpacing={0.4}>
-                    {(e.name ?? "").length > 16 ? `${(e.name ?? "").slice(0, 15)}…` : (e.name ?? "")}
+                  <rect
+                    x={-r}
+                    y={r - 6}
+                    width={r * 2}
+                    height={11}
+                    rx={5.5}
+                    fill="#000"
+                    opacity={0.72}
+                  />
+                  <text
+                    y={r + 2}
+                    textAnchor="middle"
+                    fontSize={8.5}
+                    fill="#e4e4e7"
+                    letterSpacing={0.4}
+                  >
+                    {(e.name ?? "").length > 16
+                      ? `${(e.name ?? "").slice(0, 15)}…`
+                      : (e.name ?? "")}
                   </text>
-                  <circle cx={r - 4} cy={-r + 4} r={4.5} fill={statusDot(e.status)} stroke="#000" strokeWidth={1} />
+                  <circle
+                    cx={r - 4}
+                    cy={-r + 4}
+                    r={4.5}
+                    fill={statusDot(e.status)}
+                    stroke="#000"
+                    strokeWidth={1}
+                  />
                 </g>
               );
             })}
@@ -360,9 +499,27 @@ export function ClanGraph() {
 
         {/* zoom controls */}
         <div className="absolute right-3 top-3 z-10 flex gap-1.5">
-          <button aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(0.4, +(z - 0.2).toFixed(2)))} className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground">−</button>
-          <button aria-label="Reset zoom" onClick={() => setZoom(1)} className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-[10px] font-bold hover:text-foreground">{Math.round(zoom * 100)}%</button>
-          <button aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(3, +(z + 0.2).toFixed(2)))} className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground">+</button>
+          <button
+            aria-label="Zoom out"
+            onClick={() => setZoom((z) => Math.max(0.4, +(z - 0.2).toFixed(2)))}
+            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+          >
+            −
+          </button>
+          <button
+            aria-label="Reset zoom"
+            onClick={() => setZoom(1)}
+            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-[10px] font-bold hover:text-foreground"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            aria-label="Zoom in"
+            onClick={() => setZoom((z) => Math.min(3, +(z + 0.2).toFixed(2)))}
+            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+          >
+            +
+          </button>
         </div>
 
         {/* quick view card */}
@@ -374,26 +531,57 @@ export function ClanGraph() {
               top: `${Math.min(Math.max((quick.y / H) * 100, 6), 62)}%`,
             }}
           >
-            <button aria-label="Close" onClick={() => setQuick(null)} className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-secondary">
+            <button
+              aria-label="Close"
+              onClick={() => setQuick(null)}
+              className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-secondary"
+            >
               <X className="h-3.5 w-3.5" />
             </button>
             <div className="flex items-center gap-3">
               {quick.e.image_url ? (
-                <img src={quick.e.image_url} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-xl object-cover" />
+                <img
+                  src={quick.e.image_url}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-12 w-12 rounded-xl object-cover"
+                />
               ) : (
-                <div className="grid h-12 w-12 place-items-center rounded-xl bg-secondary font-display text-xl" style={{ color: KIND_COLOR[quick.e.kind] }}>{quick.e.name[0]}</div>
+                <div
+                  className="grid h-12 w-12 place-items-center rounded-xl bg-secondary font-display text-xl"
+                  style={{ color: KIND_COLOR[quick.e.kind] }}
+                >
+                  {quick.e.name[0]}
+                </div>
               )}
               <div className="min-w-0">
                 <p className="truncate font-medium">{quick.e.name}</p>
-                <p className="text-xs capitalize text-muted-foreground">{quick.e.kind} · {quick.e.role ?? quick.e.category ?? ""}</p>
+                <p className="text-xs capitalize text-muted-foreground">
+                  {quick.e.kind} · {quick.e.role ?? quick.e.category ?? ""}
+                </p>
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs">
-              <span className="rounded-full bg-secondary px-2 py-0.5" style={{ color: KIND_COLOR[quick.e.kind] }}>{statusTag(quick.e).label}</span>
-              {combat && <span className="text-muted-foreground">PWR {combat.power} · AGI {combat.agility}</span>}
+              <span
+                className="rounded-full bg-secondary px-2 py-0.5"
+                style={{ color: KIND_COLOR[quick.e.kind] }}
+              >
+                {statusTag(quick.e).label}
+              </span>
+              {combat && (
+                <span className="text-muted-foreground">
+                  PWR {combat.power} · AGI {combat.agility}
+                </span>
+              )}
             </div>
             {weapon && <p className="mt-2 text-xs text-muted-foreground">Signature: {weapon}</p>}
-            <Button size="sm" variant="secondary" className="mt-3 w-full" onClick={() => openDossier(quick.e)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="mt-3 w-full"
+              onClick={() => openDossier(quick.e)}
+            >
               <BookOpen className="h-3.5 w-3.5" /> Open dossier
             </Button>
           </div>
@@ -402,11 +590,26 @@ export function ClanGraph() {
 
       {/* legend */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "#fb4d6d" }} />Rivalry</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "#34d399" }} />Alliance</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "#f5b942" }} />Commands</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "#7dd3fc" }} />Mentor</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "#c4b5fd" }} />Kin</span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: "#fb4d6d" }} />
+          Rivalry
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: "#34d399" }} />
+          Alliance
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: "#f5b942" }} />
+          Commands
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: "#7dd3fc" }} />
+          Mentor
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: "#c4b5fd" }} />
+          Kin
+        </span>
         <span className="ml-auto">Click any node for quick view</span>
       </div>
     </div>
@@ -415,10 +618,17 @@ export function ClanGraph() {
 
 function statusDot(status: string): string {
   switch (status) {
-    case "Alive": case "Active": return "#34d399";
-    case "Missing": return "#fbbf24";
-    case "Dead": case "Inactive": return "#fb4d6d";
-    case "Legend": return "#f5b942";
-    default: return "#71717a";
+    case "Alive":
+    case "Active":
+      return "#34d399";
+    case "Missing":
+      return "#fbbf24";
+    case "Dead":
+    case "Inactive":
+      return "#fb4d6d";
+    case "Legend":
+      return "#f5b942";
+    default:
+      return "#71717a";
   }
 }

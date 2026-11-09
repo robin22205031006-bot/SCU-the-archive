@@ -160,7 +160,10 @@ function RootComponent() {
   }, []);
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => void r.unregister())).catch(() => {});
+      void navigator.serviceWorker
+        .getRegistrations()
+        .then((rs) => rs.forEach((r) => void r.unregister()))
+        .catch(() => {});
     }
   }, []);
   useEffect(() => {
@@ -184,7 +187,11 @@ function RootComponent() {
       syncSessionCache(queryClient, session?.user ?? null);
       if (event === "SIGNED_OUT") {
         // Strict sign-out: purge persisted offline cache so re-entry requires online auth.
-        try { localStorage.removeItem("scu-rq-cache-v1"); } catch { /* storage unavailable */ }
+        try {
+          localStorage.removeItem("scu-rq-cache-v1");
+        } catch {
+          /* storage unavailable */
+        }
       }
       queueMicrotask(() => {
         void router.invalidate();
@@ -196,9 +203,15 @@ function RootComponent() {
         try {
           if (!sessionStorage.getItem(key)) {
             sessionStorage.setItem(key, "1");
-            setTimeout(() => { void supabase.from("activity_log").insert({ user_id: session.user.id, action: "Signed in" }); }, 0);
+            setTimeout(() => {
+              void supabase
+                .from("activity_log")
+                .insert({ user_id: session.user.id, action: "Signed in" });
+            }, 0);
           }
-        } catch { /* Logging must not block sign-in when storage is unavailable. */ }
+        } catch {
+          /* Logging must not block sign-in when storage is unavailable. */
+        }
       }
     });
     return () => data.subscription.unsubscribe();
@@ -209,24 +222,24 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AppearanceProvider>
         <TypographyProvider>
-        <ErrorBoundary>
-        <div className="ambient-bg relative min-h-screen">
-          <AmbientField />
-          <PlexusWallpaper />
-          <ScrollProgress />
-          <SiteNav />
-          <FloatingNav />
-          <WelcomeVfx />
-          {offline && (
-            <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
-              <WifiOff className="h-3.5 w-3.5" />
-              Offline — showing cached archive data
+          <ErrorBoundary>
+            <div className="ambient-bg relative min-h-screen">
+              <AmbientField />
+              <PlexusWallpaper />
+              <ScrollProgress />
+              <SiteNav />
+              <FloatingNav />
+              <WelcomeVfx />
+              {offline && (
+                <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
+                  <WifiOff className="h-3.5 w-3.5" />
+                  Offline — showing cached archive data
+                </div>
+              )}
+              <Outlet />
             </div>
-          )}
-          <Outlet />
-        </div>
-        </ErrorBoundary>
-        <Toaster />
+          </ErrorBoundary>
+          <Toaster />
         </TypographyProvider>
       </AppearanceProvider>
     </QueryClientProvider>

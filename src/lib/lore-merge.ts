@@ -3,16 +3,33 @@
 export type EntityKind = "character" | "organization" | "clan" | "bloodline" | "faction";
 
 export function validLoreStatus(kind: EntityKind, status: string | null): string | null {
-  const allowed = kind === "character"
-    ? ["Alive", "Dead", "Retired", "Missing", "Legend"]
-    : ["Active", "Inactive"];
+  const allowed =
+    kind === "character"
+      ? ["Alive", "Dead", "Retired", "Missing", "Legend"]
+      : ["Active", "Inactive"];
   return status && allowed.includes(status) ? status : null;
 }
 
-export const CHARACTER_CATEGORIES = ["Protagonist", "Antagonist", "Anti-Hero", "Anti-Villain", "Support"];
-export const GROUP_CATEGORIES = ["Faction", "Black Ops Team", "Clan", "Organization", "Cult", "Bloodline"];
+export const CHARACTER_CATEGORIES = [
+  "Protagonist",
+  "Antagonist",
+  "Anti-Hero",
+  "Anti-Villain",
+  "Support",
+];
+export const GROUP_CATEGORIES = [
+  "Faction",
+  "Black Ops Team",
+  "Clan",
+  "Organization",
+  "Cult",
+  "Bloodline",
+];
 
-export function validEntityCategory(_kind: EntityKind, category: string | null | undefined): string | null {
+export function validEntityCategory(
+  _kind: EntityKind,
+  category: string | null | undefined,
+): string | null {
   // Category is a free-text "sector": standard archetypes and admin-defined
   // custom tiers are all accepted; only blank values are rejected.
   const c = category?.trim();
@@ -53,7 +70,12 @@ export interface Extraction {
 }
 
 export const normalize = (s: string) =>
-  s.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim();
+  s
+    .toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** True only if the quote literally appears in the source text. */
 export function isGrounded(quote: string, sourceNorm: string): boolean {
@@ -65,11 +87,23 @@ export function isGrounded(quote: string, sourceNorm: string): boolean {
 export function filterGrounded(ex: Extraction, source: string): Extraction {
   const src = normalize(source);
   return {
-    new_entities: ex.new_entities.filter(
-      (e) => normalize(e.name).length > 0 && isGrounded(e.quote, src) && src.includes(normalize(e.name)),
-    ).map((e) => ({ ...e, status: validLoreStatus(e.kind, e.status), category: validEntityCategory(e.kind, e.category) })),
+    new_entities: ex.new_entities
+      .filter(
+        (e) =>
+          normalize(e.name).length > 0 &&
+          isGrounded(e.quote, src) &&
+          src.includes(normalize(e.name)),
+      )
+      .map((e) => ({
+        ...e,
+        status: validLoreStatus(e.kind, e.status),
+        category: validEntityCategory(e.kind, e.category),
+      })),
     updates: ex.updates.filter(
-      (u) => normalize(u.existing_name).length > 0 && isGrounded(u.quote, src) && src.includes(normalize(u.existing_name)),
+      (u) =>
+        normalize(u.existing_name).length > 0 &&
+        isGrounded(u.quote, src) &&
+        src.includes(normalize(u.existing_name)),
     ),
     events: ex.events.filter((e) => isGrounded(e.quote, src)),
   };
@@ -82,7 +116,10 @@ export interface MergeTarget {
 }
 
 /** Returns the patch to apply to an existing entity; never touches locked fields. */
-export function buildUpdatePatch(target: MergeTarget, update: ProposedUpdate): Record<string, string> {
+export function buildUpdatePatch(
+  target: MergeTarget,
+  update: ProposedUpdate,
+): Record<string, string> {
   const patch: Record<string, string> = {};
   const status = validLoreStatus(target.kind ?? "character", update.status);
   if (status && !target.locked_fields.includes("status") && status !== target.status) {

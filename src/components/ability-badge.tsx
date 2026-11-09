@@ -1,7 +1,14 @@
 import { abilityDef, type AbilityTier } from "@/lib/abilities";
 
 const TIER_RANK: Record<AbilityTier, number> = {
-  Mythic: 7, Legendary: 6, Rare: 5, Exceptional: 4, Unique: 3, Ancient: 2, Standard: 1, Role: 0,
+  Mythic: 7,
+  Legendary: 6,
+  Rare: 5,
+  Exceptional: 4,
+  Unique: 3,
+  Ancient: 2,
+  Standard: 1,
+  Role: 0,
 };
 
 /** Compact ability badge with registry color/icon and tier tooltip. */
@@ -53,7 +60,9 @@ export function AbilityBadgeRow({ abilities, max = 3 }: { abilities: string[]; m
   const rest = abilities.length - shown.length;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {shown.map((a) => <AbilityBadge key={a} name={a} />)}
+      {shown.map((a) => (
+        <AbilityBadge key={a} name={a} />
+      ))}
       {rest > 0 && (
         <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
           +{rest} more

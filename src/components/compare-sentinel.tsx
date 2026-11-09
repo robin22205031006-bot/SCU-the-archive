@@ -11,13 +11,21 @@ function Delta({ a, b }: { a: number; b: number }) {
   const d = a - b;
   if (d === 0) return <span className="text-muted-foreground">±0</span>;
   return (
-    <span className={d > 0 ? "text-emerald-400" : "text-rose-400"}>
-      {d > 0 ? `+${d}` : d}
-    </span>
+    <span className={d > 0 ? "text-emerald-400" : "text-rose-400"}>{d > 0 ? `+${d}` : d}</span>
   );
 }
 
-function StatTable({ a, b, nameA, nameB }: { a: CombatStats; b: CombatStats; nameA: string; nameB: string }) {
+function StatTable({
+  a,
+  b,
+  nameA,
+  nameB,
+}: {
+  a: CombatStats;
+  b: CombatStats;
+  nameA: string;
+  nameB: string;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -35,7 +43,9 @@ function StatTable({ a, b, nameA, nameB }: { a: CombatStats; b: CombatStats; nam
               <td className="py-1.5 pr-3 text-muted-foreground">{label}</td>
               <td className="py-1.5 pr-3 font-medium text-rose-300">{a[key]}</td>
               <td className="py-1.5 pr-3 font-medium text-amber-300">{b[key]}</td>
-              <td className="py-1.5"><Delta a={a[key]} b={b[key]} /></td>
+              <td className="py-1.5">
+                <Delta a={a[key]} b={b[key]} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -76,7 +86,11 @@ export function CompareSentinel({
         </DialogHeader>
 
         <div className="grid gap-4">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search characters…" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search characters…"
+          />
           <div className="grid max-h-40 gap-1 overflow-y-auto">
             {options.slice(0, 30).map((c) => (
               <button
@@ -88,7 +102,9 @@ export function CompareSentinel({
                 <span className="text-xs text-muted-foreground">{c.status}</span>
               </button>
             ))}
-            {options.length === 0 && <p className="px-3 py-2 text-sm text-muted-foreground">No characters found.</p>}
+            {options.length === 0 && (
+              <p className="px-3 py-2 text-sm text-muted-foreground">No characters found.</p>
+            )}
           </div>
 
           {other && statsA && statsB ? (
@@ -101,10 +117,13 @@ export function CompareSentinel({
             </div>
           ) : other ? (
             <p className="text-sm text-muted-foreground">
-              {entity.name} or {other.name} has no combat stats yet — an admin can set them in the entity editor.
+              {entity.name} or {other.name} has no combat stats yet — an admin can set them in the
+              entity editor.
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">Select a second character to overlay their combat metrics.</p>
+            <p className="text-sm text-muted-foreground">
+              Select a second character to overlay their combat metrics.
+            </p>
           )}
         </div>
       </DialogContent>

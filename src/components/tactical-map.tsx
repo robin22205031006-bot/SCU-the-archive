@@ -43,7 +43,9 @@ export function TacticalMap() {
   const [editing, setEditing] = useState<MapLocation | "new" | null>(null);
   const [f, setF] = useState<PinForm>(EMPTY_PIN);
   const [eraFilter, setEraFilter] = useState<string>("all");
-  const eras = [...new Set(pins.map((p) => p.era).filter((e): e is string => !!e && e.trim().length > 0))].sort();
+  const eras = [
+    ...new Set(pins.map((p) => p.era).filter((e): e is string => !!e && e.trim().length > 0)),
+  ].sort();
   const visiblePins = eraFilter === "all" ? pins : pins.filter((p) => p.era === eraFilter);
 
   const terrain = useMemo(
@@ -94,8 +96,14 @@ export function TacticalMap() {
     const { error } =
       editing === "new" || editing === null
         ? await supabase.from("map_locations").insert(payload)
-        : await supabase.from("map_locations").update(payload).eq("id", (editing as MapLocation).id);
-    if (error) { toast.error(error.message); return; }
+        : await supabase
+            .from("map_locations")
+            .update(payload)
+            .eq("id", (editing as MapLocation).id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     sfx.click();
     toast.success(editing === "new" || editing === null ? "Pin added" : "Pin updated");
     setEditing(null);
@@ -105,7 +113,10 @@ export function TacticalMap() {
 
   const del = async (pin: MapLocation) => {
     const { error } = await supabase.from("map_locations").delete().eq("id", pin.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     sfx.remove();
     toast.success(`Removed ${pin.name}`);
     if (selected?.id === pin.id) setSelected(null);
@@ -117,10 +128,21 @@ export function TacticalMap() {
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       {/* ---- Theater map ---- */}
       <div className="glass relative overflow-hidden rounded-2xl">
-        <svg viewBox="0 0 100 62.5" className="block h-auto w-full" role="img" aria-label="SCU tactical map">
+        <svg
+          viewBox="0 0 100 62.5"
+          className="block h-auto w-full"
+          role="img"
+          aria-label="SCU tactical map"
+        >
           <defs>
             <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
-              <path d="M 5 0 L 0 0 0 5" fill="none" stroke="var(--border)" strokeOpacity="0.25" strokeWidth="0.15" />
+              <path
+                d="M 5 0 L 0 0 0 5"
+                fill="none"
+                stroke="var(--border)"
+                strokeOpacity="0.25"
+                strokeWidth="0.15"
+              />
             </pattern>
             <radialGradient id="vign" cx="50%" cy="50%" r="75%">
               <stop offset="60%" stopColor="transparent" />
@@ -132,7 +154,12 @@ export function TacticalMap() {
           <rect width="100" height="62.5" fill="url(#grid)" />
 
           {terrain.map((t) => (
-            <polygon key={t.seed} points={blob(t.seed, t.cx, t.cy, t.r)} fill={t.fill} opacity={t.op} />
+            <polygon
+              key={t.seed}
+              points={blob(t.seed, t.cx, t.cy, t.r)}
+              fill={t.fill}
+              opacity={t.op}
+            />
           ))}
 
           {/* stylized coastline hint */}
@@ -144,12 +171,27 @@ export function TacticalMap() {
 
           {/* graticule labels */}
           {[10, 30, 50, 70, 90].map((x) => (
-            <text key={`x${x}`} x={x} y="61.8" fontSize="1.6" fill="var(--muted-foreground)" opacity="0.6" textAnchor="middle">
+            <text
+              key={`x${x}`}
+              x={x}
+              y="61.8"
+              fontSize="1.6"
+              fill="var(--muted-foreground)"
+              opacity="0.6"
+              textAnchor="middle"
+            >
               {String(x).padStart(2, "0")}E
             </text>
           ))}
           {[10, 30, 50].map((y) => (
-            <text key={`y${y}`} x="1" y={y} fontSize="1.6" fill="var(--muted-foreground)" opacity="0.6">
+            <text
+              key={`y${y}`}
+              x="1"
+              y={y}
+              fontSize="1.6"
+              fill="var(--muted-foreground)"
+              opacity="0.6"
+            >
               {String(y).padStart(2, "0")}N
             </text>
           ))}
@@ -177,13 +219,25 @@ export function TacticalMap() {
                   animate={{ scale: 1 }}
                   transition={{ delay: Math.min(i * 0.03, 0.4) }}
                 />
-                <circle r={active ? 5.5 : 4} fill="none" stroke="var(--accent)" strokeOpacity={active ? 0.9 : 0.45} strokeWidth="0.35">
+                <circle
+                  r={active ? 5.5 : 4}
+                  fill="none"
+                  stroke="var(--accent)"
+                  strokeOpacity={active ? 0.9 : 0.45}
+                  strokeWidth="0.35"
+                >
                   {!active && (
                     <animate attributeName="r" values="4;7;4" dur="2.4s" repeatCount="indefinite" />
                   )}
                 </circle>
                 {(active || i % 3 === 0) && (
-                  <text y="-3.4" fontSize="1.9" fill="var(--foreground)" textAnchor="middle" style={{ paintOrder: "stroke", stroke: "var(--card)", strokeWidth: 0.5 }}>
+                  <text
+                    y="-3.4"
+                    fontSize="1.9"
+                    fill="var(--foreground)"
+                    textAnchor="middle"
+                    style={{ paintOrder: "stroke", stroke: "var(--card)", strokeWidth: 0.5 }}
+                  >
                     {pin.name.length > 18 ? `${pin.name.slice(0, 17)}…` : pin.name}
                   </text>
                 )}
@@ -232,35 +286,80 @@ export function TacticalMap() {
           <div className="grid gap-3">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium">{editing === "new" ? "New pin" : "Edit pin"}</h3>
-              <button aria-label="Close editor" onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground">
+              <button
+                aria-label="Close editor"
+                onClick={() => setEditing(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <Input placeholder="Location name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+            <Input
+              placeholder="Location name"
+              value={f.name}
+              onChange={(e) => setF({ ...f, name: e.target.value })}
+            />
             <div className="grid grid-cols-2 gap-2">
               <label className="text-xs text-muted-foreground">
                 Easting %
-                <Input type="number" min={0} max={100} value={f.pos_x} onChange={(e) => setF({ ...f, pos_x: Number(e.target.value) })} />
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={f.pos_x}
+                  onChange={(e) => setF({ ...f, pos_x: Number(e.target.value) })}
+                />
               </label>
               <label className="text-xs text-muted-foreground">
                 Northing %
-                <Input type="number" min={0} max={100} value={f.pos_y} onChange={(e) => setF({ ...f, pos_y: Number(e.target.value) })} />
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={f.pos_y}
+                  onChange={(e) => setF({ ...f, pos_y: Number(e.target.value) })}
+                />
               </label>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Input placeholder="Era" value={f.era} onChange={(e) => setF({ ...f, era: e.target.value })} />
-              <Input placeholder="Controlling faction" value={f.faction} onChange={(e) => setF({ ...f, faction: e.target.value })} />
+              <Input
+                placeholder="Era"
+                value={f.era}
+                onChange={(e) => setF({ ...f, era: e.target.value })}
+              />
+              <Input
+                placeholder="Controlling faction"
+                value={f.faction}
+                onChange={(e) => setF({ ...f, faction: e.target.value })}
+              />
             </div>
-            <Textarea placeholder="Field report" rows={3} value={f.report} onChange={(e) => setF({ ...f, report: e.target.value })} />
-            <Textarea placeholder="Historic battles" rows={2} value={f.battles} onChange={(e) => setF({ ...f, battles: e.target.value })} />
-            <Textarea placeholder="Sentinels stationed (comma-separated)" rows={2} value={f.sentinels} onChange={(e) => setF({ ...f, sentinels: e.target.value })} />
+            <Textarea
+              placeholder="Field report"
+              rows={3}
+              value={f.report}
+              onChange={(e) => setF({ ...f, report: e.target.value })}
+            />
+            <Textarea
+              placeholder="Historic battles"
+              rows={2}
+              value={f.battles}
+              onChange={(e) => setF({ ...f, battles: e.target.value })}
+            />
+            <Textarea
+              placeholder="Sentinels stationed (comma-separated)"
+              rows={2}
+              value={f.sentinels}
+              onChange={(e) => setF({ ...f, sentinels: e.target.value })}
+            />
             <div className="flex justify-end gap-2">
               {editing !== "new" && (
                 <Button size="sm" variant="destructive" onClick={() => del(editing as MapLocation)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               )}
-              <Button size="sm" onClick={save}>Save pin</Button>
+              <Button size="sm" onClick={save}>
+                Save pin
+              </Button>
             </div>
           </div>
         ) : selected ? (
@@ -272,37 +371,58 @@ export function TacticalMap() {
                 </p>
                 <h3 className="mt-1 text-2xl font-medium">{selected.name}</h3>
                 <p className="font-mono text-[10px] text-muted-foreground">
-                  {String(selected.pos_x).padStart(2, "0")}E / {String(selected.pos_y).padStart(2, "0")}N
+                  {String(selected.pos_x).padStart(2, "0")}E /{" "}
+                  {String(selected.pos_y).padStart(2, "0")}N
                 </p>
               </div>
-              <button aria-label="Close" onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground">
+              <button
+                aria-label="Close"
+                onClick={() => setSelected(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
             {selected.report && (
               <section className="mb-3">
-                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Field report</p>
+                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Field report
+                </p>
                 <p className="text-sm leading-relaxed text-foreground/85">{selected.report}</p>
               </section>
             )}
             {selected.battles && (
               <section className="mb-3">
-                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Historic battles</p>
+                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Historic battles
+                </p>
                 <p className="text-sm leading-relaxed text-foreground/85">{selected.battles}</p>
               </section>
             )}
             {parseSentinels(selected.sentinels).length > 0 && (
               <section>
-                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Sentinels stationed</p>
+                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Sentinels stationed
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {parseSentinels(selected.sentinels).map((s) => (
-                    <span key={s} className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs text-accent">{s}</span>
+                    <span
+                      key={s}
+                      className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs text-accent"
+                    >
+                      {s}
+                    </span>
                   ))}
                 </div>
               </section>
             )}
             {isAdmin && (
-              <Button size="sm" variant="secondary" className="mt-4 w-full" onClick={() => startEdit(selected)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="mt-4 w-full"
+                onClick={() => startEdit(selected)}
+              >
                 <Pencil className="h-3.5 w-3.5" /> Edit pin
               </Button>
             )}
@@ -310,7 +430,9 @@ export function TacticalMap() {
         ) : (
           <div className="py-8 text-center">
             <MapPin className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">Select a pin to view field intelligence.</p>
+            <p className="text-sm text-muted-foreground">
+              Select a pin to view field intelligence.
+            </p>
           </div>
         )}
       </div>

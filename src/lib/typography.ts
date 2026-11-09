@@ -23,8 +23,17 @@ export interface CustomFont {
 }
 
 export type CardEffect =
-  | "glass" | "neumorphism" | "drop-shadow" | "glow" | "gradient"
-  | "outer-glow" | "inner-shadow" | "bevel" | "satin" | "texture" | "comic";
+  | "glass"
+  | "neumorphism"
+  | "drop-shadow"
+  | "glow"
+  | "gradient"
+  | "outer-glow"
+  | "inner-shadow"
+  | "bevel"
+  | "satin"
+  | "texture"
+  | "comic";
 
 export const CARD_EFFECTS: { id: CardEffect; label: string }[] = [
   { id: "glass", label: "01. Glass Effect" },
@@ -43,9 +52,21 @@ export const CARD_EFFECTS: { id: CardEffect; label: string }[] = [
 export type UiMode = "gaming" | "minimal" | "manga";
 
 export const UI_MODES: { id: UiMode; label: string; desc: string }[] = [
-  { id: "gaming", label: "Mode A — AAA Gaming / Cyberpunk", desc: "Glassmorphism, neon glow, HUD styling." },
-  { id: "minimal", label: "Mode B — Calm / Minimalist", desc: "Soft neumorphism, clean type, relaxed padding." },
-  { id: "manga", label: "Mode C — Manga & Comic", desc: "Ink-hatch borders, halftone dots, action panels." },
+  {
+    id: "gaming",
+    label: "Mode A — AAA Gaming / Cyberpunk",
+    desc: "Glassmorphism, neon glow, HUD styling.",
+  },
+  {
+    id: "minimal",
+    label: "Mode B — Calm / Minimalist",
+    desc: "Soft neumorphism, clean type, relaxed padding.",
+  },
+  {
+    id: "manga",
+    label: "Mode C — Manga & Comic",
+    desc: "Ink-hatch borders, halftone dots, action panels.",
+  },
 ];
 
 export type Density = "relaxed" | "standard" | "tight";
@@ -107,11 +128,27 @@ export const DEFAULT_TYPOGRAPHY: TypographySettings = {
 /** Curated tactical / sci-fi faces offered in the admin picker. */
 export const CURATED_FONTS = [
   // Sans / UI
-  "Manrope", "Inter", "Space Grotesk", "IBM Plex Sans", "Saira", "Chakra Petch",
-  "Rajdhani", "Exo 2", "Orbitron", "Michroma", "Share Tech Mono", "Major Mono Display",
+  "Manrope",
+  "Inter",
+  "Space Grotesk",
+  "IBM Plex Sans",
+  "Saira",
+  "Chakra Petch",
+  "Rajdhani",
+  "Exo 2",
+  "Orbitron",
+  "Michroma",
+  "Share Tech Mono",
+  "Major Mono Display",
   // Display / serif
-  "Cormorant Garamond", "Playfair Display", "EB Garamond", "Cinzel", "Marcellus",
-  "Unbounded", "Zen Dots", "Silkscreen",
+  "Cormorant Garamond",
+  "Playfair Display",
+  "EB Garamond",
+  "Cinzel",
+  "Marcellus",
+  "Unbounded",
+  "Zen Dots",
+  "Silkscreen",
 ] as const;
 
 const SANS_FALLBACK = `system-ui, -apple-system, "Segoe UI", sans-serif`;
@@ -155,13 +192,17 @@ export function applyTypography(s: TypographySettings): void {
   if (typeof document === "undefined") return;
   loadTypographyFonts(s);
   const root = document.documentElement;
-  const bodyStack = isGoogleFont(s.bodyFont) || s.customFonts.some((f) => f.name === s.bodyFont)
-    ? `"${s.bodyFont}", ${SANS_FALLBACK}`
-    : s.bodyFont;
+  const bodyStack =
+    isGoogleFont(s.bodyFont) || s.customFonts.some((f) => f.name === s.bodyFont)
+      ? `"${s.bodyFont}", ${SANS_FALLBACK}`
+      : s.bodyFont;
   const displayStack = `"${s.displayFont}", ${SERIF_FALLBACK}`;
   root.style.setProperty("--font-sans", bodyStack);
   root.style.setProperty("--font-display", displayStack);
-  root.style.setProperty("--scu-base-scale", String(Math.min(1.5, Math.max(0.8, s.baseScale ?? 1))));
+  root.style.setProperty(
+    "--scu-base-scale",
+    String(Math.min(1.5, Math.max(0.8, s.baseScale ?? 1))),
+  );
   root.style.setProperty("--scu-heading-weight", String(s.headingWeight ?? 500));
   root.style.setProperty("--scu-card-radius", `${Math.min(16, Math.max(4, s.cardRadius ?? 16))}px`);
   root.setAttribute("data-density", s.density ?? "standard");

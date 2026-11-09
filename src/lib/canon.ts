@@ -8,8 +8,6 @@ export const CANON_SERIES = [
 ] as const;
 
 /** Flat list of selectable timeline scopes, e.g. "Sentinels S3". */
-export const CANON_SCOPES = CANON_SERIES.flatMap((s) =>
-  s.seasons.map((n) => `${s.title} S${n}`),
-);
+export const CANON_SCOPES = CANON_SERIES.flatMap((s) => s.seasons.map((n) => `${s.title} S${n}`));
 
 export type CanonSeriesTitle = (typeof CANON_SERIES)[number]["title"];

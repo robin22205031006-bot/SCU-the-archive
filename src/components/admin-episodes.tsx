@@ -49,7 +49,13 @@ export function AdminEpisodes() {
   useEffect(() => {
     const d = readLocalDraft();
     if (d && (d.title || d.body)) {
-      setForm({ episodeId: d.episodeId, title: d.title, series: d.series, body: d.body, status: "draft" });
+      setForm({
+        episodeId: d.episodeId,
+        title: d.title,
+        series: d.series,
+        body: d.body,
+        status: "draft",
+      });
       setLastSaved(d.savedAt);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,7 +85,11 @@ export function AdminEpisodes() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["episodes"] });
 
   const clearLocalDraft = () => {
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
     setLastSaved(null);
   };
 
@@ -89,7 +99,13 @@ export function AdminEpisodes() {
   };
 
   const openExisting = (ep: Episode) => {
-    setForm({ episodeId: ep.id, title: ep.title, series: ep.series ?? "", body: ep.body, status: ep.status === "published" ? "published" : "draft" });
+    setForm({
+      episodeId: ep.id,
+      title: ep.title,
+      series: ep.series ?? "",
+      body: ep.body,
+      status: ep.status === "published" ? "published" : "draft",
+    });
     clearLocalDraft();
   };
 
@@ -121,10 +137,16 @@ export function AdminEpisodes() {
 
   const del = async (ep: Episode) => {
     const { error } = await supabase.from("episodes").delete().eq("id", ep.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     sfx.remove();
     toast.success("Episode deleted");
-    if (form?.episodeId === ep.id) { setForm(null); clearLocalDraft(); }
+    if (form?.episodeId === ep.id) {
+      setForm(null);
+      clearLocalDraft();
+    }
     refresh();
   };
 
@@ -152,23 +174,39 @@ export function AdminEpisodes() {
               {form.episodeId ? "Editing" : "New draft"}
               {lastSaved ? ` · autosaved ${new Date(lastSaved).toLocaleTimeString()}` : ""}
             </p>
-            <button aria-label="Close editor" onClick={() => setForm(null)} className="text-muted-foreground hover:text-foreground">
+            <button
+              aria-label="Close editor"
+              onClick={() => setForm(null)}
+              className="text-muted-foreground hover:text-foreground"
+            >
               ×
             </button>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Input placeholder="Episode / chapter title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            <Input placeholder="Series (optional)" value={form.series} onChange={(e) => setForm({ ...form, series: e.target.value })} />
+            <Input
+              placeholder="Episode / chapter title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+            <Input
+              placeholder="Series (optional)"
+              value={form.series}
+              onChange={(e) => setForm({ ...form, series: e.target.value })}
+            />
           </div>
           <Textarea
-            placeholder={"Write in Markdown…\n\n## Chapter heading\n- Bullet point\n**Bold** and *italic* work too."}
+            placeholder={
+              "Write in Markdown…\n\n## Chapter heading\n- Bullet point\n**Bold** and *italic* work too."
+            }
             rows={12}
             className="font-mono text-sm"
             value={form.body}
             onChange={(e) => setForm({ ...form, body: e.target.value })}
           />
           <div className="flex justify-end gap-2">
-            <Button size="sm" variant="secondary" onClick={() => void save(false)}>Save draft</Button>
+            <Button size="sm" variant="secondary" onClick={() => void save(false)}>
+              Save draft
+            </Button>
             <Button size="sm" onClick={() => void save(true)}>
               <BookOpen className="h-4 w-4" /> Publish
             </Button>
@@ -179,23 +217,42 @@ export function AdminEpisodes() {
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : episodes.length === 0 && !form ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">No episodes yet — draft your first chapter.</p>
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          No episodes yet — draft your first chapter.
+        </p>
       ) : (
         <ul className="grid gap-2">
           {[...drafts, ...published].map((ep) => (
-            <li key={ep.id} className="flex items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2 text-sm">
-              <FileText className={`h-4 w-4 shrink-0 ${ep.status === "published" ? "text-accent" : "text-muted-foreground"}`} />
+            <li
+              key={ep.id}
+              className="flex items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2 text-sm"
+            >
+              <FileText
+                className={`h-4 w-4 shrink-0 ${ep.status === "published" ? "text-accent" : "text-muted-foreground"}`}
+              />
               <span className="min-w-0 flex-1 truncate">
                 {ep.title}
-                {ep.series && <span className="ml-2 text-xs text-muted-foreground">{ep.series}</span>}
+                {ep.series && (
+                  <span className="ml-2 text-xs text-muted-foreground">{ep.series}</span>
+                )}
               </span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${ep.status === "published" ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${ep.status === "published" ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}
+              >
                 {ep.status}
               </span>
-              <button aria-label="Edit" onClick={() => openExisting(ep)} className="text-muted-foreground hover:text-foreground">
+              <button
+                aria-label="Edit"
+                onClick={() => openExisting(ep)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
-              <button aria-label="Delete" onClick={() => void del(ep)} className="text-muted-foreground hover:text-destructive">
+              <button
+                aria-label="Delete"
+                onClick={() => void del(ep)}
+                className="text-muted-foreground hover:text-destructive"
+              >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </li>

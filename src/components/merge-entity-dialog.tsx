@@ -20,7 +20,9 @@ interface Candidate {
 
 /** Merge `entity` (secondary) into a chosen primary entity via the merge_entities RPC. */
 export function MergeEntityDialog({
-  open, onOpenChange, entity,
+  open,
+  onOpenChange,
+  entity,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -57,14 +59,18 @@ export function MergeEntityDialog({
     },
   });
 
-  const target = useMemo(() => (candidates ?? []).find((c) => c.id === targetId), [candidates, targetId]);
+  const target = useMemo(
+    () => (candidates ?? []).find((c) => c.id === targetId),
+    [candidates, targetId],
+  );
 
   useEffect(() => {
     if (open) setTargetId("");
   }, [open, entity.id]);
 
   const combinedAlias = [target?.alias, entity.alias].filter(Boolean).join(" · ");
-  const combinedNotes = (noteCounts?.get(entity.id) ?? 0) + (targetId ? (noteCounts?.get(targetId) ?? 0) : 0);
+  const combinedNotes =
+    (noteCounts?.get(entity.id) ?? 0) + (targetId ? (noteCounts?.get(targetId) ?? 0) : 0);
   const kindDiffers = !!target && target.kind !== entity.kind;
 
   const confirm = async () => {
@@ -78,7 +84,10 @@ export function MergeEntityDialog({
         p_primary: target.id,
         p_secondary: entity.id,
       });
-      if (remapError && !/remap_series_characters|does not exist|schema cache/i.test(remapError.message)) {
+      if (
+        remapError &&
+        !/remap_series_characters|does not exist|schema cache/i.test(remapError.message)
+      ) {
         throw remapError;
       }
       const { data, error } = await supabase.rpc("merge_entities", {
@@ -88,7 +97,9 @@ export function MergeEntityDialog({
       if (error) throw error;
       const moved = (data as { notes_moved?: number } | null)?.notes_moved ?? 0;
       sfx.merge();
-      toast.success(`Merged "${entity.name}" into "${target.name}" — ${moved} lore note(s) transferred.`);
+      toast.success(
+        `Merged "${entity.name}" into "${target.name}" — ${moved} lore note(s) transferred.`,
+      );
       qc.invalidateQueries({ queryKey: ["entities"] });
       qc.invalidateQueries({ queryKey: ["notes"] });
       qc.invalidateQueries({ queryKey: ["search-index"] });
@@ -116,11 +127,17 @@ export function MergeEntityDialog({
         </DialogHeader>
         <div className="grid gap-4 text-sm">
           <p className="text-muted-foreground">
-            {entity.name} will be merged <strong className="text-foreground">into</strong> the entry you pick.
-            Its lore notes, sketches, stats, and aliases are preserved on the surviving entry, then {entity.name} is removed.
+            {entity.name} will be merged <strong className="text-foreground">into</strong> the entry
+            you pick. Its lore notes, sketches, stats, and aliases are preserved on the surviving
+            entry, then {entity.name} is removed.
           </p>
           <div className="grid gap-1.5">
-            <label className="text-xs uppercase tracking-widest text-muted-foreground" htmlFor="merge-target">Surviving entry</label>
+            <label
+              className="text-xs uppercase tracking-widest text-muted-foreground"
+              htmlFor="merge-target"
+            >
+              Surviving entry
+            </label>
             <select
               id="merge-target"
               className="h-9 rounded-md border bg-background px-3 text-sm"
@@ -129,21 +146,29 @@ export function MergeEntityDialog({
             >
               <option value="">Select an entry…</option>
               {(candidates ?? []).map((c) => (
-                <option key={c.id} value={c.id}>{c.name} ({c.kind})</option>
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.kind})
+                </option>
               ))}
             </select>
           </div>
           {target && (
             <div className="grid gap-2 rounded-xl bg-secondary/50 p-4">
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Merge preview</p>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                Merge preview
+              </p>
               <dl className="grid gap-1.5">
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">Primary</dt>
-                  <dd className="font-medium">{target.name} <span className="text-muted-foreground">({target.kind})</span></dd>
+                  <dd className="font-medium">
+                    {target.name} <span className="text-muted-foreground">({target.kind})</span>
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">Merged away</dt>
-                  <dd>{entity.name} <span className="text-muted-foreground">({entity.kind})</span></dd>
+                  <dd>
+                    {entity.name} <span className="text-muted-foreground">({entity.kind})</span>
+                  </dd>
                 </div>
                 {combinedAlias && (
                   <div className="flex justify-between gap-3">
@@ -157,14 +182,17 @@ export function MergeEntityDialog({
                 </div>
                 {kindDiffers && (
                   <p className="text-xs text-amber-500">
-                    Note: kinds differ ({entity.kind} → {target.kind}). The surviving entry keeps "{target.kind}".
+                    Note: kinds differ ({entity.kind} → {target.kind}). The surviving entry keeps "
+                    {target.kind}".
                   </p>
                 )}
               </dl>
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
             <Button onClick={confirm} disabled={!target || merging}>
               {merging ? "Merging…" : "Confirm merge"}
             </Button>

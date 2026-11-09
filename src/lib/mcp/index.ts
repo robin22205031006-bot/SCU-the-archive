@@ -10,7 +10,8 @@ export default defineMcp({
   name: "screenshot-perfect",
   title: "Screenshot Perfect",
   version: "0.1.0",
-  instructions: "Read the Sentinels Cinematic Universe archive: characters, groups, dossiers and the timeline. Admins can append lore notes.",
+  instructions:
+    "Read the Sentinels Cinematic Universe archive: characters, groups, dossiers and the timeline. Admins can append lore notes.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",

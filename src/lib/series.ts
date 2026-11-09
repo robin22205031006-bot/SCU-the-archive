@@ -76,10 +76,15 @@ export const characterSeriesQuery = (characterId: string) =>
         .select("*, series:series_id(id, title, cover_image_url)")
         .eq("character_id", characterId);
       if (error) {
-        if (missingTable(error)) return [] as (SeriesCharacter & { series: Pick<Series, "id" | "title" | "cover_image_url"> | null })[];
+        if (missingTable(error))
+          return [] as (SeriesCharacter & {
+            series: Pick<Series, "id" | "title" | "cover_image_url"> | null;
+          })[];
         throw error;
       }
-      return data as unknown as (SeriesCharacter & { series: Pick<Series, "id" | "title" | "cover_image_url"> | null })[];
+      return data as unknown as (SeriesCharacter & {
+        series: Pick<Series, "id" | "title" | "cover_image_url"> | null;
+      })[];
     },
   });
 

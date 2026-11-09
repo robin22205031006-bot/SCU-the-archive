@@ -12,7 +12,9 @@ export default defineTool({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ id, text }, ctx) => {
-    const { error } = await supabaseForUser(ctx).from("lore_notes").insert({ entity_id: id, text, source: "Agent" });
+    const { error } = await supabaseForUser(ctx)
+      .from("lore_notes")
+      .insert({ entity_id: id, text, source: "Agent" });
     if (error) throw new ToolError("Could not add the note — only the admin can edit the archive.");
     return { content: [{ type: "text", text: "Lore note added." }] };
   },

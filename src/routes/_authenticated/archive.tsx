@@ -8,13 +8,19 @@ import { CrimsonBloodlineTheme } from "@/components/ability-canvas";
 const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
 const Clans = lazy(() => import("./clans").then((m) => ({ default: m.Clans })));
 const Timeline = lazy(() => import("./timeline").then((m) => ({ default: m.Timeline })));
-const RelationshipGraph = lazy(() => import("@/components/relationship-graph").then((m) => ({ default: m.RelationshipGraph })));
+const RelationshipGraph = lazy(() =>
+  import("@/components/relationship-graph").then((m) => ({ default: m.RelationshipGraph })),
+);
 
 export const Route = createFileRoute("/_authenticated/archive")({
   head: () => ({
     meta: [
       { title: "Archive — Sentinels Cinematic Universe" },
-      { name: "description", content: "The SCU lore vault: organizations, clans, bloodlines, knowledge graph and timeline." },
+      {
+        name: "description",
+        content:
+          "The SCU lore vault: organizations, clans, bloodlines, knowledge graph and timeline.",
+      },
     ],
   }),
   component: Archive,
@@ -23,10 +29,30 @@ export const Route = createFileRoute("/_authenticated/archive")({
 type Module = "orgs" | "clans" | "graph" | "timeline";
 
 const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
-  { id: "orgs", icon: Shield, t: "Organization Charts", d: "DEW, H.A.W.K.S., Covenant and every faction structure." },
-  { id: "clans", icon: Castle, t: "Clans & Bloodlines", d: "Kurohana, Kazumi, Demon Clan, Al-Mansur and other lineages." },
-  { id: "graph", icon: Network, t: "Knowledge Graph", d: "The living web linking characters, clans, factions and powers." },
-  { id: "timeline", icon: Clock, t: "Canon Timeline", d: "Season 1 through Season 5 chronological history." },
+  {
+    id: "orgs",
+    icon: Shield,
+    t: "Organization Charts",
+    d: "DEW, H.A.W.K.S., Covenant and every faction structure.",
+  },
+  {
+    id: "clans",
+    icon: Castle,
+    t: "Clans & Bloodlines",
+    d: "Kurohana, Kazumi, Demon Clan, Al-Mansur and other lineages.",
+  },
+  {
+    id: "graph",
+    icon: Network,
+    t: "Knowledge Graph",
+    d: "The living web linking characters, clans, factions and powers.",
+  },
+  {
+    id: "timeline",
+    icon: Clock,
+    t: "Canon Timeline",
+    d: "Season 1 through Season 5 chronological history.",
+  },
 ];
 
 function Archive() {
@@ -51,7 +77,9 @@ function Archive() {
             onClick={() => setModule(m.id)}
             className={`glass rounded-2xl p-5 text-left transition-all hover:-translate-y-0.5 ${module === m.id ? "glow-ring border-accent/50" : "hover:glow-ring"}`}
           >
-            <m.icon className={`h-6 w-6 ${module === m.id ? "text-accent" : "text-muted-foreground"}`} />
+            <m.icon
+              className={`h-6 w-6 ${module === m.id ? "text-accent" : "text-muted-foreground"}`}
+            />
             <h2 className="mt-3 text-lg font-medium">{m.t}</h2>
             <p className="mt-1 text-xs text-muted-foreground">{m.d}</p>
           </button>

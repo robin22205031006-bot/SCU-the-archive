@@ -41,9 +41,19 @@ export function DayNightToggle() {
       </svg>
       <span
         className="absolute top-0.5 grid h-5.5 w-5.5 place-items-center rounded-full shadow-md transition-all duration-500"
-        style={{ left: dark ? "calc(100% - 1.5rem)" : "0.125rem", width: 22, height: 22, background: dark ? "#e8e6f0" : "#ffd36b" }}
+        style={{
+          left: dark ? "calc(100% - 1.5rem)" : "0.125rem",
+          width: 22,
+          height: 22,
+          background: dark ? "#e8e6f0" : "#ffd36b",
+        }}
       >
-        {dark && <span className="absolute right-0.5 top-0.5 h-3.5 w-3.5 rounded-full" style={{ background: "#2a2550" }} />}
+        {dark && (
+          <span
+            className="absolute right-0.5 top-0.5 h-3.5 w-3.5 rounded-full"
+            style={{ background: "#2a2550" }}
+          />
+        )}
       </span>
     </button>
   );

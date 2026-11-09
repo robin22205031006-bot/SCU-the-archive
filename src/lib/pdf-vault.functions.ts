@@ -5,7 +5,11 @@ import { isSuperadminEmail } from "./roles";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-async function assertAdmin(supabase: SupabaseClient<Database>, userId: string, email?: string | null) {
+async function assertAdmin(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  email?: string | null,
+) {
   if (isSuperadminEmail(email)) return;
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error || !data) throw new Error("Only the admin can do this.");
@@ -32,5 +36,5 @@ export const embedVaultTexts = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId, claimEmail(context.claims));
     const { embedGemini } = await import("./gemini.server");
-    return { embeddings: await embedGemini(process.env['GOOGLE_API_KEY'], data.texts) };
+    return { embeddings: await embedGemini(process.env["GOOGLE_API_KEY"], data.texts) };
   });

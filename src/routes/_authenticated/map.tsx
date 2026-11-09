@@ -6,9 +6,16 @@ export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
     meta: [
       { title: "Tactical Map — Sentinels Cinematic Universe" },
-      { name: "description", content: "Interactive tactical map of SCU locations, factions, battles, and stationed Sentinels." },
+      {
+        name: "description",
+        content:
+          "Interactive tactical map of SCU locations, factions, battles, and stationed Sentinels.",
+      },
       { property: "og:title", content: "Tactical Map — SCU" },
-      { property: "og:description", content: "Field reports and strategic positions across the SCU theater." },
+      {
+        property: "og:description",
+        content: "Field reports and strategic positions across the SCU theater.",
+      },
     ],
   }),
   component: MapPage,
@@ -22,7 +29,8 @@ function MapPage() {
         <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Strategic overview</p>
         <h1 className="mt-2 text-5xl font-medium glow-text">Tactical Map</h1>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Known locations, controlling factions, historic battles, and Sentinel deployments across the SCU theater.
+          Known locations, controlling factions, historic battles, and Sentinel deployments across
+          the SCU theater.
         </p>
       </header>
       <TacticalMap />

@@ -2,7 +2,13 @@
 
 export type CharacterTier = "Mythic" | "Angle" | "Guardian" | "Legendary" | "Heroic";
 
-export const CHARACTER_TIERS: CharacterTier[] = ["Mythic", "Angle", "Guardian", "Legendary", "Heroic"];
+export const CHARACTER_TIERS: CharacterTier[] = [
+  "Mythic",
+  "Angle",
+  "Guardian",
+  "Legendary",
+  "Heroic",
+];
 
 export interface TierDef {
   label: string;
@@ -22,7 +28,9 @@ export const TIER_DEFS: Record<string, TierDef> = {
 
 export function tierDef(tier: string | null | undefined): TierDef | null {
   if (!tier) return null;
-  return TIER_DEFS[tier] ?? TIER_DEFS[tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()] ?? null;
+  return (
+    TIER_DEFS[tier] ?? TIER_DEFS[tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()] ?? null
+  );
 }
 
 /** Admin-selectable animation styles for card overlays. */

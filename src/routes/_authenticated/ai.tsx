@@ -14,4 +14,3 @@ export const Route = createFileRoute("/_authenticated/ai")({
   }),
   component: LoreChat,
 });
-

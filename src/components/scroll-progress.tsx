@@ -36,7 +36,10 @@ export function ScrollProgress() {
       <div
         ref={bar}
         className="h-full w-full origin-left bg-accent"
-        style={{ boxShadow: "0 0 8px 1px color-mix(in oklab, var(--accent) 70%, transparent)", transform: "scaleX(0)" }}
+        style={{
+          boxShadow: "0 0 8px 1px color-mix(in oklab, var(--accent) 70%, transparent)",
+          transform: "scaleX(0)",
+        }}
       />
     </div>
   );

@@ -16,7 +16,14 @@ import { sfx } from "@/lib/scu-audio";
 
 function useRelatedEntities(rels: CharacterRelationship[] | undefined, selfId: string) {
   const ids = useMemo(
-    () => [...new Set((rels ?? []).map((r) => (r.character_id_1 === selfId ? r.character_id_2 : r.character_id_1)))].sort(),
+    () =>
+      [
+        ...new Set(
+          (rels ?? []).map((r) =>
+            r.character_id_1 === selfId ? r.character_id_2 : r.character_id_1,
+          ),
+        ),
+      ].sort(),
     [rels, selfId],
   );
   return useQuery({
@@ -33,7 +40,9 @@ function useRelatedEntities(rels: CharacterRelationship[] | undefined, selfId: s
 
 /** Dossier panel: typed relationships grouped by tag, with quick links. */
 export function CharacterRelationships({
-  entity, isAdmin, onOpen,
+  entity,
+  isAdmin,
+  onOpen,
 }: {
   entity: Entity;
   isAdmin: boolean;
@@ -84,10 +93,18 @@ export function CharacterRelationships({
           <p className="mb-1 text-[10px] uppercase tracking-widest text-accent">{label}</p>
           <div className="grid gap-1.5">
             {items.map(({ rel, other }) => (
-              <div key={rel.id} className="flex items-center gap-3 rounded-xl bg-secondary/40 px-3 py-2">
-                <button onClick={() => onOpen(other)} className="min-w-0 flex-1 text-left hover:text-accent">
+              <div
+                key={rel.id}
+                className="flex items-center gap-3 rounded-xl bg-secondary/40 px-3 py-2"
+              >
+                <button
+                  onClick={() => onOpen(other)}
+                  className="min-w-0 flex-1 text-left hover:text-accent"
+                >
                   <span className="block truncate font-medium">{other.name}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{[other.kind, other.status].filter(Boolean).join(" · ")}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {[other.kind, other.status].filter(Boolean).join(" · ")}
+                  </span>
                 </button>
                 {isAdmin && (
                   <button
@@ -109,10 +126,13 @@ export function CharacterRelationships({
 
 /** Dossier panel: parent org + branch sub-organizations. */
 export function OrgHierarchy({ entity, onOpen }: { entity: Entity; onOpen: (e: Entity) => void }) {
-  const { data: parent } = useQuery({ ...entityByIdQuery(entity.parent_id ?? ""), enabled: !!entity.parent_id });
+  const { data: parent } = useQuery({
+    ...entityByIdQuery(entity.parent_id ?? ""),
+    enabled: !!entity.parent_id,
+  });
   const { data: children } = useQuery(childEntitiesQuery(entity.id));
 
-  if (!entity.parent_id && !(children?.length)) return null;
+  if (!entity.parent_id && !children?.length) return null;
 
   return (
     <div className="grid gap-3">
@@ -121,8 +141,13 @@ export function OrgHierarchy({ entity, onOpen }: { entity: Entity; onOpen: (e: E
       </h4>
       {parent && (
         <div>
-          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Parent organization</p>
-          <button onClick={() => onOpen(parent)} className="rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent">
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+            Parent organization
+          </p>
+          <button
+            onClick={() => onOpen(parent)}
+            className="rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent"
+          >
             <span className="block truncate font-medium">{parent.name}</span>
             <span className="block truncate text-xs text-muted-foreground">{parent.kind}</span>
           </button>
@@ -130,12 +155,20 @@ export function OrgHierarchy({ entity, onOpen }: { entity: Entity; onOpen: (e: E
       )}
       {(children?.length ?? 0) > 0 && (
         <div>
-          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Sub-branches ({children!.length})</p>
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+            Sub-branches ({children!.length})
+          </p>
           <div className="grid gap-1.5">
             {children!.map((c) => (
-              <button key={c.id} onClick={() => onOpen(c)} className="rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent">
+              <button
+                key={c.id}
+                onClick={() => onOpen(c)}
+                className="rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent"
+              >
                 <span className="block truncate font-medium">{c.name}</span>
-                <span className="block truncate text-xs text-muted-foreground">{[c.kind, c.status].filter(Boolean).join(" · ")}</span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {[c.kind, c.status].filter(Boolean).join(" · ")}
+                </span>
               </button>
             ))}
           </div>

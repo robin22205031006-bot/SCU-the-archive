@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Clock, FileLock, Home, Search, Shield, Sparkles, Users } from "lucide-react";
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-admin";
 
@@ -32,13 +39,21 @@ export function UniversalSearch() {
         supabase.from("lore_notes").select("entity_id, text"),
       ]);
       for (const result of [e, t, d, n]) if (result.error) throw result.error;
-      return { entities: e.data ?? [], events: t.data ?? [], docs: d.data ?? [], notes: n.data ?? [] };
+      return {
+        entities: e.data ?? [],
+        events: t.data ?? [],
+        docs: d.data ?? [],
+        notes: n.data ?? [],
+      };
     },
   });
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); setOpen((o) => !o); }
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((o) => !o);
+      }
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -55,11 +70,22 @@ export function UniversalSearch() {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} aria-label="Search the universe (Ctrl+K)" title="Search (Ctrl+K)" className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground">
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Search the universe (Ctrl+K)"
+        title="Search (Ctrl+K)"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
+      >
         <Search className="h-3.5 w-3.5" />
       </button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder={user ? "Search characters, orgs, events, lore, documents…" : "Sign in to search the archive"} />
+        <CommandInput
+          placeholder={
+            user
+              ? "Search characters, orgs, events, lore, documents…"
+              : "Sign in to search the archive"
+          }
+        />
         <CommandList>
           <CommandEmpty>No results.</CommandEmpty>
           {user && (
@@ -67,8 +93,16 @@ export function UniversalSearch() {
               {PAGES.map((p) => {
                 const Icon = p.icon;
                 return (
-                  <CommandItem key={p.to} value={`page ${p.label}`} onSelect={() => { setOpen(false); nav({ to: p.to }); }}>
-                    <Icon className="mr-2 h-3.5 w-3.5 text-accent" />{p.label}
+                  <CommandItem
+                    key={p.to}
+                    value={`page ${p.label}`}
+                    onSelect={() => {
+                      setOpen(false);
+                      nav({ to: p.to });
+                    }}
+                  >
+                    <Icon className="mr-2 h-3.5 w-3.5 text-accent" />
+                    {p.label}
                   </CommandItem>
                 );
               })}
@@ -78,8 +112,15 @@ export function UniversalSearch() {
             <>
               <CommandGroup heading="Archive">
                 {data.entities.map((e) => (
-                  <CommandItem key={e.id} value={`${e.name} ${e.alias ?? ""} ${e.kind}`} onSelect={() => goEntity(e)}>
-                    {e.name} <span className="ml-auto text-xs capitalize text-muted-foreground">{e.kind}</span>
+                  <CommandItem
+                    key={e.id}
+                    value={`${e.name} ${e.alias ?? ""} ${e.kind}`}
+                    onSelect={() => goEntity(e)}
+                  >
+                    {e.name}{" "}
+                    <span className="ml-auto text-xs capitalize text-muted-foreground">
+                      {e.kind}
+                    </span>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -96,21 +137,40 @@ export function UniversalSearch() {
                         if (ent) goEntity(ent);
                       }}
                     >
-                      <span className="truncate">{name} — {snippet}{n.text.length > 90 ? "…" : ""}</span>
+                      <span className="truncate">
+                        {name} — {snippet}
+                        {n.text.length > 90 ? "…" : ""}
+                      </span>
                     </CommandItem>
                   );
                 })}
               </CommandGroup>
               <CommandGroup heading="Timeline">
                 {data.events.map((e) => (
-                  <CommandItem key={e.id} value={`${e.title} ${e.era ?? ""}`} onSelect={() => { setOpen(false); nav({ to: "/timeline" }); }}>
+                  <CommandItem
+                    key={e.id}
+                    value={`${e.title} ${e.era ?? ""}`}
+                    onSelect={() => {
+                      setOpen(false);
+                      nav({ to: "/timeline" });
+                    }}
+                  >
                     {e.title} <span className="ml-auto text-xs text-muted-foreground">{e.era}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
               <CommandGroup heading="PDF Vault">
                 {data.docs.map((d) => (
-                  <CommandItem key={d.id} value={d.title} onSelect={() => { setOpen(false); nav({ to: "/vault" }); }}>{d.title}</CommandItem>
+                  <CommandItem
+                    key={d.id}
+                    value={d.title}
+                    onSelect={() => {
+                      setOpen(false);
+                      nav({ to: "/vault" });
+                    }}
+                  >
+                    {d.title}
+                  </CommandItem>
                 ))}
               </CommandGroup>
             </>

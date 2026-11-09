@@ -56,7 +56,11 @@ function Admin() {
         supabase.from("profiles").select("id, email, display_name").order("created_at"),
         supabase.from("banned_users").select("user_id, reason"),
         supabase.from("banned_words").select("id, word").order("word"),
-        supabase.from("activity_log").select("id, user_id, action, created_at").order("created_at", { ascending: false }).limit(50),
+        supabase
+          .from("activity_log")
+          .select("id, user_id, action, created_at")
+          .order("created_at", { ascending: false })
+          .limit(50),
       ]);
       return { profiles: p.data ?? [], bans: b.data ?? [], words: w.data ?? [], log: l.data ?? [] };
     },
@@ -73,7 +77,12 @@ function Admin() {
     enabled: staff,
     queryFn: async () => {
       const [notes, ents] = await Promise.all([
-        supabase.from("lore_notes").select("id, entity_id, text, source, created_at").ilike("text", "[conflict]%").order("created_at", { ascending: false }).limit(200),
+        supabase
+          .from("lore_notes")
+          .select("id, entity_id, text, source, created_at")
+          .ilike("text", "[conflict]%")
+          .order("created_at", { ascending: false })
+          .limit(200),
         supabase.from("entities").select("id, name"),
       ]);
       const nameOf = new Map((ents.data ?? []).map((e) => [e.id, e.name]));
@@ -81,7 +90,8 @@ function Admin() {
     },
   });
 
-  if (!staff) return <main className="mx-auto max-w-3xl px-5 pt-32 text-muted-foreground">Staff only.</main>;
+  if (!staff)
+    return <main className="mx-auto max-w-3xl px-5 pt-32 text-muted-foreground">Staff only.</main>;
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin"] });
@@ -100,11 +110,14 @@ function Admin() {
         }),
       );
       const result = await runSync({ data: { entities, updates, events } });
-      toast.success(`Lore sync complete: ${result.created} created, ${result.notes} notes, ${result.updated} updated, ${result.events} events.`);
+      toast.success(
+        `Lore sync complete: ${result.created} created, ${result.notes} notes, ${result.updated} updated, ${result.events} events.`,
+      );
       const warns = (result.warnings ?? []) as string[];
       if (warns.length) {
         warns.slice(0, 5).forEach((w) => toast.warning(w, { duration: 8000 }));
-        if (warns.length > 5) toast.warning(`…and ${warns.length - 5} more sync notices`, { duration: 8000 });
+        if (warns.length > 5)
+          toast.warning(`…and ${warns.length - 5} more sync notices`, { duration: 8000 });
       }
       qc.invalidateQueries({ queryKey: ["entities"] });
       qc.invalidateQueries({ queryKey: ["timeline"] });
@@ -120,7 +133,8 @@ function Admin() {
   const banned = new Set((data?.bans ?? []).map((b) => b.user_id));
   const emailOf = (id: string | null) => data?.profiles.find((p) => p.id === id)?.email ?? "—";
 
-  const rolesOf = (userId: string) => (roleRows ?? []).filter((r) => r.user_id === userId).map((r) => r.role as string);
+  const rolesOf = (userId: string) =>
+    (roleRows ?? []).filter((r) => r.user_id === userId).map((r) => r.role as string);
   const effectiveRole = (userId: string) => {
     const roles = rolesOf(userId);
     if (roles.includes("admin")) return "admin";
@@ -128,12 +142,18 @@ function Admin() {
     return "user";
   };
 
-  const changeRole = async (target: { email?: string; userId?: string }, role: string, label?: string) => {
+  const changeRole = async (
+    target: { email?: string; userId?: string },
+    role: string,
+    label?: string,
+  ) => {
     try {
       const res = await assignRole({
         data: { ...target, role: role === "user" ? null : (role as "admin" | "moderator") },
       });
-      toast.success(`Role updated${res?.email ? ` for ${res.email}` : label ? ` for ${label}` : ""}`);
+      toast.success(
+        `Role updated${res?.email ? ` for ${res.email}` : label ? ` for ${label}` : ""}`,
+      );
       refresh();
       return true;
     } catch (err) {
@@ -156,16 +176,24 @@ function Admin() {
     const { error } = banned.has(id)
       ? await supabase.from("banned_users").delete().eq("user_id", id)
       : await supabase.from("banned_users").insert({ user_id: id, banned_by: me.user?.id ?? null });
-    if (error) toast.error(error.message); else refresh();
+    if (error) toast.error(error.message);
+    else refresh();
   };
   const addWord = async () => {
     if (!word.trim()) return;
-    const { error } = await supabase.from("banned_words").insert({ word: word.trim().toLowerCase() });
-    if (error) toast.error(error.message); else { setWord(""); refresh(); }
+    const { error } = await supabase
+      .from("banned_words")
+      .insert({ word: word.trim().toLowerCase() });
+    if (error) toast.error(error.message);
+    else {
+      setWord("");
+      refresh();
+    }
   };
   const delWord = async (id: string) => {
     const { error } = await supabase.from("banned_words").delete().eq("id", id);
-    if (error) toast.error(error.message); else refresh();
+    if (error) toast.error(error.message);
+    else refresh();
   };
 
   return (
@@ -177,8 +205,15 @@ function Admin() {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
-            <Button asChild size="sm" variant="secondary"><Link to="/ingest">Ingest a PDF</Link></Button>
-            <Button size="sm" variant="secondary" disabled={syncing} onClick={() => void syncExport()}>
+            <Button asChild size="sm" variant="secondary">
+              <Link to="/ingest">Ingest a PDF</Link>
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={syncing}
+              onClick={() => void syncExport()}
+            >
               {syncing ? "Syncing…" : "Sync lore export"}
             </Button>
           </div>
@@ -215,25 +250,35 @@ function Admin() {
                 <span className="min-w-0 flex-1 truncate">
                   {p.display_name || p.email}
                   <span className="ml-2 font-mono text-[10px] text-muted-foreground">{p.id}</span>
-                  {superadmin && <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent">Superadmin</span>}
+                  {superadmin && (
+                    <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent">
+                      Superadmin
+                    </span>
+                  )}
                 </span>
-                {isAdmin && p.email && (
-                  superadmin ? (
+                {isAdmin &&
+                  p.email &&
+                  (superadmin ? (
                     <span className="rounded-full bg-secondary px-3 py-1 text-xs">Admin</span>
                   ) : (
                     <select
                       aria-label={`Role for ${p.email}`}
                       className="rounded-full border border-border bg-secondary px-3 py-1 text-xs text-foreground"
                       value={effectiveRole(p.id)}
-                      onChange={(e) => void changeRole({ email: p.email as string }, e.target.value)}
+                      onChange={(e) =>
+                        void changeRole({ email: p.email as string }, e.target.value)
+                      }
                     >
                       <option value="user">User</option>
                       <option value="moderator">Moderator</option>
                       <option value="admin">Admin</option>
                     </select>
-                  )
-                )}
-                <Button size="sm" variant={banned.has(p.id) ? "secondary" : "destructive"} onClick={() => toggleBan(p.id)}>
+                  ))}
+                <Button
+                  size="sm"
+                  variant={banned.has(p.id) ? "secondary" : "destructive"}
+                  onClick={() => toggleBan(p.id)}
+                >
                   {banned.has(p.id) ? "Unblock" : "Block"}
                 </Button>
               </li>
@@ -242,41 +287,90 @@ function Admin() {
         </ul>
       </AdminAccordion>
 
-      {isAdmin && <AdminAccordion title="Series & Seasons"><AdminSeries /></AdminAccordion>}
-      {isAdmin && <AdminAccordion title="Typography & Theme"><AdminTypography /></AdminAccordion>}
-      {isAdmin && <AdminAccordion title="Appearance Options"><AdminAppearance /></AdminAccordion>}
-      {isAdmin && <AdminAccordion title="Ability Assignments"><AdminCharacterAbilities /></AdminAccordion>}
-      {isAdmin && <AdminAccordion title="Audio Controls"><AdminAudio /></AdminAccordion>}
-      {isAdmin && <AdminAccordion title="Reader UI Toggles"><AdminUiToggles /></AdminAccordion>}
-      {isAdmin && <AdminAccordion title="Navigation Visibility"><AdminNavVisibility /></AdminAccordion>}
+      {isAdmin && (
+        <AdminAccordion title="Series & Seasons">
+          <AdminSeries />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Typography & Theme">
+          <AdminTypography />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Appearance Options">
+          <AdminAppearance />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Ability Assignments">
+          <AdminCharacterAbilities />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Audio Controls">
+          <AdminAudio />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Reader UI Toggles">
+          <AdminUiToggles />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Navigation Visibility">
+          <AdminNavVisibility />
+        </AdminAccordion>
+      )}
       <AdminAccordion title="Episode Drafts & Banned Words">
         {isAdmin && <AdminEpisodes />}
         <div className="mb-3">
           <h3 className="mb-2 text-lg">Banned words</h3>
-        <div className="mb-3 flex gap-2">
-          <Input placeholder="Add a word" value={word} onChange={(e) => setWord(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addWord()} />
-          <Button onClick={addWord}>Add</Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(data?.words ?? []).map((w) => (
-            <span key={w.id} className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm">
-              {w.word}
-              <button aria-label={`Remove ${w.word}`} onClick={() => delWord(w.id)}><Trash2 className="h-3 w-3" /></button>
-            </span>
-          ))}
-        </div>
+          <div className="mb-3 flex gap-2">
+            <Input
+              placeholder="Add a word"
+              value={word}
+              onChange={(e) => setWord(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addWord()}
+            />
+            <Button onClick={addWord}>Add</Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(data?.words ?? []).map((w) => (
+              <span
+                key={w.id}
+                className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm"
+              >
+                {w.word}
+                <button aria-label={`Remove ${w.word}`} onClick={() => delWord(w.id)}>
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
       </AdminAccordion>
 
-      {(conflicts ?? []).length > 0 && <AdminAccordion title={`Lore Conflicts / Contradictions (${conflicts?.length ?? 0})`} defaultOpen><AdminContradictions conflicts={conflicts ?? []} /></AdminAccordion>}
+      {(conflicts ?? []).length > 0 && (
+        <AdminAccordion
+          title={`Lore Conflicts / Contradictions (${conflicts?.length ?? 0})`}
+          defaultOpen
+        >
+          <AdminContradictions conflicts={conflicts ?? []} />
+        </AdminAccordion>
+      )}
 
       <section className="glass rounded-2xl p-5">
         <h2 className="mb-3 text-2xl">Recent activity</h2>
         <ul className="grid gap-1 text-sm">
           {(data?.log ?? []).map((l) => (
             <li key={l.id} className="flex gap-3">
-              <span className="text-muted-foreground">{new Date(l.created_at).toLocaleString()}</span>
-              <span className="truncate">{emailOf(l.user_id)} — {l.action}</span>
+              <span className="text-muted-foreground">
+                {new Date(l.created_at).toLocaleString()}
+              </span>
+              <span className="truncate">
+                {emailOf(l.user_id)} — {l.action}
+              </span>
             </li>
           ))}
         </ul>

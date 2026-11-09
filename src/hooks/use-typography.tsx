@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -42,7 +49,8 @@ export function TypographyProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
       if (error) {
         // Table may not exist until the SQL migration is applied.
-        if (/app_settings|schema cache|does not exist/i.test(error.message)) return DEFAULT_TYPOGRAPHY;
+        if (/app_settings|schema cache|does not exist/i.test(error.message))
+          return DEFAULT_TYPOGRAPHY;
         throw error;
       }
       return normalize(data?.value);
@@ -56,7 +64,9 @@ export function TypographyProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   return (
-    <Ctx.Provider value={{ settings, reload: () => qc.invalidateQueries({ queryKey: ["app-settings"] }) }}>
+    <Ctx.Provider
+      value={{ settings, reload: () => qc.invalidateQueries({ queryKey: ["app-settings"] }) }}
+    >
       {children}
     </Ctx.Provider>
   );

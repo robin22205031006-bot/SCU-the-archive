@@ -3,7 +3,10 @@
  * preferring paragraph/sentence boundaries so chunks stay semantically coherent.
  */
 export function chunkText(text: string, target = 900, overlapRatio = 0.1): string[] {
-  const clean = text.replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").trim();
+  const clean = text
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
   if (!clean) return [];
   const overlap = Math.floor(target * overlapRatio);
   const chunks: string[] = [];
@@ -15,9 +18,20 @@ export function chunkText(text: string, target = 900, overlapRatio = 0.1): strin
       // Prefer breaking at a paragraph, then sentence, then whitespace.
       const window = clean.slice(i, end);
       const para = window.lastIndexOf("\n\n");
-      const sent = Math.max(window.lastIndexOf(". "), window.lastIndexOf("! "), window.lastIndexOf("? "));
+      const sent = Math.max(
+        window.lastIndexOf(". "),
+        window.lastIndexOf("! "),
+        window.lastIndexOf("? "),
+      );
       const space = window.lastIndexOf(" ");
-      const cut = para > target * 0.5 ? para + 2 : sent > target * 0.6 ? sent + 1 : space > target * 0.5 ? space + 1 : -1;
+      const cut =
+        para > target * 0.5
+          ? para + 2
+          : sent > target * 0.6
+            ? sent + 1
+            : space > target * 0.5
+              ? space + 1
+              : -1;
       if (cut > 0) end = i + cut;
     }
     const chunk = clean.slice(i, end).trim();

@@ -11,16 +11,28 @@ export function WelcomeVfx() {
 
   useEffect(() => {
     let seen: string | null = null;
-    try { seen = sessionStorage.getItem(KEY); } catch { /* storage unavailable */ }
+    try {
+      seen = sessionStorage.getItem(KEY);
+    } catch {
+      /* storage unavailable */
+    }
     if (seen) return;
     setShow(true);
     const t1 = setTimeout(() => setLeaving(true), 1200);
     const t2 = setTimeout(() => {
       // Mark as seen only once it has finished, so a re-run effect never strands the overlay on screen.
-      try { sessionStorage.setItem(KEY, "1"); } catch { /* storage unavailable */ }
+      try {
+        sessionStorage.setItem(KEY, "1");
+      } catch {
+        /* storage unavailable */
+      }
       setShow(false);
     }, 1800);
-    return () => { clearTimeout(t1); clearTimeout(t2); setShow(false); };
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      setShow(false);
+    };
   }, []);
 
   if (!show) return null;
@@ -34,7 +46,9 @@ export function WelcomeVfx() {
       {/* Radial VFX bloom */}
       <motion.div
         className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse at center, rgba(168,85,247,0.25), transparent 60%)" }}
+        style={{
+          background: "radial-gradient(ellipse at center, rgba(168,85,247,0.25), transparent 60%)",
+        }}
         animate={{ scale: [0.6, 1.15, 1], opacity: [0, 0.9, 0.5] }}
         transition={{ duration: 2.4, ease: "easeOut" }}
       />

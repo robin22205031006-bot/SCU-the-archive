@@ -22,7 +22,9 @@ interface ParsedConflict {
 
 /** Parses "[conflict] <field>: archived 'X' vs extracted 'Y'" into a question. */
 function parseConflict(text: string): ParsedConflict | null {
-  const m = text.match(/\[conflict\]\s*([a-z_]+):\s*archived\s*'([^']+)'\s*vs\s*(?:extracted\s*)?'([^']+)'/i);
+  const m = text.match(
+    /\[conflict\]\s*([a-z_]+):\s*archived\s*'([^']+)'\s*vs\s*(?:extracted\s*)?'([^']+)'/i,
+  );
   if (!m?.[1] || !m[2] || !m[3]) return null;
   return { field: m[1].toLowerCase(), a: m[2], b: m[3] };
 }
@@ -58,7 +60,10 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
     setBusy(c.id);
     try {
       if (field === "status") {
-        const { error } = await supabase.from("entities").update({ status: value }).eq("id", c.entity_id);
+        const { error } = await supabase
+          .from("entities")
+          .update({ status: value })
+          .eq("id", c.entity_id);
         if (error) throw error;
       }
       await supabase.from("lore_notes").insert({
@@ -79,7 +84,10 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
   /** Both options are right — persist a per-season assignment matrix. */
   const savePeriods = async (c: ConflictRow, parsed: ParsedConflict) => {
     const entries = Object.entries(periodMap).filter(([, v]) => v);
-    if (!entries.length) { toast.error("Assign at least one season."); return; }
+    if (!entries.length) {
+      toast.error("Assign at least one season.");
+      return;
+    }
     setBusy(c.id);
     try {
       for (const [scope, value] of entries) {
@@ -94,11 +102,16 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
       const latest = CANON_SCOPES.filter((s) => periodMap[s]).at(-1);
       const latestVal = latest ? periodMap[latest] : undefined;
       if (parsed.field === "status" && latestVal) {
-        const { error } = await supabase.from("entities").update({ status: latestVal }).eq("id", c.entity_id);
+        const { error } = await supabase
+          .from("entities")
+          .update({ status: latestVal })
+          .eq("id", c.entity_id);
         if (error) throw error;
       }
       await clearConflict(c);
-      toast.success(`Period map saved for ${entries.length} season${entries.length > 1 ? "s" : ""}`);
+      toast.success(
+        `Period map saved for ${entries.length} season${entries.length > 1 ? "s" : ""}`,
+      );
       setPeriodFor(null);
       setPeriodMap({});
       refresh();
@@ -122,7 +135,8 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
     <section className="glass rounded-2xl p-5">
       <h2 className="mb-1 text-2xl">Lore conflicts</h2>
       <p className="mb-3 text-sm text-muted-foreground">
-        Each card asks which version is canon — pick one answer, or map both answers to specific seasons when both are true at different points in the timeline.
+        Each card asks which version is canon — pick one answer, or map both answers to specific
+        seasons when both are true at different points in the timeline.
       </p>
       <ul className="grid gap-3 text-sm">
         {conflicts.map((c) => {
@@ -159,10 +173,20 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                       ))
                     ) : (
                       <>
-                        <Button size="sm" variant="outline" disabled={busy === c.id} onClick={() => pick(c, parsed.field, parsed.a)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy === c.id}
+                          onClick={() => pick(c, parsed.field, parsed.a)}
+                        >
                           '{parsed.a}'
                         </Button>
-                        <Button size="sm" variant="outline" disabled={busy === c.id} onClick={() => pick(c, parsed.field, parsed.b)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy === c.id}
+                          onClick={() => pick(c, parsed.field, parsed.b)}
+                        >
                           '{parsed.b}'
                         </Button>
                       </>
@@ -174,7 +198,7 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                       onClick={() => {
                         const open = periodFor !== c.id;
                         setPeriodFor(open ? c.id : null);
-                        setPeriodMap(open ? { [`${parsed.a}|${parsed.b}`]: "" } as ScopeMap : {});
+                        setPeriodMap(open ? ({ [`${parsed.a}|${parsed.b}`]: "" } as ScopeMap) : {});
                         setCustomFor(null);
                       }}
                     >
@@ -184,7 +208,11 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                       size="sm"
                       variant="ghost"
                       disabled={busy === c.id}
-                      onClick={() => { setCustomFor(customFor === c.id ? null : c.id); setCustomText(""); setPeriodFor(null); }}
+                      onClick={() => {
+                        setCustomFor(customFor === c.id ? null : c.id);
+                        setCustomText("");
+                        setPeriodFor(null);
+                      }}
                     >
                       Other…
                     </Button>
@@ -200,7 +228,13 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                         onChange={(e) => setCustomText(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && void saveCustom(c, parsed)}
                       />
-                      <Button size="sm" disabled={busy === c.id || !customText.trim()} onClick={() => void saveCustom(c, parsed)}>Set as canon</Button>
+                      <Button
+                        size="sm"
+                        disabled={busy === c.id || !customText.trim()}
+                        onClick={() => void saveCustom(c, parsed)}
+                      >
+                        Set as canon
+                      </Button>
                     </div>
                   )}
 
@@ -217,21 +251,43 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                             <select
                               className="rounded-md border border-border bg-background px-2 py-1 text-xs"
                               value={periodMap[scope] ?? ""}
-                              onChange={(e) => setPeriodMap((m) => ({ ...m, [scope]: e.target.value }))}
+                              onChange={(e) =>
+                                setPeriodMap((m) => ({ ...m, [scope]: e.target.value }))
+                              }
                             >
                               <option value="">—</option>
                               <option value={parsed.a}>{parsed.a}</option>
                               <option value={parsed.b}>{parsed.b}</option>
-                              {isStatus && LIFE_STATUSES.filter((s) => s !== parsed.a && s !== parsed.b).map((s) => (
-                                <option key={s} value={s}>{s}</option>
-                              ))}
+                              {isStatus &&
+                                LIFE_STATUSES.filter((s) => s !== parsed.a && s !== parsed.b).map(
+                                  (s) => (
+                                    <option key={s} value={s}>
+                                      {s}
+                                    </option>
+                                  ),
+                                )}
                             </select>
                           </div>
                         ))}
                       </div>
                       <div className="mt-3 flex gap-2">
-                        <Button size="sm" disabled={busy === c.id} onClick={() => void savePeriods(c, parsed)}>Save period map</Button>
-                        <Button size="sm" variant="ghost" onClick={() => { setPeriodFor(null); setPeriodMap({}); }}>Cancel</Button>
+                        <Button
+                          size="sm"
+                          disabled={busy === c.id}
+                          onClick={() => void savePeriods(c, parsed)}
+                        >
+                          Save period map
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setPeriodFor(null);
+                            setPeriodMap({});
+                          }}
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -244,7 +300,10 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                     size="sm"
                     variant="outline"
                     disabled={busy === c.id}
-                    onClick={() => { setCustomFor(customFor === c.id ? null : c.id); setPeriodFor(null); }}
+                    onClick={() => {
+                      setCustomFor(customFor === c.id ? null : c.id);
+                      setPeriodFor(null);
+                    }}
                   >
                     Set faction scope…
                   </Button>
@@ -264,12 +323,23 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                     onClick={async () => {
                       setBusy(c.id);
                       try {
-                        await supabase.from("lore_notes").insert({ entity_id: c.entity_id, text: `[resolved] ${customText.trim()}`, source: "admin-resolver" });
+                        await supabase
+                          .from("lore_notes")
+                          .insert({
+                            entity_id: c.entity_id,
+                            text: `[resolved] ${customText.trim()}`,
+                            source: "admin-resolver",
+                          });
                         await clearConflict(c);
                         toast.success("Conflict resolved.");
                         refresh();
-                      } catch (err) { toast.error(err instanceof Error ? err.message : "Failed."); }
-                      finally { setBusy(null); setCustomFor(null); setCustomText(""); }
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : "Failed.");
+                      } finally {
+                        setBusy(null);
+                        setCustomFor(null);
+                        setCustomText("");
+                      }
                     }}
                   >
                     Resolve

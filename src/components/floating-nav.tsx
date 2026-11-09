@@ -19,7 +19,11 @@ export const navMode = (): NavMode => {
   return v === "hud" ? "hud" : "standard";
 };
 export const setNavMode = (m: NavMode) => {
-  try { localStorage.setItem(LS_MODE, m); } catch { /* noop */ }
+  try {
+    localStorage.setItem(LS_MODE, m);
+  } catch {
+    /* noop */
+  }
   window.dispatchEvent(new Event("scu-nav-mode"));
 };
 // Back-compat helpers used by the Appearance drawer.
@@ -34,9 +38,12 @@ const loadPos = (): { x: number; y: number } => {
     const raw = localStorage.getItem(LS_POS);
     if (raw) {
       const p = JSON.parse(raw);
-      if (p.v === POS_VERSION && typeof p.x === "number" && typeof p.y === "number") return { x: p.x, y: p.y };
+      if (p.v === POS_VERSION && typeof p.x === "number" && typeof p.y === "number")
+        return { x: p.x, y: p.y };
     }
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   return defaultPos();
 };
 
@@ -47,7 +54,9 @@ export function FloatingNav() {
   const [open, setOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [pos, setPos] = useState(loadPos);
-  const drag = useRef<{ sx: number; sy: number; ox: number; oy: number; moved: boolean } | null>(null);
+  const drag = useRef<{ sx: number; sy: number; ox: number; oy: number; moved: boolean } | null>(
+    null,
+  );
   // Spin offset (degrees) — spring-smoothed for buttery rotation.
   const spinMV = useMotionValue(0);
   const spin = useSpring(spinMV, { stiffness: 120, damping: 18, mass: 0.6 });
@@ -57,12 +66,19 @@ export function FloatingNav() {
     const sync = () => setMode(navMode());
     window.addEventListener("scu-nav-mode", sync);
     window.addEventListener("storage", sync);
-    return () => { window.removeEventListener("scu-nav-mode", sync); window.removeEventListener("storage", sync); };
+    return () => {
+      window.removeEventListener("scu-nav-mode", sync);
+      window.removeEventListener("storage", sync);
+    };
   }, []);
 
   // Persist position + clamp on resize.
   useEffect(() => {
-    try { localStorage.setItem(LS_POS, JSON.stringify({ ...pos, v: POS_VERSION })); } catch { /* noop */ }
+    try {
+      localStorage.setItem(LS_POS, JSON.stringify({ ...pos, v: POS_VERSION }));
+    } catch {
+      /* noop */
+    }
   }, [pos]);
   useEffect(() => {
     const clamp = () =>
@@ -82,7 +98,8 @@ export function FloatingNav() {
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
-    const dx = e.clientX - d.sx, dy = e.clientY - d.sy;
+    const dx = e.clientX - d.sx,
+      dy = e.clientY - d.sy;
     if (Math.abs(dx) + Math.abs(dy) > 6) d.moved = true;
     if (!d.moved) return;
     setPos({
@@ -93,8 +110,10 @@ export function FloatingNav() {
   const onPointerUp = (e: React.PointerEvent) => {
     const wasDrag = drag.current?.moved;
     drag.current = null;
-    if (!wasDrag) { sfx.click(); setOpen((o) => !o); }
-    else (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    if (!wasDrag) {
+      sfx.click();
+      setOpen((o) => !o);
+    } else (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
   };
 
   const spinBy = (delta: number) => {
@@ -120,8 +139,17 @@ export function FloatingNav() {
   };
 
   // The full-screen character dossier has its own header; keep the floating menu off it.
-  if (mode !== "hud" || navHidden || (typeof window !== "undefined" && window.location.pathname === "/character")) return null;
-  const items = [...TABS, { to: "/profile", label: "Profile" }, { to: "#theme", label: "Theme" }] as const;
+  if (
+    mode !== "hud" ||
+    navHidden ||
+    (typeof window !== "undefined" && window.location.pathname === "/character")
+  )
+    return null;
+  const items = [
+    ...TABS,
+    { to: "/profile", label: "Profile" },
+    { to: "#theme", label: "Theme" },
+  ] as const;
   const spread = items.length > 8 ? 30 : 38;
   // Fan direction follows screen half so nodes never clip off-viewport.
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
@@ -162,10 +190,24 @@ export function FloatingNav() {
             {/* nudge buttons */}
             <motion.div
               className="absolute -top-12 right-0 flex gap-1"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <button onClick={() => spinBy(-45)} className="glass grid h-9 w-9 place-items-center rounded-full text-xs" aria-label="Rotate counter-clockwise">↺</button>
-              <button onClick={() => spinBy(45)} className="glass grid h-9 w-9 place-items-center rounded-full text-xs" aria-label="Rotate clockwise">↻</button>
+              <button
+                onClick={() => spinBy(-45)}
+                className="glass grid h-9 w-9 place-items-center rounded-full text-xs"
+                aria-label="Rotate counter-clockwise"
+              >
+                ↺
+              </button>
+              <button
+                onClick={() => spinBy(45)}
+                className="glass grid h-9 w-9 place-items-center rounded-full text-xs"
+                aria-label="Rotate clockwise"
+              >
+                ↻
+              </button>
             </motion.div>
             <motion.div
               className={`absolute left-1/2 ${fanDown ? "top-16" : "bottom-16"}`}
@@ -185,16 +227,38 @@ export function FloatingNav() {
                     key={item.to}
                     variants={{
                       hidden: { opacity: 0, scale: 0.3, x: 0, y: 0 },
-                      show: { opacity: 1, scale: 1, x, y, transition: { type: "spring", stiffness: 300, damping: 25, mass: 0.8, delay: i * 0.05 } },
+                      show: {
+                        opacity: 1,
+                        scale: 1,
+                        x,
+                        y,
+                        transition: {
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 25,
+                          mass: 0.8,
+                          delay: i * 0.05,
+                        },
+                      },
                     }}
                     initial="hidden"
                     animate="show"
-                    exit={{ opacity: 0, scale: 0.3, x: 0, y: 0, transition: { duration: 0.15, ease: "easeIn" } }}
+                    exit={{
+                      opacity: 0,
+                      scale: 0.3,
+                      x: 0,
+                      y: 0,
+                      transition: { duration: 0.15, ease: "easeIn" },
+                    }}
                     className="absolute left-0 top-0"
                   >
                     {isTheme ? (
                       <button
-                        onClick={() => { sfx.pop(); setOpen(false); setThemeOpen(true); }}
+                        onClick={() => {
+                          sfx.pop();
+                          setOpen(false);
+                          setThemeOpen(true);
+                        }}
                         className="glass glow-ring flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-xs font-semibold uppercase tracking-wide"
                         aria-label="Theme"
                       >
@@ -203,7 +267,10 @@ export function FloatingNav() {
                     ) : (
                       <Link
                         to={item.to}
-                        onClick={() => { sfx.pop(); setOpen(false); }}
+                        onClick={() => {
+                          sfx.pop();
+                          setOpen(false);
+                        }}
                         className="glass glow-ring flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-xs font-semibold uppercase tracking-wide"
                         aria-label={item.label}
                       >

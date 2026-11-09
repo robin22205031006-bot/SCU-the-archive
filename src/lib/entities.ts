@@ -11,10 +11,20 @@ export type CharacterRelationship = Tables<"character_relationships">;
 
 /** Typed kinship/social bonds between two characters. */
 export const RELATIONSHIP_TYPES = [
-  "father_son", "mother_daughter", "parent_child",
-  "brother_sister", "brother_brother", "sister_sister", "siblings",
-  "lovers", "spouses", "best_friends", "rivals",
-  "mentor_student", "ally", "enemy",
+  "father_son",
+  "mother_daughter",
+  "parent_child",
+  "brother_sister",
+  "brother_brother",
+  "sister_sister",
+  "siblings",
+  "lovers",
+  "spouses",
+  "best_friends",
+  "rivals",
+  "mentor_student",
+  "ally",
+  "enemy",
 ] as const;
 export type RelationshipType = (typeof RELATIONSHIP_TYPES)[number];
 
@@ -44,7 +54,14 @@ export const GROUP_LINK_KINDS: Entity["kind"][] = ["organization", "clan", "bloo
 
 import { CHARACTER_CATEGORIES, GROUP_CATEGORIES } from "./lore-merge";
 
-export const CHARACTER_STATUSES = ["Alive", "Dead", "Presumed Dead", "Retired", "Missing", "Legend"];
+export const CHARACTER_STATUSES = [
+  "Alive",
+  "Dead",
+  "Presumed Dead",
+  "Retired",
+  "Missing",
+  "Legend",
+];
 export const GROUP_STATUSES = ["Active", "Inactive"];
 export { CHARACTER_CATEGORIES, GROUP_CATEGORIES };
 
@@ -69,7 +86,11 @@ export const entityByIdQuery = (id: string) =>
     enabled: !!id,
     staleTime: 300_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entities").select("*").eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("entities")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -82,10 +103,14 @@ export const characterLinksQuery = (characterId: string) =>
     enabled: !!characterId,
     staleTime: 120_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entity_memberships").select("*").eq("character_id", characterId);
+      const { data, error } = await supabase
+        .from("entity_memberships")
+        .select("*")
+        .eq("character_id", characterId);
       if (error) {
         // Table may not exist yet if the SQL migration hasn't been applied.
-        if (/entity_memberships|schema cache|does not exist/i.test(error.message)) return [] as EntityMembership[];
+        if (/entity_memberships|schema cache|does not exist/i.test(error.message))
+          return [] as EntityMembership[];
         throw error;
       }
       return data;
@@ -99,9 +124,13 @@ export const groupLinksQuery = (groupId: string) =>
     enabled: !!groupId,
     staleTime: 120_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entity_memberships").select("*").eq("group_id", groupId);
+      const { data, error } = await supabase
+        .from("entity_memberships")
+        .select("*")
+        .eq("group_id", groupId);
       if (error) {
-        if (/entity_memberships|schema cache|does not exist/i.test(error.message)) return [] as EntityMembership[];
+        if (/entity_memberships|schema cache|does not exist/i.test(error.message))
+          return [] as EntityMembership[];
         throw error;
       }
       return data;
@@ -114,7 +143,8 @@ export const entityRelationsQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase.from("entity_relations").select("*");
     if (error) {
-      if (/entity_relations|schema cache|does not exist/i.test(error.message)) return [] as EntityRelation[];
+      if (/entity_relations|schema cache|does not exist/i.test(error.message))
+        return [] as EntityRelation[];
       throw error;
     }
     return data;
@@ -133,7 +163,8 @@ export const characterRelationshipsQuery = (entityId: string) =>
         .select("*")
         .or(`character_id_1.eq.${entityId},character_id_2.eq.${entityId}`);
       if (error) {
-        if (/character_relationships|schema cache|does not exist/i.test(error.message)) return [] as CharacterRelationship[];
+        if (/character_relationships|schema cache|does not exist/i.test(error.message))
+          return [] as CharacterRelationship[];
         throw error;
       }
       return data;
@@ -147,7 +178,11 @@ export const childEntitiesQuery = (parentId: string) =>
     enabled: !!parentId,
     staleTime: 300_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entities").select("*").eq("parent_id", parentId).order("name");
+      const { data, error } = await supabase
+        .from("entities")
+        .select("*")
+        .eq("parent_id", parentId)
+        .order("name");
       if (error) {
         if (/parent_id|schema cache|does not exist/i.test(error.message)) return [] as Entity[];
         throw error;
@@ -199,7 +234,10 @@ export async function fileToDataUrl(file: File, max = 640): Promise<string> {
 }
 
 /** Case-insensitive match on name, alias, role or category. */
-export function matchesSearch(e: Pick<Entity, "name" | "alias" | "role" | "category">, q: string): boolean {
+export function matchesSearch(
+  e: Pick<Entity, "name" | "alias" | "role" | "category">,
+  q: string,
+): boolean {
   const s = q.trim().toLowerCase();
   if (!s) return true;
   return [e.name, e.alias, e.role, e.category].some((v) => v?.toLowerCase().includes(s));

@@ -38,11 +38,14 @@ export const getInstallGuide = createServerFn({ method: "POST" })
           for (const c of item.content) if (c.type === "output_text") text += c.text;
         }
       }
-      return text.trim() ? { steps: text.trim() } : { steps: "", error: "No guide was returned. Please try again." };
+      return text.trim()
+        ? { steps: text.trim() }
+        : { steps: "", error: "No guide was returned. Please try again." };
     } catch (e) {
       if (e instanceof GatewayError) {
         console.error("install guide gateway error", e.code, e.ids);
-        if (e.code === "rate_limited") return { steps: "", error: "Too many requests right now — please wait a moment." };
+        if (e.code === "rate_limited")
+          return { steps: "", error: "Too many requests right now — please wait a moment." };
       } else console.error("install guide error", e);
       return { steps: "", error: "The guide is unavailable right now. Please try again later." };
     }

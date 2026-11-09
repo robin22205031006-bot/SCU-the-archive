@@ -18,10 +18,17 @@ async function callerEmail(context: { userId: string; claims: unknown }): Promis
   return data?.user?.email ?? null;
 }
 
-async function assertRoleManager(context: { userId: string; claims: unknown; supabase: SupabaseClient<Database> }) {
+async function assertRoleManager(context: {
+  userId: string;
+  claims: unknown;
+  supabase: SupabaseClient<Database>;
+}) {
   const email = await callerEmail(context);
   if (isSuperadminEmail(email)) return;
-  const { data, error } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+  const { data, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
   if (error || !data) throw new Error("Only admins can manage roles.");
 }
 
@@ -43,8 +50,11 @@ export const ensureSuperadminAccess = createServerFn({ method: "POST" })
     if (readError) throw new Error("Superadmin access could not be verified.");
     if (existing) return { granted: true };
 
-    const { error } = await supabaseAdmin.from("user_roles").insert({ user_id: context.userId, role: "admin" });
-    if (error && error.code !== "23505") throw new Error("Superadmin access could not be activated.");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: context.userId, role: "admin" });
+    if (error && error.code !== "23505")
+      throw new Error("Superadmin access could not be activated.");
     return { granted: true };
   });
 
@@ -79,7 +89,9 @@ export const setUserRole = createServerFn({ method: "POST" })
     let targetEmail: string | null = null;
 
     if (data.userId) {
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+        data.userId,
+      );
       if (authError || !authUser.user) throw new Error("No member found with that user ID.");
       targetUserId = authUser.user.id;
       targetEmail = authUser.user.email ?? null;
@@ -96,7 +108,9 @@ export const setUserRole = createServerFn({ method: "POST" })
         targetEmail = (profile.email as string | null) ?? target;
       } else {
         // profiles may lag behind auth — fall back to the auth user list.
-        const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+        const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          perPage: 1000,
+        });
         if (listError) throw new Error("The member could not be found.");
         const match = list.users.find((u) => (u.email ?? "").toLowerCase() === target);
         if (!match) throw new Error("No member found with that email.");
@@ -106,12 +120,18 @@ export const setUserRole = createServerFn({ method: "POST" })
     }
 
     if (!targetUserId) throw new Error("No member found.");
-    if (isSuperadminEmail(targetEmail)) throw new Error("The Superadmin account cannot be changed here.");
+    if (isSuperadminEmail(targetEmail))
+      throw new Error("The Superadmin account cannot be changed here.");
 
-    const { error: deleteError } = await supabaseAdmin.from("user_roles").delete().eq("user_id", targetUserId);
+    const { error: deleteError } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", targetUserId);
     if (deleteError) throw new Error("The role could not be updated.");
     if (data.role && data.role !== "user") {
-      const { error } = await supabaseAdmin.from("user_roles").insert({ user_id: targetUserId, role: data.role });
+      const { error } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: targetUserId, role: data.role });
       if (error) throw new Error("The role could not be saved.");
     }
     return { ok: true, email: targetEmail };

@@ -32,7 +32,10 @@ interface TocItem {
 }
 
 function slug(s: string, i: number) {
-  return `sec-${i}-${s.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30)}`;
+  return `sec-${i}-${s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .slice(0, 30)}`;
 }
 
 function Reader() {
@@ -43,21 +46,34 @@ function Reader() {
   const { data: notes } = useQuery({ ...notesQuery(entityId ?? ""), enabled: !!entityId });
 
   // Affiliation names (both directions) for the contents + body.
-  const { data: charLinks } = useQuery({ ...characterLinksQuery(entity?.id ?? ""), enabled: entity?.kind === "character" });
-  const { data: grpLinks } = useQuery({ ...groupLinksQuery(entity?.id ?? ""), enabled: !!entity && entity.kind !== "character" });
+  const { data: charLinks } = useQuery({
+    ...characterLinksQuery(entity?.id ?? ""),
+    enabled: entity?.kind === "character",
+  });
+  const { data: grpLinks } = useQuery({
+    ...groupLinksQuery(entity?.id ?? ""),
+    enabled: !!entity && entity.kind !== "character",
+  });
   const memberships = useMemo(
     () => [...(charLinks ?? []), ...(grpLinks ?? [])] as EntityMembership[],
     [charLinks, grpLinks],
   );
   const otherIds = useMemo(
-    () => [...new Set(memberships.map((m) => (entity?.kind === "character" ? m.group_id : m.character_id)))],
+    () => [
+      ...new Set(
+        memberships.map((m) => (entity?.kind === "character" ? m.group_id : m.character_id)),
+      ),
+    ],
     [memberships, entity?.kind],
   );
   const { data: linked } = useQuery({
     queryKey: ["reader-links", otherIds.sort().join(",")],
     enabled: otherIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entities").select("id, name, kind, status").in("id", otherIds);
+      const { data, error } = await supabase
+        .from("entities")
+        .select("id, name, kind, status")
+        .in("id", otherIds);
       if (error) throw error;
       return data ?? [];
     },
@@ -68,26 +84,40 @@ function Reader() {
   const toc: TocItem[] = useMemo(() => {
     if (!entity) return [];
     const items: TocItem[] = [{ id: "sec-overview", label: "Overview" }];
-    if (Object.keys((entity.stats as Record<string, unknown>) ?? {}).length > 0) items.push({ id: "sec-stats", label: "Records" });
+    if (Object.keys((entity.stats as Record<string, unknown>) ?? {}).length > 0)
+      items.push({ id: "sec-stats", label: "Records" });
     if ((linked ?? []).length > 0) items.push({ id: "sec-affiliations", label: "Affiliations" });
-    (notes ?? []).forEach((n, i) => items.push({ id: slug(n.source ?? `Note ${i + 1}`, i), label: n.source ?? `Note ${i + 1}` }));
+    (notes ?? []).forEach((n, i) =>
+      items.push({ id: slug(n.source ?? `Note ${i + 1}`, i), label: n.source ?? `Note ${i + 1}` }),
+    );
     return items;
   }, [entity, notes, linked]);
 
-  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const scrollTo = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  if (isLoading) return <main className="mx-auto max-w-3xl px-4 pb-24 pt-32 text-sm text-muted-foreground">Loading…</main>;
+  if (isLoading)
+    return (
+      <main className="mx-auto max-w-3xl px-4 pb-24 pt-32 text-sm text-muted-foreground">
+        Loading…
+      </main>
+    );
   if (!entity) {
     return (
       <main className="mx-auto max-w-3xl px-4 pb-24 pt-32">
         <p className="text-sm text-muted-foreground">No entry selected.</p>
-        <Button asChild variant="secondary" className="mt-4"><Link to="/characters">Browse characters</Link></Button>
+        <Button asChild variant="secondary" className="mt-4">
+          <Link to="/characters">Browse characters</Link>
+        </Button>
       </main>
     );
   }
 
   const stats = Object.entries((entity.stats as Record<string, string>) ?? {});
-  const noteSections = (notes ?? []).map((n, i) => ({ n, id: slug(n.source ?? `Note ${i + 1}`, i) }));
+  const noteSections = (notes ?? []).map((n, i) => ({
+    n,
+    id: slug(n.source ?? `Note ${i + 1}`, i),
+  }));
   const byId = new Map((linked ?? []).map((l) => [l.id, l]));
   const affiliationRows = memberships
     .map((m) => ({ m, other: byId.get(entity.kind === "character" ? m.group_id : m.character_id) }))
@@ -96,7 +126,10 @@ function Reader() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
-      <Link to={archiveTo} className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+      <Link
+        to={archiveTo}
+        className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to archive
       </Link>
 
@@ -126,17 +159,25 @@ function Reader() {
         {/* Reading column */}
         <article className="min-w-0">
           <header className="mb-10 border-b border-border pb-8">
-            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">{entity.kind} · {entity.status}</p>
-            <h1 className="mt-3 font-display text-5xl font-medium glow-text sm:text-6xl">{entity.name}</h1>
+            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">
+              {entity.kind} · {entity.status}
+            </p>
+            <h1 className="mt-3 font-display text-5xl font-medium glow-text sm:text-6xl">
+              {entity.name}
+            </h1>
             {(entity.alias || entity.role || entity.category) && (
-              <p className="mt-3 text-sm text-muted-foreground">{[entity.alias, entity.role, entity.category].filter(Boolean).join(" · ")}</p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {[entity.alias, entity.role, entity.category].filter(Boolean).join(" · ")}
+              </p>
             )}
           </header>
 
           <section id="sec-overview" className="mb-12 scroll-mt-28">
             <h2 className="mb-4 font-display text-2xl">Overview</h2>
             {entity.description ? (
-              <p className="whitespace-pre-line text-lg leading-9 text-foreground/85">{stripMerged(entity.description)}</p>
+              <p className="whitespace-pre-line text-lg leading-9 text-foreground/85">
+                {stripMerged(entity.description)}
+              </p>
             ) : (
               <p className="text-muted-foreground">No description recorded.</p>
             )}
@@ -148,7 +189,9 @@ function Reader() {
               <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
                 {stats.map(([k, v]) => (
                   <div key={k}>
-                    <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">{k}</dt>
+                    <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                      {k}
+                    </dt>
                     <dd className="mt-1 text-base">{v}</dd>
                   </div>
                 ))}
@@ -168,7 +211,9 @@ function Reader() {
                     className="flex items-center justify-between rounded-xl bg-secondary/40 px-4 py-2.5 text-sm hover:bg-secondary/70"
                   >
                     <span>{other.name}</span>
-                    <span className="text-xs capitalize text-muted-foreground">{other.kind} · {m.status}</span>
+                    <span className="text-xs capitalize text-muted-foreground">
+                      {other.kind} · {m.status}
+                    </span>
                   </Link>
                 ))}
               </div>
@@ -176,12 +221,20 @@ function Reader() {
           )}
 
           {noteSections.map(({ n, id }) => (
-            <section key={id} id={id} className="mb-10 scroll-mt-28 border-l-2 border-accent/50 pl-5">
+            <section
+              key={id}
+              id={id}
+              className="mb-10 scroll-mt-28 border-l-2 border-accent/50 pl-5"
+            >
               <h2 className="mb-2 font-display text-xl">{n.source ?? "Lore note"}</h2>
               <p className="mb-1 text-[11px] uppercase tracking-widest text-muted-foreground">
-                {[n.source, new Date(n.created_at).toLocaleDateString()].filter(Boolean).join(" · ")}
+                {[n.source, new Date(n.created_at).toLocaleDateString()]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
-              <p className="whitespace-pre-line text-lg leading-9 text-foreground/85">{stripMerged(n.text)}</p>
+              <p className="whitespace-pre-line text-lg leading-9 text-foreground/85">
+                {stripMerged(n.text)}
+              </p>
             </section>
           ))}
         </article>

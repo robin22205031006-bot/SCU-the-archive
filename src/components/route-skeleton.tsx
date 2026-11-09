@@ -43,7 +43,10 @@ export function ListSkeleton({ count = 5 }: { count?: number }) {
 /** Full-panel skeleton for graph/map style routes. */
 export function PanelSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("glass relative overflow-hidden rounded-2xl", className)} aria-label="Loading">
+    <div
+      className={cn("glass relative overflow-hidden rounded-2xl", className)}
+      aria-label="Loading"
+    >
       <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-secondary/40 via-secondary/20 to-transparent" />
       <div className="flex h-full min-h-[40vh] items-center justify-center">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
