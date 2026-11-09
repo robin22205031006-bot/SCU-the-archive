@@ -299,7 +299,7 @@ export function NexusDossier({ e }: { e: Entity }) {
                     className={`grid h-11 w-11 place-items-center rounded-full border ${
                       on ? "border-accent bg-accent/20 text-accent" : "border-border bg-background text-muted-foreground"
                     }`}
-                    style={on ? { boxShadow: `0 0 24px -4px ${coreColor}` } : undefined}
+                    style={{ boxShadow: on ? `0 0 24px -4px ${coreColor}` : "none" }}
                   >
                     <Icon className="h-4 w-4" />
                   </motion.span>

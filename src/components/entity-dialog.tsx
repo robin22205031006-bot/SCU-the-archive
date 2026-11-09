@@ -197,7 +197,7 @@ export function EntityDialog({
           ...custom,
           // Keep per-season Nexus dossier data, which is edited from the dossier page.
           ...((entity?.stats as Record<string, unknown> | null)?.["dossier"]
-            ? { dossier: (entity!.stats as Record<string, unknown>)["dossier"] }
+            ? { dossier: (entity!.stats as Record<string, string>)["dossier"] as string }
             : {}),
           ...(form.real_name.trim() ? { real_name: form.real_name.trim() } : {}),
           ...(form.bloodline.trim() ? { bloodline: form.bloodline.trim() } : {}),
