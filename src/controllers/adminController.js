@@ -1,7 +1,10 @@
 import { parsePdf } from "../utils/pdfParser.js";
 
 /** Coordinate the upload; authenticated server functions own extraction and writes. */
-export async function ingestAdminPdf(file, { analyze, apply, refresh, onStage, readPdf = parsePdf }) {
+export async function ingestAdminPdf(
+  file,
+  { analyze, apply, refresh, onStage, readPdf = parsePdf },
+) {
   onStage("reading");
   const text = await readPdf(file);
   onStage("analyzing");

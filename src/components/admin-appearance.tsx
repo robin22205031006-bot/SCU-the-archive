@@ -31,13 +31,11 @@ export function AdminAppearance() {
   const save = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("app_settings")
-        .upsert({
-          key: "ui_typography",
-          value: s as unknown as Json,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("app_settings").upsert({
+        key: "ui_typography",
+        value: s as unknown as Json,
+        updated_at: new Date().toISOString(),
+      });
       if (error) throw error;
       toast.success("Appearance saved — applied instantly.");
       setDraft(null);

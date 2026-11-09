@@ -49,13 +49,11 @@ export function AdminUiToggles() {
   const save = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("app_settings")
-        .upsert({
-          key: "ui_toggles",
-          value: t as unknown as Json,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("app_settings").upsert({
+        key: "ui_toggles",
+        value: t as unknown as Json,
+        updated_at: new Date().toISOString(),
+      });
       if (error) throw error;
       toast.success("UI toggles saved.");
       void qc.invalidateQueries({ queryKey: ["app-settings", "ui_toggles"] });

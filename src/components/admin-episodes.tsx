@@ -58,7 +58,6 @@ export function AdminEpisodes() {
       });
       setLastSaved(d.savedAt);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced autosave to localStorage whenever the form changes.

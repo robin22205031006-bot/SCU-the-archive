@@ -93,14 +93,12 @@ function Vault() {
       toast.error(up.error.message);
       return;
     }
-    const { error } = await supabase
-      .from("vault_documents")
-      .insert({
-        title: title.trim() || file.name,
-        file_path: path,
-        is_public: isPublic,
-        downloadable,
-      });
+    const { error } = await supabase.from("vault_documents").insert({
+      title: title.trim() || file.name,
+      file_path: path,
+      is_public: isPublic,
+      downloadable,
+    });
     setBusy(false);
     if (error) {
       await supabase.storage.from("vault").remove([path]);

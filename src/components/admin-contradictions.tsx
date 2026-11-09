@@ -323,13 +323,11 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
                     onClick={async () => {
                       setBusy(c.id);
                       try {
-                        await supabase
-                          .from("lore_notes")
-                          .insert({
-                            entity_id: c.entity_id,
-                            text: `[resolved] ${customText.trim()}`,
-                            source: "admin-resolver",
-                          });
+                        await supabase.from("lore_notes").insert({
+                          entity_id: c.entity_id,
+                          text: `[resolved] ${customText.trim()}`,
+                          source: "admin-resolver",
+                        });
                         await clearConflict(c);
                         toast.success("Conflict resolved.");
                         refresh();

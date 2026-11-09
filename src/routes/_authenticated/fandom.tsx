@@ -203,14 +203,12 @@ function Comments({ postId }: { postId: string }) {
   });
   const send = async () => {
     if (!text.trim()) return;
-    const { error } = await supabase
-      .from("comments")
-      .insert({
-        post_id: postId,
-        parent_id: replyTo,
-        body: text,
-        author_name: displayName(user?.email) ?? null,
-      });
+    const { error } = await supabase.from("comments").insert({
+      post_id: postId,
+      parent_id: replyTo,
+      body: text,
+      author_name: displayName(user?.email) ?? null,
+    });
     if (error) {
       toast.error("Couldn't comment — you may be blocked.");
       return;

@@ -445,13 +445,11 @@ function AddAbilityForm({ onSaved }: { onSaved: () => void }) {
       const idx = list.findIndex((a) => normalizeAbilityKey(a.key) === def.key);
       if (idx >= 0) list[idx] = def;
       else list.push(def);
-      const { error } = await supabase
-        .from("app_settings")
-        .upsert({
-          key: CUSTOM_SETTINGS_KEY,
-          value: list as unknown as Json,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("app_settings").upsert({
+        key: CUSTOM_SETTINGS_KEY,
+        value: list as unknown as Json,
+        updated_at: new Date().toISOString(),
+      });
       if (error) throw error;
       toast.success(`"${clean}" added to the registry.`);
       onSaved();
@@ -563,13 +561,11 @@ function EditAbilityForm({
       void merged;
       // Mirror overrides map to app_settings so other devices see the same ranks.
       const all = getAbilityOverrides();
-      const { error } = await supabase
-        .from("app_settings")
-        .upsert({
-          key: OVERRIDES_SETTINGS_KEY,
-          value: all as unknown as Json,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("app_settings").upsert({
+        key: OVERRIDES_SETTINGS_KEY,
+        value: all as unknown as Json,
+        updated_at: new Date().toISOString(),
+      });
       if (error) throw error;
       toast.success(
         reset ? `"${def.label}" reset to registry defaults.` : `"${label || def.label}" updated.`,

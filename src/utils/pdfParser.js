@@ -20,8 +20,12 @@ export async function parsePdf(file) {
       }
     }
     const text = pages.join("\n\n");
-    if (text.trim().length < 20) throw new Error("No readable text found in this PDF. Upload a text-based PDF instead of a scan.");
-    if (text.length > 400_000) throw new Error("This PDF contains too much text. Split it into smaller PDFs.");
+    if (text.trim().length < 20)
+      throw new Error(
+        "No readable text found in this PDF. Upload a text-based PDF instead of a scan.",
+      );
+    if (text.length > 400_000)
+      throw new Error("This PDF contains too much text. Split it into smaller PDFs.");
     return text;
   } finally {
     await task.destroy();
