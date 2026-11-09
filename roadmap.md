@@ -1,4 +1,6 @@
 # Nexus season and motion update
+- [ ] Add immutable admin audit history with editor names, timestamps and revision comparison for all styles.
+- [ ] Add Home UI Style choices: Descrete, Nexus and low-motion Minimal; verify switching.
 - [x] Add series/season character selectors, changing role counts, season rosters and role-colored dots.
 - [x] Add admin season editing for roles, status, philosophy, groups, abilities and stats; verify saved changes.
 - [x] Match the reference wheel with an outer ability-selection arc and inner labeled ability stats; verify selection, saved values, and desktop/mobile display.

@@ -22,6 +22,13 @@
       "when": 1794243644004,
       "tag": "0002_noop_apply_pending",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794267962427,
+      "tag": "0003_archive_revision_audit",
+      "breakpoints": true
     }
   ]
 }
