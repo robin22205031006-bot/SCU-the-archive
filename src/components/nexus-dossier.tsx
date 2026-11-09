@@ -149,7 +149,7 @@ export function NexusDossier({ e }: { e: Entity }) {
           </Link>
           <span
             data-spoiler="char"
-            className="rounded-sm border border-accent/40 bg-accent/10 px-3 py-1 font-display text-[11px] uppercase tracking-[0.3em] text-accent"
+            className="rounded-sm border border-accent/40 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-accent"
           >
             {roleBadge}
           </span>
@@ -281,9 +281,7 @@ export function NexusDossier({ e }: { e: Entity }) {
       <section className="relative mx-auto mt-10 max-w-6xl px-4">
         <div className="grid gap-6 rounded-2xl border border-border bg-card/40 p-5 backdrop-blur md:grid-cols-[180px_1fr_240px]">
           <nav className="relative flex flex-row gap-3 md:flex-col md:gap-6 md:py-6">
-            <svg aria-hidden viewBox="0 0 60 300" className="absolute -left-2 top-0 hidden h-full md:block">
-              <path d="M50 0 Q -20 150 50 300" fill="none" stroke="var(--border)" strokeWidth="1.5" />
-            </svg>
+            <span aria-hidden className="pointer-events-none absolute -left-1 top-2 bottom-2 hidden w-16 rounded-[50%] border-l border-border md:block" />
             {MENU.map((m, i) => {
               const Icon = m.icon;
               const on = menu === m.key;
@@ -480,7 +478,7 @@ function StatWheel({
         <text x="110" y="106" textAnchor="middle" fontSize="7" fill="var(--muted-foreground)" letterSpacing="2">
           AVG
         </text>
-        <text x="110" y="120" textAnchor="middle" fontSize="16" fill="var(--foreground)" className="font-display">
+        <text x="110" y="120" textAnchor="middle" fontSize="16" fill="var(--foreground)">
           {total}
         </text>
       </svg>
