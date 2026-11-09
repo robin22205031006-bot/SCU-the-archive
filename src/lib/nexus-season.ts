@@ -6,6 +6,12 @@ export type SeasonDossier = {
   role?: string;
   impact?: string;
   codename?: string;
+  roster?: boolean;
+  status?: string;
+  philosophy?: string;
+  bloodline?: string;
+  organizations?: string[];
+  abilityKeys?: string[];
   stats?: Record<string, number>;
   abilityStats?: Record<string, Record<string, number>>;
 };

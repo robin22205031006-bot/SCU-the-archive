@@ -1,4 +1,6 @@
 # Nexus season and motion update
+- [x] Add series/season character selectors, changing role counts, season rosters and role-colored dots.
+- [x] Add admin season editing for roles, status, philosophy, groups, abilities and stats; verify saved changes.
 - [x] Match the reference wheel with an outer ability-selection arc and inner labeled ability stats; verify selection, saved values, and desktop/mobile display.
 - [x] Add named series/season editing, season titles, Wisdom/Vitality and selectable ability-specific stats.
 - [x] Animate highest-stat ring and season-role background without leaking spoilers.

@@ -35,12 +35,12 @@ const MENU: Array<{ key: Menu; label: string; icon: typeof BookOpen }> = [
 
 type SeriesCard = { id: string; title: string; cover: string | null; seasons: string[] };
 
-export function NexusDossier({ e }: { e: Entity }) {
+export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSeason?: { seriesId: string; n: number } | null }) {
   const qc = useQueryClient();
   const isStaff = useIsStaff();
   const masked = useSpoilerMask("characters");
   const [openSeries, setOpenSeries] = useState<string | null>(null);
-  const [season, setSeason] = useState<{ seriesId: string; n: number } | null>(null);
+  const [season, setSeason] = useState<{ seriesId: string; n: number } | null>(initialSeason);
   const [menu, setMenu] = useState<Menu>("story");
   const [editing, setEditing] = useState(false);
   const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
@@ -71,30 +71,31 @@ export function NexusDossier({ e }: { e: Entity }) {
   });
 
   const stats = (e.stats ?? {}) as Record<string, unknown>;
-  const bloodline = typeof stats["bloodline"] === "string" ? (stats["bloodline"] as string) : null;
+  const baseBloodline = typeof stats["bloodline"] === "string" ? (stats["bloodline"] as string) : null;
   const realName = typeof stats["real_name"] === "string" ? (stats["real_name"] as string) : null;
   const dossier = readDossier(e.stats);
   const seasonKey = season ? `${season.seriesId}:${season.n}` : null;
   const sd: SeasonDossier = dossier[seasonKey ?? "all"] ?? {};
+  const bloodline = sd.bloodline ?? baseBloodline;
+  const status = sd.status ?? (memberships ?? []).find(m => m.series_id === season?.seriesId)?.status ?? e.status;
   const membership = (memberships ?? []).find((m) => m.series_id === season?.seriesId);
 
   // The row under the hero shows the series this character actually appears in.
   const seriesCards = useMemo<SeriesCard[]>(
     () =>
-      (memberships ?? [])
-        .filter((m) => m.series)
-        .map((m) => {
-          const full = (allSeries ?? []).find((s) => s.id === m.series_id);
+      (allSeries ?? [])
+        .filter(full => (memberships ?? []).some(m => m.series_id === full.id) || Object.keys(dossier).some(key => key.startsWith(`${full.id}:`)))
+        .map((full) => {
           const names = full?.season_names ?? [];
           const count = Math.max(full?.season_count ?? 0, names.length, 1);
           return {
-            id: m.series_id,
-            title: m.series!.title,
-            cover: m.series!.cover_image_url,
+            id: full.id,
+            title: full.title,
+            cover: full.cover_image_url,
             seasons: Array.from({ length: count }, (_, i) => names[i] || `Season ${i + 1}`),
           };
         }),
-    [memberships, allSeries],
+    [memberships, allSeries, e.stats],
   );
 
   // The editor can target any season of any series, so staff are not blocked by a missing link.
@@ -136,13 +137,13 @@ export function NexusDossier({ e }: { e: Entity }) {
         )
       : rows;
     const m = new Map<string, number>();
-    scoped.forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
-    if (!season || !rows.some((r) => r.series_id === season.seriesId))
+    scoped.filter(r => sd.abilityKeys === undefined || sd.abilityKeys.includes(r.ability_key)).forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
+    if (!season)
       (e.abilities ?? []).forEach((a) => !m.has(a) && m.set(a, 1));
     return [...m.entries()]
       .map(([name, level]) => ({ name, level, def: abilityDef(name) }))
       .sort((a, b) => b.level - a.level);
-  }, [charAbilities, season, e.abilities]);
+  }, [charAbilities, season, e.abilities, e.stats]);
 
   const core = abilities[0];
   const coreColor = core?.def.color ?? "var(--accent)";
@@ -234,7 +235,7 @@ export function NexusDossier({ e }: { e: Entity }) {
                 </p>
               )}
               <p data-spoiler="char" className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
-                Status · <span className="text-foreground">{membership?.status || e.status}</span>
+Status · <span className="text-foreground">{status}</span>
               </p>
             </motion.div>
 
@@ -412,13 +413,14 @@ export function NexusDossier({ e }: { e: Entity }) {
                         </span>
                         {sd.impact || "No impact notes for this selection yet."}
                       </p>
+                      {sd.philosophy && <p className="whitespace-pre-line"><span className="block text-xs text-muted-foreground">Philosophy</span>{sd.philosophy}</p>}
                     </div>
                   )}
                   {menu === "details" && (
                     <dl className="grid grid-cols-2 gap-3 text-sm">
                       {[
                         ["Real name", realName],
-                        ["Status", membership?.status || e.status],
+                        ["Status", status],
                         ["Category", e.category],
                         ["Tier", e.character_tier],
                       ].map(([k, v]) => (
@@ -455,7 +457,7 @@ export function NexusDossier({ e }: { e: Entity }) {
                 <p>{bloodline || "—"}</p>
                 <p className="pt-2 text-[10px] uppercase tracking-widest text-muted-foreground">Organizations</p>
                 <div className="flex flex-wrap gap-1">
-                  {orgs.length
+                  {sd.organizations !== undefined ? sd.organizations.filter(Boolean).join(" · ") || "—" : orgs.length
                     ? orgs.map((o) => (
                         <span key={o.id} className="rounded-sm border border-border px-1.5 py-0.5">
                           {o.name}
