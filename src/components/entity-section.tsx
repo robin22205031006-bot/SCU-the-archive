@@ -19,6 +19,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -1500,6 +1501,12 @@ export function EntitySection({
     return [...categories, ...extra];
   }, [categories, data]);
 
+  // Character/organization count: total in the archive, plus how many are showing now.
+  const total = data?.length ?? 0;
+  const isFiltered = cat !== "all" || q.trim().length > 0;
+  const countWord =
+    total === 1 ? title.toLowerCase().replace(/s$/, "") : title.toLowerCase();
+
   useWebMCP({
     name: "list_archive_entries",
     description: `List the ${title} entries currently shown on this page.`,
@@ -1555,6 +1562,18 @@ export function EntitySection({
           <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
           <h1 className="mt-2 text-5xl font-medium glow-text">{title}</h1>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">{subtitle}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
+              <Users className="h-3.5 w-3.5" />
+              <span className="font-display text-sm tracking-normal">{total}</span>
+              {countWord}
+            </span>
+            {isFiltered && total > 0 && (
+              <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                {list.length} showing
+              </span>
+            )}
+          </div>
         </div>
         {isAdmin && (
           <Button onClick={() => setEditing(null)} size="sm">
