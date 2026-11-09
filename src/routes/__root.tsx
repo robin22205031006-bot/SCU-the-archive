@@ -231,7 +231,7 @@ function RootComponent() {
       <AppearanceProvider>
         <TypographyProvider>
           <ErrorBoundary>
-            <MotionConfig reducedMotion={uiStyle === "minimal" ? "always" : "user"} transition={uiStyle === "minimal" ? { duration: 0 } : undefined}>
+            <MotionConfig reducedMotion={uiStyle === "minimal" ? "always" : "user"} {...(uiStyle === "minimal" ? { transition: { duration: 0 } } : {})}>
             <div className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : "ambient-bg"}`}>
               {uiStyle === "classic" && <AmbientField />}
               {uiStyle === "classic" && <PlexusWallpaper />}
