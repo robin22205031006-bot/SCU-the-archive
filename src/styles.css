@@ -719,6 +719,8 @@ html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { l
 .nexus-page > main > header > div > p:not(:first-child), .nexus-page > main > header > p:not(:first-child) { display: none; }
 .nexus-explorer .nexus-record { transition: border-color .3s, background-color .3s; }
 .nexus-explorer .nexus-record:hover { border-color: var(--nexus-glow); }
+.nexus-explorer .nexus-record[aria-pressed="true"] { background: color-mix(in oklab, var(--nexus-glow) 12%, var(--card)); color: var(--foreground); }
+.nexus-explorer article { align-self: start; }
 .nexus-cluster { box-shadow: var(--nexus-shadow); }
 .nexus-workspace > [role="tabpanel"] > main { padding: 0; max-width: none; }
 .nexus-workspace > [role="tabpanel"] > main > header { margin-bottom: 1.25rem; }
@@ -727,6 +729,8 @@ html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { l
 .nexus-section-rail { align-self: start; }
 .nexus-tool-layout > div > main, .nexus-tool-layout > div > div { max-width: 100%; }
 .nexus-tool-layout .glass { border-radius: 8px; }
+.nexus-tool-layout [class*="font-display"] { font-family: var(--font-sans); }
+.nexus-tool-layout > div > main, .nexus-tool-layout > div > div { padding-top: 6rem; }
 .nexus-page[data-nexus-page="timeline"] > main > .glass { border-radius: 8px; }
 @media (max-width: 1023px) {
   .nexus-tool-layout > div > main, .nexus-tool-layout > div > div { padding-top: 2rem; }

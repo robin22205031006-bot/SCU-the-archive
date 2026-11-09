@@ -11,7 +11,7 @@ export function NexusSectionRail({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = container.current;
     if (!root) return;
-    const update = () => setSections(Array.from(root.querySelectorAll<HTMLElement>("h2, h3, [data-slot='accordion-trigger']")).filter(e => e.textContent?.trim()).slice(0, 20).map(element => ({ title: element.textContent?.trim() ?? "", element })));
+    const update = () => setSections(Array.from(root.querySelectorAll<HTMLElement>("h2, h3, button[aria-expanded][aria-controls]")).filter(e => e.textContent?.trim() && !e.querySelector("button[aria-expanded]")).slice(0, 20).map(element => ({ title: element.textContent?.trim() ?? "", element })));
     update();
     const observer = new MutationObserver(update);
     observer.observe(root, { childList: true, subtree: true });
