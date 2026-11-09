@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { LoreLocations } from "@/components/lore-locations";
 import { TacticalMap } from "@/components/tactical-map";
 import { useSectionStyle } from "@/hooks/use-typography";
+import { NexusWorkspace } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
+import { Map, Radio } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
@@ -25,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/map")({
 });
 
 function MapPage() {
+  const nexus = useUiStyle() === "nexus";
   const sectionStyle = useSectionStyle("timeline");
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5" style={sectionStyle}>
@@ -36,8 +40,10 @@ function MapPage() {
           the SCU theater.
         </p>
       </header>
-      <LoreLocations />
-      <TacticalMap />
+      {nexus ? <NexusWorkspace views={[
+        { id: "world", title: "World & Eras", icon: <Map className="h-4 w-4" />, content: <LoreLocations /> },
+        { id: "deployments", title: "Deployments", icon: <Radio className="h-4 w-4" />, content: <TacticalMap /> },
+      ]} /> : <><LoreLocations /><TacticalMap /></>}
     </main>
   );
 }
