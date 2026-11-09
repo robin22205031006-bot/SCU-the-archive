@@ -337,6 +337,7 @@ function AbilityCard({
   onEdit: () => void;
 }) {
   const Icon = def.icon;
+  const holdersMasked = useSpoilerMask("abilities");
   return (
     <div
       className="glass rounded-2xl p-4 transition-shadow"

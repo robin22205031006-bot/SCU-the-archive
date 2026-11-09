@@ -187,7 +187,10 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
           </span>
         )}
         {!hideSpoilers && (e.category || showKind) && (
-          <span data-spoiler="char" className="text-[11px] uppercase tracking-widest text-muted-foreground">
+          <span
+            data-spoiler="char"
+            className="text-[11px] uppercase tracking-widest text-muted-foreground"
+          >
             {e.category ?? e.kind}
           </span>
         )}
@@ -869,7 +872,10 @@ function DetailOverlay({
                 (ca) => !ca.series_id || ca.series_id === r.series_id,
               );
               return (
-                <div data-spoiler="char" className="rounded-xl border border-white/10 bg-black/50 p-4 backdrop-blur-sm">
+                <div
+                  data-spoiler="char"
+                  className="rounded-xl border border-white/10 bg-black/50 p-4 backdrop-blur-sm"
+                >
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span
                       className="font-display text-sm uppercase tracking-widest"
@@ -946,7 +952,10 @@ function DetailOverlay({
             </div>
           )}
           {dossierTab === "powers" && (e.abilities?.length ?? 0) > 0 && (
-            <div data-spoiler="char" className="rounded-xl border border-white/10 bg-secondary/20 p-4">
+            <div
+              data-spoiler="char"
+              className="rounded-xl border border-white/10 bg-secondary/20 p-4"
+            >
               <h4 className="mb-3 text-[11px] uppercase tracking-widest text-muted-foreground">
                 Abilities &amp; biological traits
               </h4>
@@ -1056,7 +1065,8 @@ function DetailOverlay({
                   return (
                     <div
                       key={r.id}
-                      data-spoiler="char" className="rounded-xl border border-border/60 bg-secondary/20 p-4"
+                      data-spoiler="char"
+                      className="rounded-xl border border-border/60 bg-secondary/20 p-4"
                     >
                       <div className="mb-2 flex items-center gap-2">
                         <span
@@ -1111,7 +1121,10 @@ function DetailOverlay({
                   );
                 })
               )}
-              <div data-spoiler="char" className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+              <div
+                data-spoiler="char"
+                className="rounded-xl border border-border/60 bg-secondary/20 p-4"
+              >
                 <h4 className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
                   Combat role
                 </h4>
@@ -1507,8 +1520,7 @@ export function EntitySection({
   // Character/organization count: total in the archive, plus how many are showing now.
   const total = data?.length ?? 0;
   const isFiltered = cat !== "all" || q.trim().length > 0;
-  const countWord =
-    total === 1 ? title.toLowerCase().replace(/s$/, "") : title.toLowerCase();
+  const countWord = total === 1 ? title.toLowerCase().replace(/s$/, "") : title.toLowerCase();
 
   useWebMCP({
     name: "list_archive_entries",
