@@ -1,4 +1,5 @@
 # Nexus season and motion update
+- [ ] Match the reference wheel with an outer ability-selection arc and inner labeled ability stats; verify selection on desktop/mobile.
 - [x] Add named series/season editing, season titles, Wisdom/Vitality and selectable ability-specific stats.
 - [x] Animate highest-stat ring and season-role background without leaking spoilers.
 - [x] Add Nexus to Appearance and distinct animated navigation, tabs and background.
