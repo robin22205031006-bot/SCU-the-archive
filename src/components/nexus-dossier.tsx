@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { ArrowLeft, BookOpen, ChevronDown, Fingerprint, Pencil, Swords } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { characterLinksQuery, entitiesQuery, type Entity } from "@/lib/entities"
 import { characterSeriesQuery, seriesQuery } from "@/lib/series";
 import { abilityDef } from "@/lib/abilities";
 import { NEXUS_STATS, readDossier, resolveNexusStats, highestStatRadius, nexusRole, type SeasonDossier } from "@/lib/nexus-season";
-import { useAnimationsEnabled } from "@/lib/animations";
+import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useIsStaff } from "@/hooks/use-admin";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { Button } from "@/components/ui/button";
@@ -36,9 +36,7 @@ export function NexusDossier({ e }: { e: Entity }) {
   const [statFocus, setStatFocus] = useState(0);
   const [editing, setEditing] = useState(false);
   const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
-  const reduced = useReducedMotion();
-  const animations = useAnimationsEnabled();
-  const moving = animations && !reduced;
+  const moving = useNexusMotion();
 
   const { data: memberships } = useQuery(characterSeriesQuery(e.id));
   const { data: allSeries } = useQuery(seriesQuery);

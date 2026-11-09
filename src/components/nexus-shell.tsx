@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { Compass, Palette, X, User, Sparkles } from "lucide-react";
 import { useIsStaff } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +15,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const isStaff = useIsStaff();
   const enabled = useAnimationsEnabled();
-  const reduced = useReducedMotion();
-  const moving = enabled && !reduced;
+  const moving = useNexusMotion();
   const [open, setOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const { data: visibility } = useQuery({
