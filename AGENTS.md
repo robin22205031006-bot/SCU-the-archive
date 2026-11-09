@@ -20,3 +20,4 @@
 - LoreChat preserves the existing single-session chat controls and rendering during provider integration; this is not a new chat layout, so replacing its primitives or adding history would violate the no-redesign requirement.
 - The public install helper calls the AI model only from a server function with clipped inputs, because visitors are unauthenticated and prompts/keys must stay server-side.
 - Database schema changes go through drizzle/migrations (applied by Lovable Cloud); the root supabase-*.sql files are historical references from the old backend and must not be re-run.
+- Alternate reader UI lives in src/components/nexus-view.tsx, switched by src/lib/ui-style.ts (localStorage); it reuses entity data and data-spoiler masks so rules stay identical across styles.

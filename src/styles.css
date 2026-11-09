@@ -604,3 +604,25 @@ html[data-spoil-archive] [data-spoiler="archive"] {
   user-select: none;
   pointer-events: none;
 }
+
+/* ── Nexus UI (alternate constellation interface) ── */
+:root {
+  --nexus-bg: oklch(0.13 0.02 230);
+  --nexus-glow: oklch(0.78 0.14 175);
+  --nexus-line: oklch(0.62 0.18 265);
+  --nexus-c1: oklch(0.86 0.18 105);
+  --nexus-c2: oklch(0.74 0.2 150);
+  --nexus-c3: oklch(0.66 0.25 350);
+  --nexus-c4: oklch(0.62 0.2 265);
+  --nexus-c5: oklch(0.75 0.15 210);
+  --nexus-c6: oklch(0.72 0.17 50);
+  --nexus-fg: oklch(0.96 0.01 200);
+  --nexus-muted: oklch(0.7 0.02 220);
+}
+@theme inline {
+  --color-nexus-bg: var(--nexus-bg);
+  --color-nexus-glow: var(--nexus-glow);
+  --color-nexus-line: var(--nexus-line);
+  --color-nexus-fg: var(--nexus-fg);
+  --color-nexus-muted: var(--nexus-muted);
+}
