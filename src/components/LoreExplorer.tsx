@@ -7,6 +7,7 @@ interface LoreItem {
   title?: string;
   description?: string;
   faction?: string;
+  event_name?: string;
   bio?: string;
   lore?: string;
   combat_style?: string;
