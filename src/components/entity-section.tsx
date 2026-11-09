@@ -1501,6 +1501,12 @@ export function EntitySection({
     return [...categories, ...extra];
   }, [categories, data]);
 
+  // Character/organization count: total in the archive, plus how many are showing now.
+  const total = data?.length ?? 0;
+  const isFiltered = cat !== "all" || q.trim().length > 0;
+  const countWord =
+    total === 1 ? title.toLowerCase().replace(/s$/, "") : title.toLowerCase();
+
   useWebMCP({
     name: "list_archive_entries",
     description: `List the ${title} entries currently shown on this page.`,
