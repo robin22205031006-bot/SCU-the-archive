@@ -19,6 +19,10 @@ export const Route = createFileRoute("/_authenticated/reader")({
     typeof s["e"] === "string" ? { e: s["e"] } : {},
   head: () => ({
     meta: [
+      { property: "og:title", content: "Reader Mode — SCU" },
+      { property: "og:description", content: "Immersive reading of Sentinels Cinematic Universe lore." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Reader Mode — Sentinels Cinematic Universe" },
       { name: "description", content: "Immersive reading view for SCU lore." },
     ],

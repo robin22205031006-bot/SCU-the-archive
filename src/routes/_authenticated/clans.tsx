@@ -4,6 +4,8 @@ import { ClanGraph } from "@/components/clan-graph";
 export const Route = createFileRoute("/_authenticated/clans")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Clan & Lineage Graph — Sentinels Cinematic Universe" },
       {
         name: "description",

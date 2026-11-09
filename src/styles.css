@@ -618,6 +618,14 @@ html[data-spoil-archive] [data-spoiler="archive"] {
   --nexus-c6: oklch(0.72 0.17 50);
   --nexus-fg: oklch(0.96 0.01 200);
   --nexus-muted: oklch(0.7 0.02 220);
+  --nexus-role-hero: oklch(0.8 0.13 190);
+  --nexus-role-villain: oklch(0.72 0.19 25);
+  --nexus-role-antihero: oklch(0.83 0.15 85);
+  --nexus-role-support: oklch(0.77 0.16 145);
+  --nexus-role-neutral: oklch(0.74 0.025 210);
+  --nexus-surface: oklch(0.18 0.014 210);
+  --nexus-border: oklch(0.74 0.08 190 / 22%);
+  --nexus-shadow: 0 12px 40px oklch(0.04 0 0 / 35%);
 }
 @theme inline {
   --color-nexus-bg: var(--nexus-bg);
@@ -625,4 +633,62 @@ html[data-spoil-archive] [data-spoiler="archive"] {
   --color-nexus-line: var(--nexus-line);
   --color-nexus-fg: var(--nexus-fg);
   --color-nexus-muted: var(--nexus-muted);
+}
+
+html[data-ui="nexus"] {
+  --background: var(--nexus-bg) !important;
+  --foreground: var(--nexus-fg) !important;
+  --card: var(--nexus-surface) !important;
+  --card-foreground: var(--nexus-fg);
+  --popover: var(--nexus-surface) !important;
+  --popover-foreground: var(--nexus-fg);
+  --accent: var(--nexus-glow) !important;
+  --accent-foreground: var(--nexus-bg);
+  --muted: var(--nexus-surface) !important;
+  --muted-foreground: var(--nexus-muted) !important;
+  --border: var(--nexus-border) !important;
+  --input: var(--nexus-border);
+  --ring: var(--nexus-glow);
+  --secondary: var(--nexus-surface);
+  --secondary-foreground: var(--nexus-fg);
+  --font-display: "Manrope", system-ui, sans-serif !important;
+}
+.nexus-shell > button[aria-label="Appearance"] { display: none; }
+html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { letter-spacing: 0; }
+.nexus-command { border-radius: 4px; box-shadow: var(--nexus-shadow); }
+.nexus-nav-link { transition: background-color .3s, transform .4s; }
+.nexus-nav-link:hover { transform: translateY(-3px); }
+.nexus-nav-link[aria-current="page"] { background: color-mix(in oklab, var(--accent) 14%, transparent); }
+.nexus-grid {
+  opacity: .28;
+  background-image: linear-gradient(var(--nexus-border) 1px, transparent 1px), linear-gradient(90deg, var(--nexus-border) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: linear-gradient(transparent, var(--nexus-fg) 30%, transparent);
+  animation: nexus-grid-drift 35s linear infinite;
+}
+.nexus-dossier { --nexus-role: var(--nexus-role-neutral); }
+.nexus-dossier[data-role="hero"] { --nexus-role: var(--nexus-role-hero); }
+.nexus-dossier[data-role="villain"] { --nexus-role: var(--nexus-role-villain); }
+.nexus-dossier[data-role="antihero"] { --nexus-role: var(--nexus-role-antihero); }
+.nexus-dossier[data-role="support"] { --nexus-role: var(--nexus-role-support); }
+.nexus-dossier .text-accent { color: var(--nexus-role); transition: color 2s; }
+.nexus-dossier aside .font-display { font-family: var(--font-sans); font-size: 1.5rem; line-height: 1.35; }
+.nexus-shell { padding-bottom: 80px; }
+.nexus-role-field {
+  background: linear-gradient(125deg, color-mix(in oklab, var(--nexus-role) 16%, var(--background)), var(--background) 70%);
+}
+.nexus-role-field[data-role="hero"] { --nexus-role: var(--nexus-role-hero); }
+.nexus-role-field[data-role="villain"] { --nexus-role: var(--nexus-role-villain); }
+.nexus-role-field[data-role="antihero"] { --nexus-role: var(--nexus-role-antihero); }
+.nexus-role-field[data-role="support"] { --nexus-role: var(--nexus-role-support); }
+.nexus-role-field[data-role="neutral"] { --nexus-role: var(--nexus-role-neutral); }
+.nexus-shell [role="tablist"] { border-radius: 0; background: transparent; border-bottom: 1px solid var(--border); }
+.nexus-shell [role="tab"] { border-radius: 0; transition: color .4s, background-color .4s, transform .4s; }
+.nexus-shell [role="tab"][data-state="active"] { border-bottom: 2px solid var(--accent); background: color-mix(in oklab, var(--accent) 10%, transparent); transform: translateY(-2px); }
+@keyframes nexus-grid-drift { to { transform: translateY(80px); } }
+html[data-nexus-motion="off"] .nexus-grid { animation: none; }
+html[data-nexus-motion="off"] .nexus-shell *, html[data-nexus-motion="off"] .nexus-shell *::before { animation-duration: 0s !important; transition-duration: 0s !important; }
+@media (prefers-reduced-motion: reduce) {
+  .nexus-grid { animation: none; }
+  .nexus-shell *, .nexus-shell *::before { animation-duration: 0s !important; transition-duration: 0s !important; }
 }

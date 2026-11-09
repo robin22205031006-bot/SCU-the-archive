@@ -13,6 +13,10 @@ import { favorites, onFavoritesChange, removeFavorite, type FavoriteEntry } from
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
+      { property: "og:title", content: "Profile — SCU" },
+      { property: "og:description", content: "Manage your SCU account and favorite characters." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Profile — SCU" },
       {
         name: "description",

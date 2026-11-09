@@ -10,7 +10,7 @@ import { sfx } from "@/lib/scu-audio";
 export const Route = createFileRoute("/_authenticated/story")({
   validateSearch: (s: Record<string, unknown>): { ep?: string } =>
     typeof s["ep"] === "string" ? { ep: s["ep"] } : {},
-  head: () => ({ meta: [{ title: "Story — SCU" }] }),
+  head: () => ({ meta: [{ title: "Story — SCU" }, { name: "description", content: "Read published episodes and stories from the Sentinels Cinematic Universe." }, { property: "og:title", content: "Story — SCU" }, { property: "og:description", content: "Read published episodes and stories from the Sentinels Cinematic Universe." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Story,
 });
 
