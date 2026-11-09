@@ -21,3 +21,4 @@
 - The public install helper calls the AI model only from a server function with clipped inputs, because visitors are unauthenticated and prompts/keys must stay server-side.
 - Database schema changes go through drizzle/migrations (applied by Lovable Cloud); the root supabase-*.sql files are historical references from the old backend and must not be re-run.
 - Alternate reader UI lives in src/components/nexus-view.tsx, switched by src/lib/ui-style.ts (localStorage); it reuses entity data and data-spoiler masks so rules stay identical across styles.
+- Nexus full-character dossier lives in src/components/nexus-dossier.tsx; per-season story/role/impact/stats are stored in entities.stats.dossier keyed `seriesId:seasonNumber` (no schema change; entity-dialog preserves the key), and season abilities come from character_abilities.
