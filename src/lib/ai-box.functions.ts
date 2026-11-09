@@ -49,7 +49,7 @@ export const askLore = createServerFn({ method: "POST" })
     try {
       const lastUser = [...data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
       if (lastUser) {
-        const { embedGemini } = await import("./gemini.server");
+        const { embedGemini, pickGeminiKey } = await import("./gemini.server");
         const [vec] = await embedGemini(pickGeminiKey("chat"), [lastUser.slice(0, 2000)]);
         if (vec?.length === 1536) {
           const { data: hits, error: matchErr } = await sb.rpc("match_pdf_chunks", {
@@ -73,7 +73,7 @@ export const askLore = createServerFn({ method: "POST" })
       // Vault retrieval is best-effort; fall back to archive-only answers.
     }
 
-    const { generateGemini } = await import("./gemini.server");
+    const { generateGemini, pickGeminiKey } = await import("./gemini.server");
     const reply = await generateGemini(pickGeminiKey("chat"), {
       contents: data.messages.map((m) => ({
         role: m.role === "assistant" ? "model" : "user",

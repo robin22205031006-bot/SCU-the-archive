@@ -40,7 +40,7 @@ export const analyzeLore = createServerFn({ method: "POST" })
     if (error) throw new Error("The archive could not be loaded. Please try again.");
     const names = (existing ?? []).map((e) => `${e.name} (${e.kind})`).join("; ") || "none";
 
-    const { generateGemini } = await import("./gemini.server");
+    const { generateGemini, pickGeminiKey } = await import("./gemini.server");
     const raw = await generateGemini(pickGeminiKey("admin"), {
       contents: [
         {
