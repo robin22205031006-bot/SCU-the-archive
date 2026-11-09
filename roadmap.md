@@ -3,6 +3,7 @@
 - [x] Animate highest-stat ring and season-role background without leaking spoilers.
 - [x] Add Nexus to Appearance and distinct animated navigation, tabs and background.
 - [x] Test rules and verify signed-in saves and desktop/mobile interactions.
+- [x] Restore the approved panel/card dossier layout with the season, codename and ability-stats changes kept.
 
 # Reliability and performance
 - [x] Fix verified session/cache and page-flow defects without visual changes.
