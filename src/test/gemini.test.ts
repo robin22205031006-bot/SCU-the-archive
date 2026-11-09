@@ -18,7 +18,7 @@ describe("private Gemini integration", () => {
       "Kael Varn joined the Order of Dusk.",
     );
     expect(generateContent).toHaveBeenCalledWith({
-      model: "gemini-3.8-flash",
+      model: "gemini-3.5-flash",
       contents: "Who is Kael?",
     });
   });
@@ -37,5 +37,18 @@ describe("private Gemini integration", () => {
       },
     );
     expect(generateContent).toHaveBeenCalledOnce();
+  });
+  it("retries overloaded model then falls back", async () => {
+    vi.useFakeTimers();
+    generateContent
+      .mockRejectedValueOnce(new Error("503 UNAVAILABLE"))
+      .mockRejectedValueOnce(new Error("503 UNAVAILABLE"))
+      .mockRejectedValueOnce(new Error("503 UNAVAILABLE"))
+      .mockResolvedValueOnce({ text: "ok" });
+    const p = generateGemini("k", { contents: "Q" });
+    await vi.runAllTimersAsync();
+    expect(await p).toBe("ok");
+    expect(generateContent).toHaveBeenLastCalledWith({ model: "gemini-3.8-flash", contents: "Q" });
+    vi.useRealTimers();
   });
 });

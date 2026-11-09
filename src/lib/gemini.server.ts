@@ -11,7 +11,14 @@ export function pickGeminiKey(pool: "admin" | "chat"): string | undefined {
     pool === "admin"
       ? [env["GOOGLE_API_KEY"], env["GOOGLE_API_KEY_2"]]
       : [env["GOOGLE_API_KEY_3"], env["GOOGLE_API_KEY_4"], env["GOOGLE_API_KEY"]]
-  ).filter((k): k is string => !!k);
+  ).filter((k): k is string => !!k && !k.startsWith("gen-lang-client-"));
+  // Fall back to any valid key so a pool with only placeholder IDs still works.
+  if (!keys.length) {
+    const all = [env["GOOGLE_API_KEY"], env["GOOGLE_API_KEY_2"]].filter(
+      (k): k is string => !!k && !k.startsWith("gen-lang-client-"),
+    );
+    keys.push(...all);
+  }
   return keys.length ? keys[Math.floor(Math.random() * keys.length)] : undefined;
 }
 
@@ -23,17 +30,32 @@ export async function generateGemini(
   if (!apiKey)
     throw new Error("Gemini is not configured. Ask the administrator to add the Google API key.");
   const ai = new GoogleGenAI({ apiKey });
-  try {
-    const response = await ai.models.generateContent({ model: "gemini-3.8-flash", ...request });
-    const text = response.text;
-    if (!text?.trim()) throw new Error("Empty response");
-    return text;
-  } catch {
-    // Never expose provider errors, which can contain credential-bearing URLs.
-    throw new Error(
-      "Gemini could not complete this request. Your input is preserved; please try again later.",
-    );
+  // Primary model first, fallback second; retry transient overload (503/429).
+  const models = ["gemini-3.5-flash", "gemini-3.8-flash"];
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await ai.models.generateContent({ model, ...request });
+        const text = response.text;
+        if (text?.trim()) return text;
+        break;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const transient =
+          /\b(503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|overloaded|high demand)\b/i.test(msg);
+        if (!transient) {
+          throw new Error(
+            "Gemini could not complete this request. Your input is preserved; please try again later.",
+          );
+        }
+        await new Promise((r) => setTimeout(r, 800 * 2 ** attempt));
+      }
+    }
   }
+  // Never expose provider errors, which can contain credential-bearing URLs.
+  throw new Error(
+    "Gemini could not complete this request. Your input is preserved; please try again later.",
+  );
 }
 
 /**
