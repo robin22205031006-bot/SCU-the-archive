@@ -15,6 +15,13 @@
       "when": 1794186126137,
       "tag": "0001_vault_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794243644004,
+      "tag": "0002_noop_apply_pending",
+      "breakpoints": true
     }
   ]
 }
