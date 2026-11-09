@@ -19,6 +19,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
