@@ -4,15 +4,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useAppearance } from "@/hooks/use-appearance";
 import { navMode, setNavMode, type NavMode } from "@/components/floating-nav";
 import { THEMES } from "@/lib/themes";
-import { setUiStyle, useUiStyle } from "@/lib/ui-style";
-import { Button } from "@/components/ui/button";
+import { UiStylePicker } from "@/components/ui-style-picker";
 
 export function ThemeDrawer({
   open,
   onOpenChange,
 }: { open?: boolean; onOpenChange?: (o: boolean) => void } = {}) {
   const { theme, setTheme, zoom, scaleIndex } = useAppearance();
-  const uiStyle = useUiStyle();
   const [tab, setTab] = useState<"live" | "plain">("live");
   const liveThemes = THEMES.filter((t) => t.live);
   const plainThemes = THEMES.filter((t) => !t.live);
@@ -32,11 +30,8 @@ export function ThemeDrawer({
           <SheetTitle className="font-display text-2xl">Appearance</SheetTitle>
         </SheetHeader>
         <div className="flex items-center gap-3 border-b border-border px-4 py-4">
-          <span className="mr-auto text-sm text-muted-foreground">Interface</span>
-          <div role="group" aria-label="Reader interface" className="flex gap-1">
-            <Button size="sm" variant={uiStyle === "classic" ? "secondary" : "ghost"} aria-pressed={uiStyle === "classic"} onClick={() => setUiStyle("classic")}>Classic</Button>
-            <Button size="sm" variant={uiStyle === "nexus" ? "secondary" : "ghost"} aria-pressed={uiStyle === "nexus"} onClick={() => setUiStyle("nexus")}>Nexus</Button>
-          </div>
+          <span className="mr-auto text-sm text-muted-foreground">UI Style</span>
+          <UiStylePicker />
         </div>
         <div className="flex gap-1.5 px-4 pt-1">
           {(
