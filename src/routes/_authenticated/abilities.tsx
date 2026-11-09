@@ -29,6 +29,7 @@ import {
 import { AbilityBadge } from "@/components/ability-badge";
 import { EntityGridSkeleton } from "@/components/route-skeleton";
 import { sfx } from "@/lib/scu-audio";
+import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import type { Json } from "@/integrations/supabase/types";
 
 const ALL_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
@@ -60,6 +61,7 @@ export const Route = createFileRoute("/_authenticated/abilities")({
 
 function AbilitiesHub() {
   const isAdmin = useIsAdmin();
+  const holdersMasked = useSpoilerMask("abilities");
   const qc = useQueryClient();
   const { data: entities, isLoading } = useQuery(entitiesQuery([...ALL_KINDS]));
   const [q, setQ] = useState("");
@@ -154,10 +156,11 @@ function AbilitiesHub() {
           d.label.toLowerCase().includes(needle) ||
           d.tier.toLowerCase().includes(needle) ||
           ABILITY_GROUP_LABELS[d.group].toLowerCase().includes(needle) ||
-          (holders.get(d.key) ?? []).some((e) => e.name.toLowerCase().includes(needle))
+          (!holdersMasked &&
+            (holders.get(d.key) ?? []).some((e) => e.name.toLowerCase().includes(needle)))
         );
       }),
-    [defs, tier, needle, holders],
+    [defs, tier, needle, holders, holdersMasked],
   );
 
   const byTier = useMemo(() => {
@@ -195,6 +198,9 @@ function AbilitiesHub() {
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
             Every power, beast trait and role — cross-referenced to the characters who wield them.
           </p>
+          <div className="mt-3">
+            <SpoilerToggle scope="abilities" />
+          </div>
         </div>
         {isAdmin && (
           <Button size="sm" onClick={() => setShowAdd((v) => !v)}>
@@ -372,6 +378,10 @@ function AbilityCard({
           {holders.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               No characters carry this yet — assign it from a character's editor.
+            </p>
+          ) : holdersMasked ? (
+            <p className="text-xs italic text-muted-foreground">
+              Holder names are hidden to avoid spoilers.
             </p>
           ) : (
             <div className="flex flex-wrap gap-1.5">

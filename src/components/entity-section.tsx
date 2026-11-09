@@ -74,6 +74,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { animationClass, tierDef } from "@/lib/character-tier";
 import { onSpoilerChange, spoilersHidden } from "@/lib/spoiler";
+import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
 import { getCombatStats } from "@/lib/combat-stats";
 
@@ -89,6 +90,7 @@ const statusClass: Record<string, string> = {
 export function StatusBadge({ status }: { status: string }) {
   return (
     <span
+      data-spoiler="char"
       className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] ${statusClass[status] ?? "text-status-neutral"}`}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -185,7 +187,7 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
           </span>
         )}
         {!hideSpoilers && (e.category || showKind) && (
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+          <span data-spoiler="char" className="text-[11px] uppercase tracking-widest text-muted-foreground">
             {e.category ?? e.kind}
           </span>
         )}
@@ -201,7 +203,7 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
       >
         {e.name}
       </h2>
-      <p className="truncate text-sm text-muted-foreground">
+      <p data-spoiler="char" className="truncate text-sm text-muted-foreground">
         {[e.alias, e.role].filter(Boolean).join(" · ") || "—"}
       </p>
       {e.kind === "character" && (e.stats as Record<string, string> | null)?.["bloodline"] && (
@@ -210,7 +212,7 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
         </p>
       )}
       {e.kind === "character" && (e.abilities?.length ?? 0) > 0 && (
-        <div className="mt-1.5">
+        <div data-spoiler="char" className="mt-1.5">
           <AbilityBadgeRow abilities={sortAbilities(e.abilities ?? [])} max={3} />
         </div>
       )}
@@ -867,7 +869,7 @@ function DetailOverlay({
                 (ca) => !ca.series_id || ca.series_id === r.series_id,
               );
               return (
-                <div className="rounded-xl border border-white/10 bg-black/50 p-4 backdrop-blur-sm">
+                <div data-spoiler="char" className="rounded-xl border border-white/10 bg-black/50 p-4 backdrop-blur-sm">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span
                       className="font-display text-sm uppercase tracking-widest"
@@ -944,7 +946,7 @@ function DetailOverlay({
             </div>
           )}
           {dossierTab === "powers" && (e.abilities?.length ?? 0) > 0 && (
-            <div className="rounded-xl border border-white/10 bg-secondary/20 p-4">
+            <div data-spoiler="char" className="rounded-xl border border-white/10 bg-secondary/20 p-4">
               <h4 className="mb-3 text-[11px] uppercase tracking-widest text-muted-foreground">
                 Abilities &amp; biological traits
               </h4>
@@ -1054,7 +1056,7 @@ function DetailOverlay({
                   return (
                     <div
                       key={r.id}
-                      className="rounded-xl border border-border/60 bg-secondary/20 p-4"
+                      data-spoiler="char" className="rounded-xl border border-border/60 bg-secondary/20 p-4"
                     >
                       <div className="mb-2 flex items-center gap-2">
                         <span
@@ -1109,7 +1111,7 @@ function DetailOverlay({
                   );
                 })
               )}
-              <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+              <div data-spoiler="char" className="rounded-xl border border-border/60 bg-secondary/20 p-4">
                 <h4 className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
                   Combat role
                 </h4>
@@ -1359,7 +1361,7 @@ function ShowcaseView({
                 <h3 className="font-display text-3xl font-bold text-white drop-shadow-lg">
                   {e.name}
                 </h3>
-                <p className="mt-1 line-clamp-2 text-sm text-white/75">
+                <p data-spoiler="char" className="mt-1 line-clamp-2 text-sm text-white/75">
                   {e.role ?? e.category ?? ""}
                 </p>
                 <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur">
@@ -1416,7 +1418,7 @@ function ShowcaseView({
                 <h3 className="font-display text-3xl font-bold text-white drop-shadow-lg">
                   {e.name}
                 </h3>
-                <p className="mt-1 line-clamp-2 text-sm text-white/75">
+                <p data-spoiler="char" className="mt-1 line-clamp-2 text-sm text-white/75">
                   {e.role ?? e.category ?? ""}
                 </p>
                 <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur">
@@ -1449,6 +1451,7 @@ export function EntitySection({
   view?: "characters" | "organizations";
 }) {
   const isAdmin = useIsAdmin();
+  useSpoilerMask("characters");
   const sectionStyle = useSectionStyle(view);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(entitiesQuery(kinds));
@@ -1568,6 +1571,7 @@ export function EntitySection({
               <span className="font-display text-sm tracking-normal">{total}</span>
               {countWord}
             </span>
+            <SpoilerToggle scope="characters" />
             {isFiltered && total > 0 && (
               <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                 {list.length} showing
