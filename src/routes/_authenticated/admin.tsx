@@ -102,13 +102,11 @@ function Admin() {
   const syncExport = async () => {
     setSyncing(true);
     try {
-      const [entities, updates, events] = await Promise.all(
-        ["entities.json", "updates.json", "timeline_events.json"].map(async (f) => {
-          const res = await fetch(`/lore-export/${f}`);
-          if (!res.ok) throw new Error(`${f} not found — run lore-consolidate.mjs first.`);
-          return res.json();
-        }),
-      );
+      const [entities, updates, events] = await Promise.all([
+        import("../../../public/lore-export/entities.json").then((m) => m.default),
+        import("../../../public/lore-export/updates.json").then((m) => m.default),
+        import("../../../public/lore-export/timeline_events.json").then((m) => m.default),
+      ]);
       const result = await runSync({ data: { entities, updates, events } });
       toast.success(
         `Lore sync complete: ${result.created} created, ${result.notes} notes, ${result.updated} updated, ${result.events} events.`,
