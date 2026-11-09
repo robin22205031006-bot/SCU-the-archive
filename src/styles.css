@@ -626,6 +626,10 @@ html[data-spoil-archive] [data-spoiler="archive"] {
   --nexus-surface: oklch(0.18 0.014 210);
   --nexus-border: oklch(0.74 0.08 190 / 22%);
   --nexus-shadow: 0 12px 40px oklch(0.04 0 0 / 35%);
+  --nexus-wheel-blue: oklch(0.7 0.12 230);
+  --nexus-wheel-label: oklch(0.86 0.07 220);
+  --nexus-wheel-track: oklch(0.28 0.025 220 / 65%);
+  --nexus-wheel-line: oklch(0.68 0.045 220 / 35%);
 }
 @theme inline {
   --color-nexus-bg: var(--nexus-bg);
@@ -633,6 +637,7 @@ html[data-spoil-archive] [data-spoiler="archive"] {
   --color-nexus-line: var(--nexus-line);
   --color-nexus-fg: var(--nexus-fg);
   --color-nexus-muted: var(--nexus-muted);
+  --color-nexus-wheel-label: var(--nexus-wheel-label);
 }
 
 html[data-ui="nexus"] {
@@ -667,6 +672,9 @@ html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { l
   animation: nexus-grid-drift 35s linear infinite;
 }
 .nexus-dossier { --nexus-role: var(--nexus-role-neutral); }
+.nexus-wheel-option { color: var(--nexus-muted); }
+.nexus-wheel-option[aria-pressed="true"] { color: var(--nexus-wheel-label); }
+.nexus-wheel-option:hover { background: color-mix(in oklab, var(--nexus-wheel-blue) 20%, transparent); }
 .nexus-dossier[data-role="hero"] { --nexus-role: var(--nexus-role-hero); }
 .nexus-dossier[data-role="villain"] { --nexus-role: var(--nexus-role-villain); }
 .nexus-dossier[data-role="antihero"] { --nexus-role: var(--nexus-role-antihero); }
