@@ -210,7 +210,7 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
         {[e.alias, e.role].filter(Boolean).join(" · ") || "—"}
       </p>
       {e.kind === "character" && (e.stats as Record<string, string> | null)?.["bloodline"] && (
-        <p className="truncate text-[11px] uppercase tracking-widest text-accent/80">
+        <p data-spoiler="char" className="truncate text-[11px] uppercase tracking-widest text-accent/80">
           {(e.stats as Record<string, string>)["bloodline"]}
         </p>
       )}
@@ -831,7 +831,7 @@ function DetailOverlay({
                 </div>
               )}
               {bloodline && (
-                <div>
+                <div data-spoiler="char">
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
                     Bloodline
                   </div>
@@ -1003,9 +1003,15 @@ function DetailOverlay({
               ))}
             </dl>
           )}
-          {dossierTab === "bonds" && <EntityLinks entity={e} isAdmin={isAdmin} onOpen={onOpen} />}
+          {dossierTab === "bonds" && (
+            <div data-spoiler={e.kind === "character" ? "char" : undefined}>
+              <EntityLinks entity={e} isAdmin={isAdmin} onOpen={onOpen} />
+            </div>
+          )}
           {dossierTab === "bonds" && e.kind === "character" && (
-            <CharacterRelationships entity={e} isAdmin={isAdmin} onOpen={onOpen} />
+            <div data-spoiler="char">
+              <CharacterRelationships entity={e} isAdmin={isAdmin} onOpen={onOpen} />
+            </div>
           )}
           {dossierTab === "bonds" && e.kind !== "character" && (
             <OrgHierarchy entity={e} onOpen={onOpen} />

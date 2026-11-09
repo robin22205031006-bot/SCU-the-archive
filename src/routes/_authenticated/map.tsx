@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LoreLocations } from "@/components/lore-locations";
 import { TacticalMap } from "@/components/tactical-map";
 import { useSectionStyle } from "@/hooks/use-typography";
 
@@ -33,6 +34,7 @@ function MapPage() {
           the SCU theater.
         </p>
       </header>
+      <LoreLocations />
       <TacticalMap />
     </main>
   );

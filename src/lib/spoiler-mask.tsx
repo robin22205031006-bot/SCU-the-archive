@@ -10,7 +10,7 @@ import { useIsStaff } from "@/hooks/use-admin";
  * "characters" hides status, role, abilities and skills on character cards;
  * "abilities" hides the names of ability holders in the Abilities Hub.
  */
-export type SpoilerScope = "characters" | "abilities";
+export type SpoilerScope = "characters" | "abilities" | "archive";
 type MaskValue = Partial<Record<SpoilerScope, boolean>>;
 const KEY = "spoiler_mask";
 const QK = ["app-settings", KEY];

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Castle, Clock, Network, Shield } from "lucide-react";
 import { SectionBoundary } from "@/components/section-boundary";
 import { PanelSkeleton } from "@/components/route-skeleton";
+import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { CrimsonBloodlineTheme } from "@/components/ability-canvas";
 
 const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
@@ -58,6 +59,7 @@ const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
 function Archive() {
   const [module, setModule] = useState<Module>("orgs");
   const active = MODULES.find((m) => m.id === module)!;
+  useSpoilerMask("archive");
 
   return (
     <main className="relative mx-auto max-w-6xl px-4 pb-24 sm:px-5">
@@ -68,6 +70,9 @@ function Archive() {
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
           The deep vault of the universe — structures, bloodlines, connections and history.
         </p>
+        <div className="mt-3">
+          <SpoilerToggle scope="archive" />
+        </div>
       </header>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -86,7 +91,7 @@ function Archive() {
         ))}
       </div>
 
-      <section aria-label={active.t}>
+      <section aria-label={active.t} data-spoiler="archive">
         <SectionBoundary key={module} label={active.t}>
           <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
             {module === "orgs" && <Orgs />}
