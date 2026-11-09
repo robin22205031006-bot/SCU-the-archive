@@ -1,8 +1,8 @@
 # Nexus season and motion update
-- [ ] Add named series/season editing, season titles, Wisdom/Vitality and selectable ability-specific stats.
-- [ ] Animate highest-stat ring and season-role background without leaking spoilers.
-- [ ] Add Nexus to Appearance and distinct animated navigation, tabs and background.
-- [ ] Test rules and verify signed-in saves and desktop/mobile interactions.
+- [x] Add named series/season editing, season titles, Wisdom/Vitality and selectable ability-specific stats.
+- [x] Animate highest-stat ring and season-role background without leaking spoilers.
+- [x] Add Nexus to Appearance and distinct animated navigation, tabs and background.
+- [x] Test rules and verify signed-in saves and desktop/mobile interactions.
 
 # Reliability and performance
 - [x] Fix verified session/cache and page-flow defects without visual changes.
