@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MapPin } from "lucide-react";
+import { LoreWorldMap } from "@/components/lore-world-map";
 
 type Era = { id: string; era: string; state: string; description: string; visual: string; status: string; tone: "alive" | "hidden" | "ruin" };
 type Location = { id: string; name: string; epithet: string; eras: Era[] };
@@ -70,7 +71,13 @@ export function LoreLocations() {
   const idx = Math.min(eraIdx[loc.id] ?? 0, loc.eras.length - 1);
   const era = loc.eras[idx]!;
 
+  const activeEras = Object.fromEntries(
+    LOCATIONS.map((l) => [l.id, l.eras[Math.min(eraIdx[l.id] ?? 0, l.eras.length - 1)]!.id]),
+  );
+
   return (
+    <>
+    <LoreWorldMap activeId={locId} eras={activeEras} onSelect={setLocId} />
     <section className="mb-10 grid gap-4 lg:grid-cols-[240px_1fr]" aria-label="Key lore locations">
       <div className="flex gap-2 overflow-x-auto lg:flex-col">
         {LOCATIONS.map((l) => (
@@ -145,5 +152,6 @@ export function LoreLocations() {
         </div>
       </div>
     </section>
+    </>
   );
 }
