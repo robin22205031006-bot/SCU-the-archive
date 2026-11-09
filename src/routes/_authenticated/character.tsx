@@ -351,6 +351,7 @@ function CharacterDossier() {
     data: e,
     isError: entityError,
     error: entityErr,
+    isSuccess: entityLoaded,
   } = useQuery({ ...entityByIdQuery(id ?? ""), enabled: !!id });
   // Auto-select first character when no ?e param — never show an empty dossier.
   const { data: firstChar } = useQuery({
@@ -442,6 +443,23 @@ function CharacterDossier() {
       return (
         <div className="grid min-h-screen place-items-center bg-[#020408] text-sm text-muted-foreground">
           No character selected.
+        </div>
+      );
+    if (entityLoaded)
+      return (
+        <div className="grid min-h-screen place-items-center bg-[#020408] p-8 text-center">
+          <div>
+            <p className="font-display text-xl text-accent">Character not found</p>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              This card may have been merged into another character.
+            </p>
+            <Link
+              to="/characters"
+              className="mt-4 inline-block text-xs uppercase tracking-widest text-accent hover:underline"
+            >
+              ← Back to characters
+            </Link>
+          </div>
         </div>
       );
     return (
