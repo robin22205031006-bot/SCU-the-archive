@@ -159,6 +159,8 @@ const Avatar = memo(function Avatar({ e, size }: { e: Entity; size: string }) {
   );
 });
 
+const ALTER_EGOS: Record<string, string> = { ethan: "Elizah", elizah: "Ethan" };
+
 const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: boolean }) {
   const tier = tierDef(e.character_tier);
   const theme = e.theme_color ?? tier?.color ?? null;
@@ -201,6 +203,11 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
       <p className="truncate text-sm text-muted-foreground">
         {[e.alias, e.role].filter(Boolean).join(" · ") || "—"}
       </p>
+      {e.kind === "character" && (e.stats as Record<string, string> | null)?.["bloodline"] && (
+        <p className="truncate text-[11px] uppercase tracking-widest text-accent/80">
+          {(e.stats as Record<string, string>)["bloodline"]}
+        </p>
+      )}
       {e.kind === "character" && (e.abilities?.length ?? 0) > 0 && (
         <div className="mt-1.5">
           <AbilityBadgeRow abilities={sortAbilities(e.abilities ?? [])} max={3} />
@@ -344,7 +351,26 @@ function DetailOverlay({
 }) {
   const qc = useQueryClient();
   const { data: notes } = useQuery(notesQuery(e.id));
-  const stats = Object.entries((e.stats as Record<string, string>) ?? {});
+  const rawStats = (e.stats as Record<string, string>) ?? {};
+  const stats = Object.entries(rawStats).filter(([k]) => k !== "real_name" && k !== "bloodline");
+  const realName = rawStats["real_name"];
+  const bloodline = rawStats["bloodline"];
+  // Ethan and Elizah are alter egos of each other — the only cards with a switch.
+  const alterName = ALTER_EGOS[e.name.toLowerCase()];
+  const { data: alterEntity } = useQuery({
+    queryKey: ["alter-ego", alterName],
+    enabled: !!alterName,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("entities")
+        .select("*")
+        .eq("kind", "character")
+        .ilike("name", alterName!)
+        .limit(1)
+        .maybeSingle();
+      return (data as Entity | null) ?? null;
+    },
+  });
   const combat = e.kind === "character" ? getCombatStats(e.stats) : null;
   const [comparing, setComparing] = useState(false);
   const [journeyCompareId, setJourneyCompareId] = useState("");
@@ -788,6 +814,42 @@ function DetailOverlay({
               </button>
             ))}
           </div>
+          {e.kind === "character" && (e.alias || bloodline || realName || alterEntity) && (
+            <div className="relative grid gap-2 rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm sm:grid-cols-3">
+              {e.alias && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Title / Known as / Codename
+                  </div>
+                  <div className="font-medium">{e.alias}</div>
+                </div>
+              )}
+              {bloodline && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Bloodline
+                  </div>
+                  <div className="font-medium">{bloodline}</div>
+                </div>
+              )}
+              {realName && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Real name
+                  </div>
+                  <div className="font-medium">{realName}</div>
+                </div>
+              )}
+              {alterEntity && (
+                <button
+                  onClick={() => onOpen(alterEntity)}
+                  className="sm:col-span-3 mt-1 inline-flex items-center justify-center gap-2 rounded-full border border-accent/60 bg-accent/15 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-accent shadow-[0_0_18px_var(--accent)] transition hover:bg-accent hover:text-accent-foreground"
+                >
+                  ⇄ Switch to alter ego: {alterEntity.name}
+                </button>
+              )}
+            </div>
+          )}
           <SketchGallery images={e.sketches} name={e.name} />
           {/* Season-scoped intel — role, status, abilities, scoped notes for selected season */}
           {seasonIdx >= 0 &&

@@ -87,8 +87,11 @@ export function EntityDialog({
     category: entity?.category ?? "",
     description: entity?.description ?? "",
     image_url: entity?.image_url ?? "",
+    real_name: String((entity?.stats as Record<string, unknown> | null)?.["real_name"] ?? ""),
+    bloodline: String((entity?.stats as Record<string, unknown> | null)?.["bloodline"] ?? ""),
     stats: entity
       ? Object.entries((entity.stats as Record<string, string>) ?? {})
+          .filter(([k]) => k !== "real_name" && k !== "bloodline")
           .map(([k, v]) => `${k}: ${v}`)
           .join("\n")
       : "",
@@ -170,7 +173,7 @@ export function EntityDialog({
   };
 
   const set =
-    (k: "name" | "alias" | "role" | "description" | "stats") =>
+    (k: "name" | "alias" | "role" | "description" | "stats" | "real_name" | "bloodline") =>
     (e: { target: { value: string } }) =>
       setForm({ ...form, [k]: e.target.value });
 
@@ -192,6 +195,8 @@ export function EntityDialog({
     const stats = isChar
       ? {
           ...custom,
+          ...(form.real_name.trim() ? { real_name: form.real_name.trim() } : {}),
+          ...(form.bloodline.trim() ? { bloodline: form.bloodline.trim() } : {}),
           ...Object.fromEntries(
             COMBAT_STATS.filter(({ key }) => combat[key] > 0).map(({ key }) => [key, combat[key]]),
           ),
@@ -278,12 +283,24 @@ export function EntityDialog({
             </div>
           )}
           <div className="grid gap-1.5">
-            <Label>Name</Label>
+            <Label>{isChar ? "In-story name (shown on card)" : "Name"}</Label>
             <Input value={form.name} onChange={set("name")} />
           </div>
+          {isChar && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label>Real name</Label>
+                <Input value={form.real_name} onChange={set("real_name")} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>Bloodline</Label>
+                <Input value={form.bloodline} onChange={set("bloodline")} />
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label>{isChar ? "Alias / real name" : "Alias"}</Label>
+              <Label>{isChar ? "Title / Known as / Codename" : "Alias"}</Label>
               <Input value={form.alias} onChange={set("alias")} />
             </div>
             <div className="grid gap-1.5">
