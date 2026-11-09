@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
 import { ArrowLeft, BookOpen, ChevronDown, Fingerprint, Pencil, Swords } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { characterLinksQuery, entitiesQuery, type Entity } from "@/lib/entities";
 import { characterSeriesQuery, seriesQuery } from "@/lib/series";
 import { abilityDef } from "@/lib/abilities";
-import { COMBAT_STATS, getCombatStats } from "@/lib/combat-stats";
+import { NEXUS_STATS, readDossier, resolveNexusStats, highestStatRadius, nexusRole, type SeasonDossier, type DossierMap } from "@/lib/nexus-season";
+import { useAnimationsEnabled } from "@/lib/animations";
 import { useIsStaff } from "@/hooks/use-admin";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { Button } from "@/components/ui/button";
@@ -17,20 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
-
-/** Per-season dossier data lives in entities.stats.dossier, keyed `${seriesId}:${seasonNumber}`. */
-export type SeasonDossier = {
-  story?: string;
-  role?: string;
-  impact?: string;
-  stats?: Record<string, number>;
-};
-type DossierMap = Record<string, SeasonDossier>;
-
-function readDossier(e: Entity): DossierMap {
-  const raw = (e.stats as Record<string, unknown> | null)?.["dossier"];
-  return raw && typeof raw === "object" ? (raw as DossierMap) : {};
-}
 
 type Menu = "story" | "role" | "details";
 const MENU: Array<{ key: Menu; label: string; icon: typeof BookOpen }> = [
@@ -48,6 +35,10 @@ export function NexusDossier({ e }: { e: Entity }) {
   const [menu, setMenu] = useState<Menu>("story");
   const [statFocus, setStatFocus] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
+  const reduced = useReducedMotion();
+  const animations = useAnimationsEnabled();
+  const moving = animations && !reduced;
 
   const { data: memberships } = useQuery(characterSeriesQuery(e.id));
   const { data: allSeries } = useQuery(seriesQuery);
@@ -65,32 +56,27 @@ export function NexusDossier({ e }: { e: Entity }) {
   const { data: alter } = useQuery({
     queryKey: ["alter-ego", alterName],
     enabled: !!alterName,
-    queryFn: async () =>
-      (await supabase.from("entities").select("id").eq("kind", "character").ilike("name", alterName!).maybeSingle()).data,
+    queryFn: async () => {
+      if (!alterName) return null;
+      return (await supabase.from("entities").select("id").eq("kind", "character").ilike("name", alterName).maybeSingle()).data;
+    },
   });
   const stats = (e.stats ?? {}) as Record<string, unknown>;
   const bloodline = typeof stats["bloodline"] === "string" ? (stats["bloodline"] as string) : null;
   const realName = typeof stats["real_name"] === "string" ? (stats["real_name"] as string) : null;
-  const dossier = readDossier(e);
+  const dossier = readDossier(e.stats);
   const seasonKey = season ? `${season.seriesId}:${season.n}` : null;
-  const sd: SeasonDossier = (seasonKey && dossier[seasonKey]) || {};
+  const sd: SeasonDossier = dossier[seasonKey ?? "all"] ?? {};
   const membership = (memberships ?? []).find((m) => m.series_id === season?.seriesId);
 
   const seriesCards = useMemo(
     () =>
-      (memberships ?? [])
-        .filter((m) => m.series)
-        .map((m) => {
-          const full = (allSeries ?? []).find((s) => s.id === m.series_id);
-          const names = full?.season_names ?? [];
-          const count = Math.max(full?.season_count ?? 0, names.length, 1);
-          return {
-            id: m.series_id,
-            title: m.series!.title,
-            cover: m.series!.cover_image_url,
-            seasons: Array.from({ length: count }, (_, i) => names[i] || `Season ${i + 1}`),
-          };
-        }),
+      (allSeries ?? []).map((full) => {
+        const names = full.season_names ?? [];
+        const count = Math.max(full.season_count ?? 0, names.length, 1);
+        return { id: full.id, title: full.title, cover: full.cover_image_url,
+          seasons: Array.from({ length: count }, (_, i) => names[i] || `Season ${i + 1}`) };
+      }),
     [memberships, allSeries],
   );
   const seasonLabel = season
@@ -123,27 +109,25 @@ export function NexusDossier({ e }: { e: Entity }) {
       .sort((a, b) => b.level - a.level);
   }, [charAbilities, season, e.abilities]);
   const core = abilities[0];
-  const coreColor = core?.def.color ?? "var(--accent)";
-
-  const baseCombat = getCombatStats(e.stats);
-  const statVals = COMBAT_STATS.map(({ key, label }) => ({
-    key,
-    label,
-    value: sd.stats?.[key] ?? baseCombat?.[key] ?? 0,
-  }));
-
-  const roleBadge = membership?.arc_role || membership?.role_in_series || e.category || "Unclassified";
+  const abilitySelection = abilities.some(a => a.name === selectedAbility) ? selectedAbility : null;
+  const statVals = resolveNexusStats(e.stats, seasonKey, abilitySelection);
+  const roleBadge = sd.role || membership?.arc_role || membership?.role_in_series || e.category || "Unclassified";
+  const roleTone = nexusRole(roleBadge, masked);
+  const coreColor = `var(--nexus-role-${roleTone})`;
+  const codename = sd.codename ?? e.alias;
+  const selectSeason = (value: { seriesId: string; n: number } | null) => {
+    setSeason(value);
+    setSelectedAbility(null);
+  };
 
   return (
-    <div className="nexus-dossier relative min-h-dvh overflow-x-hidden bg-background text-foreground">
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 opacity-60"
-        style={{
-          background: `radial-gradient(60% 50% at 50% 20%, color-mix(in oklab, ${coreColor} 22%, transparent), transparent 70%)`,
-        }}
-      />
-
+    <MotionConfig reducedMotion={moving ? "user" : "always"} transition={{ duration: moving ? 0.7 : 0, ease: EASE }}>
+    <div data-role={roleTone} className="nexus-dossier relative min-h-dvh overflow-x-hidden bg-background text-foreground">
+      <AnimatePresence initial={false}>
+        <motion.div key={roleTone} aria-hidden className="nexus-role-field pointer-events-none fixed inset-0"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          transition={{ duration: moving ? 2.2 : 0 }} />
+      </AnimatePresence>
       {/* ═════ TOP: hero + stat wheel + series cards ═════ */}
       <section className="relative mx-auto max-w-6xl px-4 pt-4">
         <div className="flex items-center gap-3">
@@ -187,9 +171,9 @@ export function NexusDossier({ e }: { e: Entity }) {
           >
             <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground">{seasonLabel}</p>
             <h1 className="mt-1 [font-family:var(--font-display)] text-4xl tracking-wide md:text-5xl">{e.name}</h1>
-            {e.alias && (
+            {codename && (
               <p data-spoiler="char" className="mt-1 text-sm italic text-accent">
-                {e.alias}
+                {codename}
               </p>
             )}
             <p data-spoiler="char" className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
@@ -214,7 +198,12 @@ export function NexusDossier({ e }: { e: Entity }) {
           </motion.div>
 
           <div className="order-3" data-spoiler="char">
+            <p className="mb-2 text-center text-xs text-muted-foreground">{abilitySelection ? abilityDef(abilitySelection).label : "Character stats"} · {seasonLabel}</p>
             <StatWheel stats={statVals} focus={statFocus} onFocus={setStatFocus} color={coreColor} />
+            <div className="mt-4 flex flex-wrap justify-center gap-2" role="group" aria-label="Stats ability">
+              <Button size="sm" variant={abilitySelection === null ? "secondary" : "ghost"} onClick={() => setSelectedAbility(null)}>Character</Button>
+              {abilities.map(a => <Button key={a.name} size="sm" variant={abilitySelection === a.name ? "secondary" : "ghost"} aria-pressed={abilitySelection === a.name} onClick={() => setSelectedAbility(a.name)}><a.def.icon />{a.def.label}</Button>)}
+            </div>
           </div>
         </div>
 
@@ -222,22 +211,23 @@ export function NexusDossier({ e }: { e: Entity }) {
         <div className="mt-8">
           <p className="mb-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">Series</p>
           <div className="flex gap-3 overflow-x-auto pb-2">
-            <button
+            <Button variant="ghost"
               onClick={() => {
-                setSeason(null);
+                selectSeason(null);
                 setOpenSeries(null);
               }}
               className={`shrink-0 rounded-lg border px-4 py-6 text-xs uppercase tracking-widest transition ${
                 !season ? "border-accent bg-accent/15 text-accent" : "border-border bg-card/50 hover:border-accent/60"
               }`}
             >
-              All
-            </button>
+              All seasons
+            </Button>
             {seriesCards.map((s) => (
-              <motion.button
+              <motion.div
                 key={s.id}
                 layout
                 whileHover={{ y: -4 }}
+                role="button" tabIndex={0} onKeyDown={ev => (ev.key === "Enter" || ev.key === " ") && setOpenSeries(openSeries === s.id ? null : s.id)}
                 onClick={() => setOpenSeries(openSeries === s.id ? null : s.id)}
                 className={`relative h-24 w-40 shrink-0 overflow-hidden rounded-lg border text-left transition ${
                   openSeries === s.id || season?.seriesId === s.id
@@ -253,7 +243,7 @@ export function NexusDossier({ e }: { e: Entity }) {
                 <ChevronDown
                   className={`absolute bottom-2 right-2 h-4 w-4 transition-transform ${openSeries === s.id ? "rotate-180" : ""}`}
                 />
-              </motion.button>
+              </motion.div>
             ))}
             {!seriesCards.length && (
               <p className="self-center text-xs text-muted-foreground">Not linked to any series yet.</p>
@@ -275,15 +265,15 @@ export function NexusDossier({ e }: { e: Entity }) {
                     ?.seasons.map((label, i) => {
                       const on = season?.seriesId === openSeries && season.n === i + 1;
                       return (
-                        <button
+                        <Button variant="ghost"
                           key={label + i}
-                          onClick={() => setSeason({ seriesId: openSeries, n: i + 1 })}
+                          onClick={() => selectSeason({ seriesId: openSeries, n: i + 1 })}
                           className={`rounded-full border px-3 py-1 text-xs transition ${
                             on ? "border-accent bg-accent text-accent-foreground" : "border-border hover:border-accent"
                           }`}
                         >
                           {label}
-                        </button>
+                        </Button>
                       );
                     })}
                 </div>
@@ -295,14 +285,14 @@ export function NexusDossier({ e }: { e: Entity }) {
 
       {/* ═════ MIDDLE: arc menu · content · identity ═════ */}
       <section className="relative mx-auto mt-10 max-w-6xl px-4">
-        <div className="grid gap-6 rounded-2xl border border-border bg-card/40 p-5 backdrop-blur md:grid-cols-[180px_1fr_240px]">
-          <nav className="relative flex flex-row gap-3 md:flex-col md:gap-6 md:py-6">
-            <span aria-hidden className="pointer-events-none absolute -left-1 top-2 bottom-2 hidden w-16 rounded-[50%] border-l border-border md:block" />
+        <div className="grid gap-6 border-y border-border py-6 lg:grid-cols-[170px_minmax(0,1fr)_210px]">
+          <nav className="relative flex flex-row gap-3 lg:flex-col lg:gap-6 lg:py-6">
+            <span aria-hidden className="pointer-events-none absolute -left-1 top-2 bottom-2 hidden w-16 rounded-[50%] border-l border-border lg:block" />
             {MENU.map((m, i) => {
               const Icon = m.icon;
               const on = menu === m.key;
               return (
-                <button
+                <Button variant="ghost"
                   key={m.key}
                   onClick={() => setMenu(m.key)}
                   className="relative flex items-center gap-3 text-left"
@@ -320,7 +310,7 @@ export function NexusDossier({ e }: { e: Entity }) {
                   <span className={`text-xs uppercase tracking-[0.3em] ${on ? "text-foreground" : "text-muted-foreground"}`}>
                     {m.label}
                   </span>
-                </button>
+                </Button>
               );
             })}
           </nav>
@@ -373,10 +363,10 @@ export function NexusDossier({ e }: { e: Entity }) {
             </AnimatePresence>
           </div>
 
-          <aside className="space-y-4 border-t border-border pt-4 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+          <aside className="space-y-4 border-t border-border pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
             <div>
-              <p className="[font-family:var(--font-display)] text-2xl">{e.name}</p>
-              {e.alias && <p data-spoiler="char" className="text-xs italic text-accent">{e.alias}</p>}
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Title / Codename</p>
+              <AnimatePresence mode="wait"><motion.p key={codename || "none"} data-spoiler="char" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="font-display break-words text-2xl text-accent">{codename || "—"}</motion.p></AnimatePresence>
             </div>
             <div data-spoiler="char" className="space-y-1 text-xs">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Bloodline</p>
@@ -413,8 +403,8 @@ export function NexusDossier({ e }: { e: Entity }) {
         <p className="mb-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
           Ability core · {seasonLabel}
         </p>
-        <div className="grid gap-6 rounded-2xl border border-border bg-card/40 p-5 md:grid-cols-[1fr_240px]">
-          <AbilityOrbit abilities={abilities} masked={masked} seasonKey={seasonKey ?? "all"} />
+        <div className="grid gap-6 border-t border-border py-5 md:grid-cols-[1fr_240px]">
+          <AbilityOrbit abilities={abilities} masked={masked} seasonKey={seasonKey ?? "all"} selected={abilitySelection} onSelect={setSelectedAbility} moving={moving} />
           <div className="space-y-2 text-xs">
             <p className="[font-family:var(--font-display)] text-lg" style={{ color: coreColor }}>
               {core ? core.def.label : "No abilities"}
@@ -437,6 +427,9 @@ export function NexusDossier({ e }: { e: Entity }) {
           entity={e}
           seasonKey={seasonKey}
           seasonLabel={seasonLabel}
+          seriesCards={seriesCards}
+          onSeasonChange={selectSeason}
+          abilityNames={abilities.map(a => a.name)}
           onSaved={() => {
             void qc.invalidateQueries({ queryKey: ["entity", e.id] });
             void qc.invalidateQueries({ queryKey: ["entities"] });
@@ -444,6 +437,7 @@ export function NexusDossier({ e }: { e: Entity }) {
         />
       )}
     </div>
+    </MotionConfig>
   );
 }
 
@@ -471,7 +465,7 @@ function StatWheel({
   return (
     <div className="mx-auto w-full max-w-[280px]">
       <svg viewBox="0 0 220 220" className="w-full">
-        <circle cx="110" cy="110" r="104" fill="none" stroke="var(--border)" strokeDasharray="2 6" />
+        <motion.circle aria-label="Highest stat ring" data-radius={highestStatRadius(stats)} cx="110" cy="110" initial={false} animate={{ r: highestStatRadius(stats) }} transition={{ type: "spring", stiffness: 65, damping: 19 }} fill="none" stroke={color} strokeDasharray="2 6" />
         <motion.g
           animate={{ rotate }}
           transition={{ type: "spring", stiffness: 60, damping: 14 }}
@@ -500,7 +494,7 @@ function StatWheel({
       </svg>
       <div className="mt-2 flex flex-wrap justify-center gap-1">
         {stats.map((s, i) => (
-          <button
+          <Button variant="ghost"
             key={s.key}
             onClick={() => onFocus(i)}
             className={`rounded-sm px-2 py-0.5 text-[10px] uppercase tracking-wider transition ${
@@ -508,7 +502,7 @@ function StatWheel({
             }`}
           >
             {s.label} {s.value}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -519,7 +513,11 @@ function AbilityOrbit({
   abilities,
   masked,
   seasonKey,
+  selected, onSelect, moving,
 }: {
+  selected: string | null;
+  onSelect: (name: string) => void;
+  moving: boolean;
   abilities: Array<{ name: string; level: number; def: ReturnType<typeof abilityDef> }>;
   masked: boolean;
   seasonKey: string;
@@ -538,7 +536,7 @@ function AbilityOrbit({
             inset: `${((1 - s) / 2) * 100}%`,
             borderColor: `color-mix(in oklab, ${core.def.color} ${40 - i * 10}%, transparent)`,
           }}
-          animate={{ rotate: i % 2 ? -360 : 360 }}
+          animate={{ rotate: moving ? (i % 2 ? -360 : 360) : 0 }}
           transition={{ duration: 40 + i * 15, repeat: Infinity, ease: "linear" }}
         />
       ))}
@@ -549,7 +547,8 @@ function AbilityOrbit({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.4, opacity: 0 }}
             transition={{ duration: 0.6, ease: EASE }}
-            className="absolute left-1/2 top-1/2 grid h-28 w-28 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 bg-background"
+            role="button" tabIndex={0} aria-label={`Select ${core.def.label} stats`} onClick={() => onSelect(core.name)} onKeyDown={ev => (ev.key === "Enter" || ev.key === " ") && onSelect(core.name)}
+            className="cursor-pointer absolute left-1/2 top-1/2 grid h-28 w-28 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 bg-background"
             style={{ borderColor: core.def.color, boxShadow: `0 0 60px -6px ${core.def.color}` }}
           >
             <CoreIcon className="h-10 w-10" style={{ color: core.def.color }} />
@@ -573,6 +572,7 @@ function AbilityOrbit({
                 transition={{ duration: 0.7, delay: 0.1 + i * 0.05, ease: EASE }}
                 className="absolute grid h-12 w-12 place-items-center rounded-full border bg-card"
                 style={{ borderColor: a.def.color, boxShadow: `0 0 20px -6px ${a.def.color}` }}
+                role="button" tabIndex={0} aria-pressed={selected === a.name} aria-label={`Select ${a.def.label} stats`} onClick={() => onSelect(a.name)} onKeyDown={ev => (ev.key === "Enter" || ev.key === " ") && onSelect(a.name)}
                 title={a.def.label}
               >
                 <Icon className="h-5 w-5" style={{ color: a.def.color }} />
@@ -585,108 +585,60 @@ function AbilityOrbit({
   );
 }
 
-function SeasonEditor({
-  open,
-  onClose,
-  entity,
-  seasonKey,
-  seasonLabel,
-  onSaved,
-}: {
-  open: boolean;
-  onClose: () => void;
-  entity: Entity;
-  seasonKey: string | null;
-  seasonLabel: string;
-  onSaved: () => void;
+function SeasonEditor({ open, onClose, entity, seasonKey, seasonLabel, onSaved, seriesCards, onSeasonChange, abilityNames }: {
+  open: boolean; onClose: () => void; entity: Entity; seasonKey: string | null; seasonLabel: string; onSaved: () => void;
+  seriesCards: Array<{ id: string; title: string; seasons: string[] }>;
+  onSeasonChange: (s: { seriesId: string; n: number } | null) => void;
+  abilityNames: string[];
 }) {
   const key = seasonKey ?? "all";
-  const current = readDossier(entity)[key] ?? {};
-  const base = getCombatStats(entity.stats);
-  const [form, setForm] = useState({ story: "", role: "", impact: "" });
-  const [vals, setVals] = useState<Record<string, number>>({});
+  const current = readDossier(entity.stats)[key] ?? {};
+  const [form, setForm] = useState<SeasonDossier>({});
+  const [ability, setAbility] = useState("");
   const [busy, setBusy] = useState(false);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   if (open && loadedFor !== key) {
     setLoadedFor(key);
-    setForm({ story: current.story ?? "", role: current.role ?? "", impact: current.impact ?? "" });
-    setVals(
-      Object.fromEntries(COMBAT_STATS.map(({ key: k }) => [k, current.stats?.[k] ?? base?.[k] ?? 0])),
-    );
+    setAbility("");
+    setForm({ ...current, stats: Object.fromEntries(resolveNexusStats(entity.stats, seasonKey, null).map(s => [s.key, s.value])) });
   }
   if (!open && loadedFor) setLoadedFor(null);
-
+  const vals = ability ? form.abilityStats?.[ability] ?? {} : form.stats ?? {};
+  const setValue = (k: string, value: number) => setForm(f => ability
+    ? { ...f, abilityStats: { ...f.abilityStats, [ability]: { ...f.abilityStats?.[ability], [k]: value } } }
+    : { ...f, stats: { ...f.stats, [k]: value } });
   const save = async () => {
     setBusy(true);
     try {
-      const { data: fresh, error: readErr } = await supabase
-        .from("entities")
-        .select("stats")
-        .eq("id", entity.id)
-        .single();
-      if (readErr) throw readErr;
-      const stats = { ...((fresh.stats as Record<string, unknown>) ?? {}) };
-      const map = { ...((stats["dossier"] as DossierMap) ?? {}) };
-      map[key] = { ...form, stats: vals };
-      stats["dossier"] = map;
-      const { error } = await supabase.from("entities").update({ stats: stats as never }).eq("id", entity.id);
+      const { data: fresh, error } = await supabase.from("entities").select("stats,locked_fields").eq("id", entity.id).single();
       if (error) throw error;
-      toast.success("Dossier saved");
-      onSaved();
-      onClose();
-    } catch {
-      toast.error("Couldn't save the dossier");
-    } finally {
-      setBusy(false);
-    }
+      const stats = { ...((fresh.stats as Record<string, unknown>) ?? {}) };
+      const map = { ...readDossier(stats) };
+      map[key] = { ...map[key], ...form };
+      stats.dossier = map;
+      const { error: writeError } = await supabase.from("entities").update({ stats: stats as never, locked_fields: [...new Set([...(fresh.locked_fields ?? []), "stats"])] }).eq("id", entity.id);
+      if (writeError) throw writeError;
+      toast.success("Dossier saved"); onSaved(); onClose();
+    } catch { toast.error("Couldn't save the dossier"); } finally { setBusy(false); }
   };
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {entity.name} · {seasonLabel}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 text-sm">
-          <label className="block">
-            Story
-            <Textarea rows={5} value={form.story} onChange={(ev) => setForm({ ...form, story: ev.target.value })} />
-          </label>
-          <label className="block">
-            Role
-            <Input value={form.role} onChange={(ev) => setForm({ ...form, role: ev.target.value })} />
-          </label>
-          <label className="block">
-            Impact
-            <Textarea rows={4} value={form.impact} onChange={(ev) => setForm({ ...form, impact: ev.target.value })} />
-          </label>
-          <div className="space-y-2">
-            <p>Stats (0–100)</p>
-            {COMBAT_STATS.map(({ key: k, label }) => (
-              <label key={k} className="flex items-center gap-2 text-xs">
-                <span className="w-36">{label}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={vals[k] ?? 0}
-                  onChange={(ev) => setVals({ ...vals, [k]: Number(ev.target.value) })}
-                  className="flex-1 accent-[var(--accent)]"
-                />
-                <span className="w-8 text-right">{vals[k] ?? 0}</span>
-              </label>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Season abilities are set in Admin → Character abilities (pick the series and season).
-          </p>
-          <Button onClick={save} disabled={busy} className="w-full">
-            {busy ? "Saving…" : "Save"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+  const seriesId = seasonKey?.split(":")[0] ?? "";
+  const seasonNumber = Number(seasonKey?.split(":")[1] ?? 1);
+  return <Dialog open={open} onOpenChange={o => !o && onClose()}>
+    <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogHeader><DialogTitle>{entity.name} · {seasonLabel}</DialogTitle></DialogHeader>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="text-xs">Series<select aria-label="Edit series" value={seriesId} onChange={ev => onSeasonChange(ev.target.value ? { seriesId: ev.target.value, n: 1 } : null)} className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-foreground"><option value="">All seasons</option>{seriesCards.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
+        <label className="text-xs">Season<select aria-label="Edit season" disabled={!seriesId} value={seasonNumber} onChange={ev => onSeasonChange({ seriesId, n: Number(ev.target.value) })} className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-foreground">{(seriesCards.find(s => s.id === seriesId)?.seasons ?? ["All seasons"]).map((s, i) => <option key={i} value={i + 1}>{s}</option>)}</select></label>
+      </div>
+      <div className="space-y-3 text-sm">
+        <label className="block">Title / Codename<Input value={form.codename ?? ""} onChange={ev => setForm({ ...form, codename: ev.target.value })} /></label>
+        <label className="block">Story<Textarea rows={5} value={form.story ?? ""} onChange={ev => setForm({ ...form, story: ev.target.value })} /></label>
+        <label className="block">Role<Input value={form.role ?? ""} onChange={ev => setForm({ ...form, role: ev.target.value })} /></label>
+        <label className="block">Impact<Textarea rows={4} value={form.impact ?? ""} onChange={ev => setForm({ ...form, impact: ev.target.value })} /></label>
+        <label className="block">Stats profile<select aria-label="Edit stats profile" value={ability} onChange={ev => setAbility(ev.target.value)} className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2"><option value="">Character stats</option>{abilityNames.map(a => <option key={a} value={a}>{abilityDef(a).label}</option>)}</select></label>
+        <div className="space-y-2"><p>Stats (0–100)</p>{NEXUS_STATS.map(({ key: k, label }) => <label key={k} className="flex items-center gap-2 text-xs"><span className="w-32 shrink-0">{label}</span><input aria-label={label} type="range" min={0} max={100} value={vals[k] ?? 0} onChange={ev => setValue(k, Number(ev.target.value))} className="min-w-0 flex-1 accent-[var(--accent)]" /><span className="w-8 text-right">{vals[k] ?? 0}</span></label>)}</div>
+        <Button onClick={save} disabled={busy} className="w-full">{busy ? "Saving…" : "Save"}</Button>
+      </div>
+    </DialogContent>
+  </Dialog>;
 }
