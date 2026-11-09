@@ -672,6 +672,8 @@ html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { l
 .nexus-dossier[data-role="antihero"] { --nexus-role: var(--nexus-role-antihero); }
 .nexus-dossier[data-role="support"] { --nexus-role: var(--nexus-role-support); }
 .nexus-dossier .text-accent { color: var(--nexus-role); transition: color 2s; }
+.nexus-dossier aside .font-display { font-family: var(--font-sans); font-size: 1.5rem; line-height: 1.35; }
+.nexus-shell { padding-bottom: 80px; }
 .nexus-role-field {
   background: linear-gradient(125deg, color-mix(in oklab, var(--nexus-role) 16%, var(--background)), var(--background) 70%);
 }

@@ -246,7 +246,7 @@ export function NexusDossier({ e }: { e: Entity }) {
               </motion.div>
             ))}
             {!seriesCards.length && (
-              <p className="self-center text-xs text-muted-foreground">Not linked to any series yet.</p>
+              <p className="self-center text-xs text-muted-foreground">No series added yet.{isStaff && <Link to="/admin" className="ml-2 text-accent underline">Add series</Link>}</p>
             )}
           </div>
           <AnimatePresence initial={false}>
