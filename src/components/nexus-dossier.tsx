@@ -170,7 +170,7 @@ export function NexusDossier({ e }: { e: Entity }) {
             className="order-2 md:order-1"
           >
             <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground">{seasonLabel}</p>
-            <h1 className="mt-1 font-display text-4xl tracking-wide md:text-5xl">{e.name}</h1>
+            <h1 className="mt-1 [font-family:var(--font-display)] text-4xl tracking-wide md:text-5xl">{e.name}</h1>
             {e.alias && (
               <p data-spoiler="char" className="mt-1 text-sm italic text-accent">
                 {e.alias}
@@ -191,7 +191,7 @@ export function NexusDossier({ e }: { e: Entity }) {
             {e.image_url ? (
               <img src={e.image_url} alt={e.name} className="h-full w-full object-cover" />
             ) : (
-              <div className="grid h-full w-full place-items-center bg-card font-display text-6xl text-muted-foreground">
+              <div className="grid h-full w-full place-items-center bg-card [font-family:var(--font-display)] text-6xl text-muted-foreground">
                 {e.name[0]}
               </div>
             )}
@@ -233,7 +233,7 @@ export function NexusDossier({ e }: { e: Entity }) {
                   <img src={s.cover} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
                 )}
                 <span className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-                <span className="absolute bottom-2 left-2 right-6 font-display text-sm leading-tight">{s.title}</span>
+                <span className="absolute bottom-2 left-2 right-6 [font-family:var(--font-display)] text-sm leading-tight">{s.title}</span>
                 <ChevronDown
                   className={`absolute bottom-2 right-2 h-4 w-4 transition-transform ${openSeries === s.id ? "rotate-180" : ""}`}
                 />
@@ -359,7 +359,7 @@ export function NexusDossier({ e }: { e: Entity }) {
 
           <aside className="space-y-4 border-t border-border pt-4 md:border-l md:border-t-0 md:pl-5 md:pt-0">
             <div>
-              <h2 className="font-display text-2xl">{e.name}</h2>
+              <p className="[font-family:var(--font-display)] text-2xl">{e.name}</p>
               {e.alias && <p data-spoiler="char" className="text-xs italic text-accent">{e.alias}</p>}
             </div>
             <div data-spoiler="char" className="space-y-1 text-xs">
@@ -400,7 +400,7 @@ export function NexusDossier({ e }: { e: Entity }) {
         <div className="grid gap-6 rounded-2xl border border-border bg-card/40 p-5 md:grid-cols-[1fr_240px]">
           <AbilityOrbit abilities={abilities} masked={masked} seasonKey={seasonKey ?? "all"} />
           <div className="space-y-2 text-xs">
-            <p className="font-display text-lg" style={{ color: coreColor }}>
+            <p className="[font-family:var(--font-display)] text-lg" style={{ color: coreColor }}>
               {core ? core.def.label : "No abilities"}
             </p>
             {core?.def.description && <p className="text-muted-foreground">{core.def.description}</p>}
