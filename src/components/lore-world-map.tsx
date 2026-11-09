@@ -29,7 +29,7 @@ const REGIONS = [
 
 /** Era-specific glyphs drawn inside each region. */
 function RegionDetail({ id, era }: { id: string; era: string }) {
-  const c = TONE_COLOR[ERA_TONE[era] ?? "alive"];
+  const c = TONE_COLOR[ERA_TONE[era] ?? "alive"] ?? "var(--accent)";
   const trees = (pts: [number, number][], dead = false) =>
     pts.map(([x, y], i) => (
       <g key={i} opacity={dead ? 0.6 : 0.85}>
@@ -71,7 +71,7 @@ function RegionDetail({ id, era }: { id: string; era: string }) {
       <text x={205} y={420} textAnchor="middle" fontSize={7} fill={c} letterSpacing={2}>SAFEHOUSE</text></g>;
   }
   // ruincity
-  const towers = [[560, 300, 40], [585, 290, 60], [610, 295, 50], [635, 280, 75], [660, 300, 45], [685, 290, 55]];
+  const towers: [number, number, number][] = [[560, 300, 40], [585, 290, 60], [610, 295, 50], [635, 280, 75], [660, 300, 45], [685, 290, 55]];
   if (era === "pre")
     return <g>
       {towers.map(([x, y, h], i) => <rect key={i} x={x} y={y - h + 40} width={16} height={h} fill={c} fillOpacity={0.25} stroke={c} />)}
@@ -117,7 +117,7 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
 
         {REGIONS.map((r) => {
           const era = eras[r.id] ?? "";
-          const color = TONE_COLOR[ERA_TONE[era] ?? "alive"];
+          const color = TONE_COLOR[ERA_TONE[era] ?? "alive"] ?? "var(--accent)";
           const active = r.id === activeId;
           return (
             <g key={r.id} onClick={() => onSelect(r.id)} className="cursor-pointer" role="button" aria-label={r.name}>
