@@ -16,6 +16,10 @@ const RelationshipGraph = lazy(() =>
 export const Route = createFileRoute("/_authenticated/archive")({
   head: () => ({
     meta: [
+      { property: "og:title", content: "Archive — Sentinels Cinematic Universe" },
+      { property: "og:description", content: "Organizations, clans, bloodlines, knowledge graph and canon timeline of the SCU." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Archive — Sentinels Cinematic Universe" },
       {
         name: "description",

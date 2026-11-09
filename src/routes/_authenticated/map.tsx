@@ -6,6 +6,8 @@ import { useSectionStyle } from "@/hooks/use-typography";
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Tactical Map — Sentinels Cinematic Universe" },
       {
         name: "description",
