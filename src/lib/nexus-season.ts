@@ -11,6 +11,7 @@ export type SeasonDossier = {
   philosophy?: string;
   bloodline?: string;
   organizations?: string[];
+  abilityKeys?: string[];
   stats?: Record<string, number>;
   abilityStats?: Record<string, Record<string, number>>;
 };

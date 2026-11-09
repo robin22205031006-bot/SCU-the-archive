@@ -137,13 +137,13 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
         )
       : rows;
     const m = new Map<string, number>();
-    scoped.forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
+    scoped.filter(r => sd.abilityKeys === undefined || sd.abilityKeys.includes(r.ability_key)).forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
     if (!season)
       (e.abilities ?? []).forEach((a) => !m.has(a) && m.set(a, 1));
     return [...m.entries()]
       .map(([name, level]) => ({ name, level, def: abilityDef(name) }))
       .sort((a, b) => b.level - a.level);
-  }, [charAbilities, season, e.abilities]);
+  }, [charAbilities, season, e.abilities, e.stats]);
 
   const core = abilities[0];
   const coreColor = core?.def.color ?? "var(--accent)";

@@ -3,7 +3,7 @@ import { Link, getRouteApi } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Minus, Plus, Repeat, Search, X } from "lucide-react";
-import { matchesSearch, type Entity } from "@/lib/entities";
+import { entitiesQuery, matchesSearch, type Entity } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { sfx } from "@/lib/scu-audio";
 import { seriesQuery, seriesCharactersQuery } from "@/lib/series";
@@ -14,14 +14,6 @@ import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { Button } from "@/components/ui/button";
 const charactersRoute = getRouteApi("/_authenticated/characters");
 
-const PALETTE = [
-  "var(--nexus-c1)",
-  "var(--nexus-c2)",
-  "var(--nexus-c3)",
-  "var(--nexus-c4)",
-  "var(--nexus-c5)",
-  "var(--nexus-c6)",
-];
 const EASE = [0.22, 1, 0.36, 1] as const;
 const ALTER_EGOS: Record<string, string> = { ethan: "Elizah", elizah: "Ethan" };
 
@@ -57,6 +49,8 @@ export function NexusView({
   const seasonNumber = search.season ?? null;
   const [rosterOpen, setRosterOpen] = useState(false);
   const { data: series = [] } = useQuery(seriesQuery);
+  const { data: groups = [] } = useQuery(entitiesQuery(["organization", "clan", "bloodline", "faction"]));
+  const seasonGroups = seriesId ? projectSeasonRoster(groups, seriesId, seasonNumber, []) : [];
   const { data: memberships = [] } = useQuery(seriesCharactersQuery(seriesId));
   const { data: abilityRows = [] } = useQuery({ queryKey: ["nexus-series-abilities", seriesId], enabled: !!seriesId, queryFn: async () => {
     const { data, error } = await supabase.from("character_abilities").select("*").eq("series_id", seriesId);
@@ -68,7 +62,7 @@ export function NexusView({
   const data = useMemo(() => projectSeasonRoster(originalData, seriesId, seasonNumber, memberships).map(e => {
     if (!seriesId) return { ...e, category: normalizeNexusRole(e.category) };
     const profile = readDossier(e.stats)[`${seriesId}:${seasonNumber ?? "all"}`];
-    const rows = abilityRows.filter(a => a.entity_id === e.id && (seasonNumber == null || a.season_number == null || a.season_number === seasonNumber));
+    const rows = abilityRows.filter(a => a.entity_id === e.id && (seasonNumber == null || a.season_number == null || a.season_number === seasonNumber) && (profile?.abilityKeys === undefined || profile.abilityKeys.includes(a.ability_key)));
     return { ...e, abilities: [...new Set(rows.map(a => a.ability_key))], stats: { ...(e.stats as Record<string, unknown>), ...(profile?.bloodline !== undefined ? { bloodline: profile.bloodline } : {}) } as Entity["stats"] };
   }), [originalData, seriesId, seasonNumber, memberships, abilityRows]);
   const [cluster, setCluster] = useState<string | null>(null);
@@ -181,6 +175,7 @@ export function NexusView({
         </AnimatePresence>
       </LayoutGroup>
       {!data.length && <p className="relative py-8 text-center text-sm text-muted-foreground">No characters recorded for this selection.</p>}
+      {seasonGroups.length > 0 && <div data-spoiler="char" className="relative mt-5 border-t border-border pt-4"><h3 className="mb-3 text-sm">Impactful organizations, bloodlines & cults</h3><div className="grid gap-3 sm:grid-cols-3">{seasonGroups.map(g => <div key={g.id} className="rounded-lg border border-border p-3"><p className="text-sm">{g.name}</p><p className="text-xs text-muted-foreground">{g.role || g.category} · {g.status}</p>{readDossier(g.stats)[`${seriesId}:${seasonNumber ?? "all"}`]?.impact && <p className="mt-2 text-xs">{readDossier(g.stats)[`${seriesId}:${seasonNumber ?? "all"}`]?.impact}</p>}</div>)}</div></div>}
       {isAdmin && seriesId && seasonNumber && <NexusRosterEditor open={rosterOpen} onClose={() => setRosterOpen(false)} entities={originalData} seriesId={seriesId} season={seasonNumber} label={`${selectedSeries?.title ?? ""} · ${seasonNames[seasonNumber-1] ?? ""}`} />}
     </div>
   );

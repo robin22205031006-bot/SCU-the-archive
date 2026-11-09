@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Entity } from "@/lib/entities";
+import { entitiesQuery, type Entity } from "@/lib/entities";
 import { NEXUS_STATS, readDossier, type SeasonDossier } from "@/lib/nexus-season";
 import { NEXUS_ROLES } from "@/lib/nexus-roster";
 import { ABILITY_REGISTRY, abilityDef } from "@/lib/abilities";
@@ -15,9 +15,11 @@ import { Plus, Trash2 } from "lucide-react";
 type Ability = { name: string; level: number; note: string };
 export function NexusRosterEditor({ open, onClose, entities, seriesId, season, label }: { open: boolean; onClose: () => void; entities: Entity[]; seriesId: string; season: number; label: string }) {
   const [selected, setSelected] = useState(entities[0]?.id ?? "");
-  const entity = entities.find(e => e.id === selected);
+  const { data: groups = [] } = useQuery(entitiesQuery(["organization", "clan", "bloodline", "faction"]));
+  const all = [...entities, ...groups];
+  const entity = all.find(e => e.id === selected);
   return <Dialog open={open} onOpenChange={v => !v && onClose()}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Season roster · {label}</DialogTitle></DialogHeader>
-    <label className="grid gap-1 text-xs">Character<select aria-label="Roster character" className="h-10 w-full rounded-md border border-input bg-background px-3" value={selected} onChange={ev => setSelected(ev.target.value)}>{entities.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></label>
+    <label className="grid gap-1 text-xs">Character / Organization / Bloodline / Cult<select aria-label="Roster character" className="h-10 w-full rounded-md border border-input bg-background px-3" value={selected} onChange={ev => setSelected(ev.target.value)}>{all.map(e => <option key={e.id} value={e.id}>{e.name}{e.kind !== "character" ? ` · ${e.kind}` : ""}</option>)}</select></label>
     {entity && <RosterFields key={`${entity.id}:${seriesId}:${season}`} entity={entity} seriesId={seriesId} season={season} />}
   </DialogContent></Dialog>;
 }
@@ -38,7 +40,8 @@ function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: 
     setLoaded(true);
     const m = new Map<string, Ability>();
     data.filter(a => a.season_number == null || a.season_number === season).sort((a,b) => Number(a.season_number != null)-Number(b.season_number != null)).forEach(a => m.set(a.ability_key, { name: a.ability_key, level: a.level, note: a.note ?? "" }));
-    setAbilities([...m.values()]);
+    const keys = form.abilityKeys;
+    setAbilities([...m.values()].filter(a => keys === undefined || keys.includes(a.name)));
   }
   const values = profile ? form.abilityStats?.[profile] ?? {} : form.stats ?? {};
   const setStat = (stat: string, value: number) => setForm(f => profile ? { ...f, abilityStats: { ...f.abilityStats, [profile]: { ...f.abilityStats?.[profile], [stat]: value } } } : { ...f, stats: { ...f.stats, [stat]: value } });
@@ -49,7 +52,7 @@ function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: 
       const { data: fresh, error } = await supabase.from("entities").select("stats,locked_fields").eq("id", entity.id).single();
       if (error) throw error;
       const stats = { ...(fresh.stats as Record<string, unknown>) };
-      stats["dossier"] = { ...readDossier(stats), [key]: { ...readDossier(stats)[key], ...form } };
+      stats["dossier"] = { ...readDossier(stats), [key]: { ...readDossier(stats)[key], ...form, abilityKeys: abilities.filter(a => a.name.trim()).map(a => a.name) } };
       const result = await supabase.from("entities").update({ stats: stats as never, locked_fields: [...new Set([...fresh.locked_fields, "stats"])] }).eq("id", entity.id).select("id").single();
       if (result.error) throw result.error;
       wrote = true;
