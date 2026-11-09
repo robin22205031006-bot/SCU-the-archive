@@ -61,6 +61,13 @@ export function NexusDossier({ e }: { e: Entity }) {
     },
   });
 
+  const alterName = ({ ethan: "Elizah", elizah: "Ethan" } as Record<string, string>)[e.name.toLowerCase()];
+  const { data: alter } = useQuery({
+    queryKey: ["alter-ego", alterName],
+    enabled: !!alterName,
+    queryFn: async () =>
+      (await supabase.from("entities").select("id").eq("kind", "character").ilike("name", alterName!).maybeSingle()).data,
+  });
   const stats = (e.stats ?? {}) as Record<string, unknown>;
   const bloodline = typeof stats["bloodline"] === "string" ? (stats["bloodline"] as string) : null;
   const realName = typeof stats["real_name"] === "string" ? (stats["real_name"] as string) : null;
@@ -153,8 +160,17 @@ export function NexusDossier({ e }: { e: Entity }) {
           >
             {roleBadge}
           </span>
+          {alter && (
+            <Link
+              to="/character"
+              search={{ e: alter.id }}
+              className="ml-auto rounded-full border border-accent px-3 py-1 text-xs text-accent hover:bg-accent/15"
+            >
+              ⇄ Switch to {alterName}
+            </Link>
+          )}
           {isStaff && (
-            <Button size="sm" variant="outline" className="ml-auto" onClick={() => setEditing(true)}>
+            <Button size="sm" variant="outline" className={alter ? "" : "ml-auto"} onClick={() => setEditing(true)}>
               <Pencil className="mr-1 h-3.5 w-3.5" />
               Edit {season ? "this season" : "dossier"}
             </Button>
