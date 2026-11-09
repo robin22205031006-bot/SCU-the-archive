@@ -1,15 +1,19 @@
 // Post-build step: generates the Workbox service worker against the real
 // client output (.output/public), which Nitro emits after `vite build`.
 // Run automatically via `npm run build`.
+import { existsSync } from "node:fs";
 import { generateSW } from "workbox-build";
 
+// TanStack Start emits client assets to dist/client; fall back to Nitro's .output/public.
+const outDir = existsSync("dist/client") ? "dist/client" : ".output/public";
+
 const { count, size, warnings } = await generateSW({
-  globDirectory: ".output/public",
+  globDirectory: outDir,
   globPatterns: [
     "**/*.{js,css,html,png,svg,ico,webmanifest,json,woff,woff2,ttf,otf}",
   ],
   globIgnores: ["sw.js", "registerSW.js", "_headers", "**/*.map"],
-  swDest: ".output/public/sw.js",
+  swDest: `${outDir}/sw.js`,
   // No navigateFallback: this is an SSR app with no SPA shell HTML to fall back
   // to — serving offline.html for every navigation traps users on the offline
   // page after any full reload (e.g. post-login). Navigations are handled by

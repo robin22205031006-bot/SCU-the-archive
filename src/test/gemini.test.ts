@@ -7,7 +7,9 @@ vi.mock("@google/genai/web", () => ({
 import { generateGemini } from "@/lib/gemini.server";
 
 describe("private Gemini integration", () => {
-  beforeEach(() => generateContent.mockReset());
+  beforeEach(() => {
+    generateContent.mockReset();
+  });
   it("uses Gemini for a server-side generation request", async () => {
     generateContent.mockResolvedValue({ text: "Kael Varn joined the Order of Dusk." });
     expect(await generateGemini("test-credential", { contents: "Who is Kael?" })).toBe("Kael Varn joined the Order of Dusk.");

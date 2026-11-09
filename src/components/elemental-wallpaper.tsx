@@ -76,7 +76,8 @@ export function ElementalWallpaper({ element, enabled }: { element: Element; ena
             const y = element === "wind"
               ? y0 + Math.sin(x * 0.006 + t * 0.9 + l) * 26
               : y0 + Math.sin(x * 0.01 - t * 0.6 + l * 1.7) * 10 + Math.sin(x * 0.003 + t * 0.3) * 18;
-            x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
           }
           ctx.strokeStyle = `rgba(${l % 2 ? c2 : c1},${element === "wind" ? 0.18 : 0.14})`;
           ctx.lineWidth = element === "wind" ? 1.2 : 2;
@@ -114,7 +115,10 @@ export function ElementalWallpaper({ element, enabled }: { element: Element; ena
             bolt = { until: t + 0.18, pts };
           }
           if (t < bolt.until) {
-            ctx.beginPath(); bolt.pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+            ctx.beginPath(); bolt.pts.forEach(([x, y], i) => {
+              if (i) ctx.lineTo(x, y);
+              else ctx.moveTo(x, y);
+            });
             ctx.strokeStyle = `rgba(${c2},0.5)`; ctx.lineWidth = 1.5; ctx.shadowBlur = 16; ctx.shadowColor = `rgb(${c1})`; ctx.stroke(); ctx.shadowBlur = 0;
           }
         }

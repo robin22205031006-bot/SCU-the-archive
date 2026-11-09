@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { scuCache } from '../services/scuCache';
 
+interface LoreItem {
+  id?: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
 export function LoreExplorer() {
   const [tab, setTab] = useState<'characters' | 'organizations' | 'timeline'>('characters');
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<LoreItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -3,14 +3,28 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
-type OAuthResult = { data: any; error: { message: string } | null };
-const oauth = (supabase.auth as unknown as {
-  oauth: {
-    getAuthorizationDetails: (id: string) => Promise<OAuthResult>;
-    approveAuthorization: (id: string) => Promise<OAuthResult>;
-    denyAuthorization: (id: string) => Promise<OAuthResult>;
-  };
-}).oauth;
+interface OAuthClient {
+  name?: string;
+  client_name?: string;
+}
+interface OAuthDetails {
+  client?: OAuthClient;
+  scope?: string;
+  redirect_url?: string;
+  redirect_to?: string;
+}
+type OAuthResult = { data: OAuthDetails | null; error: { message: string } | null };
+// Resolved lazily so loading the route tree never touches auth config at module load.
+const getOAuth = () =>
+  (
+    supabase.auth as unknown as {
+      oauth: {
+        getAuthorizationDetails: (id: string) => Promise<OAuthResult>;
+        approveAuthorization: (id: string) => Promise<OAuthResult>;
+        denyAuthorization: (id: string) => Promise<OAuthResult>;
+      };
+    }
+  ).oauth;
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
@@ -33,7 +47,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   },
   loader: async ({ location }) => {
     const id = new URLSearchParams(location.search).get("authorization_id")!;
-    const { data, error } = await oauth.getAuthorizationDetails(id);
+    const { data, error } = await getOAuth().getAuthorizationDetails(id);
     if (error) throw new Error(error.message);
     const immediate = data?.redirect_url ?? data?.redirect_to;
     if (immediate && !data?.client) throw redirect({ href: immediate });
@@ -62,7 +76,7 @@ function Consent() {
   async function decide(approve: boolean) {
     setBusy(true);
     setError(null);
-    const { data, error } = approve ? await oauth.approveAuthorization(authorization_id) : await oauth.denyAuthorization(authorization_id);
+    const { data, error } = approve ? await getOAuth().approveAuthorization(authorization_id) : await getOAuth().denyAuthorization(authorization_id);
     if (error) { setBusy(false); setError(error.message); return; }
     const target = data?.redirect_url ?? data?.redirect_to;
     if (!target) { setBusy(false); setError("No redirect was returned. Please try again."); return; }

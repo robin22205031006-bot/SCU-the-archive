@@ -175,7 +175,7 @@ const ALIASES: Record<string, string> = {
 const CUSTOM_STORAGE_KEY = "scu_custom_abilities";
 
 /** Admin-defined abilities persisted locally + mirrored to app_settings by the hub. */
-export interface CustomAbilityDef extends AbilityDef {}
+export type CustomAbilityDef = AbilityDef;
 
 export function getCustomAbilities(): CustomAbilityDef[] {
   try {

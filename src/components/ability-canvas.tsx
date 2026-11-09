@@ -178,7 +178,8 @@ export function AbilityCardCanvas({ abilities, theme: themeOverride, className, 
         ctx.beginPath();
         for (let x = 0; x <= w; x += 8) {
           const y = h * (0.55 + row * 0.16) + Math.sin(x * 0.04 + t * (1.4 + row * 0.4)) * (6 + row * 4);
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
         }
         ctx.stroke();
       }

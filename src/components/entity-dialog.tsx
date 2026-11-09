@@ -147,7 +147,7 @@ export function EntityDialog({
     };
     let error;
     if (entity) {
-      const changed = FIELDS.filter((f) => JSON.stringify((entity as any)[f] ?? "") !== JSON.stringify((row as any)[f] ?? ""));
+      const changed = FIELDS.filter((f) => JSON.stringify((entity as unknown as Record<string, unknown>)[f] ?? "") !== JSON.stringify((row as unknown as Record<string, unknown>)[f] ?? ""));
       ({ error } = await supabase.from("entities")
         .update({ ...row, locked_fields: mergeLocks(entity.locked_fields, changed), updated_at: new Date().toISOString() })
         .eq("id", entity.id));

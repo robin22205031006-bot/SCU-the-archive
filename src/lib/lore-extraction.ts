@@ -36,7 +36,7 @@ export const loreJsonSchema = {
 
 const fields = {
   name: z.string().min(1), alias: z.string().nullable(), role: z.string().nullable(),
-  status: z.string().nullable(), category: z.string().nullable(), description: z.string(), quote: z.string(),
+  status: z.string().nullable(), category: z.string().nullable().optional(), description: z.string(), quote: z.string(),
 };
 const extraction = z.object({
   characters: z.array(z.object({ kind: z.literal("character"), ...fields }).strict()),
