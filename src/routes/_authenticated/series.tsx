@@ -15,6 +15,9 @@ import {
 } from "@/lib/series";
 import { episodesQuery } from "@/lib/map";
 import { useSectionStyle } from "@/hooks/use-typography";
+import { NexusExplorer } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
+import { Button } from "@/components/ui/button";
 import type { Entity } from "@/lib/entities";
 
 export const Route = createFileRoute("/_authenticated/series")({
@@ -219,6 +222,7 @@ function SeriesHero({
 }
 
 export function SeriesPage() {
+  const nexus = useUiStyle() === "nexus";
   const { s } = useSearch({ strict: false }) as { s?: string };
   const sectionStyle = useSectionStyle("series");
   const nav = useNavigate();
@@ -263,6 +267,7 @@ export function SeriesPage() {
         </p>
       </header>
 
+      {nexus ? <NexusExplorer label="Series" loading={isLoading} records={(series ?? []).map(s => ({ id: s.id, title: s.title, group: "Sagas", image: s.cover_image_url, subtitle: `${s.season_count ?? s.season_names.length} seasons`, series: s }))} renderDetail={({ series: saga }) => <div className="grid gap-5"><h2 className="break-words text-3xl">{saga.title}</h2>{saga.cover_image_url && <img src={saga.cover_image_url} alt={saga.title} className="max-h-72 w-full rounded-lg object-contain" />}<p className="whitespace-pre-line text-sm leading-relaxed">{saga.description}</p><div className="grid gap-2 sm:grid-cols-2">{Array.from({ length: Math.max(saga.season_count ?? 0, saga.season_names.length) }, (_, i) => <Button asChild variant="outline" key={i} className="h-auto min-h-12 whitespace-normal text-left"><Link to="/characters" search={{ series: saga.id, season: i + 1 }}>{saga.season_names[i] || `Season ${i + 1}`}<Users className="h-4 w-4 shrink-0" /></Link></Button>)}</div><Button variant="outline" onClick={() => navigate({ search: { s: saga.id } })}><BookMarked className="h-4 w-4" /> Series dossier</Button></div>} /> : <>
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -327,6 +332,7 @@ export function SeriesPage() {
         </div>
       )}
 
+      </>}
       {(episodes?.length ?? 0) > 0 && (
         <section className="mt-14">
           <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>

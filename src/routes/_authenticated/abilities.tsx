@@ -30,6 +30,8 @@ import { AbilityBadge } from "@/components/ability-badge";
 import { EntityGridSkeleton } from "@/components/route-skeleton";
 import { sfx } from "@/lib/scu-audio";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
+import { NexusExplorer } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
 import type { Json } from "@/integrations/supabase/types";
 
 const ALL_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
@@ -60,6 +62,7 @@ export const Route = createFileRoute("/_authenticated/abilities")({
 });
 
 function AbilitiesHub() {
+  const nexus = useUiStyle() === "nexus";
   const isAdmin = useIsAdmin();
   const holdersMasked = useSpoilerMask("abilities");
   const qc = useQueryClient();
@@ -230,6 +233,11 @@ function AbilitiesHub() {
         />
       )}
 
+      {nexus ? <NexusExplorer
+        label="Abilities" loading={isLoading}
+        records={defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], subtitle: ABILITY_GROUP_LABELS[def.group], icon: <def.icon className="h-5 w-5" />, def }))}
+        renderDetail={({ def }) => <AbilityCard def={def} holders={holders.get(def.key) ?? []} open onToggle={() => {}} isAdmin={isAdmin} isCustom={customKeys.has(def.key)} onEdit={() => setEditingDef(def)} onDeleteCustom={() => { removeCustomAbility(def.key); setCustomsVersion(v => v + 1); toast.success(`Removed "${def.label}" from the registry.`); }} />}
+      /> : <>
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -294,6 +302,7 @@ function AbilitiesHub() {
           </section>
         ))
       )}
+      </>}
     </main>
   );
 }

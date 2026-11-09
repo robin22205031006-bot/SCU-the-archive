@@ -1,3 +1,6 @@
+import { NexusExplorer } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
+import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/story")({
 });
 
 function Story() {
+  const nexus = useUiStyle() === "nexus";
   const { ep } = Route.useSearch();
   const { zoom, scaleIndex } = useAppearance();
   const [eyeCare, setEyeCare] = useState(() => localStorage.getItem("scu-story-eyecare") === "1");
@@ -168,7 +172,7 @@ function Story() {
       <p className="mt-1 text-sm text-muted-foreground">
         Official SCU epics and published stories.
       </p>
-      <ul className="mt-6 grid gap-2">
+      {nexus ? <div className="mt-6"><NexusExplorer label="Stories" records={(episodes ?? []).map(e => ({ id: e.id, title: e.title, group: e.series || "Standalone", subtitle: e.status, episode: e }))} renderDetail={({ episode: e }) => <div className="grid gap-4"><BookOpen className="h-8 w-8 text-accent" /><h2 className="break-words text-2xl">{e.title}</h2><p className="text-sm text-muted-foreground">{e.series}</p><Button asChild><Link to="/story" search={{ ep: e.id }} onClick={() => sfx.whoosh()}><BookOpen className="h-4 w-4" /> Read story</Link></Button></div>} /></div> : <ul className="mt-6 grid gap-2">
         {(episodes ?? []).map((e) => (
           <li key={e.id}>
             <Link
@@ -190,7 +194,7 @@ function Story() {
         {(episodes ?? []).length === 0 && (
           <li className="text-sm text-muted-foreground">No published stories yet.</li>
         )}
-      </ul>
+      </ul>}
     </div>
   );
 }

@@ -77,6 +77,7 @@ import { onSpoilerChange, spoilersHidden } from "@/lib/spoiler";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
 import { getCombatStats } from "@/lib/combat-stats";
+import { NexusExplorer } from "./nexus-explorer";
 import { NexusView } from "./nexus-view";
 import { useUiStyle } from "@/lib/ui-style";
 import { UiStylePicker } from "@/components/ui-style-picker";
@@ -1479,7 +1480,7 @@ export function EntitySection({
   useSpoilerMask("characters");
   const sectionStyle = useSectionStyle(view);
   const uiStyle = useUiStyle();
-  const nexus = view === "characters" && uiStyle === "nexus";
+  const nexus = uiStyle === "nexus";
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(entitiesQuery(kinds));
   const [open, setOpen] = useState<{ id: string; rect: DOMRect | null } | null>(null);
@@ -1629,12 +1630,12 @@ export function EntitySection({
         isLoading ? (
           <EntityGridSkeleton />
         ) : (
-          <NexusView
+          view === "characters" ? <NexusView
             data={data ?? []}
             categories={allCategories}
             isAdmin={isAdmin}
             onEdit={(e) => setEditing(e)}
-          />
+          /> : <div data-spoiler="archive"><NexusExplorer label={title} initialQuery={initialQuery} records={(data ?? []).map(e => ({ id: e.id, title: e.name, group: e.category || e.kind, image: e.image_url, subtitle: e.alias || e.kind, entity: e }))} renderDetail={({ entity: e }) => <div className="grid gap-4"><h2 className="break-words text-2xl">{e.name}</h2>{e.image_url && <img src={e.image_url} alt={e.name} className="h-52 w-full rounded-lg object-contain" />}<p className="whitespace-pre-line text-sm leading-relaxed">{e.description || "No description recorded."}</p><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setOpen({ id: e.id, rect: null })}><BookOpen className="h-4 w-4" /> Full dossier</Button>{isAdmin && <Button variant="outline" onClick={() => setEditing(e)}><Pencil className="h-4 w-4" /> Edit</Button>}</div></div>} /></div>
         )
       ) : (
         <>
