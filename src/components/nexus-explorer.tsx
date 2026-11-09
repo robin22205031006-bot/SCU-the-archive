@@ -9,7 +9,7 @@ export type NexusRecord = {
   id: string;
   title: string;
   group: string;
-  subtitle?: string;
+  subtitle?: string | undefined;
   image?: string | null;
   icon?: ReactNode;
 };
@@ -50,7 +50,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
         {group === null && !needle ? <motion.div key="categories" initial={{ opacity: 0, scale: moving ? 0.96 : 1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: moving ? 1.03 : 1 }} transition={transition} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {["all", ...groups].map((g, index) => {
             const members = g === "all" ? records : records.filter(r => r.group === g);
-            return <motion.div key={g} whileHover={moving ? { y: -4 } : undefined} transition={transition} className="nexus-cluster relative overflow-hidden rounded-lg border border-border bg-card/60">
+            return <motion.div key={g} whileHover={{ y: moving ? -4 : 0 }} transition={transition} className="nexus-cluster relative overflow-hidden rounded-lg border border-border bg-card/60">
               <Button variant="ghost" className="relative block h-auto min-h-48 w-full whitespace-normal p-4 text-left" onClick={() => { setGroup(g); setSelectedId(null); }} aria-label={`${g === "all" ? `All ${label.toLowerCase()}` : g}, ${members.length}`}>
                 <span className="block text-xs font-medium">{g === "all" ? `All ${label.toLowerCase()}` : g}</span>
                 <svg aria-hidden viewBox="0 0 160 120" className="mx-auto h-28 w-36 max-w-full">

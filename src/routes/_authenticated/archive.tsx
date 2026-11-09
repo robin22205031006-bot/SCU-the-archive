@@ -65,7 +65,7 @@ const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
 function Archive() {
   const nexus = useUiStyle() === "nexus";
   const [module, setModule] = useState<Module>("orgs");
-  const active = MODULES.find((m) => m.id === module) ?? MODULES[0];
+  const active = MODULES.find((m) => m.id === module) ?? { t: "Archive" };
   useSpoilerMask("archive");
 
   return (
