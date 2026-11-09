@@ -1,3 +1,8 @@
+# Nexus across all tabs
+- [ ] Add category-to-focused-record Nexus browsing for abilities, groups, series, timeline, stories, documents and community.
+- [ ] Add immersive Nexus map/graph workspaces, Home navigation and shared section navigation for account/staff tools.
+- [ ] Preserve existing edits, spoiler masks and data; verify signed-in browsing and mobile layout without changing Descrete or Minimal.
+
 # Nexus season and motion update
 - [x] Add immutable admin audit history with editor names, timestamps and revision comparison for all styles.
 - [x] Add Home UI Style choices: Descrete, Nexus and low-motion Minimal; verify switching.
