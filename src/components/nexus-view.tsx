@@ -137,7 +137,7 @@ export function NexusView({
               </div>
               <Sphere
                 cluster={cluster}
-                members={(cluster === "all" ? data : data.filter((e) => e.category === cluster))}
+                members={cluster === "all" ? data : data.filter((e) => e.category === cluster)}
                 all={data}
                 query={q}
                 colorOf={colorOf}
@@ -168,7 +168,10 @@ function MiniConstellation({
     return { x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, c: color ?? colorOf(e.category) };
   });
   return (
-    <svg viewBox="0 0 100 100" className="mx-auto mt-1 h-24 w-24 transition-transform duration-700 group-hover:rotate-12 group-hover:scale-110">
+    <svg
+      viewBox="0 0 100 100"
+      className="mx-auto mt-1 h-24 w-24 transition-transform duration-700 group-hover:rotate-12 group-hover:scale-110"
+    >
       <circle cx="50" cy="50" r="46" fill="none" stroke="var(--nexus-glow)" strokeOpacity="0.25" />
       {pts.slice(1).map((p, i) => (
         <line
@@ -497,7 +500,9 @@ function DossierPanel({
   onJump: (e: Entity) => void;
 }) {
   const alterName = ALTER_EGOS[e.name.trim().toLowerCase()];
-  const alter = alterName ? all.find((x) => x.name.toLowerCase() === alterName.toLowerCase()) : undefined;
+  const alter = alterName
+    ? all.find((x) => x.name.toLowerCase() === alterName.toLowerCase())
+    : undefined;
   const rows: [string, string | null, boolean][] = [
     ["Title / Codename", e.alias, true],
     ["Bloodline", stat(e, "bloodline"), true],
@@ -557,7 +562,10 @@ function DossierPanel({
           <span className="absolute bottom-2 left-2 h-3 w-3 border-b border-l border-nexus-glow/60" />
         </motion.div>
 
-        <motion.p variants={item} className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-nexus-muted">
+        <motion.p
+          variants={item}
+          className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-nexus-muted"
+        >
           Dossier
         </motion.p>
         <motion.dl variants={item} className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
@@ -573,7 +581,9 @@ function DossierPanel({
 
         {(e.abilities?.length ?? 0) > 0 && (
           <motion.div variants={item} data-spoiler="char" className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-nexus-muted">Abilities</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-nexus-muted">
+              Abilities
+            </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {(masked ? [] : e.abilities).slice(0, 8).map((a) => (
                 <span
@@ -589,7 +599,10 @@ function DossierPanel({
         )}
 
         {e.description && (
-          <motion.p variants={item} className="mt-4 line-clamp-6 text-xs leading-relaxed text-nexus-muted">
+          <motion.p
+            variants={item}
+            className="mt-4 line-clamp-6 text-xs leading-relaxed text-nexus-muted"
+          >
             {e.description}
           </motion.p>
         )}

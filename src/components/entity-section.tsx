@@ -77,6 +77,8 @@ import { onSpoilerChange, spoilersHidden } from "@/lib/spoiler";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
 import { getCombatStats } from "@/lib/combat-stats";
+import { NexusView } from "./nexus-view";
+import { setUiStyle, useUiStyle } from "@/lib/ui-style";
 
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
@@ -210,7 +212,10 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
         {[e.alias, e.role].filter(Boolean).join(" · ") || "—"}
       </p>
       {e.kind === "character" && (e.stats as Record<string, string> | null)?.["bloodline"] && (
-        <p data-spoiler="char" className="truncate text-[11px] uppercase tracking-widest text-accent/80">
+        <p
+          data-spoiler="char"
+          className="truncate text-[11px] uppercase tracking-widest text-accent/80"
+        >
           {(e.stats as Record<string, string>)["bloodline"]}
         </p>
       )}
@@ -1472,6 +1477,8 @@ export function EntitySection({
   const isAdmin = useIsAdmin();
   useSpoilerMask("characters");
   const sectionStyle = useSectionStyle(view);
+  const uiStyle = useUiStyle();
+  const nexus = view === "characters" && uiStyle === "nexus";
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(entitiesQuery(kinds));
   const [open, setOpen] = useState<{ id: string; rect: DOMRect | null } | null>(null);
@@ -1577,7 +1584,10 @@ export function EntitySection({
   };
 
   return (
-    <main className="mx-auto max-w-5xl px-4 pb-24 pt-28 sm:px-5" style={sectionStyle}>
+    <main
+      className={`mx-auto ${nexus ? "max-w-7xl" : "max-w-5xl"} px-4 pb-24 pt-28 sm:px-5`}
+      style={sectionStyle}
+    >
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
@@ -1590,6 +1600,29 @@ export function EntitySection({
               {countWord}
             </span>
             <SpoilerToggle scope="characters" />
+            {view === "characters" && (
+              <div
+                role="group"
+                aria-label="Interface style"
+                className="inline-flex rounded-full border border-border p-0.5 text-[11px]"
+              >
+                {(
+                  [
+                    ["classic", "Classic"],
+                    ["nexus", "Nexus"],
+                  ] as const
+                ).map(([v, label]) => (
+                  <button
+                    key={v}
+                    onClick={() => setUiStyle(v)}
+                    aria-pressed={uiStyle === v}
+                    className={`rounded-full px-3 py-0.5 transition-colors ${uiStyle === v ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             {isFiltered && total > 0 && (
               <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                 {list.length} showing
@@ -1605,143 +1638,166 @@ export function EntitySection({
         )}
       </header>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={`Search ${title.toLowerCase()}…`}
-          className="glass h-11 rounded-full pl-10"
-        />
-      </div>
-      <div data-no-swipe className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
-        {["all", ...allCategories].map((k) => (
-          <button
-            key={k}
-            onClick={() => setCat(k)}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${cat === k ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            {k === "all" ? "All" : k}
-          </button>
-        ))}
-        <span className="mx-1 w-px self-stretch bg-border" />
-        {(
-          [
-            ["grid", "Grid"],
-            ["list", "List"],
-            ["showcase", "Showcase"],
-          ] as const
-        ).map(([v, label]) => (
-          <button
-            key={v}
-            onClick={() => {
-              setViewMode(v);
-              try {
-                localStorage.setItem("scu-card-view", v);
-              } catch {
-                /* noop */
-              }
-            }}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${viewMode === v ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {isLoading ? (
-        <EntityGridSkeleton />
-      ) : list.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">
-          {data?.length ? "No matches." : "Nothing in the archive yet."}
-        </p>
-      ) : viewMode === "showcase" ? (
-        <ShowcaseView
-          list={list}
-          onOpen={(e) => {
-            sfx.tierReveal(e.character_tier);
-          }}
-        />
+      {nexus ? (
+        isLoading ? (
+          <EntityGridSkeleton />
+        ) : (
+          <NexusView
+            data={data ?? []}
+            categories={allCategories}
+            isAdmin={isAdmin}
+            onEdit={(e) => setEditing(e)}
+          />
+        )
       ) : (
-        <div
-          className={
-            viewMode === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3"
-          }
-        >
-          <AnimatePresence initial={false}>
-            {list.map((e, i) => {
-              if (open?.id === e.id) return null; // unmount → shared-element morph into dossier
-              return (
-                <motion.article
-                  key={e.id}
-                  layout
-                  layoutId={`card-${e.id}`}
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                    y: 0,
-                    transition: {
-                      delay: Math.min(i * 0.03, 0.45),
-                      duration: 0.3,
-                      ease: [0.2, 0.8, 0.2, 1],
-                    },
-                  }}
-                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.18, ease: "easeIn" } }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`}
-                  style={
-                    {
-                      "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
-                    } as unknown as MotionStyle
+        <>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={`Search ${title.toLowerCase()}…`}
+              className="glass h-11 rounded-full pl-10"
+            />
+          </div>
+          <div data-no-swipe className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
+            {["all", ...allCategories].map((k) => (
+              <button
+                key={k}
+                onClick={() => setCat(k)}
+                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${cat === k ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {k === "all" ? "All" : k}
+              </button>
+            ))}
+            <span className="mx-1 w-px self-stretch bg-border" />
+            {(
+              [
+                ["grid", "Grid"],
+                ["list", "List"],
+                ["showcase", "Showcase"],
+              ] as const
+            ).map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => {
+                  setViewMode(v);
+                  try {
+                    localStorage.setItem("scu-card-view", v);
+                  } catch {
+                    /* noop */
                   }
-                >
-                  <AbilityCardCanvas
-                    abilities={e.abilities}
-                    theme={e.card_theme}
-                    className="pointer-events-none absolute inset-0 h-full w-full opacity-30 transition-opacity group-hover:opacity-60"
-                  />
-                  <Link to="/character" search={{ e: e.id }} className="flex min-w-0 flex-1 gap-4">
-                    <Avatar e={e} size="h-16 w-16" />
-                    <CardBody e={e} showKind={kinds.length > 1} />
-                  </Link>
-                  {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
-                  {isAdmin && (
-                    <div className="flex shrink-0 flex-col gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 active:scale-90"
-                        aria-label="Edit"
-                        onClick={() => setEditing(e)}
+                }}
+                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${viewMode === v ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {isLoading ? (
+            <EntityGridSkeleton />
+          ) : list.length === 0 ? (
+            <p className="py-16 text-center text-sm text-muted-foreground">
+              {data?.length ? "No matches." : "Nothing in the archive yet."}
+            </p>
+          ) : viewMode === "showcase" ? (
+            <ShowcaseView
+              list={list}
+              onOpen={(e) => {
+                sfx.tierReveal(e.character_tier);
+              }}
+            />
+          ) : (
+            <div
+              className={
+                viewMode === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3"
+              }
+            >
+              <AnimatePresence initial={false}>
+                {list.map((e, i) => {
+                  if (open?.id === e.id) return null; // unmount → shared-element morph into dossier
+                  return (
+                    <motion.article
+                      key={e.id}
+                      layout
+                      layoutId={`card-${e.id}`}
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        y: 0,
+                        transition: {
+                          delay: Math.min(i * 0.03, 0.45),
+                          duration: 0.3,
+                          ease: [0.2, 0.8, 0.2, 1],
+                        },
+                      }}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.95,
+                        transition: { duration: 0.18, ease: "easeIn" },
+                      }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`}
+                      style={
+                        {
+                          "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
+                        } as unknown as MotionStyle
+                      }
+                    >
+                      <AbilityCardCanvas
+                        abilities={e.abilities}
+                        theme={e.card_theme}
+                        className="pointer-events-none absolute inset-0 h-full w-full opacity-30 transition-opacity group-hover:opacity-60"
+                      />
+                      <Link
+                        to="/character"
+                        search={{ e: e.id }}
+                        className="flex min-w-0 flex-1 gap-4"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 active:scale-90"
-                        aria-label="Merge into another entry"
-                        onClick={() => setMerging(e)}
-                      >
-                        <GitMerge className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-destructive active:scale-90"
-                        aria-label="Delete"
-                        onClick={() => setDeleting(e)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </motion.article>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+                        <Avatar e={e} size="h-16 w-16" />
+                        <CardBody e={e} showKind={kinds.length > 1} />
+                      </Link>
+                      {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
+                      {isAdmin && (
+                        <div className="flex shrink-0 flex-col gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 active:scale-90"
+                            aria-label="Edit"
+                            onClick={() => setEditing(e)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 active:scale-90"
+                            aria-label="Merge into another entry"
+                            onClick={() => setMerging(e)}
+                          >
+                            <GitMerge className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-destructive active:scale-90"
+                            aria-label="Delete"
+                            onClick={() => setDeleting(e)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </motion.article>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          )}
+        </>
       )}
 
       <AnimatePresence>
