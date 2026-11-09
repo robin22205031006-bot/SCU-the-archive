@@ -596,3 +596,10 @@ body {
 [data-theme="fabric"] body {
   background-image: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.04), transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(0,0,0,.15), transparent 60%);
 }
+
+/* Staff-controlled spoiler mask (see src/lib/spoiler-mask.tsx) */
+html[data-spoil-characters] [data-spoiler="char"] {
+  filter: blur(7px);
+  user-select: none;
+  pointer-events: none;
+}
