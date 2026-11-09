@@ -91,7 +91,7 @@ export function EntityDialog({
     bloodline: String((entity?.stats as Record<string, unknown> | null)?.["bloodline"] ?? ""),
     stats: entity
       ? Object.entries((entity.stats as Record<string, string>) ?? {})
-          .filter(([k]) => k !== "real_name" && k !== "bloodline")
+          .filter(([k]) => k !== "real_name" && k !== "bloodline" && k !== "dossier")
           .map(([k, v]) => `${k}: ${v}`)
           .join("\n")
       : "",
@@ -195,6 +195,10 @@ export function EntityDialog({
     const stats = isChar
       ? {
           ...custom,
+          // Keep per-season Nexus dossier data, which is edited from the dossier page.
+          ...((entity?.stats as Record<string, unknown> | null)?.["dossier"]
+            ? { dossier: (entity!.stats as Record<string, string>)["dossier"] as string }
+            : {}),
           ...(form.real_name.trim() ? { real_name: form.real_name.trim() } : {}),
           ...(form.bloodline.trim() ? { bloodline: form.bloodline.trim() } : {}),
           ...Object.fromEntries(
