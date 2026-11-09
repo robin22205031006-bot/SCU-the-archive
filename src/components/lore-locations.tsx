@@ -64,11 +64,11 @@ const TONE: Record<Era["tone"], string> = {
 };
 
 export function LoreLocations() {
-  const [locId, setLocId] = useState(LOCATIONS[0].id);
+  const [locId, setLocId] = useState(LOCATIONS[0]!.id);
   const [eraIdx, setEraIdx] = useState<Record<string, number>>({});
   const loc = LOCATIONS.find((l) => l.id === locId)!;
   const idx = Math.min(eraIdx[loc.id] ?? 0, loc.eras.length - 1);
-  const era = loc.eras[idx];
+  const era = loc.eras[idx]!;
 
   return (
     <section className="mb-10 grid gap-4 lg:grid-cols-[240px_1fr]" aria-label="Key lore locations">
