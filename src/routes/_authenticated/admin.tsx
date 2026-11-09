@@ -21,6 +21,7 @@ import { AdminContradictions } from "@/components/admin-contradictions";
 import { AdminCharacterAbilities } from "@/components/admin-character-abilities";
 import { AdminAccordion } from "@/components/admin-accordion";
 import { AdminUiToggles } from "@/components/admin-ui-toggles";
+import { AdminAuditLog } from "@/components/admin-audit-log";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -285,6 +286,9 @@ function Admin() {
         </ul>
       </AdminAccordion>
 
+      {isAdmin && (
+        <AdminAccordion title="Audit Log & Revisions"><AdminAuditLog /></AdminAccordion>
+      )}
       {isAdmin && (
         <AdminAccordion title="Series & Seasons">
           <AdminSeries />

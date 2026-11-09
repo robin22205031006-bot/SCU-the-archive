@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_revisions: {
+        Row: {
+          after_data: Json | null
+          before_data: Json | null
+          editor_id: string | null
+          editor_name: string
+          entity_id: string | null
+          entity_name: string
+          id: string
+          operation: string
+          record_id: string
+          recorded_at: string
+          source_table: string
+        }
+        Insert: {
+          after_data?: Json | null
+          before_data?: Json | null
+          editor_id?: string | null
+          editor_name: string
+          entity_id?: string | null
+          entity_name: string
+          id?: string
+          operation: string
+          record_id: string
+          recorded_at?: string
+          source_table: string
+        }
+        Update: {
+          after_data?: Json | null
+          before_data?: Json | null
+          editor_id?: string | null
+          editor_name?: string
+          entity_id?: string | null
+          entity_name?: string
+          id?: string
+          operation?: string
+          record_id?: string
+          recorded_at?: string
+          source_table?: string
+        }
+        Relationships: []
+      }
       banned_users: {
         Row: {
           banned_by: string | null

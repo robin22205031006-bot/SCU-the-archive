@@ -78,7 +78,8 @@ import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
 import { getCombatStats } from "@/lib/combat-stats";
 import { NexusView } from "./nexus-view";
-import { setUiStyle, useUiStyle } from "@/lib/ui-style";
+import { useUiStyle } from "@/lib/ui-style";
+import { UiStylePicker } from "@/components/ui-style-picker";
 
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
@@ -1606,21 +1607,7 @@ export function EntitySection({
                 aria-label="Interface style"
                 className="inline-flex rounded-full border border-border p-0.5 text-[11px]"
               >
-                {(
-                  [
-                    ["classic", "Classic"],
-                    ["nexus", "Nexus"],
-                  ] as const
-                ).map(([v, label]) => (
-                  <button
-                    key={v}
-                    onClick={() => setUiStyle(v)}
-                    aria-pressed={uiStyle === v}
-                    className={`rounded-full px-3 py-0.5 transition-colors ${uiStyle === v ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    {label}
-                  </button>
-                ))}
+                <UiStylePicker />
               </div>
             )}
             {isFiltered && total > 0 && (

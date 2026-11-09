@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SeriesPage } from "./_authenticated/series";
+import { UiStylePicker } from "@/components/ui-style-picker";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -49,6 +50,7 @@ const sections = [
 function Index() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-5 pb-20 pt-32">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4"><h2 className="text-sm">UI Style</h2><UiStylePicker /></div>
       <p className="text-[11px] uppercase tracking-[0.3em] text-accent">The Archive</p>
       <h1 className="mt-4 text-6xl font-medium leading-[0.95] sm:text-8xl">
         Sentinels
