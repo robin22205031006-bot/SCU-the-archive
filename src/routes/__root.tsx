@@ -24,6 +24,8 @@ import { syncSessionCache } from "@/lib/session-cache";
 import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
 import { playWelcome } from "@/lib/scu-audio";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { NexusShell } from "@/components/nexus-shell";
+import { useUiStyle } from "@/lib/ui-style";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -144,6 +146,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
+  const uiStyle = useUiStyle();
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const [offline, setOffline] = useState(false);
@@ -224,19 +227,19 @@ function RootComponent() {
         <TypographyProvider>
           <ErrorBoundary>
             <div className="ambient-bg relative min-h-screen">
-              <AmbientField />
-              <PlexusWallpaper />
+              {uiStyle === "classic" && <AmbientField />}
+              {uiStyle === "classic" && <PlexusWallpaper />}
               <ScrollProgress />
-              <SiteNav />
-              <FloatingNav />
-              <WelcomeVfx />
+              {uiStyle === "classic" && <SiteNav />}
+              {uiStyle === "classic" && <FloatingNav />}
+              {uiStyle === "classic" && <WelcomeVfx />}
               {offline && (
                 <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
                   <WifiOff className="h-3.5 w-3.5" />
                   Offline — showing cached archive data
                 </div>
               )}
-              <Outlet />
+              {uiStyle === "nexus" ? <NexusShell><Outlet /></NexusShell> : <Outlet />}
             </div>
           </ErrorBoundary>
           <Toaster />
