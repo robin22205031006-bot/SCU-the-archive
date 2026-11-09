@@ -12,7 +12,7 @@ export type SeasonDossier = {
 export type DossierMap = Record<string, SeasonDossier>;
 export function readDossier(stats: unknown): DossierMap {
   if (!stats || typeof stats !== "object") return {};
-  const raw = (stats as Record<string, unknown>).dossier;
+  const raw = (stats as Record<string, unknown>)["dossier"];
   return raw && typeof raw === "object" ? raw as DossierMap : {};
 }
 export function clampStat(value: unknown): number {

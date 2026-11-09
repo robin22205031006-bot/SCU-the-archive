@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { characterLinksQuery, entitiesQuery, type Entity } from "@/lib/entities";
 import { characterSeriesQuery, seriesQuery } from "@/lib/series";
 import { abilityDef } from "@/lib/abilities";
-import { NEXUS_STATS, readDossier, resolveNexusStats, highestStatRadius, nexusRole, type SeasonDossier, type DossierMap } from "@/lib/nexus-season";
+import { NEXUS_STATS, readDossier, resolveNexusStats, highestStatRadius, nexusRole, type SeasonDossier } from "@/lib/nexus-season";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { useIsStaff } from "@/hooks/use-admin";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
@@ -615,7 +615,7 @@ function SeasonEditor({ open, onClose, entity, seasonKey, seasonLabel, onSaved, 
       const stats = { ...((fresh.stats as Record<string, unknown>) ?? {}) };
       const map = { ...readDossier(stats) };
       map[key] = { ...map[key], ...form };
-      stats.dossier = map;
+      stats["dossier"] = map;
       const { error: writeError } = await supabase.from("entities").update({ stats: stats as never, locked_fields: [...new Set([...(fresh.locked_fields ?? []), "stats"])] }).eq("id", entity.id);
       if (writeError) throw writeError;
       toast.success("Dossier saved"); onSaved(); onClose();

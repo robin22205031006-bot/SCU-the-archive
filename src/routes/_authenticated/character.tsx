@@ -26,7 +26,14 @@ import { NexusDossier } from "@/components/nexus-dossier";
 export const Route = createFileRoute("/_authenticated/character")({
   validateSearch: (s: Record<string, unknown>): { e?: string } =>
     typeof s["e"] === "string" ? { e: s["e"] } : {},
-  head: () => ({ meta: [{ title: "Character — SCU" }] }),
+  head: () => ({ meta: [
+    { title: "Character Dossier — SCU" },
+    { name: "description", content: "Explore SCU character stories, season identities, abilities and stats in Classic or Nexus." },
+    { property: "og:title", content: "Character Dossier — SCU" },
+    { property: "og:description", content: "Character stories, identities and season dossiers from the Sentinels Cinematic Universe." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   errorComponent: ({ error }) => (
     <div className="grid min-h-screen place-items-center bg-[#020408] p-8 text-center">
       <div>

@@ -27,9 +27,9 @@ export function NexusShell({ children }: { children: ReactNode }) {
     },
   });
   useEffect(() => {
-    document.documentElement.dataset.ui = "nexus";
-    document.documentElement.dataset.nexusMotion = moving ? "on" : "off";
-    return () => { delete document.documentElement.dataset.ui; delete document.documentElement.dataset.nexusMotion; };
+    document.documentElement.dataset["ui"] = "nexus";
+    document.documentElement.dataset["nexusMotion"] = moving ? "on" : "off";
+    return () => { delete document.documentElement.dataset["ui"]; delete document.documentElement.dataset["nexusMotion"]; };
   }, [moving]);
   useEffect(() => setOpen(false), [pathname]);
   const tabs = [...TABS, { to: "/series", label: "Series", icon: "book" }, { to: "/orgs", label: "Organizations", icon: "book" }, { to: "/timeline", label: "Timeline", icon: "book" }, { to: "/graph", label: "Graph", icon: "book" }, { to: "/clans", label: "Clans", icon: "book" }, ...(isStaff ? [STAFF_TAB] : [])].filter(t => visibility?.[t.to] ?? true);
