@@ -26,6 +26,7 @@ import { playWelcome } from "@/lib/scu-audio";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NexusShell } from "@/components/nexus-shell";
 import { useUiStyle } from "@/lib/ui-style";
+import { MotionConfig } from "framer-motion";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -150,6 +151,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    if (uiStyle === "minimal") document.documentElement.dataset["ui"] = "minimal";
+    else if (uiStyle === "classic") delete document.documentElement.dataset["ui"];
+  }, [uiStyle]);
   useScuAudioGlobal();
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
@@ -226,11 +231,12 @@ function RootComponent() {
       <AppearanceProvider>
         <TypographyProvider>
           <ErrorBoundary>
-            <div className="ambient-bg relative min-h-screen">
+            <MotionConfig reducedMotion={uiStyle === "minimal" ? "always" : "user"} transition={uiStyle === "minimal" ? { duration: 0 } : undefined}>
+            <div className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : "ambient-bg"}`}>
               {uiStyle === "classic" && <AmbientField />}
               {uiStyle === "classic" && <PlexusWallpaper />}
               <ScrollProgress />
-              {uiStyle === "classic" && <SiteNav />}
+              {uiStyle !== "nexus" && <SiteNav />}
               {uiStyle === "classic" && <FloatingNav />}
               {uiStyle === "classic" && <WelcomeVfx />}
               {offline && (
@@ -241,6 +247,7 @@ function RootComponent() {
               )}
               {uiStyle === "nexus" ? <NexusShell><Outlet /></NexusShell> : <Outlet />}
             </div>
+            </MotionConfig>
           </ErrorBoundary>
           <Toaster />
         </TypographyProvider>
