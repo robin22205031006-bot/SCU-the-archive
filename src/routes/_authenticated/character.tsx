@@ -24,7 +24,7 @@ import { useUiStyle } from "@/lib/ui-style";
 import { NexusDossier } from "@/components/nexus-dossier";
 
 export const Route = createFileRoute("/_authenticated/character")({
-  validateSearch: (s: Record<string, unknown>): { e?: string; series?: string; season?: number } => ({
+  validateSearch: (s: Record<string, unknown>): { e?: string; series?: string | undefined; season?: number | undefined } => ({
     ...(typeof s["e"] === "string" ? { e: s["e"] } : {}),
     ...(typeof s["series"] === "string" ? { series: s["series"] } : {}),
     ...(Number.isInteger(Number(s["season"])) && Number(s["season"]) > 0 ? { season: Number(s["season"]) } : {}),

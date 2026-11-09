@@ -18,8 +18,9 @@ export function projectSeasonRoster(entities: Entity[], seriesId: string, season
   return entities.flatMap(e => {
     const map = readDossier(e.stats);
     const profile = map[key] ?? {};
+    const inSeries = Object.entries(map).some(([k,v]) => k.startsWith(`${seriesId}:`) && v.roster !== false);
     const member = memberships.find(m => m.character_id === e.id);
-    if (profile.roster === false || (!member && !profile.roster && !map[key])) return [];
+    if (profile.roster === false || (!member && !profile.roster && !map[key] && !(season == null && inSeries))) return [];
     return [{ ...e, category: normalizeNexusRole(profile.role ?? member?.arc_role ?? member?.role_in_series ?? e.category), role: profile.role ?? member?.role_in_series ?? e.role, status: profile.status ?? member?.status ?? e.status, alias: profile.codename ?? e.alias, description: profile.story ?? e.description }];
   });
 }

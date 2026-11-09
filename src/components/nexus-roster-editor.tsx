@@ -49,7 +49,7 @@ function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: 
       const { data: fresh, error } = await supabase.from("entities").select("stats,locked_fields").eq("id", entity.id).single();
       if (error) throw error;
       const stats = { ...(fresh.stats as Record<string, unknown>) };
-      stats.dossier = { ...readDossier(stats), [key]: { ...readDossier(stats)[key], ...form } };
+      stats["dossier"] = { ...readDossier(stats), [key]: { ...readDossier(stats)[key], ...form } };
       const result = await supabase.from("entities").update({ stats: stats as never, locked_fields: [...new Set([...fresh.locked_fields, "stats"])] }).eq("id", entity.id).select("id").single();
       if (result.error) throw result.error;
       wrote = true;

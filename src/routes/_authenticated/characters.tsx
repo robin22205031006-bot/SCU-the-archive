@@ -4,7 +4,7 @@ import { CyanNeuralPlexusTheme } from "@/components/ability-canvas";
 import { CHARACTER_CATEGORIES } from "@/lib/entities";
 
 export const Route = createFileRoute("/_authenticated/characters")({
-  validateSearch: (s: Record<string, unknown>): { q?: string; open?: string; series?: string; season?: number } => ({
+  validateSearch: (s: Record<string, unknown>): { q?: string; open?: string; series?: string | undefined; season?: number | undefined } => ({
     ...(typeof s["q"] === "string" ? { q: s["q"] } : {}),
     ...(typeof s["open"] === "string" ? { open: s["open"] } : {}),
     ...(typeof s["series"] === "string" ? { series: s["series"] } : {}),
