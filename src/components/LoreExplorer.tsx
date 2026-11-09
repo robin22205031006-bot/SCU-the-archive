@@ -6,7 +6,11 @@ interface LoreItem {
   name?: string;
   title?: string;
   description?: string;
-  [key: string]: unknown;
+  faction?: string;
+  bio?: string;
+  lore?: string;
+  combat_style?: string;
+  year?: string | number;
 }
 
 export function LoreExplorer() {
