@@ -20,6 +20,8 @@ import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { sfx } from "@/lib/scu-audio";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useUiStyle } from "@/lib/ui-style";
+import { NexusDossier } from "@/components/nexus-dossier";
 
 export const Route = createFileRoute("/_authenticated/character")({
   validateSearch: (s: Record<string, unknown>): { e?: string } =>
@@ -326,6 +328,14 @@ function JourneyBars({
 }
 
 function CharacterDossier() {
+  const style = useUiStyle();
+  const { e: id } = Route.useSearch();
+  const { data } = useQuery({ ...entityByIdQuery(id ?? ""), enabled: !!id && style === "nexus" });
+  if (style === "nexus" && data && data.kind === "character") return <NexusDossier key={data.id} e={data} />;
+  return <ClassicDossier />;
+}
+
+function ClassicDossier() {
   const { e: id } = Route.useSearch();
   const nav = useNavigate();
   const qc = useQueryClient();
