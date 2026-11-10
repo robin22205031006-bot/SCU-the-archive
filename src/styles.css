@@ -797,7 +797,7 @@ html[data-ui="nexus"] body { font-family: "Space Grotesk", system-ui, sans-serif
 .nexus-sign > .nexus-mark { animation: nexus-sign-mark 5s ease-in-out infinite; }
 .nexus-sign[data-sign-motion="off"], .nexus-sign[data-sign-motion="off"] * { animation-play-state: paused !important; }
 html[data-nexus-motion="off"] .nexus-sign *, html[data-ui="minimal"] .nexus-sign * { animation: none !important; }
-[data-spoiler="hidden"] .nexus-sign *, [data-spoiler="hidden"] .nexus-sign { animation: none !important; filter: none; }
+html[data-spoil-characters] [data-spoiler="char"] .nexus-sign *, html[data-spoil-archive] [data-spoiler="archive"] .nexus-sign * { animation: none !important; filter: none; }
 @keyframes nexus-sign-breathe { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 1px currentColor); } 50% { transform: scale(1.06); filter: drop-shadow(0 0 4px currentColor); } }
 @keyframes nexus-sign-ink { 0%,100% { stroke-opacity: 1; } 45% { stroke-opacity: .65; } 65% { stroke-opacity: 1; } }
 @keyframes nexus-sign-orbit { to { transform: rotate(360deg); } }
