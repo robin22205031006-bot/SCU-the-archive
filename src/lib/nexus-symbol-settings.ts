@@ -1,6 +1,9 @@
 export type SymbolStyle = { color?: string; anime?: boolean };
 export type NexusSymbolSettings = { anime?: boolean; symbols?: Record<string, SymbolStyle> };
 export const NEXUS_SYMBOL_SETTINGS_KEY = "nexus_symbol_presentation";
+export function canEditEmblemColors(roles: readonly string[]) {
+  return roles.includes("admin") || roles.includes("moderator");
+}
 export function symbolKey(name: string) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); }
 export function resolveSymbolStyle(settings: NexusSymbolSettings, name: string) {
   const value = settings.symbols?.[symbolKey(name)];

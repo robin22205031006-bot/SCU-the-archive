@@ -237,7 +237,7 @@ function RootComponent() {
               {uiStyle === "classic" && <PlexusWallpaper />}
               <ScrollProgress />
               {uiStyle !== "nexus" && <SiteNav />}
-              {uiStyle === "classic" && <FloatingNav />}
+              <FloatingNav />
               {uiStyle === "classic" && <WelcomeVfx />}
               {offline && (
                 <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
