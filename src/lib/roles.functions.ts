@@ -3,28 +3,13 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { isSuperadminEmail } from "./roles";
-
-function claimEmail(claims: unknown): string | null {
-  const email = (claims as { email?: unknown } | null | undefined)?.email;
-  return typeof email === "string" ? email : null;
-}
-
-async function callerEmail(context: { userId: string; claims: unknown }): Promise<string | null> {
-  const fromClaims = claimEmail(context.claims);
-  if (fromClaims) return fromClaims;
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.auth.admin.getUserById(context.userId);
-  return data?.user?.email ?? null;
-}
+import { isSuperadminEmail, isVerifiedSuperadmin } from "./roles";
 
 async function assertRoleManager(context: {
   userId: string;
   claims: unknown;
   supabase: SupabaseClient<Database>;
 }) {
-  const email = await callerEmail(context);
-  if (isSuperadminEmail(email)) return;
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -37,8 +22,9 @@ export const ensureSuperadminAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({}).parse(d ?? {}))
   .handler(async ({ context }) => {
-    const email = await callerEmail(context);
-    if (!isSuperadminEmail(email)) return { granted: false };
+    const { data: identity, error: identityError } = await context.supabase.auth.getUser();
+    if (identityError || identity.user?.id !== context.userId || !isVerifiedSuperadmin(identity.user))
+      return { granted: false };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existing, error: readError } = await supabaseAdmin
@@ -105,7 +91,6 @@ export const setUserRole = createServerFn({ method: "POST" })
       if (profileError) throw new Error("The member could not be found.");
       if (profile) {
         targetUserId = profile.id;
-        targetEmail = (profile.email as string | null) ?? target;
       } else {
         // profiles may lag behind auth — fall back to the auth user list.
         const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({
@@ -120,6 +105,10 @@ export const setUserRole = createServerFn({ method: "POST" })
     }
 
     if (!targetUserId) throw new Error("No member found.");
+    // Profile emails are editable display data; protect the target using Auth's identity.
+    const { data: targetIdentity, error: targetError } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+    if (targetError || !targetIdentity.user) throw new Error("The member could not be verified.");
+    targetEmail = targetIdentity.user.email ?? null;
     if (isSuperadminEmail(targetEmail))
       throw new Error("The Superadmin account cannot be changed here.");
 

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureSuperadminAccess } from "@/lib/roles.functions";
-import { isSuperadminEmail } from "@/lib/roles";
+import { isVerifiedSuperadmin } from "@/lib/roles";
 
 const SESSION_TIMEOUT_MS = 5_000;
 
@@ -18,9 +18,9 @@ export function useSession() {
     queryFn: async () => {
       // Never let a slow Supabase round-trip pin the app in a loading state:
       // on timeout we resolve with no session and let RLS/public UI render.
-      const res = await withTimeout(supabase.auth.getSession(), SESSION_TIMEOUT_MS);
+      const res = await withTimeout(supabase.auth.getUser(), SESSION_TIMEOUT_MS);
       if (res === "__timeout__") return null;
-      return res.data.session?.user ?? null;
+      return res.data.user ?? null;
     },
     staleTime: 60_000,
   });
@@ -34,19 +34,16 @@ export function useRoles() {
     staleTime: 60_000,
     queryFn: async () => {
       if (!user) return [];
-      const meta = (user.app_metadata ?? {}) as { role?: string; email?: string };
-      const email = user.email ?? meta.email ?? null;
-      const superadmin = isSuperadminEmail(email);
-      const metaAdmin = meta.role === "admin" || meta.role === "superadmin";
+      const superadmin = isVerifiedSuperadmin(user);
       if (superadmin) {
         // Bootstrap a real `admin` row so RLS-protected writes keep working.
         try {
           await withTimeout(ensureSuperadminAccess({ data: {} }), SESSION_TIMEOUT_MS);
         } catch {
-          // The role row may already exist or the server may be unreachable; roles below still apply.
+          // Fail closed; only persisted role rows grant access below.
         }
       }
-      // Elevated status must survive a user_roles failure (RLS, offline, missing row).
+      // Read privileges only from the protected role table.
       let roles: string[] = [];
       try {
         const { data, error } = await supabase
@@ -58,9 +55,7 @@ export function useRoles() {
       } catch {
         roles = [];
       }
-      if (superadmin || metaAdmin) {
-        return Array.from(new Set([...roles, "admin", ...(superadmin ? ["superadmin"] : [])]));
-      }
+      if (superadmin && roles.includes("admin")) return [...roles, "superadmin"];
       return roles;
     },
   });
@@ -68,9 +63,7 @@ export function useRoles() {
 }
 
 export function useIsSuperadmin() {
-  const { data: user } = useSession();
-  const meta = (user?.app_metadata ?? {}) as { email?: string };
-  return isSuperadminEmail(user?.email ?? meta.email ?? null);
+  return useRoles().includes("superadmin");
 }
 
 export function useIsAdmin() {

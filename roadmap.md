@@ -1,3 +1,8 @@
+# Sign-in support and superadmin access
+- [x] Confirm unsupported providers cannot be enabled; the sign-in page already has real Google OAuth and no unsupported placeholders.
+- [x] Verify the designated superadmin has the persisted admin role; enforce verified identity and protected target checks.
+- [x] Run permission tests and verify signed-in role controls, reload persistence and server rejection of owner demotion; no other registered account exists for a successful role-change test.
+
 # Compact modal HUD, sign-in and speed
 - [x] Make HUD a small circle that opens a sliding modal, blurs/locks the page and closes on navigation in all styles.
 - [x] Enable Google sign-in with existing optional profiles; explain unsupported requested providers. Provider enabled and button verified; external Google consent remains unverified.
