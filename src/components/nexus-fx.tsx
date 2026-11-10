@@ -103,29 +103,3 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
   </>;
 }
 
-export function NexusSigil({ label, effect, className = "h-12 w-12", masked = false }: { label: string; effect?: NexusEffect; className?: string; masked?: boolean }) {
-  const available = useContext(FxAvailable);
-  const moving = useNexusMotion();
-  const ref = useRef<HTMLSpanElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [hiddenSpoiler, setHiddenSpoiler] = useState(false);
-  const kind = masked ? "archive" : effect ?? nexusEffect(label);
-  useEffect(() => {
-    const target = ref.current;
-    if (!target) return;
-    const observer = new IntersectionObserver(entries => setVisible(entries.some(e => e.isIntersecting)), { rootMargin: "40px" });
-    observer.observe(target);
-    const updateMask = () => {
-      const parent = target.closest("[data-spoiler]");
-      const scope = parent?.getAttribute("data-spoiler");
-      setHiddenSpoiler((scope === "char" && document.documentElement.hasAttribute("data-spoil-characters")) || (scope === "archive" && document.documentElement.hasAttribute("data-spoil-archive")));
-    };
-    updateMask();
-    const maskObserver = new MutationObserver(updateMask);
-    maskObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-spoil-characters", "data-spoil-archive"] });
-    return () => { observer.disconnect(); maskObserver.disconnect(); };
-  }, []);
-  return <span ref={ref} aria-hidden data-nexus-sigil={kind} className={`nexus-sigil relative inline-block shrink-0 ${className}`}>
-    {!hiddenSpoiler && (available && visible ? <View as="span" className="absolute inset-0 block" index={2}><PerspectiveCamera makeDefault position={[0, 0, 4.6]} fov={42} /><ambientLight intensity={1.4} /><directionalLight position={[3, 3, 3]} intensity={3} /><Simulation effect={kind} moving={moving} /></View> : <span className="nexus-sigil-fallback absolute inset-2" />)}
-  </span>;
-}
