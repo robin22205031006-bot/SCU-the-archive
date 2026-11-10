@@ -767,10 +767,9 @@ html[data-nexus-theme="wind"] { --nexus-glow: var(--fx-wind); }
 html[data-nexus-theme="nature"] { --nexus-glow: var(--fx-nature); }
 html[data-nexus-theme="void"] { --nexus-glow: var(--fx-void); }
 .nexus-fx-background { z-index: 0; opacity: .24; }
-.nexus-fx-symbols { z-index: 60; }
-.nexus-fx-symbols, .nexus-fx-symbols *, .nexus-fx-background, .nexus-fx-background * { pointer-events: none !important; }
-.nexus-sigil { vertical-align: middle; }
-.nexus-sigil-fallback { border: 1px solid var(--nexus-glow); transform: rotate(45deg); }
+.nexus-fx-background, .nexus-fx-background * { pointer-events: none !important; }
+.nexus-mark { display: inline-block; border: 1px solid var(--nexus-glow); transform: rotate(45deg); background: color-mix(in oklab, var(--nexus-glow) 18%, transparent); box-shadow: 0 0 12px -4px var(--nexus-glow); }
+.nexus-theme-swatch { box-shadow: 0 0 18px -6px var(--nexus-glow); }
 .nexus-theme-option { position: relative; }
 html[data-ui="nexus"] body { background-image: none !important; }
 html[data-ui="nexus"] .nexus-dossier { background: transparent; }

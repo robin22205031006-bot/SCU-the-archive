@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
-import { NexusSigil } from "@/components/nexus-fx";
+import { useNexusMotion } from "@/hooks/use-nexus-motion";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -533,6 +533,12 @@ Status · <span className="text-foreground">{status}</span>
   );
 }
 
+function AbilityGlyph({ def, masked, className = "" }: { def: ReturnType<typeof abilityDef>; masked: boolean; className?: string }) {
+  const Icon = def.icon;
+  if (masked) return <span aria-hidden className={`nexus-mark ${className}`} />;
+  return <Icon aria-hidden className={className} style={{ color: def.color }} />;
+}
+
 function AbilityOrbit({
   abilities,
   masked,
@@ -581,7 +587,7 @@ function AbilityOrbit({
             className="absolute left-1/2 top-1/2 grid h-28 w-28 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-2 bg-background"
             style={{ borderColor: core.def.color, boxShadow: `0 0 60px -6px ${core.def.color}` }}
           >
-            <NexusSigil label={core.name} masked={masked} className="h-24 w-24" />
+            <AbilityGlyph def={core.def} masked={masked} className="h-12 w-12" />
             <span className="absolute -bottom-6 whitespace-nowrap text-[10px] uppercase tracking-widest">
               {masked ? "Core" : core.def.label}
             </span>
@@ -609,7 +615,7 @@ function AbilityOrbit({
                 onKeyDown={(ev) => (ev.key === "Enter" || ev.key === " ") && onSelect(a.name)}
                 title={a.def.label}
               >
-                <NexusSigil label={a.name} masked={masked} className="h-10 w-10" />
+                <AbilityGlyph def={a.def} masked={masked} className="h-5 w-5" />
               </motion.div>
             );
           })}
