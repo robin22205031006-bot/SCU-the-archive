@@ -1,3 +1,8 @@
+# Compact modal HUD, sign-in and speed
+- [ ] Make HUD a small circle that opens a sliding modal, blurs/locks the page and closes on navigation in all styles.
+- [ ] Enable Google sign-in with existing optional profiles; explain unsupported requested providers.
+- [ ] Measure loading, address verified bottlenecks, and verify desktop/tablet/phone layouts and HUD flows.
+
 # Left-side HUD and emblem access
 - [x] Replace the HUD with a left-side curved, sliding navigation menu across all three styles.
 - [x] Allow emblem color edits only for admins and moderators, preserving protected saves.
