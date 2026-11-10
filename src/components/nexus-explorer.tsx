@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Search } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
+import { NexusSign } from "@/components/nexus-sign";
 
 export type NexusRecord = {
   id: string;
@@ -71,7 +72,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
           <div className={`grid content-start gap-2 ${selected ? "max-h-80 overflow-y-auto lg:max-h-[75dvh]" : "sm:grid-cols-2 lg:grid-cols-3"}`} role="list" aria-label={label}>
             {visible.map(r => <motion.div layout={moving ? "position" : false} key={r.id} transition={transition} role="listitem">
               <Button variant="ghost" aria-pressed={r.id === selectedId} className={`nexus-record h-auto min-h-20 w-full justify-start whitespace-normal rounded-lg border px-4 py-3 text-left ${r.id === selectedId ? "border-accent bg-accent/10" : "border-border bg-card/40"}`} onClick={() => setSelectedId(r.id)}>
-                {r.image ? <img src={r.image} alt="" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-md object-cover" /> : <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center text-accent">{r.icon ?? <span className="nexus-mark h-4 w-4" />}</span>}
+                {r.image ? <img src={r.image} alt="" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-md object-cover" /> : <NexusSign className="h-8 w-8 shrink-0 text-accent">{r.icon ?? <span className="nexus-mark h-4 w-4" />}</NexusSign>}
                 <span className="min-w-0 flex-1"><span className="block break-words text-sm font-medium">{r.title}</span><span className="mt-1 block break-words text-xs text-muted-foreground">{r.subtitle ?? r.group}</span></span>
                 <ArrowRight className="h-3 w-3 shrink-0 text-accent" />
               </Button>
@@ -98,7 +99,7 @@ export function NexusWorkspace({ views }: { views: { id: string; title: string; 
   const view = views.find(v => v.id === active) ?? views[0];
   if (!view) return null;
   return <section className="nexus-workspace min-w-0">
-    <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Workspace views">{views.map(v => <Button key={v.id} role="tab" id={`nexus-tab-${v.id}`} aria-controls={`nexus-panel-${v.id}`} aria-selected={view.id === v.id} variant={view.id === v.id ? "secondary" : "ghost"} onClick={() => setActive(v.id)}>{v.icon}{v.title}</Button>)}</div>
+    <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Workspace views">{views.map(v => <Button key={v.id} role="tab" id={`nexus-tab-${v.id}`} aria-controls={`nexus-panel-${v.id}`} aria-selected={view.id === v.id} variant={view.id === v.id ? "secondary" : "ghost"} onClick={() => setActive(v.id)}><NexusSign>{v.icon}</NexusSign>{v.title}</Button>)}</div>
     <AnimatePresence mode="wait" initial={false}><motion.div key={view.id} id={`nexus-panel-${view.id}`} role="tabpanel" aria-labelledby={`nexus-tab-${view.id}`} initial={{ opacity: 0, scale: moving ? 0.97 : 1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: moving ? 0.35 : 0 }} className="min-w-0">{view.content}</motion.div></AnimatePresence>
   </section>;
 }
