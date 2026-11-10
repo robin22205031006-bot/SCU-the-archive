@@ -1,6 +1,6 @@
 # Nexus exact-sign animation
-- [ ] Animate existing signs with shape-preserving 2D effects across Nexus, retaining the 3D backgrounds.
-- [ ] Verify the pictured orbit sign, other symbols, pause controls and phone layout.
+- [x] Animate existing signs with shape-preserving 2D effects across Nexus, retaining the 3D backgrounds.
+- [x] Verify the pictured orbit sign, other symbols, pause controls and phone layout.
 
 # Nexus 3D presentation
 - [x] Add shared 3D ability/group symbols and ability-inspired background simulations across Nexus tabs.
