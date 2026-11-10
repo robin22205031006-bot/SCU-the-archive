@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ThemeDrawer } from "./theme-drawer";
 import { useNavHidden } from "@/lib/nav-visibility";
+import { useAnimationsEnabled } from "@/lib/animations";
+import { useUiStyle } from "@/lib/ui-style";
 export { navMode, setNavMode, hudNavEnabled, setHudNav, type NavMode } from "@/lib/nav-mode";
 
 const icons = { home: Home, chars: Users, abilities: WandSparkles, archive: Archive, book: BookOpen, map: Map, fandom: MessagesSquare, ai: Bot, vault: FileLock, admin: Sparkles, series: BookMarked, orgs: Shield, time: Clock, graph: Network, clans: Castle, profile: User, theme: Palette };
@@ -22,12 +24,16 @@ export function FloatingNav() {
   const { data: user } = useSession();
   const staff = useIsStaff();
   const hidden = useNavHidden();
-  const reduce = useReducedMotion();
+  const deviceReduced = useReducedMotion();
+  const animations = useAnimationsEnabled();
+  const style = useUiStyle();
+  const reduce = deviceReduced || !animations || style === "minimal";
   const [open, setOpen] = useState(true);
   const [themeOpen, setThemeOpen] = useState(false);
   const [start, setStart] = useState(0);
   const touch = useRef<number | null>(null);
   const wheelAt = useRef(0);
+  useEffect(() => { if (window.matchMedia("(max-width: 640px)").matches) setOpen(false); }, []);
   const { data: visibility } = useQuery({ queryKey: ["app-settings", "nav_visibility"], staleTime: 60_000, queryFn: async () => {
     const { data, error } = await supabase.from("app_settings").select("value").eq("key", "nav_visibility").maybeSingle();
     if (error) throw error;
