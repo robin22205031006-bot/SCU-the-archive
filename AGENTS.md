@@ -40,7 +40,7 @@
 - Nexus advanced ability FX are device-local opt-in; per-ability cel choreography (motif+variant) and upgrade lineages live in browser-safe src/lib/ability-fx.ts, rendered by a frame-stepped 2D canvas, so every ability stays unique (tested) without new data or schema.
 - Ability FX upgrade chains default in src/lib/ability-fx.ts and admin overrides live in app_settings (`ability_fx_lineages`), validated by sanitizeLineages; shape-based painters (flame, lightning, wind, water, earth, nature, beasts, guardian aura) live in browser-only src/components/fx-painters.ts, other motifs fall back to the legacy DRAW table, so painters can be upgraded per motif without touching recipes.
 - Ability in Action (src/lib/ability-action.ts choreography + src/components/ability-action-canvas.tsx) reuses fx-painters for charge/impact so new painters upgrade both pages.
-- Series title styling lives in app_settings `series_styles` (per series id) and the shared Series page hosts staff series management and per-season roster editing for every UI style, so readers in any style see the same season data. Nexus-only animated title effects fall back to a static glow elsewhere.
+- Series title styles live in app_settings `series_styles`; the shared Series page hosts staff series and season-roster editing for all styles (Nexus-only title FX fall back to static glow).
 - AI Box, series Q&A and season-story drafting use AI Gateway in authenticated server functions; Gemini is only used for PDF ingestion/embeddings, because the Google keys are unreliable.
-- Duplicate-character prevention: adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicate names to the in-story card name (tested), so lore syncs never recreate merged cards.
+- adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicates to the in-story card name (tested), so syncs never recreate merged cards.
 - Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
