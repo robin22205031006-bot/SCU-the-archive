@@ -1,0 +1,2 @@
+ALTER POLICY "signed-in read pdf_vault" ON public.pdf_vault TO authenticated USING (public.is_staff(auth.uid()));
+COMMENT ON POLICY "signed-in read pdf_vault" ON public.pdf_vault IS 'Only staff may read ingestion index records; reader-facing documents remain governed by vault_documents.';
