@@ -41,6 +41,6 @@
 - Ability FX upgrade chains default in src/lib/ability-fx.ts and admin overrides live in app_settings (`ability_fx_lineages`), validated by sanitizeLineages; shape-based painters (flame, lightning, wind, water, earth, nature, beasts, guardian aura) live in browser-only src/components/fx-painters.ts, other motifs fall back to the legacy DRAW table, so painters can be upgraded per motif without touching recipes.
 - Ability in Action (src/lib/ability-action.ts choreography + src/components/ability-action-canvas.tsx) reuses fx-painters for charge/impact so new painters upgrade both pages.
 - Series title styles live in app_settings `series_styles`; the shared Series page hosts staff series and season-roster editing for all styles (Nexus-only title FX fall back to static glow).
-- AI Box, series Q&A and season-story drafting use AI Gateway in authenticated server functions; Gemini is only used for PDF ingestion/embeddings, because the Google keys are unreliable.
+- AI Box, series Q&A and story drafting use AI Gateway in authenticated server functions; Gemini only for PDF ingestion/embeddings (keys unreliable).
 - adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicates to the in-story card name (tested), so syncs never recreate merged cards.
 - Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
