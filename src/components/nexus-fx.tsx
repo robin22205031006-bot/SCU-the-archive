@@ -31,7 +31,7 @@ function usePalette(effect: NexusEffect) {
 }
 
 const flameVertex = `uniform float time; varying vec3 pos; void main(){pos=position; vec3 p=position; float h=p.y+1.0; p.x+=sin(h*5.0+time*3.0)*h*.12; p.z+=cos(h*4.0+time*2.0)*h*.13; gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`;
-const flameFragment = `uniform float time; uniform vec3 tint; uniform vec3 light; varying vec3 pos; void main(){float waves=sin(pos.y*15.0+pos.x*9.0-time*6.0)*.5+.5; float fade=clamp(1.0-(pos.y+1.0)*.42,0.0,1.0); gl_FragColor=vec4(mix(tint,light,pow(fade,3.0)),(.18+waves*.45)*fade); #include <tonemapping_fragment>\n #include <colorspace_fragment> }`;
+const flameFragment = `uniform float time; uniform vec3 tint; uniform vec3 light; varying vec3 pos; void main(){float waves=sin(pos.y*15.0+pos.x*9.0-time*6.0)*.5+.5; float fade=clamp(1.0-(pos.y+1.0)*.42,0.0,1.0); gl_FragColor=vec4(mix(tint,light,pow(fade,3.0)),(.18+waves*.45)*fade);\n #include <tonemapping_fragment>\n #include <colorspace_fragment>\n }`;
 
 function Simulation({ effect, moving, background = false }: { effect: NexusEffect; moving: boolean; background?: boolean }) {
   const root = useRef<Group>(null);
@@ -110,15 +110,24 @@ export function NexusSigil({ label, effect, className = "h-12 w-12", masked = fa
   const moving = useNexusMotion();
   const ref = useRef<HTMLSpanElement>(null);
   const [visible, setVisible] = useState(false);
+  const [hiddenSpoiler, setHiddenSpoiler] = useState(false);
   const kind = masked ? "archive" : effect ?? nexusEffect(label);
   useEffect(() => {
     const target = ref.current;
     if (!target) return;
     const observer = new IntersectionObserver(entries => setVisible(entries.some(e => e.isIntersecting)), { rootMargin: "40px" });
     observer.observe(target);
-    return () => observer.disconnect();
+    const updateMask = () => {
+      const parent = target.closest("[data-spoiler]");
+      const scope = parent?.getAttribute("data-spoiler");
+      setHiddenSpoiler((scope === "char" && document.documentElement.hasAttribute("data-spoil-characters")) || (scope === "archive" && document.documentElement.hasAttribute("data-spoil-archive")));
+    };
+    updateMask();
+    const maskObserver = new MutationObserver(updateMask);
+    maskObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-spoil-characters", "data-spoil-archive"] });
+    return () => { observer.disconnect(); maskObserver.disconnect(); };
   }, []);
   return <span ref={ref} aria-hidden data-nexus-sigil={kind} className={`nexus-sigil relative inline-block shrink-0 ${className}`}>
-    {available && visible ? <View track={ref} index={2}><PerspectiveCamera makeDefault position={[0, 0, 4.6]} fov={42} /><ambientLight intensity={1.4} /><directionalLight position={[3, 3, 3]} intensity={3} /><Simulation effect={kind} moving={moving} /></View> : <span className="nexus-sigil-fallback absolute inset-2" />}
+    {!hiddenSpoiler && (available && visible ? <View track={ref} index={2}><PerspectiveCamera makeDefault position={[0, 0, 4.6]} fov={42} /><ambientLight intensity={1.4} /><directionalLight position={[3, 3, 3]} intensity={3} /><Simulation effect={kind} moving={moving} /></View> : <span className="nexus-sigil-fallback absolute inset-2" />)}
   </span>;
 }
