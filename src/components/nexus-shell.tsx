@@ -64,7 +64,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
         </motion.nav>}
       </AnimatePresence>
       <ThemeDrawer open={themeOpen} onOpenChange={setThemeOpen} />
-      <AnimatePresence mode="wait" initial={false}><motion.div key={pathname} data-nexus-page={pathname.slice(1) || "home"} initial={{ opacity: moving ? 0 : 1, x: moving ? 24 : 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: moving ? -20 : 0 }} transition={{ duration: moving ? 0.5 : 0, ease: [0.22, 1, 0.36, 1] }} className="nexus-page relative">{["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? <NexusSectionRail>{children}</NexusSectionRail> : children}</motion.div></AnimatePresence>
+      <motion.div key={pathname} data-nexus-page={pathname.slice(1) || "home"} initial={{ opacity: moving ? 0.6 : 1, x: moving ? 12 : 0 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: moving ? 0.24 : 0, ease: [0.22, 1, 0.36, 1] }} className="nexus-page relative">{["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? <NexusSectionRail>{children}</NexusSectionRail> : children}</motion.div>
       </NexusFxLayer>
     </div>
   </MotionConfig>;

@@ -192,7 +192,7 @@ function RootComponent() {
         event !== "TOKEN_REFRESHED"
       )
         return;
-      syncSessionCache(queryClient, session?.user ?? null);
+      const identityChanged = syncSessionCache(queryClient, session?.user ?? null, event === "USER_UPDATED");
       if (event === "SIGNED_OUT") {
         // Strict sign-out: purge persisted offline cache so re-entry requires online auth.
         try {
@@ -201,7 +201,7 @@ function RootComponent() {
           /* storage unavailable */
         }
       }
-      queueMicrotask(() => {
+      if (identityChanged) queueMicrotask(() => {
         void router.invalidate();
         if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
       });
