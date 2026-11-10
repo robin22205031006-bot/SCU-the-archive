@@ -56,7 +56,7 @@ export function NexusStatWheel({ stats, abilities, selected, onSelect }: {
         <text x={CENTER.x} y={CENTER.y + 9} textAnchor="middle" fontSize="20" fill="var(--foreground)">{average}</text>
         <text x={CENTER.x} y={CENTER.y + 21} textAnchor="middle" fontSize="6" fill="var(--muted-foreground)">AVERAGE</text>
       </svg>
-      <Icon aria-hidden className="pointer-events-none absolute h-3 w-3 text-nexus-wheel-label" style={{ left: `${CENTER.x / 460 * 100}%`, top: `${(CENTER.y - 17) / 420 * 100}%`, transform: "translate(-50%, -50%)" }} />
+      <span className="pointer-events-none absolute text-nexus-wheel-label" style={{ left: `${CENTER.x / 460 * 100}%`, top: `${(CENTER.y - 17) / 420 * 100}%`, transform: "translate(-50%, -50%)" }}>{selected ? <NexusAbilitySymbol name={selected} className="h-5 w-5" /> : <Icon aria-hidden className="h-3 w-3" />}</span>
       {visible.map((a, i) => {
         const p = point(115 + (i + 0.5) * step, 186);
         const AbilityIcon = a.icon;

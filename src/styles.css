@@ -811,6 +811,8 @@ html[data-spoil-characters] [data-spoiler="char"] .nexus-sign *, html[data-spoil
 
 /* Illustrated Nexus emblem palette and hand-drawn energy layers. */
 .nexus-ability-symbol { --emblem-energy: var(--fx-highlight); }
+.nexus-ability-symbol > svg { width: 100% !important; height: 100% !important; }
+.nexus-ability-symbol > svg > .nexus-emblem-art { width: 100px !important; height: 100px !important; }
 .nexus-ability-symbol > svg { animation: nexus-sign-seal 4s ease-in-out infinite; }
 .nexus-emblem-art { transform-origin: 50px 50px; }
 .nexus-emblem-current { fill: var(--emblem-energy); opacity: .13; mix-blend-mode: screen; transform-origin: 50px 75px; animation: nexus-cel-flare 2s ease-in-out infinite !important; }
