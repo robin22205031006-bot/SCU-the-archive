@@ -846,3 +846,16 @@ html[data-ui="nexus"][data-nexus-anime="on"] :is(h1,h2,h3) { font-style: italic;
 .nexus-sign[data-symbol-anime="on"] .nexus-emblem-current { opacity: .3; }
 .nexus-sign[data-sign-motion="off"]::after { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .nexus-sign::after { animation: none !important; } }
+
+/* Static artwork is the same emblem, without cel FX or a frozen animation frame. */
+.nexus-sign[data-sign-static="on"],
+.nexus-sign[data-sign-static="on"] *,
+.nexus-sign[data-sign-static="on"]::after {
+  animation: none !important;
+  transition: none !important;
+}
+.nexus-sign[data-sign-static="on"] > svg,
+.nexus-sign[data-sign-static="on"] .nexus-emblem-art { transform: none !important; }
+.nexus-sign[data-sign-static="on"] .nexus-emblem-cel,
+.nexus-sign[data-sign-static="on"] .nexus-emblem-glint,
+.nexus-sign[data-sign-static="on"]::after { display: none; }

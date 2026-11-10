@@ -10,6 +10,9 @@ import { useUiStyle } from "@/lib/ui-style";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
 import { useNexusTheme, setNexusTheme } from "@/hooks/use-nexus-theme";
 import { NexusPresentationEditor } from "@/components/nexus-presentation-editor";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useStaticNexusEmblems, setStaticNexusEmblems } from "@/hooks/use-nexus-emblem-motion";
 
 export function ThemeDrawer({
   open,
@@ -18,6 +21,7 @@ export function ThemeDrawer({
   const { theme, setTheme, zoom, scaleIndex } = useAppearance();
   const nexus = useUiStyle() === "nexus";
   const nexusTheme = useNexusTheme();
+  const staticEmblems = useStaticNexusEmblems();
   const [tab, setTab] = useState<"live" | "plain">("live");
   const liveThemes = THEMES.filter((t) => t.live);
   const plainThemes = THEMES.filter((t) => !t.live);
@@ -76,6 +80,10 @@ export function ThemeDrawer({
           ))}
         </div>
         </>}
+        {nexus && <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-4">
+          <Label htmlFor="nexus-static-emblems">Reduced motion · Static emblems</Label>
+          <Switch id="nexus-static-emblems" checked={staticEmblems} onCheckedChange={setStaticNexusEmblems} />
+        </div>}
         {nexus && <NexusPresentationEditor />}
         <div className="flex items-center gap-3 px-4 pb-6 text-sm">
           <span className="text-muted-foreground">Text size</span>
