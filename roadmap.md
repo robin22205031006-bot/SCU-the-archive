@@ -1,6 +1,6 @@
 # Nexus static emblems
-- [ ] Add a reader-controlled, saved static-emblem switch in Nexus Appearance.
-- [ ] Verify instant switching, reload persistence and system reduced-motion support.
+- [x] Add a reader-controlled, saved static-emblem switch in Nexus Appearance.
+- [x] Verify instant switching, reload persistence and system reduced-motion support.
 
 # Distinct Nexus ability emblems
 - [x] Replace shared/fallback artwork for every listed ability with a distinct lore-informed emblem.
