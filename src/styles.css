@@ -768,7 +768,7 @@ html[data-nexus-theme="nature"] { --nexus-glow: var(--fx-nature); }
 html[data-nexus-theme="void"] { --nexus-glow: var(--fx-void); }
 .nexus-fx-background { z-index: 0; opacity: .24; }
 .nexus-fx-background, .nexus-fx-background * { pointer-events: none !important; }
-.nexus-mark { display: inline-block; border: 1px solid var(--nexus-glow); transform: rotate(45deg); background: color-mix(in oklab, var(--nexus-glow) 18%, transparent); box-shadow: 0 0 12px -4px var(--nexus-glow); }
+.nexus-mark { display: inline-block; border: 1px solid var(--symbol-color, var(--nexus-glow)); transform: rotate(45deg); background: color-mix(in oklab, var(--symbol-color, var(--nexus-glow)) 18%, transparent); box-shadow: 0 0 12px -4px var(--symbol-color, var(--nexus-glow)); }
 .nexus-theme-swatch { box-shadow: 0 0 18px -6px var(--nexus-glow); }
 .nexus-theme-option { position: relative; }
 html[data-ui="nexus"] body { background-image: none !important; }
@@ -782,7 +782,7 @@ html[data-ui="nexus"] body { font-family: "Space Grotesk", system-ui, sans-serif
 @media (max-width: 640px) { .nexus-fx-background { opacity: .16; } }
 
 /* Shape-faithful cel motion: each SVG keeps its original paths and silhouette. */
-.nexus-sign { display: inline-grid; place-items: center; vertical-align: middle; flex-shrink: 0; color: inherit; }
+.nexus-sign { display: inline-grid; place-items: center; vertical-align: middle; flex-shrink: 0; color: var(--symbol-color, inherit); }
 .nexus-sign > svg { overflow: visible; transform-origin: center; animation: nexus-sign-breathe 3.6s ease-in-out infinite; }
 .nexus-sign > svg > :is(path,polyline,line) { animation: nexus-sign-ink 4.8s ease-in-out infinite; }
 .nexus-sign > svg > :nth-child(2n) { animation-delay: -.8s; }
@@ -812,7 +812,7 @@ html[data-spoil-characters] [data-spoiler="char"] .nexus-sign *, html[data-spoil
 /* Illustrated Nexus emblem palette and hand-drawn energy layers. */
 .nexus-ability-symbol { --emblem-energy: var(--fx-highlight); }
 .nexus-ability-symbol > svg { width: 100% !important; height: 100% !important; }
-.nexus-ability-symbol > svg > .nexus-emblem-art { width: 100px !important; height: 100px !important; }
+.nexus-emblem-art { overflow: hidden; }
 .nexus-ability-symbol > svg { animation: nexus-sign-seal 4s ease-in-out infinite; }
 .nexus-emblem-art { transform-origin: 50px 50px; }
 .nexus-emblem-current { fill: var(--emblem-energy); opacity: .13; mix-blend-mode: screen; transform-origin: 50px 75px; animation: nexus-cel-flare 2s ease-in-out infinite !important; }
@@ -835,3 +835,14 @@ html[data-spoil-characters] [data-spoiler="char"] .nexus-sign *, html[data-spoil
 .nexus-sign[data-sign-motion="off"] .nexus-emblem-current, .nexus-sign[data-sign-motion="off"] .nexus-emblem-glint { animation-play-state: paused !important; }
 html[data-nexus-motion="off"] .nexus-emblem-current, html[data-nexus-motion="off"] .nexus-emblem-glint { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .nexus-ability-symbol * { animation: none !important; } }
+
+/* Optional Nexus anime presentation; shared lore and motion controls remain unchanged. */
+html[data-ui="nexus"][data-nexus-anime="on"] { --nexus-border: var(--nexus-glow); --nexus-surface: color-mix(in oklab, var(--nexus-bg) 92%, var(--nexus-glow)); }
+html[data-ui="nexus"][data-nexus-anime="on"] :is(.nexus-command,.nexus-record,.nexus-cluster,.nexus-workspace [role="tab"],.nexus-nav-link) { border-width: 2px; box-shadow: 3px 3px 0 color-mix(in oklab, var(--nexus-glow) 30%, transparent); border-radius: 4px; }
+html[data-ui="nexus"][data-nexus-anime="on"] :is(h1,h2,h3) { font-style: italic; text-shadow: 2px 2px 0 var(--nexus-bg), 3px 3px 0 color-mix(in oklab, var(--nexus-glow) 55%, transparent); }
+.nexus-sign[data-symbol-anime="on"] { position: relative; isolation: isolate; }
+.nexus-sign[data-symbol-anime="on"]::after { content: ""; pointer-events: none; position: absolute; inset: -10%; border: 1px dashed var(--nexus-glow); border-radius: 50%; opacity: .55; animation: nexus-sign-orbit 12s linear infinite; }
+.nexus-sign[data-symbol-anime="on"] .nexus-emblem-art { filter: contrast(1.25) saturate(1.4); }
+.nexus-sign[data-symbol-anime="on"] .nexus-emblem-current { opacity: .3; }
+.nexus-sign[data-sign-motion="off"]::after { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .nexus-sign::after { animation: none !important; } }

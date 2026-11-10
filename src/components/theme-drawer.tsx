@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useUiStyle } from "@/lib/ui-style";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
 import { useNexusTheme, setNexusTheme } from "@/hooks/use-nexus-theme";
+import { NexusPresentationEditor } from "@/components/nexus-presentation-editor";
 
 export function ThemeDrawer({
   open,
@@ -75,6 +76,7 @@ export function ThemeDrawer({
           ))}
         </div>
         </>}
+        {nexus && <NexusPresentationEditor />}
         <div className="flex items-center gap-3 px-4 pb-6 text-sm">
           <span className="text-muted-foreground">Text size</span>
           <button
