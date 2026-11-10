@@ -39,7 +39,7 @@ function AbilityActionPage() {
     <div className="flex flex-wrap items-center gap-2">
       <select className={sel} value={k} onChange={e => { setK(e.target.value); setFightId(null); }} aria-label="Ability">{defs.map(x => <option key={x.key} value={x.key}>{x.label}</option>)}</select>
       <div role="radiogroup" aria-label="Fighter" className="flex rounded-full border border-border p-0.5">
-        {(["male", "female"] as const).map(g => <button key={g} role="radio" aria-checked={gender === g} onClick={() => setGender(g)} className={`rounded-full px-3 py-1 text-sm capitalize transition ${gender === g ? "bg-accent/20 text-foreground" : "text-muted-foreground hover:text-foreground"}`}>{g}</button>)}
+    {(["male", "female"] as const).map(g => <Button key={g} variant="ghost" size="sm" role="radio" aria-checked={gender === g} onClick={() => { setGender(g); setFightId(null); }} className={`rounded-full px-3 py-1 text-sm capitalize transition ${gender === g ? "bg-accent/20 text-foreground" : "text-muted-foreground hover:text-foreground"}`}>{g}</Button>)}
       </div>
       <select className={sel} value={fstyle} onChange={e => { setFstyle(e.target.value as FightStyleId); setFightId(null); }} aria-label="Fighting style">
         <option value="auto">Style: ability default</option>{Object.entries(FIGHT_STYLES).map(([id, v]) => <option key={id} value={id}>Style: {v.label}</option>)}</select>

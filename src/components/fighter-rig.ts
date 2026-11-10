@@ -1,4 +1,4 @@
-/** Filled shadow-fighter silhouettes in the style of the fire-sword reference sheets. Browser-only (canvas). */
+/** Articulated anatomical shadow mannequins based on the approved male/female body sheets. */
 import type { Gender, PoseName, Weapon } from "@/lib/ability-action";
 
 type C = CanvasRenderingContext2D;
@@ -18,72 +18,85 @@ export const POSES: Record<PoseName, P> = {
 export interface Look { body: string; back: string; rim: string; gender: Gender; weapon: Weapon; heavy?: boolean }
 type V = { x: number; y: number };
 
-function capsule(c: C, a: V, b: V, w0: number, w1: number) {
-  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-  c.beginPath(); c.moveTo(a.x + nx * w0, a.y + ny * w0); c.lineTo(b.x + nx * w1, b.y + ny * w1); c.lineTo(b.x - nx * w1, b.y - ny * w1); c.lineTo(a.x - nx * w0, a.y - ny * w0); c.closePath(); c.fill();
-  c.beginPath(); c.arc(a.x, a.y, w0, 0, TAU); c.arc(b.x, b.y, w1, 0, TAU); c.fill();
+/** Anatomical limb volumes: rounded muscle belly tapering into each joint. */
+function limb(c: C, a: V, b: V, w0: number, w1: number, col: string, shade: string) {
+  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
+  c.save(); c.translate(a.x, a.y); c.rotate(Math.atan2(dy, dx) - Math.PI / 2);
+  const g = c.createLinearGradient(-w0, 0, w0, 0);
+  g.addColorStop(0, shade); g.addColorStop(.38, col); g.addColorStop(.7, col); g.addColorStop(1, shade);
+  c.fillStyle = g; c.beginPath(); c.moveTo(-w0 * .55, 0);
+  c.bezierCurveTo(-w0 * 1.15, L * .2, -w1 * 1.5, L * .7, -w1, L);
+  c.quadraticCurveTo(0, L + w1, w1, L);
+  c.bezierCurveTo(w1 * 1.5, L * .7, w0 * 1.15, L * .2, w0 * .55, 0);
+  c.quadraticCurveTo(0, -w0 * .5, -w0 * .55, 0); c.fill(); c.restore();
 }
 
-/**
- * Draws one fighter with feet at (gx, gy). `vel` (px/s, signed) bends hair, scarf and cape behind the body.
- * Returns hand, weapon tip, body centre and head positions in canvas coordinates.
- */
+/** All combat scenes share this articulated, neutral anatomical mannequin. */
 export function drawFighter(c: C, S: number, gx: number, gy: number, face: number, p: P, look: Look, t: number, vel = 0) {
-  const f = look.gender === "female", H = S * .42, th = H * .25, sh = H * .25, to = H * .31, ua = H * .17, fa = H * .17;
-  const w = H * (f ? .052 : .066);
-  const [lean, lT, lS, rT, rS, lU, lF, rU, rF] = p.map(v => v * D) as [number, number, number, number, number, number, number, number, number];
+  const f = look.gender === "female", H = S * .46, th = H * .245, sh = H * .245, to = H * .32, ua = H * .175, fa = H * .16;
+  const w = H * (f ? .049 : .063);
+  const angles = p.map(v => v * D);
+  const lean = angles[0] ?? 0, lT = angles[1] ?? 0, lS = angles[2] ?? 0, rT = angles[3] ?? 0, rS = angles[4] ?? 0;
+  const lU = angles[5] ?? 0, lF = angles[6] ?? 0, rU = angles[7] ?? 0, rF = angles[8] ?? 0;
   const leg = (a: number, b: number) => { const kx = Math.sin(a) * th, ky = Math.cos(a) * th; return { kx, ky, fx: kx + Math.sin(a - b) * sh, fy: ky + Math.cos(a - b) * sh }; };
   const Lg = leg(lT, lS), Rg = leg(rT, rS), drop = Math.max(Lg.fy, Rg.fy);
   const hip = { x: gx, y: gy - drop };
   const neck = { x: hip.x + Math.sin(lean) * to * face, y: hip.y - Math.cos(lean) * to };
   const P2 = (o: V, a: number, l: number) => ({ x: o.x + Math.sin(a) * l * face, y: o.y + Math.cos(a) * l });
-  const shoulder = P2(neck, lean + Math.PI, -H * .02);
+  const shoulder = P2(neck, lean, H * .035);
   const arm = (u: number, fo: number) => { const e = P2(shoulder, u, ua); return { e, h: P2(e, u - fo, fa), dir: u - fo }; };
   const la = arm(lU, lF), ra = arm(rU, rF);
   const knee = (g: typeof Lg) => ({ x: hip.x + g.kx * face, y: hip.y + g.ky }), foot = (g: typeof Lg) => ({ x: hip.x + g.fx * face, y: hip.y + g.fy });
-  const head = { x: neck.x + Math.sin(lean) * H * .1 * face, y: neck.y - Math.cos(lean) * H * .1 };
-  const drag = Math.max(-1, Math.min(1, -vel / (S * 2))) , trail = -face * (.35 + Math.abs(drag) * .9) - drag * .2;
-  c.save(); c.lineJoin = "round"; c.globalCompositeOperation = "source-over"; c.shadowBlur = 0; c.filter = "none";
-
-  // back limbs
-  c.fillStyle = look.back;
-  capsule(c, shoulder, la.e, w * .75, w * .6); capsule(c, la.e, la.h, w * .6, w * .45);
-  capsule(c, hip, knee(Lg), w * 1.05, w * .75); capsule(c, knee(Lg), foot(Lg), w * .75, w * .5);
-  // cape (male) or long scarf (female) streaming behind
-  const flow = (len: number, wd: number, col: string, ph: number) => {
-    c.fillStyle = col; c.beginPath(); c.moveTo(neck.x - face * w * .6, neck.y);
-    const N = 10; const pts: V[] = [];
-    for (let i = 1; i <= N; i++) { const k = i / N; pts.push({ x: neck.x + trail * len * k * S * (.04 + Math.abs(drag) * .22), y: neck.y + k * len * S * .17 * (1 - Math.abs(drag) * .6) + Math.sin(t * 9 + k * 5 + ph) * S * .02 * k }); }
-    pts.forEach(q => c.lineTo(q.x, q.y - wd * .5)); for (let i = pts.length - 1; i >= 0; i--) { const q = pts[i]!, k = (i + 1) / N; c.lineTo(q.x, q.y + wd * (1 - k * .7)); } c.closePath(); c.fill();
-  };
-  if (f) flow(1.1, w * .9, look.back, 0); else flow(.75, w * 2.4, look.back, 1.3);
-
-  // torso (tapered; women narrower shoulders, defined waist)
-  const nx = Math.cos(lean) * face, ny = Math.sin(lean), sw = (f ? .95 : 1.45) * w, ww = (f ? .6 : 1.0) * w, hw = (f ? 1.1 : 1.0) * w;
+  const head = { x: neck.x + Math.sin(lean) * H * .09 * face, y: neck.y - Math.cos(lean) * H * .09 };
+  const nx = Math.cos(lean) * face, ny = Math.sin(lean), sw = (f ? 1.22 : 1.52) * w, ww = (f ? .74 : .95) * w, hw = (f ? 1.5 : 1.05) * w;
   const mid = { x: (neck.x + hip.x) / 2, y: (neck.y + hip.y) / 2 };
-  c.fillStyle = look.body; c.beginPath();
-  c.moveTo(neck.x - nx * sw, neck.y - ny * sw * face); c.lineTo(neck.x + nx * sw, neck.y + ny * sw * face);
-  c.quadraticCurveTo(mid.x + nx * ww * 1.2, mid.y + ny * ww * face, hip.x + nx * hw, hip.y + ny * hw * face);
-  c.lineTo(hip.x - nx * hw, hip.y - ny * hw * face); c.quadraticCurveTo(mid.x - nx * ww * 1.2, mid.y - ny * ww * face, neck.x - nx * sw, neck.y - ny * sw * face); c.fill();
-  // skirt / armour tassets
-  c.beginPath(); const sk = f ? .9 : 1.25;
-  c.moveTo(hip.x - nx * hw * 1.1, hip.y - ny * hw * face); c.lineTo(hip.x + nx * hw * 1.1, hip.y + ny * hw * face);
-  c.lineTo(hip.x + nx * hw * 1.6 + Math.sin(lean) * w * face, hip.y + H * .11 * sk); c.lineTo(hip.x - nx * hw * 1.5 - trail * w, hip.y + H * .12 * sk); c.closePath(); c.fill();
-  if (!f) { c.beginPath(); c.ellipse(shoulder.x + face * w * .3, shoulder.y + w * .2, w * 1.25, w * .85, lean * face, 0, TAU); c.fill(); }
-
-  // front leg
-  capsule(c, hip, knee(Rg), w * 1.1, w * .8); capsule(c, knee(Rg), foot(Rg), w * .8, w * .55);
-  c.beginPath(); const ft = foot(Rg); c.ellipse(ft.x + face * w * .5, ft.y, w * .9, w * .4, 0, 0, TAU); c.fill();
-
-  // head + hair
-  if (f) { c.fillStyle = look.body; c.beginPath(); const hx = head.x - face * H * .05, hy = head.y - H * .05;
-    c.moveTo(hx, hy - w * .5); for (let i = 1; i <= 8; i++) { const k = i / 8; c.lineTo(hx + trail * k * S * .07, hy + k * H * .16 + Math.sin(t * 8 + k * 4) * H * .025 * k - w * .5 * (1 - k)); }
-    for (let i = 8; i >= 1; i--) { const k = i / 8; c.lineTo(hx + trail * k * S * .07, hy + k * H * .16 + Math.sin(t * 8 + k * 4) * H * .025 * k + w * .5 * (1 - k)); } c.fill(); }
-  c.fillStyle = look.body; c.beginPath(); c.ellipse(head.x, head.y, H * .068, H * .078, lean * face, 0, TAU); c.fill();
-  if (!f) { c.beginPath(); c.moveTo(head.x - face * H * .06, head.y - H * .05); c.lineTo(head.x - face * H * .13, head.y - H * .1); c.lineTo(head.x - face * H * .02, head.y - H * .07); c.fill(); }
-
-  // front arm
-  capsule(c, shoulder, ra.e, w * .8, w * .62); capsule(c, ra.e, ra.h, w * .62, w * .48);
+  c.save(); c.lineJoin = "round"; c.globalCompositeOperation = "source-over"; c.shadowBlur = 0; c.filter = "none";
+  const mass = (a: V, b: V, aW: number, bW: number, back = false) => limb(c, a, b, aW, bW, back ? look.back : look.body, look.back);
+  const joint = (v: V, radius: number) => { c.fillStyle = look.body; c.beginPath(); c.ellipse(v.x, v.y, radius, radius * .9, lean * face, 0, TAU); c.fill(); };
+  const drawLeg = (g: typeof Lg, back: boolean) => {
+    const k = knee(g), ft = foot(g);
+    mass(hip, k, w * (f ? 1.25 : 1.15), w * .61, back);
+    mass(k, ft, w * .72, w * .32, back);
+    c.fillStyle = back ? look.back : look.body; c.beginPath();
+    c.moveTo(ft.x - face * w * .35, ft.y - w * .3);
+    c.quadraticCurveTo(ft.x + face * w * .45, ft.y - w * .45, ft.x + face * w * 1.2, ft.y - w * .03);
+    c.lineTo(ft.x + face * w * 1.15, ft.y + w * .12); c.lineTo(ft.x - face * w * .4, ft.y + w * .12); c.closePath(); c.fill();
+  };
+  mass(shoulder, la.e, w * .72, w * .39, true); mass(la.e, la.h, w * .5, w * .26, true); drawLeg(Lg, true);
+  // Torso in its own rotated coordinate space: trapezius, rib cage, waist and pelvis.
+  c.save(); c.translate(neck.x, neck.y); c.rotate(lean * face); c.scale(face, 1);
+  const skin = c.createLinearGradient(-sw, 0, sw, 0); skin.addColorStop(0, look.back); skin.addColorStop(.42, look.body); skin.addColorStop(.72, look.body); skin.addColorStop(1, look.back);
+  c.fillStyle = skin; c.beginPath(); c.moveTo(-w * .35, -H * .018); c.lineTo(w * .35, -H * .018);
+  c.quadraticCurveTo(w * .48, H * .025, sw, H * .065);
+  c.bezierCurveTo(sw * 1.12, H * .13, ww, H * .2, ww, H * .225);
+  c.bezierCurveTo(ww, H * .27, hw * 1.1, H * .27, hw, to);
+  c.quadraticCurveTo(0, to + H * .045, -hw, to);
+  c.bezierCurveTo(-hw * 1.1, H * .27, -ww, H * .27, -ww, H * .225);
+  c.bezierCurveTo(-ww, H * .2, -sw * 1.12, H * .13, -sw, H * .065);
+  c.quadraticCurveTo(-w * .48, H * .025, -w * .35, -H * .018); c.fill();
+  // Subtle chest / abdominal planes, not armour or costume.
+  c.strokeStyle = look.back; c.lineWidth = Math.max(.6, H * .005); c.globalAlpha *= .65;
+  for (const side of [-1, 1]) {
+    c.beginPath(); c.moveTo(side * w * .1, H * .065);
+    c.bezierCurveTo(side * sw * .55, H * .045, side * sw * .95, H * .085, side * sw * .8, H * .115);
+    c.quadraticCurveTo(side * w * .4, H * (f ? .16 : .13), side * w * .1, H * .12); c.stroke();
+    c.beginPath(); c.moveTo(side * ww * .75, H * .16); c.lineTo(side * ww * .55, H * .23); c.lineTo(side * hw * .6, H * .29); c.stroke();
+  }
+  c.beginPath(); c.moveTo(0, H * .13); c.lineTo(0, H * .25); c.stroke();
+  if (!f) for (let i = 0; i < 3; i++) { const y = H * (.155 + i * .03); c.beginPath(); c.moveTo(-ww * .55, y); c.quadraticCurveTo(0, y + H * .015, ww * .55, y); c.stroke(); }
+  c.restore(); drawLeg(Rg, false);
+  // Bald neutral head, jaw and face planes matching the reference mannequins.
+  mass(neck, head, w * .38, w * .4);
+  c.save(); c.translate(head.x, head.y); c.rotate(lean * face); c.scale(face, 1);
+  c.fillStyle = skin; c.beginPath(); c.moveTo(-H * .055, -H * .026);
+  c.bezierCurveTo(-H * .06, -H * .095, H * .057, -H * .095, H * .061, -H * .034);
+  c.lineTo(H * .067, H * .008); c.lineTo(H * .057, H * .035); c.lineTo(H * .022, H * .06);
+  c.lineTo(-H * .036, H * .048); c.quadraticCurveTo(-H * .057, H * .018, -H * .055, -H * .026); c.fill();
+  c.strokeStyle = look.back; c.lineWidth = Math.max(.7, H * .006);
+  c.beginPath(); c.moveTo(H * .015, -H * .014); c.lineTo(H * .045, -H * .013); c.moveTo(H * .038, -H * .005); c.lineTo(H * .048, H * .017); c.lineTo(H * .025, H * .019); c.moveTo(H * .012, H * .034); c.lineTo(H * .039, H * .034); c.stroke(); c.restore();
+  mass(shoulder, ra.e, w * .82, w * .4); joint(shoulder, w * .85);
+  mass(ra.e, ra.h, w * .57, w * .27); joint(ra.h, w * .34);
+  void t; void vel;
 
   // weapon in the front hand, continuing the forearm line
   let tip = ra.h;

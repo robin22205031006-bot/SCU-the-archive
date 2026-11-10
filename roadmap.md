@@ -1,3 +1,8 @@
+# Combat reference update
+- [x] Reviewed all six Pinterest pages and cover images; exact video choreography remains blocked because Pinterest exposes no playable videos here. Uploaded clips are needed for timing analysis.
+- [x] Replaced shared male/female fighter bodies with anatomical mannequins based on the supplied sheets, including opponents and afterimages.
+- [x] Added opponent guard/recoil movement and frame-time camera smoothing; checked both bodies, playback, story fights and Android-width layout without changing guessed story choreography.
+
 # Sign-in support and superadmin access
 - [x] Confirm unsupported providers cannot be enabled; the sign-in page already has real Google OAuth and no unsupported placeholders.
 - [x] Verify the designated superadmin has the persisted admin role; enforce verified identity and protected target checks.
