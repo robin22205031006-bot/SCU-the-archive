@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { FxRecipe } from "@/lib/ability-fx";
+import { PAINT, guardianAura, type PF } from "@/components/fx-painters";
 
 type C = CanvasRenderingContext2D;
 interface F { c: C; t: number; p: number; s: number; r: FxRecipe; rnd: (i: number) => number; v: number }
@@ -248,7 +249,7 @@ function aura(c: C, s: number, t: number, r: FxRecipe) {
 }
 
 /** Cel-style frame-stepped ability FX renderer ("on twos": 12 drawn frames per second). */
-export function AbilityFxCanvas({ recipe, className = "", playing = true, fps = 12, label }: { recipe: FxRecipe; className?: string; playing?: boolean; fps?: number; label?: string }) {
+export function AbilityFxCanvas({ recipe, className = "", playing = true, fps = 24, label }: { recipe: FxRecipe; className?: string; playing?: boolean; fps?: number; label?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current; if (!cv) return; const c = cv.getContext("2d"); if (!c) return;
@@ -260,12 +261,19 @@ export function AbilityFxCanvas({ recipe, className = "", playing = true, fps = 
       if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
       const frame = Math.floor(((now - start) / 1000) * fps);
       if (frame !== last || !playing || reduce) {
-        last = frame; const t = (reduce || !playing ? 1.2 : frame / fps) / recipe.tempo * 1.6;
+        last = frame; const t = (reduce || !playing ? 2.9 * recipe.tempo / 1.6 : frame / fps) / recipe.tempo * 1.6;
         c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+        c.fillStyle = "#07070d"; c.fillRect(0, 0, w, h);
         const s = Math.min(w, h); c.save(); c.translate(w / 2, h / 2);
         const bg = c.createRadialGradient(0, 0, 0, 0, 0, s * .55); bg.addColorStop(0, recipe.palette[1] + "66"); bg.addColorStop(1, "transparent"); c.fillStyle = bg; c.fillRect(-w, -h, w * 2, h * 2);
-        glow(c, recipe.palette[0], 8 + recipe.power * 2); aura(c, s, t, recipe);
-        DRAW[recipe.motif]({ c, t, p: recipe.power, s, r: recipe, rnd, v: recipe.variant % 8 });
+        const painter = PAINT[recipe.motif];
+        const pf: PF = { c, t, p: recipe.power, s, r: recipe, rnd, v: recipe.variant, step: Math.floor(t * 8) };
+        const guardian = recipe.key.endsWith("_guardian");
+        if (guardian) guardianAura(pf, true);
+        if (painter) { c.shadowBlur = 0; painter(pf); c.globalCompositeOperation = "source-over"; c.globalAlpha = 1; glow(c, recipe.palette[0], 6); aura(c, s, t, recipe); c.shadowBlur = 0; }
+        else { glow(c, recipe.palette[0], 8 + recipe.power * 2); aura(c, s, t, recipe); DRAW[recipe.motif]({ c, t, p: recipe.power, s, r: recipe, rnd, v: recipe.variant % 8 }); }
+        if (guardian) { c.shadowBlur = 0; guardianAura(pf, false); }
+        c.globalCompositeOperation = "source-over";
         c.restore(); c.shadowBlur = 0; c.globalAlpha = 1;
       }
       if (playing && !reduce) raf = requestAnimationFrame(draw);

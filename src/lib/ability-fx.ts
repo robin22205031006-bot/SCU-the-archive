@@ -36,7 +36,7 @@ const TABLE: Record<string, Row> = {
   astrapo_electrokinesis: ["lightning", 1, P("#38bdf8", "#1d4ed8", "#e0f2fe"), 1.0, "Tight blue plasma coils commanded at will."],
   purple_lightning: ["lightning", 2, P("#c084fc", "#6d28d9", "#f5e8ff"), 1.0, "A dense violet storm sphere with coronal discharge."],
   red_lightning: ["lightning", 3, P("#ff1f3d", "#3a0008", "#ffd1d8"), 0.9, "Dorian's apex: black core, crimson destruction bolts."],
-  crimson_astrapo: ["lightning", 4, P("#ff4d6d", "#7f1d1d", "#ffe4e6"), 1.0, "Astrapo control fused with crimson charge."],
+  crimson_astrapo: ["lightning", 4, P("#ff4d6d", "#7f1d1d", "#ffe4e6"), 1.0, "Another form of Red Lightning: a crimson spear wrapped in twin spiralling bolts."],
   white_lightning_drive: ["lightning", 5, P("#ffffff", "#94a3b8", "#e2e8f0"), 0.8, "Kinetic white sparks trailing the body's drive."],
   hyperkinesis: ["lightning", 6, P("#a3e635", "#3f6212", "#f7fee7"), 0.7, "Overcharged motion crackling at every step."],
   // Blood lineage
@@ -125,7 +125,7 @@ const TABLE: Record<string, Row> = {
   sword_master: ["blade", 3, P("#fde68a", "#422006", "#ffffff"), 1.4, "Triple master slashes forming a star."],
 };
 
-const TIER_POWER: Record<AbilityTier, number> = { Mythic: 8, Legendary: 7, Rare: 5, Exceptional: 6, Unique: 4, Ancient: 4, Standard: 2, Role: 1 };
+export const TIER_POWER: Record<AbilityTier, number> = { Mythic: 8, Legendary: 7, Rare: 5, Exceptional: 6, Unique: 4, Ancient: 4, Standard: 2, Role: 1 };
 const FALLBACK: [RegExp, FxMotif][] = [
   [/flame|fire|pyro|ember/, "flame"], [/lightning|electro|volt|thunder/, "lightning"], [/blood|hemo|sangu/, "blood"],
   [/water|hydro|tide/, "water"], [/wind|aero|air|sky/, "wind"], [/ice|cryo|frost/, "frost"], [/earth|stone|geo/, "earth"],
@@ -150,16 +150,65 @@ export function fxSignature(r: FxRecipe) { return `${r.motif}:${r.variant}`; }
 export const FX_TABLE_KEYS = Object.keys(TABLE);
 
 /** Upgrade lineages from lore: lowest rank first, apex last. */
-export const FX_LINEAGES: { id: string; label: string; steps: string[] }[] = [
+export interface FxLineage { id: string; label: string; steps: string[] }
+export const ABILITY_FX_LINEAGES_KEY = "ability_fx_lineages";
+/** Default upgrade chains; admins can override them (stored in app_settings). */
+export const FX_LINEAGES: FxLineage[] = [
   { id: "lightning", label: "Lightning ascension", steps: ["lightning", "astrapo_electrokinesis", "purple_lightning", "red_lightning"] },
+  { id: "crimson", label: "Crimson branch (Red Lightning variant)", steps: ["lightning", "astrapo_electrokinesis", "purple_lightning", "crimson_astrapo"] },
+  { id: "speed", label: "Speed lightning (Weston)", steps: ["lightning", "white_lightning_drive"] },
   { id: "flame", label: "Flame ascension", steps: ["flame", "red_flame_magic", "duskmoor_blue_flame", "draconic_flame"] },
   { id: "blood", label: "Blood ascension", steps: ["blood_manipulation", "hemokinesis", "sanguine_shift", "demonic_hemokinesis"] },
   { id: "aether", label: "Aether ascension", steps: ["aether", "aether_dominion"] },
+  { id: "fire", label: "Fire → Fire Guardian", steps: ["fire", "fire_guardian"] },
+  { id: "water", label: "Water → Water Guardian", steps: ["water", "water_guardian"] },
+  { id: "wind", label: "Wind → Wind Guardian", steps: ["wind", "wind_guardian"] },
+  { id: "earth", label: "Earth → Earth Guardian", steps: ["earth", "earth_guardian"] },
+  { id: "nature", label: "Nature → Nature Guardian", steps: ["nature", "nature_guardian"] },
   { id: "elements", label: "Elemental convergence", steps: ["fire_guardian", "water_guardian", "wind_guardian", "earth_guardian", "omni_ergon"] },
   { id: "blade", label: "Blade ascension", steps: ["swordsman", "sword_master", "gladiokinesis"] },
 ];
 
-export function abilityLineage(name: string) {
-  const key = abilityDef(name).key;
-  return FX_LINEAGES.find(l => l.steps.includes(key)) ?? null;
+/** Validates admin-saved chains; returns null when the value is unusable. */
+export function sanitizeLineages(value: unknown): FxLineage[] | null {
+  const list = (value as { lineages?: unknown } | null)?.lineages;
+  if (!Array.isArray(list)) return null;
+  const out: FxLineage[] = [];
+  for (const l of list) {
+    const x = l as Partial<FxLineage>;
+    if (typeof x?.id !== "string" || typeof x.label !== "string" || !Array.isArray(x.steps)) continue;
+    const steps = x.steps.filter((k): k is string => typeof k === "string" && k.length > 0).slice(0, 12);
+    if (steps.length >= 2) out.push({ id: x.id.slice(0, 40), label: x.label.slice(0, 80), steps });
+  }
+  return out;
 }
+
+export function lineageFor(lineages: FxLineage[], name: string) {
+  const key = abilityDef(name).key;
+  return lineages.find(l => l.steps[l.steps.length - 1] === key) ?? lineages.find(l => l.steps.includes(key)) ?? null;
+}
+
+export type CombatStats = { damage: number; speed: number; range: number; mobility: number; meters: number; role: string };
+const MOTIF_COMBAT: Record<FxMotif, [number, number, number, number]> = {
+  flame: [7, 5, 6, 4], lightning: [8, 8, 7, 6], water: [5, 5, 6, 5], wind: [4, 8, 7, 8], earth: [7, 3, 4, 2], nature: [4, 4, 5, 3],
+  frost: [6, 4, 6, 3], blood: [7, 6, 4, 6], void: [9, 5, 8, 5], arcane: [6, 5, 8, 4], chrono: [6, 6, 9, 7], beam: [7, 6, 10, 2],
+  blade: [7, 7, 2, 7], beast: [8, 7, 2, 8], heal: [1, 4, 5, 4], shadow: [6, 8, 4, 9], tech: [6, 6, 7, 6], chaos: [8, 6, 6, 6],
+  prism: [9, 7, 8, 7], judgement: [9, 4, 9, 3], portal: [5, 7, 9, 10], impact: [8, 5, 3, 4], ghost: [5, 8, 4, 9], mind: [3, 5, 8, 5],
+};
+const KEY_COMBAT: Record<string, [number, number, number, number]> = {
+  white_lightning_drive: [5, 10, 5, 10], red_lightning: [10, 8, 8, 6], crimson_astrapo: [9, 8, 9, 6], super_speed: [4, 10, 3, 10],
+  speed: [3, 9, 3, 9], long_range_overwatch: [8, 4, 10, 2], long_range: [7, 4, 10, 3], assassin: [9, 9, 2, 8], healing: [0, 4, 5, 4],
+  regeneration: [1, 4, 1, 5], domain_expansion: [7, 5, 10, 3], aether_dominion: [10, 7, 10, 8], omni_ergon: [10, 8, 9, 8],
+};
+/** Reader combat simulator: tier scales the ability's base combat profile. */
+export function simulateCombat(name: string, tier: AbilityTier): CombatStats {
+  const r = abilityFxRecipe(name);
+  const [d, sp, rg, mo] = KEY_COMBAT[r.key] ?? MOTIF_COMBAT[r.motif];
+  const m = 0.55 + (TIER_POWER[tier] ?? 2) * 0.08;
+  const sc = (x: number) => Math.min(100, Math.round(x * 10 * m));
+  const range = sc(rg), mobility = sc(mo);
+  const role = range >= 70 ? "Backline / long range" : mobility >= 70 ? "Skirmisher / flanker" : range <= 35 ? "Frontline brawler" : "Midline controller";
+  return { damage: sc(d), speed: sc(sp), range, mobility, meters: Math.round(rg * 5 * m), role };
+}
+
+export function abilityLineage(name: string) { return lineageFor(FX_LINEAGES, name); }

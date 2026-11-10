@@ -21,3 +21,23 @@ describe("ability FX", () => {
     expect(abilityFxRecipe("red_lightning").power).toBeGreaterThan(abilityFxRecipe("lightning").power);
   });
 });
+
+import { lineageFor, FX_LINEAGES, sanitizeLineages, simulateCombat } from "@/lib/ability-fx";
+describe("ability chains and simulator", () => {
+  it("crimson astrapo is its own branch of red lightning", () => {
+    expect(lineageFor(FX_LINEAGES, "crimson_astrapo")?.steps).toEqual(["lightning", "astrapo_electrokinesis", "purple_lightning", "crimson_astrapo"]);
+  });
+  it("fire guardian ranks above the fire element", () => {
+    expect(lineageFor(FX_LINEAGES, "fire_guardian")?.steps).toEqual(["fire", "fire_guardian"]);
+  });
+  it("drops admin chains with fewer than two steps", () => {
+    expect(sanitizeLineages({ lineages: [{ id: "a", label: "A", steps: ["x"] }, { id: "b", label: "B", steps: ["x", "y"] }] })?.map(l => l.id)).toEqual(["b"]);
+  });
+  it("higher tier means more damage", () => {
+    expect(simulateCombat("flame", "Mythic").damage).toBeGreaterThan(simulateCombat("flame", "Standard").damage);
+  });
+  it("Weston's white lightning is faster but Dorian's red lightning hits harder", () => {
+    expect(simulateCombat("white_lightning_drive", "Legendary").speed).toBeGreaterThan(simulateCombat("red_lightning", "Legendary").speed);
+    expect(simulateCombat("red_lightning", "Legendary").damage).toBeGreaterThan(simulateCombat("white_lightning_drive", "Legendary").damage);
+  });
+});

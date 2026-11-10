@@ -2,6 +2,7 @@ export const TABS = [
   { to: "/", label: "Home", icon: "home" },
   { to: "/characters", label: "Characters", icon: "chars" },
   { to: "/abilities", label: "Abilities", icon: "abilities" },
+  { to: "/ability-fx", label: "Ability FX", icon: "fx" },
   { to: "/archive", label: "Archive", icon: "archive" },
   { to: "/story", label: "Story", icon: "book" },
   { to: "/map", label: "Map", icon: "map" },
