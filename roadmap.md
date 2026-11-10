@@ -1,3 +1,8 @@
+# Season titles and lore questions
+- [ ] Add per-season title controls with checked admin saves across all three styles.
+- [ ] Add series/season questions answered through AI Gateway from scoped existing lore, respecting spoiler controls.
+- [ ] Test title persistence, lore scoping and signed-in question flows.
+
 # Restore original series catalogue
 - [x] Restore original five series and their seasons in shared records, preserving existing lore.
 - [x] Show selectable seasons in all three styles and verify original counts and named epics.
