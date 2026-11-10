@@ -20,6 +20,7 @@ import { useUiStyle } from "@/lib/ui-style";
 import { Button } from "@/components/ui/button";
 import type { Entity } from "@/lib/entities";
 import { seriesSeasonNames } from "@/lib/series-seasons";
+import { SeriesTools } from "@/components/series-tools";
 
 export const Route = createFileRoute("/_authenticated/series")({
   validateSearch: (s: Record<string, unknown>): { s?: string } => ({
@@ -122,6 +123,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
               <Link to="/characters" search={{ series: series.id, season: i + 1 }}>{name}<Users className="h-4 w-4 shrink-0" /></Link>
             </Button>)}
           </div>}
+          {series && <SeriesTools series={series} />}
           <div className="grid gap-4">
             {grouped.length === 0 ? (
               <p className="text-sm text-muted-foreground">No characters assigned yet.</p>
@@ -339,6 +341,7 @@ export function SeriesPage() {
       )}
 
       </>}
+      {nexus && <div className="mt-6 grid gap-3" aria-label="Series controls">{(series ?? []).map(saga => <div key={saga.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3"><h3 className="text-sm font-medium">{saga.title}</h3><SeriesTools series={saga} /></div>)}</div>}
       {(episodes?.length ?? 0) > 0 && (
         <section className="mt-14">
           <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
