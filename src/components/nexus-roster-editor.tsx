@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
+import { invalidateArchive, resolveGroupIds } from "@/lib/archive-sync";
 
 type Ability = { name: string; level: number; note: string };
 export function NexusRosterEditor({ open, onClose, entities, seriesId, season, label }: { open: boolean; onClose: () => void; entities: Entity[]; seriesId: string; season: number; label: string }) {
@@ -23,10 +24,10 @@ export function NexusRosterEditor({ open, onClose, entities, seriesId, season, l
   const entity = all.find(e => e.id === selected);
   return <Dialog open={open} onOpenChange={v => !v && onClose()}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Season roster · {label}</DialogTitle></DialogHeader>
     <label className="grid gap-1 text-xs">Character / Organization / Bloodline / Cult<select aria-label="Roster character" className="h-10 w-full rounded-md border border-input bg-background px-3" value={selected} onChange={ev => setSelected(ev.target.value)}>{all.map(e => <option key={e.id} value={e.id}>{e.name}{e.kind !== "character" ? ` · ${e.kind}` : ""}</option>)}</select></label>
-    {entity && <RosterFields key={`${entity.id}:${seriesId}:${season}`} entity={entity} seriesId={seriesId} season={season} />}
+    {entity && <RosterFields key={`${entity.id}:${seriesId}:${season}`} entity={entity} seriesId={seriesId} season={season} groups={groups} />}
   </DialogContent></Dialog>;
 }
-function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: string; season: number }) {
+function RosterFields({ entity, seriesId, season, groups }: { entity: Entity; seriesId: string; season: number; groups: Entity[] }) {
   const qc = useQueryClient();
   const key = `${seriesId}:${season}`;
   const [form, setForm] = useState<SeasonDossier>(() => ({ roster: true, ...readDossier(entity.stats)[key] }));
@@ -78,11 +79,33 @@ function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: 
         const inserted = await supabase.from("character_abilities").insert(unique.map(a => ({ entity_id: entity.id, series_id: seriesId, season_number: season, ability_key: a.name, level: a.level, note: a.note || null })));
         if (inserted.error) throw inserted.error;
       }
+      // Shared records: group memberships feed Archive/Orgs/Clan graph, series rows feed Journey graphs.
+      const picked = [...(form.organizations ?? []), ...(form.bloodline ? [form.bloodline] : [])].filter(Boolean);
+      const groupIds = resolveGroupIds(picked, groups);
+      if (groupIds.length) {
+        const { data: existing, error: memErr } = await supabase.from("entity_memberships").select("group_id").eq("character_id", entity.id);
+        if (memErr) throw memErr;
+        const have = new Set((existing ?? []).map(m => m.group_id));
+        const add = groupIds.filter(g => !have.has(g) && g !== entity.id);
+        if (add.length) {
+          const ins = await supabase.from("entity_memberships").insert(add.map(group_id => ({ character_id: entity.id, group_id, status: "member" })));
+          if (ins.error) throw ins.error;
+        }
+      }
+      if (entity.kind === "character") {
+        const { data: sc, error: scErr } = await supabase.from("series_characters").select("id").eq("series_id", seriesId).eq("character_id", entity.id).limit(1);
+        if (scErr) throw scErr;
+        const patch = { ...(form.role ? { role_in_series: form.role, arc_role: form.role } : {}), ...(form.status ? { status: form.status } : {}) };
+        const up = sc?.[0]
+          ? (Object.keys(patch).length ? await supabase.from("series_characters").update(patch).eq("id", sc[0].id) : { error: null })
+          : form.roster !== false ? await supabase.from("series_characters").insert({ series_id: seriesId, character_id: entity.id, status: form.status || "Alive", ...patch }) : { error: null };
+        if (up.error) throw up.error;
+      }
       toast.success(`${entity.name} · season saved`);
     } catch (err) {
       toast.error(`${wrote ? "Season details saved, but abilities could not all be saved. " : "Couldn't save this season. "}${err instanceof Error ? err.message : "Please retry."}`);
     } finally {
-      await Promise.all([["entities"], ["entity", entity.id], ["character-abilities"], ["roster-abilities"], ["nexus-series-abilities"], ["character-series"]].map(queryKey => qc.invalidateQueries({ queryKey })));
+      await invalidateArchive(qc);
       setBusy(false);
     }
   };
@@ -92,9 +115,9 @@ function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: 
       <label className="grid gap-1 text-xs">Role this season<select aria-label="Season role" className="h-9 rounded-md border border-input bg-background px-2" value={form.role ?? ""} onChange={ev => setForm({ ...form, role: ev.target.value })}><option value="">Not recorded</option>{[...new Set([...NEXUS_ROLES, ...(form.role ? [form.role] : [])])].map(r => <option key={r} value={r}>{r}</option>)}</select></label>
       <label className="grid gap-1 text-xs">Status<select aria-label="Season status" className="h-9 rounded-md border border-input bg-background px-2" value={form.status ?? ""} onChange={ev => setForm({ ...form, status: ev.target.value })}><option value="">Not recorded</option>{SEASON_STATUSES.map(s => <option key={s}>{s}</option>)}</select></label>
       <label className="grid gap-1 text-xs">Title / Codename<Input aria-label="Season codename" value={form.codename ?? ""} onChange={ev => setForm({ ...form, codename: ev.target.value })} /></label>
-      <label className="grid gap-1 text-xs">Bloodline<Input aria-label="Season bloodline" value={form.bloodline ?? ""} onChange={ev => setForm({ ...form, bloodline: ev.target.value })} /></label>
+      <label className="grid gap-1 text-xs">Bloodline<select aria-label="Season bloodline" className="h-9 rounded-md border border-input bg-background px-2" value={form.bloodline ?? ""} onChange={ev => setForm({ ...form, bloodline: ev.target.value })}><option value="">None</option>{[...new Set([...groups.filter(g => g.kind === "bloodline" || g.kind === "clan").map(g => g.name), ...(form.bloodline ? [form.bloodline] : [])])].map(n => <option key={n} value={n}>{n}</option>)}</select></label>
     </div>
-    <label className="grid gap-1 text-xs">Organizations / Cults<Input aria-label="Season organizations" value={(form.organizations ?? []).join(", ")} onChange={ev => setForm({ ...form, organizations: ev.target.value.split(",").map(s => s.trim()) })} /></label>
+    <fieldset className="grid gap-1 text-xs"><legend className="mb-1">Organizations / Cults / Factions</legend><div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-md border border-input p-2">{groups.filter(g => g.kind === "organization" || g.kind === "faction").map(g => { const on = (form.organizations ?? []).includes(g.name); return <button type="button" key={g.id} aria-pressed={on} onClick={() => setForm({ ...form, organizations: on ? (form.organizations ?? []).filter(n => n !== g.name) : [...(form.organizations ?? []).filter(Boolean), g.name] })} className={`rounded-full border px-2 py-0.5 ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>{g.name}</button>; })}</div></fieldset>
     <div className="flex justify-end"><Button variant="outline" size="sm" disabled={drafting} onClick={fillStory}>{drafting ? "Reading PDFs…" : "Fill story from PDFs"}</Button></div>
     {(["story", "impact", "philosophy"] as const).map(field => <label key={field} className="grid gap-1 text-xs capitalize">{field}<Textarea aria-label={`Season ${field}`} rows={2} value={form[field] ?? ""} onChange={ev => setForm({ ...form, [field]: ev.target.value })} /></label>)}
     <div className="flex items-center justify-between"><h3 className="text-sm">Season abilities</h3><Button variant="outline" size="sm" disabled={!loaded} onClick={() => setAbilities([...abilities, { name: "", level: 1, note: "" }])}><Plus className="h-3 w-3" />Ability</Button></div>

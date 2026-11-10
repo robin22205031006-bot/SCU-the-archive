@@ -1,3 +1,4 @@
+import { invalidateArchive } from "@/lib/archive-sync";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookMarked, Pencil, Plus, Trash2, Users, X } from "lucide-react";
@@ -140,7 +141,7 @@ function SeriesFormDialog({
       if (error) throw error;
       sfx.add();
       toast.success(series ? "Series updated" : "Series created");
-      qc.invalidateQueries({ queryKey: ["series"] });
+      void invalidateArchive(qc);
       onOpenChange(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "The series could not be saved.");
@@ -351,7 +352,7 @@ function AddCharacterDialog({
       if (error) throw error;
       sfx.add();
       toast.success(`Added ${c.name} to ${series.title}`);
-      qc.invalidateQueries({ queryKey: ["series-characters", series.id] });
+      void invalidateArchive(qc);
       qc.invalidateQueries({ queryKey: ["character-series"] });
       onOpenChange(false);
     } catch (err) {
@@ -417,7 +418,7 @@ function SeriesMembers({ series }: { series: Series }) {
   const update = async (row: SeriesCharacter, patch: Partial<SeriesCharacter>) => {
     const { error } = await supabase.from("series_characters").update(patch).eq("id", row.id);
     if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["series-characters", series.id] });
+    else void invalidateArchive(qc);
   };
 
   const remove = async (row: SeriesCharacter) => {
@@ -425,7 +426,7 @@ function SeriesMembers({ series }: { series: Series }) {
     if (error) toast.error(error.message);
     else {
       sfx.remove();
-      qc.invalidateQueries({ queryKey: ["series-characters", series.id] });
+      void invalidateArchive(qc);
       qc.invalidateQueries({ queryKey: ["character-series"] });
     }
   };
@@ -571,8 +572,8 @@ export function AdminSeries() {
     else {
       sfx.remove();
       toast.success(`${deleting.title} deleted`);
-      qc.invalidateQueries({ queryKey: ["series"] });
-      qc.invalidateQueries({ queryKey: ["series-characters"] });
+      void invalidateArchive(qc);
+      void invalidateArchive(qc);
       qc.invalidateQueries({ queryKey: ["character-series"] });
     }
     setDeleting(null);

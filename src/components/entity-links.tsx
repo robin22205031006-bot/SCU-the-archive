@@ -1,3 +1,4 @@
+import { invalidateArchive } from "@/lib/archive-sync";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Plus, X } from "lucide-react";
@@ -87,7 +88,7 @@ function LinkEntityDialog({
       if (error) throw error;
       sfx.add();
       toast.success(`Linked ${target.name} to ${entity.name}`);
-      qc.invalidateQueries({ queryKey: ["entity-links"] });
+      void invalidateArchive(qc);
       onOpenChange(false);
     } catch (err) {
       const detail =
@@ -186,7 +187,7 @@ export function EntityLinks({
   const updateStatus = async (m: EntityMembership, status: string) => {
     const { error } = await supabase.from("entity_memberships").update({ status }).eq("id", m.id);
     if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["entity-links"] });
+    else void invalidateArchive(qc);
   };
 
   const remove = async (m: EntityMembership) => {
@@ -195,7 +196,7 @@ export function EntityLinks({
     else {
       sfx.remove();
       toast.success("Link removed");
-      qc.invalidateQueries({ queryKey: ["entity-links"] });
+      void invalidateArchive(qc);
     }
   };
 

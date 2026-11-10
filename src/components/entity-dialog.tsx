@@ -1,3 +1,4 @@
+import { invalidateArchive } from "@/lib/archive-sync";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
@@ -256,7 +257,7 @@ export function EntityDialog({
     if (entity) sfx.click();
     else sfx.add();
     toast.success(entity ? "Saved" : "Created");
-    qc.invalidateQueries({ queryKey: ["entities"] });
+    void invalidateArchive(qc)
     qc.invalidateQueries({ queryKey: ["search-index"] });
     onOpenChange(false);
   };
