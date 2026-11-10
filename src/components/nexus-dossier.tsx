@@ -23,7 +23,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
-import { useNexusMotion } from "@/hooks/use-nexus-motion";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
