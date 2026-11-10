@@ -23,9 +23,9 @@ export function NexusAbilitySymbol({ name, iconName = "", className = "h-8 w-8",
   const special = art === "vampire" ? vampire : art === "aether-dominion" ? dominion : art === "omni-ergon" ? omni : null;
   return <NexusSign symbolName={name} anime={previewAnime ?? appearance.anime} className={`nexus-ability-symbol ${className}`}>
     <svg viewBox="0 0 100 100" data-ability-art={art} className="h-full w-full" aria-hidden>
-      <defs><clipPath id={id}><circle cx="50" cy="50" r="43" /></clipPath><filter id={`${id}-tint`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={color ? tintMatrix(color) : "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"} /></filter></defs>
+      <defs><clipPath id={id}><circle cx="50" cy="50" r="43" /></clipPath><clipPath id={`${id}-tile`}><rect x="6" y="6" width="88" height="88" /></clipPath><filter id={`${id}-tint`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={color ? tintMatrix(color) : "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"} /></filter></defs>
       <g filter={color ? `url(#${id}-tint)` : undefined}>
-        {special ? <image className="nexus-emblem-art" href={special} x="6" y="6" width="88" height="88" /> : <svg x="6" y="6" width="88" height="88" overflow="hidden" viewBox={`${x} ${y} 384 384`} className="nexus-emblem-art"><image href={index < 16 ? elementalAtlas : skillAtlas} width="1536" height="1536" /></svg>}
+        <g clipPath={`url(#${id}-tile)`} className="nexus-emblem-art">{special ? <image href={special} x="6" y="6" width="88" height="88" /> : <image href={index < 16 ? elementalAtlas : skillAtlas} x={6 - x * 88 / 384} y={6 - y * 88 / 384} width="352" height="352" />}</g>
       </g>
       <g clipPath={`url(#${id})`} className="nexus-emblem-cel">
         <path className="nexus-emblem-current" d="M25 68 Q40 50 48 23 Q53 47 68 40 Q60 61 75 75 Q54 64 48 83 Q35 63 25 68Z" />
