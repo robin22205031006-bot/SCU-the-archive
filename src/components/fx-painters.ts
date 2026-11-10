@@ -371,9 +371,9 @@ export function guardianAura(f: PF, under: boolean) {
   const { c, s, t, r } = f; const [a, , hi] = r.palette; const gy = s * GY;
   if (under) {
     runeCircle(c, s, t, a, hi, s * .44, .95);
-    add(c); const g = c.createLinearGradient(0, gy, 0, -s * .5); g.addColorStop(0, rgba(a, .14)); g.addColorStop(1, rgba(a, 0)); c.fillStyle = g;
-    for (let i = 1; i <= 5; i++) { const w = s * .03 * i; c.fillRect(-w, -s * .5, w * 2, gy + s * .5); }
-    c.shadowColor = a; c.shadowBlur = 24; c.globalAlpha = .3 + .08 * Math.sin(t * 2); const bob = Math.sin(t * 1.2) * s * .015; const hd = humanoid(c, 0, gy - s * .08 + bob, s * .55, rgba(a, .35), 0, .75 + Math.sin(t) * .05, true);
+    add(c); const top = -s * .5, n = 14, sh = (gy - top) / n;
+    for (let i = 0; i < n; i++) { const k = 1 - i / n, w = s * (.16 - .06 * (i / n)); const g = c.createLinearGradient(-w, 0, w, 0); g.addColorStop(0, rgba(a, 0)); g.addColorStop(.5, rgba(a, .4 * k)); g.addColorStop(1, rgba(a, 0)); c.fillStyle = g; c.fillRect(-w, gy - (i + 1) * sh, w * 2, sh + .5); }
+    c.shadowColor = a; c.shadowBlur = 24; c.globalAlpha = .22 + .06 * Math.sin(t * 2); const bob = Math.sin(t * 1.2) * s * .015; const hd = humanoid(c, 0, gy - s * .08 + bob, s * .55, rgba(a, .35), 0, .75 + Math.sin(t) * .05, true);
     c.globalAlpha = 1; c.save(); c.translate(hd.hx, hd.hy - hd.u * 1.6); c.scale(1, .3); c.strokeStyle = rgba(hi, .9); c.lineWidth = 2; c.beginPath(); c.arc(0, 0, hd.u * 1.6, 0, TAU); c.stroke(); c.restore(); c.shadowBlur = 0; norm(c);
   } else {
     add(c); for (let i = 0; i < 18; i++) { const q = i / 18 * TAU + t * .5; glowDot(c, Math.cos(q) * s * .38, gy - s * .14 + Math.sin(q) * s * .08 - (i % 4) * s * .06, s * .022, i % 2 ? a : hi, .9); }

@@ -103,7 +103,7 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
 }
 
 export function FxSimulator() {
-  const defs = allAbilityDefs().filter(d => d.tier !== "Role").sort((a, b) => a.label.localeCompare(b.label));
+  const defs = allAbilityDefs().sort((a, b) => a.label.localeCompare(b.label));
   const [k, setK] = useState("red_lightning"); const [tier, setTier] = useState<AbilityTier>(abilityDef("red_lightning").tier);
   const lineages = useAbilityLineages();
   const base = useMemo(() => abilityFxRecipe(k), [k]);
@@ -113,7 +113,7 @@ export function FxSimulator() {
   return <section className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
     <div className="grid gap-3">
       <div className="flex flex-wrap gap-2">
-        <select className={sel} value={k} onChange={e => { setK(e.target.value); setTier(abilityDef(e.target.value).tier); }} aria-label="Ability">{defs.map(d => <option key={d.key} value={d.key}>{d.label}</option>)}</select>
+        <select className={sel} value={k} onChange={e => { setK(e.target.value); const t0 = abilityDef(e.target.value).tier; setTier(t0 === "Role" ? "Standard" : t0); }} aria-label="Ability">{defs.map(d => <option key={d.key} value={d.key}>{d.label}</option>)}</select>
         <select className={sel} value={tier} onChange={e => setTier(e.target.value as AbilityTier)} aria-label="Tier">{TIER_ORDER.filter(t => t !== "Role").map(t => <option key={t} value={t}>{t} (power {TIER_POWER[t]})</option>)}</select>
       </div>
       <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-card/40"><AbilityFxCanvas key={`${k}-${tier}`} recipe={recipe} label={`${abilityDef(k).label} at ${tier} tier`} /></div>
