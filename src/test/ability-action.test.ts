@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STORY_FIGHTS, actionStyle, choreography, weaponFor } from "@/lib/ability-action";
+import { STORY_FIGHTS, actionStyle, choreography, styleFor, totalDuration, weaponFor } from "@/lib/ability-action";
 import { FX_LINEAGES, FX_TABLE_KEYS, abilityFxRecipe } from "@/lib/ability-fx";
 import { ALL_PAINT } from "@/components/fx-brush";
 import lore from "../../public/lore-export/timeline_events.json";
@@ -28,5 +28,12 @@ describe("ability in action", () => {
   it("every story fight quotes the archive verbatim", () => {
     const text = JSON.stringify([lore, ents]).replace(/\\\\n/g, " ");
     for (const f of STORY_FIGHTS) expect(text.includes(JSON.stringify(f.quote).slice(1, -1)), f.id).toBe(true);
+  });
+  it("story characters fight in their own styles", () => {
+    expect(styleFor("Weston")).toBe("speedster"); expect(styleFor("Zayn")).toBe("aerial"); expect(styleFor("Khalid")).toBe("juggernaut");
+    const labels = (w: string) => choreography("red_lightning", "male", styleFor(w)).map(s => s.label).join();
+    expect(new Set(["Weston", "Zayn", "Dorian", "Khalid", "Aariz", "Liam", "Norman"].map(labels)).size).toBe(7);
+    expect(choreography("red_lightning", "male", "aerial").some(s => (s.launch ?? 0) > 0)).toBe(true);
+    expect(totalDuration(choreography("lightning", "male", "juggernaut"))).toBeGreaterThan(totalDuration(choreography("lightning", "male", "speedster")));
   });
 });

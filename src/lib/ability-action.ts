@@ -4,7 +4,8 @@ import { abilityFxRecipe, type FxMotif } from "@/lib/ability-fx";
 export type Gender = "male" | "female";
 export type PoseName = "stand" | "guard" | "crouch" | "dash" | "punch" | "kick" | "cast" | "raise" | "slashUp" | "slashDown" | "knee" | "stomp" | "leap" | "flip" | "windUp" | "lunge" | "spinCut" | "throw" | "kneelFinish";
 export type Fx = "charge" | "trail" | "projectile" | "impact" | "wave" | "slash" | "aura" | "beam";
-export interface Seg { pose: PoseName; d: number; x: number; y?: number; fx?: Fx[]; label: string; /** Seconds to freeze on the key pose before the next move (anime hold). */ hold?: number }
+export type Cam = "wide" | "close" | "punch" | "track" | "low" | "air";
+export interface Seg { pose: PoseName; d: number; x: number; y?: number; fx?: Fx[]; label: string; /** Camera framing for this beat (auto from fx when omitted). */ cam?: Cam; /** Opponent launch height (fraction of stage). */ launch?: number; /** Seconds to freeze on the key pose before the next move (anime hold). */ hold?: number }
 export type ActionStyle = "dashStrike" | "speedBlitz" | "projectile" | "groundWave" | "spinBlade" | "slashCombo" | "beastPounce" | "aura" | "beam" | "blink";
 
 const MOTIF_STYLE: Record<FxMotif, ActionStyle> = {
@@ -36,7 +37,8 @@ export function actionNote(name: string) { return STYLE_NOTE[actionStyle(name)];
 
 /** Timeline in seconds; x is a fraction of stage width from centre (-0.5..0.5). Target stands at TARGET_X. */
 export const TARGET_X = .3;
-export function choreography(name: string, g: Gender): Seg[] {
+export function choreography(name: string, g: Gender, style: FightStyleId = "auto"): Seg[] { return stylize(baseChoreo(name, g), style, g); }
+function baseChoreo(name: string, g: Gender): Seg[] {
   const f = g === "female"; const hit: PoseName = f ? "kick" : "punch"; const st = actionStyle(name);
   const open: Seg[] = [{ pose: "stand", d: .5, x: -.32, label: "Ready" }, { pose: "guard", d: .35, x: -.32, label: "Guard up" }];
   const end: Seg[] = [{ pose: "guard", d: .45, x: -.05, label: "Recover" }, { pose: "stand", d: .6, x: -.32, label: "Reset" }];
@@ -71,6 +73,43 @@ export function choreography(name: string, g: Gender): Seg[] {
     case "blink": return [...open, { pose: "crouch", d: .35, x: -.32, fx: ["charge"], label: "Fade" }, { pose: "dash", d: .12, x: .48, fx: ["trail"], label: "Vanish" },
       { pose: f ? "kick" : "slashDown", d: .18, x: .42, fx: ["slash"], label: "Behind you" }, { pose: "guard", d: .45, x: .42, fx: ["impact"], label: "Impact" }, { pose: "dash", d: .15, x: -.32, fx: ["trail"], label: "Withdraw" }, { pose: "stand", d: .45, x: -.32, label: "Reset" }];
   }
+}
+/** Each fighter moves differently: tempo, footwork, combos and finishers are layered over the ability's base move. */
+export type FightStyleId = "auto" | "speedster" | "aerial" | "brawler" | "duelist" | "juggernaut" | "tactician" | "feral" | "caster";
+export const FIGHT_STYLES: Record<Exclude<FightStyleId, "auto">, { label: string; note: string }> = {
+  speedster: { label: "Speedster", note: "Zig-zag footwork, hits from several angles, never stands still." },
+  aerial: { label: "Aerial striker", note: "Launches the opponent and finishes in the air with a diving strike." },
+  brawler: { label: "Brawler", note: "Walks straight in and chains punches and kicks before the power lands." },
+  duelist: { label: "Duelist", note: "Reads the attack, parries, then counters in one clean lunge." },
+  juggernaut: { label: "Juggernaut", note: "Slow, heavy, unstoppable: long wind-ups and ground-cracking hits." },
+  tactician: { label: "Tactician", note: "Side-steps out of range, waits for the opening, strikes once." },
+  feral: { label: "Feral", note: "Low, crouched, relentless lunges and pounces like an animal." },
+  caster: { label: "Caster", note: "Keeps distance, builds the power, releases it with full force." },
+};
+/** Story characters' fighting styles, from how the archive describes them. */
+const WHO_STYLE: Record<string, FightStyleId> = { weston: "speedster", zayn: "aerial", dorian: "tactician", john: "duelist", lucas: "speedster", khalid: "juggernaut", liam: "caster", aariz: "feral", elizah: "duelist", norman: "brawler", agnus: "juggernaut", enemy: "juggernaut" };
+export function styleFor(who: string): FightStyleId { return WHO_STYLE[who.toLowerCase().split(/\s/)[0] ?? ""] ?? "auto"; }
+function stylize(segs: Seg[], st: FightStyleId, g: Gender): Seg[] {
+  if (st === "auto") return segs;
+  const tempo = { speedster: .7, aerial: .85, brawler: .9, duelist: .95, juggernaut: 1.35, tactician: 1, feral: .8, caster: 1.1 }[st];
+  let out: Seg[] = segs.map(s => s.hold === undefined ? { ...s, d: s.d * tempo } : { ...s, d: s.d * tempo, hold: s.hold * (st === "juggernaut" ? 1.6 : 1) });
+  const hitAt = out.findIndex(s => s.fx?.includes("impact")); const at = hitAt < 0 ? out.length - 2 : hitAt;
+  const ins = (i: number, add: Seg[]) => { out = [...out.slice(0, i), ...add, ...out.slice(i)]; };
+  const hit = g === "female" ? "kick" : "punch";
+  switch (st) {
+    case "speedster": ins(2, [{ pose: "dash", d: .1, x: -.1, y: .04, fx: ["trail"], label: "Zig", cam: "track" }, { pose: "dash", d: .1, x: -.22, fx: ["trail"], label: "Zag", cam: "track" }, { pose: "dash", d: .1, x: .1, y: .06, fx: ["trail"], label: "Feint", cam: "track" }]); break;
+    case "aerial": out.splice(out.length - 2, 0, { pose: "kick", d: .16, x: .2, fx: ["impact"], label: "Launcher", launch: .32, cam: "low" }, { pose: "leap", d: .22, x: .24, y: .34, fx: ["trail"], label: "Chase into the air", launch: .36, cam: "air" },
+      { pose: "spinCut", d: .14, x: .27, y: .38, fx: ["slash"], label: "Air combo", launch: .38, cam: "air", hold: .06 }, { pose: "slashDown", d: .16, x: .28, y: .2, fx: ["slash", "impact"], label: "Diving spike", launch: 0, cam: "punch", hold: .14 }); break;
+    case "brawler": ins(at, [{ pose: "dash", d: .18, x: .12, fx: ["trail"], label: "Step in", cam: "track" }, { pose: "punch", d: .1, x: .16, fx: ["impact"], label: "Jab", cam: "close" }, { pose: "kick", d: .12, x: .16, fx: ["impact"], label: "Body kick", cam: "close" }, { pose: "knee", d: .12, x: .17, fx: ["impact"], label: "Knee", cam: "punch" }]); break;
+    case "duelist": ins(2, [{ pose: "guard", d: .3, x: -.05, label: "Read the attack", cam: "close", hold: .15 }, { pose: "crouch", d: .12, x: -.08, fx: ["slash"], label: "Parry", cam: "punch" }, { pose: "lunge", d: .16, x: .16, fx: ["trail", "impact"], label: "Counter", cam: "punch", hold: .1 }]); break;
+    case "juggernaut": ins(2, [{ pose: "stomp", d: .35, x: -.2, fx: ["wave"], label: "Heavy step", cam: "low" }, { pose: "stomp", d: .35, x: -.08, fx: ["wave"], label: "Heavy step", cam: "low" }]);
+      out.splice(out.length - 2, 0, { pose: "windUp", d: .45, x: .1, fx: ["charge"], label: "Hammer wind-up", cam: "close", hold: .2 }, { pose: "stomp", d: .2, x: .14, fx: ["impact", "wave"], label: "Crushing blow", cam: "punch", hold: .2 }); break;
+    case "tactician": ins(2, [{ pose: "dash", d: .2, x: -.4, y: .02, fx: ["trail"], label: "Side-step out", cam: "wide" }, { pose: "guard", d: .4, x: -.38, label: "Wait for the opening", cam: "close", hold: .2 }]); break;
+    case "feral": out = out.map(s => s.pose === "stand" || s.pose === "guard" ? { ...s, pose: "crouch" as PoseName } : s);
+      ins(at, [{ pose: "leap", d: .2, x: .05, y: .15, fx: ["trail"], label: "Pounce", cam: "track" }, { pose: "crouch", d: .1, x: .15, fx: ["impact"], label: "Claw", cam: "punch" }, { pose: "leap", d: .16, x: -.05, y: .1, fx: ["trail"], label: "Bound back", cam: "track" }, { pose: "lunge", d: .14, x: .16, fx: ["impact"], label: "Lunge again", cam: "punch" }]); break;
+    case "caster": ins(2, [{ pose: "dash", d: .22, x: -.42, fx: ["trail"], label: "Back off", cam: "wide" }, { pose: "raise", d: .55, x: -.42, fx: ["charge", "aura"], label: "Build the power", cam: "close", hold: .15 }]); break;
+  }
+  void hit; return out;
 }
 export function totalDuration(segs: Seg[]) { return segs.reduce((a, s) => a + s.d + (s.hold ?? 0), 0); }
 
