@@ -72,7 +72,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
           <div className={`grid content-start gap-2 ${selected ? "max-h-80 overflow-y-auto lg:max-h-[75dvh]" : "sm:grid-cols-2 lg:grid-cols-3"}`} role="list" aria-label={label}>
             {visible.map(r => <motion.div layout={moving ? "position" : false} key={r.id} transition={transition} role="listitem">
               <Button variant="ghost" aria-pressed={r.id === selectedId} className={`nexus-record h-auto min-h-20 w-full justify-start whitespace-normal rounded-lg border px-4 py-3 text-left ${r.id === selectedId ? "border-accent bg-accent/10" : "border-border bg-card/40"}`} onClick={() => setSelectedId(r.id)}>
-                {r.image ? <img src={r.image} alt="" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-md object-cover" /> : <NexusSign symbolName={r.title} className="h-10 w-10 shrink-0 text-accent">{r.icon ?? <span className="nexus-mark h-4 w-4" />}</NexusSign>}
+                {r.image ? <NexusSign symbolName={r.title} className="h-12 w-12 shrink-0"><img src={r.image} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-md object-cover" /></NexusSign> : <NexusSign symbolName={r.title} className="h-10 w-10 shrink-0 text-accent">{r.icon ?? <span className="nexus-mark h-4 w-4" />}</NexusSign>}
                 <span className="min-w-0 flex-1"><span className="block break-words text-sm font-medium">{r.title}</span><span className="mt-1 block break-words text-xs text-muted-foreground">{r.subtitle ?? r.group}</span></span>
                 <ArrowRight className="h-3 w-3 shrink-0 text-accent" />
               </Button>

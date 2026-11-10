@@ -1,7 +1,7 @@
 # Nexus emblem corrections and anime presentation
-- [ ] Fix sprite clipping and review ability classification, including vampire and unique apex emblems.
-- [ ] Add shared admin per-symbol colors/anime overrides and a Nexus-wide anime presentation switch.
-- [ ] Test saved settings, artwork containment, motion safety and style isolation.
+- [x] Fix sprite clipping and review ability classification, including vampire and unique apex emblems.
+- [x] Add shared admin per-symbol colors/anime overrides and a Nexus-wide anime presentation switch.
+- [x] Test saved settings, artwork containment, motion safety and style isolation.
 
 # Nexus illustrated ability symbols
 - [x] Create Nexus-only elemental and skill emblems inspired by the references, with fitting animation.
