@@ -1,3 +1,8 @@
+# Left-side HUD and emblem access
+- [ ] Replace the HUD with a left-side curved, sliding navigation menu across all three styles.
+- [ ] Allow emblem color edits only for admins and moderators, preserving protected saves.
+- [ ] Verify all styles, phone layout, navigation and permissions.
+
 # Season titles and lore questions
 - [x] Add per-season title controls with checked admin saves across all three styles.
 - [x] Add series/season questions answered through AI Gateway from scoped existing lore, respecting spoiler controls.
