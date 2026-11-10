@@ -768,7 +768,7 @@ html[data-nexus-theme="nature"] { --nexus-glow: var(--fx-nature); }
 html[data-nexus-theme="void"] { --nexus-glow: var(--fx-void); }
 .nexus-fx-background { z-index: 0; opacity: .24; }
 .nexus-fx-background, .nexus-fx-background * { pointer-events: none !important; }
-.nexus-mark { display: inline-block; border: 1px solid var(--nexus-glow); transform: rotate(45deg); background: color-mix(in oklab, var(--nexus-glow) 18%, transparent); box-shadow: 0 0 12px -4px var(--nexus-glow); }
+.nexus-mark { display: inline-block; border: 1px solid var(--symbol-color, var(--nexus-glow)); transform: rotate(45deg); background: color-mix(in oklab, var(--symbol-color, var(--nexus-glow)) 18%, transparent); box-shadow: 0 0 12px -4px var(--symbol-color, var(--nexus-glow)); }
 .nexus-theme-swatch { box-shadow: 0 0 18px -6px var(--nexus-glow); }
 .nexus-theme-option { position: relative; }
 html[data-ui="nexus"] body { background-image: none !important; }
@@ -782,7 +782,7 @@ html[data-ui="nexus"] body { font-family: "Space Grotesk", system-ui, sans-serif
 @media (max-width: 640px) { .nexus-fx-background { opacity: .16; } }
 
 /* Shape-faithful cel motion: each SVG keeps its original paths and silhouette. */
-.nexus-sign { display: inline-grid; place-items: center; vertical-align: middle; flex-shrink: 0; color: inherit; }
+.nexus-sign { display: inline-grid; place-items: center; vertical-align: middle; flex-shrink: 0; color: var(--symbol-color, inherit); }
 .nexus-sign > svg { overflow: visible; transform-origin: center; animation: nexus-sign-breathe 3.6s ease-in-out infinite; }
 .nexus-sign > svg > :is(path,polyline,line) { animation: nexus-sign-ink 4.8s ease-in-out infinite; }
 .nexus-sign > svg > :nth-child(2n) { animation-delay: -.8s; }

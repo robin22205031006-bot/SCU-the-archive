@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from "react";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
 import { resolveSymbolStyle } from "@/lib/nexus-symbol-settings";
@@ -17,5 +17,5 @@ export function NexusSign({ children, className = "", symbolName = "", anime }: 
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  return <span ref={ref} aria-hidden="true" data-nexus-sign data-symbol-anime={(anime ?? appearance.anime) ? "on" : "off"} data-sign-motion={moving && visible ? "on" : "off"} className={`nexus-sign ${className}`}>{children}</span>;
+  return <span ref={ref} aria-hidden="true" style={appearance.color ? { "--symbol-color": appearance.color } as CSSProperties : undefined} data-nexus-sign data-symbol-anime={(anime ?? appearance.anime) ? "on" : "off"} data-sign-motion={moving && visible ? "on" : "off"} className={`nexus-sign ${className}`}>{children}</span>;
 }
