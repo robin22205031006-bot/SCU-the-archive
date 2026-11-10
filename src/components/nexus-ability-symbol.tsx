@@ -8,15 +8,16 @@ import { NEXUS_ABILITY_ART, nexusAbilityArt } from "@/lib/nexus-ability-art";
 import { NexusSign } from "@/components/nexus-sign";
 import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
 import { resolveSymbolStyle, tintMatrix } from "@/lib/nexus-symbol-settings";
+import { abilityDef } from "@/lib/abilities";
 
 /** Nexus-only illustrated artwork; Descrete keeps the original registry icons. */
 export function NexusAbilitySymbol({ name, iconName = "", className = "h-8 w-8", masked = false, previewColor, previewAnime }: { name: string; iconName?: string; className?: string; masked?: boolean; previewColor?: string; previewAnime?: boolean }) {
   const id = useId();
   const settings = useNexusSymbolSettings();
   const appearance = resolveSymbolStyle(settings, name);
-  const color = previewColor ?? appearance.color;
   if (masked) return <span aria-hidden className={`nexus-mark ${className}`} />;
   const art = nexusAbilityArt(name, iconName);
+  const color = previewColor ?? appearance.color ?? (art === "lightning" || /(?:red|blue|white|purple)[_ -](?:flame|fire)/i.test(name) ? abilityDef(name).color : undefined);
   const index = NEXUS_ABILITY_ART.indexOf(art);
   const tile = index % 16;
   const x = tile % 4 * 384, y = Math.floor(tile / 4) * 384;
