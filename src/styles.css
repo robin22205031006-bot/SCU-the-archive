@@ -861,7 +861,7 @@ html[data-ui="nexus"][data-nexus-anime="on"] :is(h1,h2,h3) { font-style: italic;
 .nexus-sign[data-sign-static="on"]::after { display: none; }
 
 /* Reference-inspired sliding HUD; color follows the active style/theme. */
-.hud-navigation { width: 0; height: min(520px, 82dvh); touch-action: pan-x; }
+.hud-navigation { width: 28px; height: min(520px, 82dvh); touch-action: pan-x; }
 .hud-arc-panel { position: absolute; width: 270px; height: 100%; pointer-events: none; }
 .hud-arc-track { position: absolute; width: 390px; height: calc(100% - 48px); top: 24px; left: -247px; border: 1px solid var(--accent); border-radius: 50%; background: color-mix(in oklab, var(--background) 82%, transparent); box-shadow: 0 0 20px color-mix(in oklab, var(--accent) 12%, transparent); }
 .hud-arc-track::after { content: ""; position: absolute; inset: 8px; border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent); border-radius: inherit; }
