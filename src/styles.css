@@ -665,7 +665,8 @@ html[data-ui="nexus"] {
   --ring: var(--nexus-glow);
   --secondary: var(--nexus-surface);
   --secondary-foreground: var(--nexus-fg);
-  --font-display: "Manrope", system-ui, sans-serif !important;
+  --font-display: "Rajdhani", system-ui, sans-serif !important;
+  --font-sans: "Space Grotesk", system-ui, sans-serif !important;
 }
 html[data-ui="minimal"] { --glow-strength: 0; --glass-blur: 0px; --radius: 0.375rem; }
 html[data-ui="minimal"] *, html[data-ui="minimal"] *::before, html[data-ui="minimal"] *::after { animation: none !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
@@ -742,3 +743,41 @@ html[data-nexus-motion="off"] .nexus-shell *, html[data-nexus-motion="off"] .nex
   .nexus-grid { animation: none; }
   .nexus-shell *, .nexus-shell *::before { animation-duration: 0s !important; transition-duration: 0s !important; }
 }
+
+/* Nexus-only CG palette: consumed by Three.js and the isolated theme system. */
+:root {
+  --fx-fire: oklch(.72 .22 40);
+  --fx-water: oklch(.76 .13 220);
+  --fx-storm: oklch(.85 .16 95);
+  --fx-frost: oklch(.88 .08 200);
+  --fx-wind: oklch(.8 .08 175);
+  --fx-nature: oklch(.78 .19 145);
+  --fx-void: oklch(.72 .18 340);
+  --fx-bloodline: oklch(.7 .21 25);
+  --fx-organization: oklch(.8 .11 75);
+  --fx-archive: oklch(.8 .1 210);
+  --fx-highlight: oklch(.98 .015 100);
+}
+html[data-ui="nexus"] { --primary: var(--nexus-glow) !important; --primary-foreground: var(--nexus-bg) !important; --nexus-bg: oklch(.12 .006 260); --nexus-surface: oklch(.19 .008 260 / .87); }
+html[data-nexus-theme="fire"] { --nexus-glow: var(--fx-fire); }
+html[data-nexus-theme="water"] { --nexus-glow: var(--fx-water); }
+html[data-nexus-theme="storm"] { --nexus-glow: var(--fx-storm); }
+html[data-nexus-theme="frost"] { --nexus-glow: var(--fx-frost); }
+html[data-nexus-theme="wind"] { --nexus-glow: var(--fx-wind); }
+html[data-nexus-theme="nature"] { --nexus-glow: var(--fx-nature); }
+html[data-nexus-theme="void"] { --nexus-glow: var(--fx-void); }
+.nexus-fx-background { z-index: 0; opacity: .24; }
+.nexus-fx-symbols { z-index: 60; }
+.nexus-fx-symbols, .nexus-fx-symbols *, .nexus-fx-background, .nexus-fx-background * { pointer-events: none !important; }
+.nexus-sigil { vertical-align: middle; }
+.nexus-sigil-fallback { border: 1px solid var(--nexus-glow); transform: rotate(45deg); }
+.nexus-theme-option { position: relative; }
+html[data-ui="nexus"] body { background-image: none !important; }
+html[data-ui="nexus"] .nexus-dossier { background: transparent; }
+html[data-ui="nexus"] .nexus-role-field { opacity: .22 !important; }
+html[data-ui="nexus"] .nexus-page :is(h1,h2,h3) { animation: nexus-type-in .65s cubic-bezier(.22,1,.36,1) both; }
+html[data-ui="nexus"] .nexus-explorer article :is(p,li) { animation: nexus-type-in .55s cubic-bezier(.22,1,.36,1) both; }
+@keyframes nexus-type-in { from { opacity: 0; transform: translate3d(16px,8px,0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+html[data-ui="nexus"] :is(h1,h2,h3,.font-display) { font-family: "Rajdhani", system-ui, sans-serif; }
+html[data-ui="nexus"] body { font-family: "Space Grotesk", system-ui, sans-serif; }
+@media (max-width: 640px) { .nexus-fx-background { opacity: .16; } }

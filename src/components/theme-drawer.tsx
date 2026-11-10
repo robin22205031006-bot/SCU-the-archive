@@ -5,12 +5,19 @@ import { useAppearance } from "@/hooks/use-appearance";
 import { navMode, setNavMode, type NavMode } from "@/components/floating-nav";
 import { THEMES } from "@/lib/themes";
 import { UiStylePicker } from "@/components/ui-style-picker";
+import { Button } from "@/components/ui/button";
+import { useUiStyle } from "@/lib/ui-style";
+import { NEXUS_THEMES } from "@/lib/nexus-fx";
+import { useNexusTheme, setNexusTheme } from "@/hooks/use-nexus-theme";
+import { NexusSigil } from "@/components/nexus-fx";
 
 export function ThemeDrawer({
   open,
   onOpenChange,
 }: { open?: boolean; onOpenChange?: (o: boolean) => void } = {}) {
   const { theme, setTheme, zoom, scaleIndex } = useAppearance();
+  const nexus = useUiStyle() === "nexus";
+  const nexusTheme = useNexusTheme();
   const [tab, setTab] = useState<"live" | "plain">("live");
   const liveThemes = THEMES.filter((t) => t.live);
   const plainThemes = THEMES.filter((t) => !t.live);
@@ -33,7 +40,9 @@ export function ThemeDrawer({
           <span className="mr-auto text-sm text-muted-foreground">UI Style</span>
           <UiStylePicker />
         </div>
-        <div className="flex gap-1.5 px-4 pt-1">
+        {nexus ? <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
+          {NEXUS_THEMES.map(t => <Button key={t.id} variant="ghost" aria-pressed={nexusTheme === t.id} onClick={() => setNexusTheme(t.id)} className={`nexus-theme-option flex h-auto min-h-32 flex-col gap-2 whitespace-normal rounded-lg border p-3 text-center ${nexusTheme === t.id ? "border-accent bg-accent/10" : "border-border"}`}><NexusSigil label={t.label} effect={t.id} className="h-16 w-16" /><span>{t.label}</span></Button>)}
+        </div> : <><div className="flex gap-1.5 px-4 pt-1">
           {(
             [
               ["live", "Live 3D"],
@@ -66,6 +75,7 @@ export function ThemeDrawer({
             </button>
           ))}
         </div>
+        </>}
         <div className="flex items-center gap-3 px-4 pb-6 text-sm">
           <span className="text-muted-foreground">Text size</span>
           <button
@@ -84,7 +94,7 @@ export function ThemeDrawer({
             A+
           </button>
         </div>
-        <div className="flex items-center justify-between border-t border-border px-4 pb-6 pt-4 text-sm">
+        {!nexus && <div className="flex items-center justify-between border-t border-border px-4 pb-6 pt-4 text-sm">
           <span className="text-muted-foreground">Navigation mode</span>
           <div className="flex gap-1.5">
             {(
@@ -102,7 +112,7 @@ export function ThemeDrawer({
               </button>
             ))}
           </div>
-        </div>
+        </div>}
       </SheetContent>
     </Sheet>
   );
