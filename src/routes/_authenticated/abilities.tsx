@@ -1,3 +1,4 @@
+import { AbilityFxLauncher } from "@/components/ability-fx-showcase";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -232,7 +233,7 @@ function AbilitiesHub() {
       {nexus ? <NexusExplorer
         label="Abilities" loading={isLoading}
         records={defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], subtitle: ABILITY_GROUP_LABELS[def.group], icon: <NexusAbilitySymbol name={def.key} className="h-10 w-10" />, def }))}
-        renderDetail={({ def }) => <AbilityCard def={def} holders={holders.get(def.key) ?? []} open onToggle={() => {}} isAdmin={isAdmin} isCustom={customKeys.has(def.key)} onEdit={() => setEditingDef(def)} onDeleteCustom={() => { removeCustomAbility(def.key); setCustomsVersion(v => v + 1); toast.success(`Removed "${def.label}" from the registry.`); }} />}
+        renderDetail={({ def }) => <div><AbilityFxLauncher name={def.key} /><AbilityCard def={def} holders={holders.get(def.key) ?? []} open onToggle={() => {}} isAdmin={isAdmin} isCustom={customKeys.has(def.key)} onEdit={() => setEditingDef(def)} onDeleteCustom={() => { removeCustomAbility(def.key); setCustomsVersion(v => v + 1); toast.success(`Removed "${def.label}" from the registry.`); }} /></div>}
       /> : <>
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <div className="relative">

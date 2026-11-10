@@ -1,6 +1,9 @@
 import { abilityDef, type AbilityTier } from "@/lib/abilities";
 import { useUiStyle } from "@/lib/ui-style";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
+import { useState } from "react";
+import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
+import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
 
 const TIER_RANK: Record<AbilityTier, number> = {
   Mythic: 7,
@@ -16,6 +19,8 @@ const TIER_RANK: Record<AbilityTier, number> = {
 /** Compact ability badge with registry color/icon and tier tooltip. */
 export function AbilityBadge({ name, className = "" }: { name: string; className?: string }) {
   const nexus = useUiStyle() === "nexus";
+  const advanced = useNexusAdvancedFx();
+  const [fxOpen, setFxOpen] = useState(false);
   const def = abilityDef(name);
   const Icon = def.icon;
   const mythic = def.tier === "Mythic";
@@ -23,6 +28,10 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
   const rarePlus = def.tier === "Rare" || def.tier === "Exceptional" || def.tier === "Unique";
   const ancient = def.tier === "Ancient";
   const title = `${def.label} — ${def.tier}${def.group === "beast" ? " · Beast trait" : ""}${def.description ? `\n${def.description}` : ""}`;
+  if (nexus && advanced) return <>
+    <button type="button" title={title} onClick={e => { e.stopPropagation(); setFxOpen(true); }} aria-label={`Play ${def.label} animation`} className={`inline-flex items-center gap-1 border border-border text-xs text-accent hover:border-accent ${className}`}><NexusAbilitySymbol name={def.key} className="h-6 w-6" />{def.label}</button>
+    <AbilityFxShowcase name={def.key} open={fxOpen} onOpenChange={setFxOpen} />
+  </>;
   if (nexus) return <span title={title} className={`inline-flex items-center gap-1 border border-border text-xs text-accent ${className}`}><NexusAbilitySymbol name={def.key} className="h-6 w-6" />{def.label}</span>;
   return (
     <span

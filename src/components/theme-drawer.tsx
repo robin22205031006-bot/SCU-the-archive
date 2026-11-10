@@ -13,6 +13,8 @@ import { NexusPresentationEditor } from "@/components/nexus-presentation-editor"
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNexusEmblemMotion, setNexusEmblemMotion } from "@/hooks/use-nexus-emblem-motion";
+import { useNexusAdvancedFx, setNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
+import { Switch } from "@/components/ui/switch";
 
 export function ThemeDrawer({
   open,
@@ -23,6 +25,7 @@ export function ThemeDrawer({
   const navigationMode = useNavMode();
   const nexusTheme = useNexusTheme();
   const emblemMotion = useNexusEmblemMotion();
+  const advancedFx = useNexusAdvancedFx();
   const [tab, setTab] = useState<"live" | "plain">("live");
   const liveThemes = THEMES.filter((t) => t.live);
   const plainThemes = THEMES.filter((t) => !t.live);
@@ -90,6 +93,10 @@ export function ThemeDrawer({
               <SelectItem value="static">Always static</SelectItem>
             </SelectContent>
           </Select>
+        </div>}
+        {nexus && <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-4">
+          <div><Label htmlFor="nexus-advanced-fx">Advanced ability FX</Label><p className="text-xs text-muted-foreground">Tap any ability to play its full animation and upgrades.</p></div>
+          <Switch id="nexus-advanced-fx" checked={advancedFx} onCheckedChange={setNexusAdvancedFx} />
         </div>}
         {nexus && <NexusPresentationEditor />}
         <div className="flex items-center gap-3 px-4 pb-6 text-sm">
