@@ -780,3 +780,31 @@ html[data-ui="nexus"] .nexus-explorer article :is(p,li) { animation: nexus-type-
 html[data-ui="nexus"] :is(h1,h2,h3,.font-display) { font-family: "Rajdhani", system-ui, sans-serif; }
 html[data-ui="nexus"] body { font-family: "Space Grotesk", system-ui, sans-serif; }
 @media (max-width: 640px) { .nexus-fx-background { opacity: .16; } }
+
+/* Shape-faithful cel motion: each SVG keeps its original paths and silhouette. */
+.nexus-sign { display: inline-grid; place-items: center; vertical-align: middle; flex-shrink: 0; color: inherit; }
+.nexus-sign > svg { overflow: visible; transform-origin: center; animation: nexus-sign-breathe 3.6s ease-in-out infinite; }
+.nexus-sign > svg > :is(path,polyline,line) { animation: nexus-sign-ink 4.8s ease-in-out infinite; }
+.nexus-sign > svg > :nth-child(2n) { animation-delay: -.8s; }
+.nexus-sign > .lucide-orbit { animation: nexus-sign-orbit 16s linear infinite; }
+.nexus-sign > .lucide-orbit > circle { transform-origin: 12px 12px; animation: nexus-sign-satellite 8s linear infinite; }
+.nexus-sign > .lucide-orbit > circle:first-child { animation: nexus-sign-ink 3s ease-in-out infinite; }
+.nexus-sign > .lucide-flame { transform-origin: 50% 90%; animation: nexus-sign-flame 1.8s ease-in-out infinite; }
+.nexus-sign > :is(.lucide-wind,.lucide-waves,.lucide-droplets) > path { animation: nexus-sign-flow 3s ease-in-out infinite; }
+.nexus-sign > :is(.lucide-snowflake,.lucide-sun,.lucide-cog) { animation: nexus-sign-orbit 24s linear infinite; }
+.nexus-sign > :is(.lucide-zap,.lucide-sparkles) { animation: nexus-sign-charge 2.8s ease-in-out infinite; }
+.nexus-sign > :is(.lucide-shield,.lucide-landmark,.lucide-crown,.lucide-fingerprint) { animation: nexus-sign-seal 4s ease-in-out infinite; }
+.nexus-sign > .nexus-mark { animation: nexus-sign-mark 5s ease-in-out infinite; }
+.nexus-sign[data-sign-motion="off"], .nexus-sign[data-sign-motion="off"] * { animation-play-state: paused !important; }
+html[data-nexus-motion="off"] .nexus-sign *, html[data-ui="minimal"] .nexus-sign * { animation: none !important; }
+[data-spoiler="hidden"] .nexus-sign *, [data-spoiler="hidden"] .nexus-sign { animation: none !important; filter: none; }
+@keyframes nexus-sign-breathe { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 1px currentColor); } 50% { transform: scale(1.06); filter: drop-shadow(0 0 4px currentColor); } }
+@keyframes nexus-sign-ink { 0%,100% { stroke-opacity: 1; } 45% { stroke-opacity: .65; } 65% { stroke-opacity: 1; } }
+@keyframes nexus-sign-orbit { to { transform: rotate(360deg); } }
+@keyframes nexus-sign-satellite { to { transform: rotate(-360deg); } }
+@keyframes nexus-sign-flame { 0%,100% { transform: scale(1) skewX(-2deg); filter: drop-shadow(0 -1px 2px currentColor); } 35% { transform: scale(.97,1.1) skewX(3deg); filter: drop-shadow(0 -2px 4px currentColor); } 70% { transform: scale(1.04,.97) skewX(-3deg); } }
+@keyframes nexus-sign-flow { 0%,100% { transform: translateX(-.6px); stroke-opacity: 1; } 50% { transform: translateX(.6px); stroke-opacity: .7; } }
+@keyframes nexus-sign-charge { 0%,100%,60% { transform: scale(1); filter: drop-shadow(0 0 1px currentColor); } 45%,52% { transform: scale(1.08); filter: drop-shadow(0 0 5px currentColor); } }
+@keyframes nexus-sign-seal { 0%,100% { transform: translateY(0); filter: drop-shadow(0 0 1px currentColor); } 50% { transform: translateY(-1px); filter: drop-shadow(0 0 4px currentColor); } }
+@keyframes nexus-sign-mark { 0%,100% { transform: rotate(45deg) scale(1); } 50% { transform: rotate(135deg) scale(.88); } }
+@media (prefers-reduced-motion: reduce) { .nexus-sign, .nexus-sign * { animation: none !important; filter: none !important; } }
