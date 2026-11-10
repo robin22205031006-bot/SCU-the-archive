@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery, type Entity } from "@/lib/entities";
 import { NEXUS_STATS, readDossier, type SeasonDossier } from "@/lib/nexus-season";
 import { NEXUS_ROLES } from "@/lib/nexus-roster";
+import { SEASON_STATUSES } from "@/lib/series";
+import { useServerFn } from "@tanstack/react-start";
+import { draftSeasonStory } from "@/lib/season-story.functions";
 import { ABILITY_REGISTRY, abilityDef } from "@/lib/abilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +34,17 @@ function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: 
   const [loaded, setLoaded] = useState(false);
   const [profile, setProfile] = useState("");
   const [busy, setBusy] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const runDraft = useServerFn(draftSeasonStory);
+  const fillStory = async () => {
+    setDrafting(true);
+    try {
+      const res = await runDraft({ data: { entityId: entity.id, seriesId, season } });
+      if (res.error) toast.error(res.error);
+      else { setForm(f => ({ ...f, story: res.story })); toast.success("Draft added from the PDFs — review it, then Save season."); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Couldn't draft the story."); }
+    finally { setDrafting(false); }
+  };
   const { data, error: loadError } = useQuery({ queryKey: ["roster-abilities", entity.id, seriesId, season], queryFn: async () => {
     const { data, error } = await supabase.from("character_abilities").select("*").eq("entity_id", entity.id).eq("series_id", seriesId);
     if (error) throw error;
@@ -75,16 +89,17 @@ function RosterFields({ entity, seriesId, season }: { entity: Entity; seriesId: 
   return <div className="space-y-4">
     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.roster !== false} onChange={ev => setForm({ ...form, roster: ev.target.checked })} />In this season's roster</label>
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="grid gap-1 text-xs">Role<Input aria-label="Season role" list="nexus-role-options" value={form.role ?? ""} onChange={ev => setForm({ ...form, role: ev.target.value })} /><datalist id="nexus-role-options">{NEXUS_ROLES.map(r => <option key={r} value={r} />)}</datalist></label>
-      <label className="grid gap-1 text-xs">Status<select aria-label="Season status" className="h-9 rounded-md border border-input bg-background px-2" value={form.status ?? ""} onChange={ev => setForm({ ...form, status: ev.target.value })}><option value="">Not recorded</option>{["Alive", "Dead", "Revived", "Presumed Dead", "Missing", "Retired", "Unknown"].map(s => <option key={s}>{s}</option>)}</select></label>
+      <label className="grid gap-1 text-xs">Role this season<select aria-label="Season role" className="h-9 rounded-md border border-input bg-background px-2" value={form.role ?? ""} onChange={ev => setForm({ ...form, role: ev.target.value })}><option value="">Not recorded</option>{[...new Set([...NEXUS_ROLES, ...(form.role ? [form.role] : [])])].map(r => <option key={r} value={r}>{r}</option>)}</select></label>
+      <label className="grid gap-1 text-xs">Status<select aria-label="Season status" className="h-9 rounded-md border border-input bg-background px-2" value={form.status ?? ""} onChange={ev => setForm({ ...form, status: ev.target.value })}><option value="">Not recorded</option>{SEASON_STATUSES.map(s => <option key={s}>{s}</option>)}</select></label>
       <label className="grid gap-1 text-xs">Title / Codename<Input aria-label="Season codename" value={form.codename ?? ""} onChange={ev => setForm({ ...form, codename: ev.target.value })} /></label>
       <label className="grid gap-1 text-xs">Bloodline<Input aria-label="Season bloodline" value={form.bloodline ?? ""} onChange={ev => setForm({ ...form, bloodline: ev.target.value })} /></label>
     </div>
     <label className="grid gap-1 text-xs">Organizations / Cults<Input aria-label="Season organizations" value={(form.organizations ?? []).join(", ")} onChange={ev => setForm({ ...form, organizations: ev.target.value.split(",").map(s => s.trim()) })} /></label>
+    <div className="flex justify-end"><Button variant="outline" size="sm" disabled={drafting} onClick={fillStory}>{drafting ? "Reading PDFs…" : "Fill story from PDFs"}</Button></div>
     {(["story", "impact", "philosophy"] as const).map(field => <label key={field} className="grid gap-1 text-xs capitalize">{field}<Textarea aria-label={`Season ${field}`} rows={2} value={form[field] ?? ""} onChange={ev => setForm({ ...form, [field]: ev.target.value })} /></label>)}
     <div className="flex items-center justify-between"><h3 className="text-sm">Season abilities</h3><Button variant="outline" size="sm" disabled={!loaded} onClick={() => setAbilities([...abilities, { name: "", level: 1, note: "" }])}><Plus className="h-3 w-3" />Ability</Button></div>
     {loadError && <p role="alert" className="text-sm text-destructive">Abilities could not be loaded.</p>}
-    {abilities.map((a,i) => <div key={i} className="grid grid-cols-[1fr_70px_36px] gap-2 border-b border-border pb-3">
+    {abilities.map((a,i) => <div key={i} className="grid grid-cols-[minmax(0,1fr)_64px_36px] gap-2 border-b border-border pb-3">
       <Input aria-label={`Ability ${i+1}`} list="nexus-ability-options" value={a.name} onChange={ev => setAbilities(abilities.map((v,j) => j===i ? { ...v, name: ev.target.value } : v))} />
       <Input type="number" aria-label={`Ability ${i+1} level`} min={1} max={100} value={a.level} onChange={ev => setAbilities(abilities.map((v,j) => j===i ? { ...v, level: Math.max(1,Math.min(100,Number(ev.target.value)||1)) } : v))} />
       <Button variant="ghost" size="icon" aria-label={`Remove ability ${i+1}`} onClick={() => setAbilities(abilities.filter((_,j) => j!==i))}><Trash2 className="h-4 w-4" /></Button>

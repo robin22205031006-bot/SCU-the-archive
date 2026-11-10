@@ -82,3 +82,9 @@
 # Gemini integration (completed in prior updates)
 - [x] Connect private-key Gemini extraction and the existing chat through a dedicated LoreChat component.
 - [x] Preserve protected archive saves, grounding and manual fields; test and verify PDF and chat flows.
+# Mobile fit, merges, series editor, AI box (all styles; Nexus keeps own presentation)
+- [x] Mobile fit: admin members panel + phone-width sweep
+- [x] Merge duplicate characters (story-name card wins) and stop re-creation
+- [x] Series editor: per-season roles/status/abilities/stats/story, styling, spoiler toggle
+- [x] Series list showing 0 on published (works in preview; published needs republish)
+- [x] AI box on Lovable AI

@@ -915,3 +915,17 @@ html[data-ui="minimal"] .hud-arc-track, html[data-ui="minimal"] .hud-tab-active 
   .hud-tab { height: 44px; grid-template-columns: 36px minmax(0, 1fr); }
   .hud-node svg { width: 18px; height: 18px; }
 }
+
+/* Series title effects (admin-chosen). Nexus-only animated variants respect reduced motion. */
+.series-fx-glow { text-shadow: 0 0 18px color-mix(in oklab, var(--series-color, var(--accent)) 70%, transparent); }
+.series-fx-outline { -webkit-text-stroke: 1px var(--series-color, var(--accent)); color: transparent !important; }
+.series-fx-shadow { text-shadow: 0 4px 0 color-mix(in oklab, var(--background) 60%, transparent), 0 10px 24px color-mix(in oklab, var(--background) 80%, transparent); }
+.series-fx-nx-shimmer { background: linear-gradient(100deg, var(--series-color, var(--foreground)) 30%, var(--accent) 50%, var(--series-color, var(--foreground)) 70%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: series-shimmer 3.2s linear infinite; }
+.series-fx-nx-flicker { text-shadow: 0 0 12px var(--series-color, var(--accent)); animation: series-flicker 4s steps(1) infinite; }
+.series-fx-nx-ember { animation: series-ember 2.6s ease-in-out infinite; }
+.series-fx-nx-glitch { position: relative; animation: series-glitch 2.8s steps(2) infinite; }
+@keyframes series-shimmer { to { background-position: -250% 0; } }
+@keyframes series-flicker { 0%,19%,22%,62%,64%,100% { opacity: 1; } 20%,63% { opacity: .35; } }
+@keyframes series-ember { 0%,100% { text-shadow: 0 0 8px color-mix(in oklab, var(--series-color, var(--accent)) 50%, transparent); } 50% { text-shadow: 0 0 26px var(--series-color, var(--accent)), 0 -4px 18px color-mix(in oklab, var(--accent) 60%, transparent); } }
+@keyframes series-glitch { 0%,92%,100% { transform: none; text-shadow: none; } 94% { transform: translateX(-2px); text-shadow: 2px 0 var(--accent); } 97% { transform: translateX(2px); text-shadow: -2px 0 var(--destructive); } }
+@media (prefers-reduced-motion: reduce) { [class*="series-fx-nx-"] { animation: none !important; } }

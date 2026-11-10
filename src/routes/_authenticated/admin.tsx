@@ -196,14 +196,14 @@ function Admin() {
   };
 
   return (
-    <main className="mx-auto grid max-w-3xl gap-8 px-4 pb-24 pt-28 sm:px-5">
-      <header className="flex items-end justify-between">
+    <main className="mx-auto grid w-full max-w-3xl grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-24 pt-28 sm:px-5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Control room</p>
           <h1 className="mt-2 text-5xl font-medium glow-text">Admin</h1>
         </div>
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button asChild size="sm" variant="secondary">
               <Link to="/ingest">Ingest a PDF</Link>
             </Button>
@@ -245,12 +245,17 @@ function Admin() {
           {(data?.profiles ?? []).map((p) => {
             const superadmin = isSuperadminEmail(p.email);
             return (
-              <li key={p.id} className="flex items-center gap-3 text-sm">
-                <span className="min-w-0 flex-1 truncate">
-                  {p.display_name || p.email}
-                  <span className="ml-2 font-mono text-[10px] text-muted-foreground">{p.id}</span>
+              <li
+                key={p.id}
+                className="flex flex-wrap items-center gap-2 border-b border-border/30 pb-2 text-sm last:border-0"
+              >
+                <span className="flex min-w-0 basis-full flex-wrap items-center gap-x-2 sm:basis-auto sm:flex-1">
+                  <span className="truncate">{p.display_name || p.email}</span>
+                  <span className="max-w-full truncate font-mono text-[10px] text-muted-foreground">
+                    {p.id}
+                  </span>
                   {superadmin && (
-                    <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent">
+                    <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent">
                       Superadmin
                     </span>
                   )}

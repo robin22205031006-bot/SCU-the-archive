@@ -6,7 +6,9 @@ import type { Entity } from "@/lib/entities";
 export type Series = Tables<"series">;
 export type SeriesCharacter = Tables<"series_characters">;
 
-export const SERIES_STATUSES = ["Alive", "Dead", "Presumed Dead", "Missing", "Unknown"] as const;
+export const SERIES_STATUSES = ["Alive", "Dead", "Missing", "Presumed Dead", "Realive", "Unknown"] as const;
+/** Per-season character status options (admins pick one per season). */
+export const SEASON_STATUSES = ["Alive", "Dead", "Missing", "Presumed Dead", "Realive", "Unknown"];
 export type SeriesStatus = (typeof SERIES_STATUSES)[number];
 
 export const seriesStatusClass: Record<string, string> = {
@@ -14,6 +16,8 @@ export const seriesStatusClass: Record<string, string> = {
   Dead: "text-status-dead",
   Missing: "text-status-legend",
   "Presumed Dead": "text-status-legend",
+  Realive: "text-status-alive",
+  Revived: "text-status-alive",
   Unknown: "text-status-neutral",
 };
 

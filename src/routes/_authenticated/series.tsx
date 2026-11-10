@@ -21,6 +21,47 @@ import { Button } from "@/components/ui/button";
 import type { Entity } from "@/lib/entities";
 import { seriesSeasonNames } from "@/lib/series-seasons";
 import { SeriesTools } from "@/components/series-tools";
+import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
+import { useIsStaff } from "@/hooks/use-admin";
+import { AdminSeries } from "@/components/admin-series";
+import { NexusRosterEditor } from "@/components/nexus-roster-editor";
+import { entitiesQuery } from "@/lib/entities";
+import { SeriesStyleEditor, useSeriesTitleStyle } from "@/lib/series-style";
+import { Pencil } from "lucide-react";
+
+/** Series title with the admin-chosen font, colour and effect. */
+function SeriesTitle({ series, className = "" }: { series: Series; className?: string }) {
+  const nexus = useUiStyle() === "nexus";
+  const t = useSeriesTitleStyle(series.id, nexus);
+  return <span className={`${className} ${t.className}`} style={t.style}>{series.title}</span>;
+}
+
+/** Season buttons for readers plus a per-season roster editor for admins/mods (all UI styles). */
+function SeasonList({ series }: { series: Series }) {
+  const isStaff = useIsStaff();
+  const [editing, setEditing] = useState<number | null>(null);
+  const { data: characters = [] } = useQuery({ ...entitiesQuery(["character"]), enabled: isStaff && editing !== null });
+  const names = seriesSeasonNames(series);
+  return (
+    <div className="grid gap-2 sm:grid-cols-2" aria-label={`${series.title} seasons`}>
+      {names.map((name, i) => (
+        <div key={i} className="flex min-w-0 gap-2">
+          <Button asChild variant="outline" className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal text-left">
+            <Link to="/characters" search={{ series: series.id, season: i + 1 }}>{name}<Users className="h-4 w-4 shrink-0" /></Link>
+          </Button>
+          {isStaff && (
+            <Button variant="secondary" className="h-auto min-h-12 shrink-0" aria-label={`Edit ${name} roster`} onClick={() => setEditing(i + 1)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ))}
+      {isStaff && editing !== null && characters.length > 0 && (
+        <NexusRosterEditor open onClose={() => setEditing(null)} entities={characters} seriesId={series.id} season={editing} label={`${series.title} · ${names[editing - 1] ?? ""}`} />
+      )}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/series")({
   validateSearch: (s: Record<string, unknown>): { s?: string } => ({
@@ -54,6 +95,8 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
   const { data: series } = useQuery(seriesByIdQuery(seriesId));
   const { data: rows } = useQuery(seriesCharactersQuery(seriesId));
   const { data: members } = useQuery(seriesMembersQuery(rows));
+  const isStaff = useIsStaff();
+  const hide = useSpoilerMask("series") && !isStaff;
 
   const memberRows: MemberRow[] = useMemo(() => {
     const byId = new Map((members ?? []).map((e) => [e.id, e]));
@@ -67,7 +110,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
     const order = ["Alive", "Missing", "Dead", "Unknown"];
     const map = new Map<string, MemberRow[]>();
     for (const r of memberRows) {
-      const k = r.row.status || "Unknown";
+      const k = hide ? "Characters" : r.row.status || "Unknown";
       map.set(k, [...(map.get(k) ?? []), r]);
     }
     return [...map.entries()].sort((a, b) => {
@@ -75,7 +118,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
       const bi = order.indexOf(b[0]);
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
-  }, [memberRows]);
+  }, [memberRows, hide]);
 
   return (
     <div
@@ -88,7 +131,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
       >
         <section className="morph-in glass grid gap-6 rounded-2xl p-5 sm:p-7">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-4">
               {series?.cover_image_url ? (
                 <img
                   src={series.cover_image_url}
@@ -102,9 +145,9 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
                   <BookMarked className="h-6 w-6" />
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Series</p>
-                <h2 className="mt-1 text-3xl font-medium glow-text">{series?.title ?? "…"}</h2>
+                <h2 className="mt-1 break-words text-3xl font-medium glow-text">{series ? <SeriesTitle series={series} /> : "…"}</h2>
               </div>
             </div>
             <button
@@ -118,11 +161,8 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
           {series?.description && (
             <p className="whitespace-pre-line text-sm text-foreground/85">{series.description}</p>
           )}
-          {series && <div className="grid gap-2 sm:grid-cols-2" aria-label={`${series.title} seasons`}>
-            {seriesSeasonNames(series).map((name, i) => <Button asChild variant="outline" key={i} className="h-auto min-h-12 whitespace-normal text-left">
-              <Link to="/characters" search={{ series: series.id, season: i + 1 }}>{name}<Users className="h-4 w-4 shrink-0" /></Link>
-            </Button>)}
-          </div>}
+          {series && <SeasonList series={series} />}
+          {series && <SeriesStyleEditor seriesId={series.id} />}
           {series && <SeriesTools series={series} />}
           <div className="grid gap-4">
             {grouped.length === 0 ? (
@@ -146,13 +186,13 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{entity.name}</span>
-                          {row.role_in_series && (
+                          {!hide && row.role_in_series && (
                             <span className="block truncate text-xs text-muted-foreground">
                               {row.role_in_series}
                             </span>
                           )}
                         </span>
-                        {entity.category && (
+                        {!hide && entity.category && (
                           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
                             {entity.category}
                           </span>
@@ -212,8 +252,8 @@ function SeriesHero({
                   {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
                 </span>
               </div>
-              <h2 className="font-display text-4xl font-bold leading-tight text-white drop-shadow-lg sm:text-5xl">
-                {s.title}
+              <h2 className="break-words font-display text-4xl font-bold leading-tight text-white drop-shadow-lg sm:text-5xl">
+                <SeriesTitle series={s} />
               </h2>
               {s.description && (
                 <p className="mt-2 line-clamp-2 max-w-md text-sm text-white/80">{s.description}</p>
@@ -226,6 +266,17 @@ function SeriesHero({
         ))}
       </div>
     </div>
+  );
+}
+
+function StaffSeriesManager() {
+  const isStaff = useIsStaff();
+  if (!isStaff) return null;
+  return (
+    <details className="glass mt-4 rounded-2xl p-4">
+      <summary className="cursor-pointer text-sm font-medium">Manage series (add, rename, seasons)</summary>
+      <div className="mt-3 min-w-0"><AdminSeries /></div>
+    </details>
   );
 }
 
@@ -266,16 +317,18 @@ export function SeriesPage() {
   }, [series, q]);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 pb-24 pt-28 sm:px-5" style={sectionStyle}>
+    <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-28 sm:px-5" style={sectionStyle}>
       <header className="mb-8">
         <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
         <h1 className="mt-2 text-5xl font-medium glow-text">Series</h1>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
           Story arcs and sagas — who lived, died, or vanished in each.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2"><SpoilerToggle scope="series" /></div>
+        <StaffSeriesManager />
       </header>
 
-      {nexus ? <NexusExplorer label="Series" loading={isLoading} records={(series ?? []).map(s => ({ id: s.id, title: s.title, group: "Sagas", image: s.cover_image_url, subtitle: `${seriesSeasonNames(s).length} seasons`, series: s }))} renderDetail={({ series: saga }) => <div className="grid gap-5"><h2 className="break-words text-3xl">{saga.title}</h2>{saga.cover_image_url && <img src={saga.cover_image_url} alt={saga.title} className="max-h-72 w-full rounded-lg object-contain" />}<p className="whitespace-pre-line text-sm leading-relaxed">{saga.description}</p><div className="grid gap-2 sm:grid-cols-2">{seriesSeasonNames(saga).map((name, i) => <Button asChild variant="outline" key={i} className="h-auto min-h-12 whitespace-normal text-left"><Link to="/characters" search={{ series: saga.id, season: i + 1 }}>{name}<Users className="h-4 w-4 shrink-0" /></Link></Button>)}</div><Button variant="outline" onClick={() => navigate({ search: { s: saga.id } })}><BookMarked className="h-4 w-4" /> Series dossier</Button></div>} /> : <>
+      {nexus ? <NexusExplorer label="Series" loading={isLoading} records={(series ?? []).map(s => ({ id: s.id, title: s.title, group: "Sagas", image: s.cover_image_url, subtitle: `${seriesSeasonNames(s).length} seasons`, series: s }))} renderDetail={({ series: saga }) => <div className="grid gap-5"><h2 className="break-words text-3xl"><SeriesTitle series={saga} /></h2>{saga.cover_image_url && <img src={saga.cover_image_url} alt={saga.title} className="max-h-72 w-full rounded-lg object-contain" />}<p className="whitespace-pre-line text-sm leading-relaxed">{saga.description}</p><SeasonList series={saga} /><SeriesStyleEditor seriesId={saga.id} /><Button variant="outline" onClick={() => navigate({ search: { s: saga.id } })}><BookMarked className="h-4 w-4" /> Series dossier</Button></div>} /> : <>
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -324,7 +377,7 @@ export function SeriesPage() {
                 </div>
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-xl font-medium">{s.title}</span>
+                <SeriesTitle series={s} className="block truncate text-xl font-medium" />
                 <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="h-3.5 w-3.5" />
                   {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}

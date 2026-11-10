@@ -70,13 +70,53 @@ const ALIAS_MAP: Record<string, string> = {
   "khalid el mansur": "khalid",
   "alt ethan": "ethan",
   "ethan thorne": "ethan",
-  elizah: "ethan",
+
   robin: "ethan",
-  "zaynab al-ahd": "issabela",
-  zaynab: "issabela",
-  "nasab ibn khalil": "ramiz",
-  "alter david": "alt david",
-  ayman: "ayaan",
+  "zaynab al-ahd": "issabela al-ahd",
+  zaynab: "issabela al-ahd",
+  "nasab ibn khalil": "francisco",
+  // Real names, codenames and duplicate cards → in-story name (character chart PDF).
+  bunny: "ethan",
+  zayn: "zayn hayes",
+  jubayer: "zayn hayes",
+  marufa: "xinea",
+  nyxia: "xinea",
+  "nyxia vale": "xinea",
+  nawshin: "valeria",
+  nisha: "nilanjona",
+  ela: "grace",
+  rafi: "weston hale",
+  weston: "weston hale",
+  rohan: "damian brown",
+  fahad: "rowan colloway",
+  sammam: "samuel sterling",
+  tamim: "david",
+  dawood: "david",
+  luba: "maliha",
+  ariyan: "aariz maddox",
+  nusrat: "saya",
+  madhobi: "nytheris",
+  humayra: "amaya",
+  shakti: "yoshiko arashi",
+  rifat: "derek miles",
+  john: "dorian cross",
+  "john liam": "dorian cross",
+  liam: "eldrich aldercrest",
+  agnus: "altan el-mansur",
+  mubasshir: "evan grant",
+  aeric: "aeric valenheart",
+  "alistair graye": "alistair quinn",
+  maverick: "sean stone",
+  shina: "shina nasrin",
+  "major general stitch": "stitch",
+  asetra: "jessy",
+  "anna la sarta": "anna al-ahd",
+  "zaan al-murad": "zaan",
+  mashiho: "mashiho kurohana",
+  "kurahana kazumi": "kazumi kurahana",
+  ayaan: "ayaan siddique",
+  issabela: "issabela al-ahd",
+  ayman: "ayaan siddique",
   echan: "ethan",
 };
 
@@ -316,3 +356,8 @@ export function planLoreSync(
 
 /** Re-exported so callers can extend locked_fields after admin edits. */
 export { mergeLocks };
+
+/** Story-name card a real name, codename or merged duplicate resolves to (or the input when unmapped). */
+export function canonicalCharacterName(name: string): string {
+  return ALIAS_MAP[normalize(name)] ?? normalize(name);
+}

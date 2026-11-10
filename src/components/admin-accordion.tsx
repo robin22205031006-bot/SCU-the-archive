@@ -13,7 +13,7 @@ export function AdminAccordion({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="glass rounded-2xl">
+    <section className="glass min-w-0 max-w-full overflow-hidden rounded-2xl">
       <button
         className="flex w-full items-center justify-between px-5 py-4 text-left"
         onClick={() => setOpen((o) => !o)}
@@ -25,7 +25,7 @@ export function AdminAccordion({
         />
       </button>
       {open && (
-        <div className="border-t border-border/50 px-5 py-4 [&>section]:border-0 [&>section]:bg-transparent [&>section]:p-0">
+        <div className="min-w-0 border-t border-border/50 px-3 py-4 sm:px-5 [&>section]:border-0 [&>section]:bg-transparent [&>section]:p-0">
           {children}
         </div>
       )}

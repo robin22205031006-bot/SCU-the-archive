@@ -73,14 +73,8 @@ export const askLore = createServerFn({ method: "POST" })
       // Vault retrieval is best-effort; fall back to archive-only answers.
     }
 
-    const { generateGemini, pickGeminiKey } = await import("./gemini.server");
-    const reply = await generateGemini(pickGeminiKey("chat"), {
-      contents: data.messages.map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      })),
-      config: {
-        systemInstruction:
+    const { generateResponse, GatewayError } = await import("@lovable.dev/ai-gateway");
+    const instructions =
           "You are the SCU Lore Assistant. Your goal is to answer questions using the provided 'Context' from the official SCU PDF documents in the vault. " +
           "Always prioritize information from the vault. If the answer is not in the context, clearly state that the official archives do not contain that specific information, and then provide a generalized response if possible. " +
           "You may also use the SCU archive entries below as secondary reference, but the vault documents are canon. " +
@@ -90,8 +84,28 @@ export const askLore = createServerFn({ method: "POST" })
           (vaultContext ? `<vault_context>\n${vaultContext}\n</vault_context>\n\n` : "") +
           "<archive>\n" +
           lore +
-          "\n</archive>",
-      },
-    });
+          "\n</archive>";
+    let reply = "";
+    try {
+      const response = await generateResponse({
+        model: "openai/gpt-6-astra",
+        instructions,
+        input: data.messages.map((m) => ({ role: m.role, content: m.content })),
+      });
+      for (const item of response.output ?? [])
+        if (item.type === "message")
+          for (const c of item.content) if (c.type === "output_text") reply += c.text;
+    } catch (error) {
+      if (error instanceof GatewayError) {
+        console.error("ai box gateway", error.code, error.ids);
+        if (error.httpStatus === 402)
+          throw new Error("AI credits need topping up before the AI Box can answer again.");
+        if (error.httpStatus === 429)
+          throw new Error("Too many questions right now. Please wait a moment and try again.");
+      } else console.error("ai box", error);
+      throw new Error("The AI Box couldn't answer just now. Your question is kept — try again.");
+    }
+    if (!reply.trim())
+      throw new Error("The AI Box returned an empty answer. Your question is kept — try again.");
     return { reply, sources: [...sources] };
   });
