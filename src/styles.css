@@ -768,7 +768,7 @@ html[data-nexus-theme="nature"] { --nexus-glow: var(--fx-nature); }
 html[data-nexus-theme="void"] { --nexus-glow: var(--fx-void); }
 .nexus-fx-background { z-index: 0; opacity: .62; }
 .nexus-fx-symbols { z-index: 60; }
-.nexus-fx-symbols canvas { pointer-events: none !important; }
+.nexus-fx-symbols, .nexus-fx-symbols *, .nexus-fx-background, .nexus-fx-background * { pointer-events: none !important; }
 .nexus-sigil { vertical-align: middle; }
 .nexus-sigil-fallback { border: 1px solid var(--nexus-glow); transform: rotate(45deg); }
 .nexus-theme-option { position: relative; }
