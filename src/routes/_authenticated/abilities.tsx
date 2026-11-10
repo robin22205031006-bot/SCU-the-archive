@@ -33,7 +33,7 @@ import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { NexusExplorer } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import type { Json } from "@/integrations/supabase/types";
-import { NexusSign } from "@/components/nexus-sign";
+import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 
 const ALL_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
 const CUSTOM_SETTINGS_KEY = "ability_registry";
@@ -236,7 +236,7 @@ function AbilitiesHub() {
 
       {nexus ? <NexusExplorer
         label="Abilities" loading={isLoading}
-        records={defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], subtitle: ABILITY_GROUP_LABELS[def.group], icon: <def.icon className="h-5 w-5" style={{ color: def.color }} />, def }))}
+        records={defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], subtitle: ABILITY_GROUP_LABELS[def.group], icon: <NexusAbilitySymbol name={def.key} className="h-10 w-10" />, def }))}
         renderDetail={({ def }) => <AbilityCard def={def} holders={holders.get(def.key) ?? []} open onToggle={() => {}} isAdmin={isAdmin} isCustom={customKeys.has(def.key)} onEdit={() => setEditingDef(def)} onDeleteCustom={() => { removeCustomAbility(def.key); setCustomsVersion(v => v + 1); toast.success(`Removed "${def.label}" from the registry.`); }} />}
       /> : <>
       <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -363,7 +363,7 @@ function AbilityCard({
             boxShadow: `0 0 10px ${def.color}44`,
           }}
         >
-          {nexus ? <NexusSign><Icon className="h-5 w-5" /></NexusSign> : <Icon className="h-5 w-5" />}
+          {nexus ? <NexusAbilitySymbol name={def.key} className="h-10 w-10" /> : <Icon className="h-5 w-5" />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
