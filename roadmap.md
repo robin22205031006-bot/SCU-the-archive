@@ -1,3 +1,8 @@
+# Nexus 3D presentation
+- [ ] Add shared 3D ability/group symbols and ability-inspired background simulations across Nexus tabs.
+- [ ] Isolate Nexus themes and fonts from Descrete; add fluid text/page transitions with motion controls.
+- [ ] Verify theme persistence, spoiler safety, live rendering and desktop/phone layout.
+
 # Nexus across all tabs
 - [x] Add category-to-focused-record Nexus browsing for abilities, groups, series, timeline, stories, documents and community.
 - [x] Add immersive Nexus map/graph workspaces, Home navigation and shared section navigation for account/staff tools.
