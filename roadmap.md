@@ -1,3 +1,7 @@
+# Restore original series catalogue
+- [x] Restore original five series and their seasons in shared records, preserving existing lore.
+- [x] Show selectable seasons in all three styles and verify original counts and named epics.
+
 # Nexus device-following emblem motion
 - [x] Add saved Follow device and Always static options while preserving existing preferences.
 - [x] Verify live device-preference changes, saved selection and static artwork.
