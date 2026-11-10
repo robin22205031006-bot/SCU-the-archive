@@ -1,6 +1,6 @@
 # Nexus illustrated ability symbols
-- [ ] Create Nexus-only elemental and skill emblems inspired by the references, with fitting animation.
-- [ ] Apply to ability browsing, badges and dossier abilities; verify motion, layout and style isolation.
+- [x] Create Nexus-only elemental and skill emblems inspired by the references, with fitting animation.
+- [x] Apply to ability browsing, badges and dossier abilities; verify motion, layout and style isolation.
 
 # Nexus exact-sign animation
 - [x] Animate existing signs with shape-preserving 2D effects across Nexus, retaining the 3D backgrounds.
