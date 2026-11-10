@@ -31,6 +31,7 @@ import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/ma
 import { Route as AuthenticatedOrgsRouteImport } from './routes/_authenticated/orgs'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedReaderRouteImport } from './routes/_authenticated/reader'
+import { Route as AuthenticatedSeasonRouteImport } from './routes/_authenticated/season'
 import { Route as AuthenticatedSeriesRouteImport } from './routes/_authenticated/series'
 import { Route as AuthenticatedStoryRouteImport } from './routes/_authenticated/story'
 import { Route as AuthenticatedTimelineRouteImport } from './routes/_authenticated/timeline'
@@ -148,6 +149,11 @@ const AuthenticatedReaderRoute = AuthenticatedReaderRouteImport.update({
   path: '/reader',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSeasonRoute = AuthenticatedSeasonRouteImport.update({
+  id: '/season',
+  path: '/season',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSeriesRoute = AuthenticatedSeriesRouteImport.update({
   id: '/series',
   path: '/series',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/orgs': typeof AuthenticatedOrgsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reader': typeof AuthenticatedReaderRoute
+  '/season': typeof AuthenticatedSeasonRoute
   '/series': typeof AuthenticatedSeriesRoute
   '/story': typeof AuthenticatedStoryRoute
   '/timeline': typeof AuthenticatedTimelineRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/orgs': typeof AuthenticatedOrgsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reader': typeof AuthenticatedReaderRoute
+  '/season': typeof AuthenticatedSeasonRoute
   '/series': typeof AuthenticatedSeriesRoute
   '/story': typeof AuthenticatedStoryRoute
   '/timeline': typeof AuthenticatedTimelineRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/_authenticated/orgs': typeof AuthenticatedOrgsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reader': typeof AuthenticatedReaderRoute
+  '/_authenticated/season': typeof AuthenticatedSeasonRoute
   '/_authenticated/series': typeof AuthenticatedSeriesRoute
   '/_authenticated/story': typeof AuthenticatedStoryRoute
   '/_authenticated/timeline': typeof AuthenticatedTimelineRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/orgs'
     | '/profile'
     | '/reader'
+    | '/season'
     | '/series'
     | '/story'
     | '/timeline'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/orgs'
     | '/profile'
     | '/reader'
+    | '/season'
     | '/series'
     | '/story'
     | '/timeline'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/_authenticated/orgs'
     | '/_authenticated/profile'
     | '/_authenticated/reader'
+    | '/_authenticated/season'
     | '/_authenticated/series'
     | '/_authenticated/story'
     | '/_authenticated/timeline'
@@ -514,6 +526,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReaderRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/season': {
+      id: '/_authenticated/season'
+      path: '/season'
+      fullPath: '/season'
+      preLoaderRoute: typeof AuthenticatedSeasonRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/series': {
       id: '/_authenticated/series'
       path: '/series'
@@ -569,6 +588,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOrgsRoute: typeof AuthenticatedOrgsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReaderRoute: typeof AuthenticatedReaderRoute
+  AuthenticatedSeasonRoute: typeof AuthenticatedSeasonRoute
   AuthenticatedSeriesRoute: typeof AuthenticatedSeriesRoute
   AuthenticatedStoryRoute: typeof AuthenticatedStoryRoute
   AuthenticatedTimelineRoute: typeof AuthenticatedTimelineRoute
@@ -592,6 +612,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOrgsRoute: AuthenticatedOrgsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReaderRoute: AuthenticatedReaderRoute,
+  AuthenticatedSeasonRoute: AuthenticatedSeasonRoute,
   AuthenticatedSeriesRoute: AuthenticatedSeriesRoute,
   AuthenticatedStoryRoute: AuthenticatedStoryRoute,
   AuthenticatedTimelineRoute: AuthenticatedTimelineRoute,

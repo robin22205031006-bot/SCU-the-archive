@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Castle, Clock, Network, Shield } from "lucide-react";
+import { BookOpen, Castle, Clock, Network, Shield } from "lucide-react";
+import { ArchiveSeasons } from "@/components/archive-seasons";
 import { SectionBoundary } from "@/components/section-boundary";
 import { PanelSkeleton } from "@/components/route-skeleton";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
@@ -33,9 +34,10 @@ export const Route = createFileRoute("/_authenticated/archive")({
   component: Archive,
 });
 
-type Module = "orgs" | "clans" | "graph" | "timeline";
+type Module = "series" | "orgs" | "clans" | "graph" | "timeline";
 
 const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
+  { id: "series", icon: BookOpen, t: "Series & Seasons", d: "Every series and season, each with its own roster page." },
   {
     id: "orgs",
     icon: Shield,
@@ -82,8 +84,8 @@ function Archive() {
         </div>
       </header>
 
-      {nexus ? <div data-spoiler="archive"><NexusWorkspace views={MODULES.map(m => ({ id: m.id, title: m.t, icon: <m.icon className="h-4 w-4" />, content: <SectionBoundary label={m.t}><Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>{m.id === "orgs" ? <Orgs /> : m.id === "clans" ? <Clans /> : m.id === "graph" ? <RelationshipGraph /> : <Timeline />}</Suspense></SectionBoundary> }))} /></div> : <>
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {nexus ? <div data-spoiler="archive"><NexusWorkspace views={MODULES.map(m => ({ id: m.id, title: m.t, icon: <m.icon className="h-4 w-4" />, content: <SectionBoundary label={m.t}><Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>{m.id === "series" ? <ArchiveSeasons /> : m.id === "orgs" ? <Orgs /> : m.id === "clans" ? <Clans /> : m.id === "graph" ? <RelationshipGraph /> : <Timeline />}</Suspense></SectionBoundary> }))} /></div> : <>
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {MODULES.map((m) => (
           <button
             key={m.id}
@@ -102,6 +104,7 @@ function Archive() {
       <section aria-label={active.t} data-spoiler="archive">
         <SectionBoundary key={module} label={active.t}>
           <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+            {module === "series" && <ArchiveSeasons />}
             {module === "orgs" && <Orgs />}
             {module === "clans" && <Clans />}
             {module === "graph" && (
