@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Archive, BookMarked, BookOpen, Bot, Castle, ChevronDown, ChevronLeft, ChevronUp, Clock, Compass, FileLock, Flame, Home, Map, MessagesSquare, Network, Palette, Shield, Sparkles, User, Users, WandSparkles } from "lucide-react";
+import { Archive, BookMarked, BookOpen, Bot, Castle, ChevronDown, ChevronLeft, ChevronUp, Clock, Compass, FileLock, Flame, Swords, Home, Map, MessagesSquare, Network, Palette, Shield, Sparkles, User, Users, WandSparkles } from "lucide-react";
 import { TABS, STAFF_TAB } from "@/lib/nav";
 import { useNavMode } from "@/lib/nav-mode";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
@@ -16,7 +16,7 @@ import { useAnimationsEnabled } from "@/lib/animations";
 import { useUiStyle } from "@/lib/ui-style";
 export { navMode, setNavMode, hudNavEnabled, setHudNav, type NavMode } from "@/lib/nav-mode";
 
-const icons = { home: Home, chars: Users, abilities: WandSparkles, fx: Flame, archive: Archive, book: BookOpen, map: Map, fandom: MessagesSquare, ai: Bot, vault: FileLock, admin: Sparkles, series: BookMarked, orgs: Shield, time: Clock, graph: Network, clans: Castle, profile: User, theme: Palette };
+const icons = { home: Home, chars: Users, abilities: WandSparkles, fx: Flame, action: Swords, archive: Archive, book: BookOpen, map: Map, fandom: MessagesSquare, ai: Bot, vault: FileLock, admin: Sparkles, series: BookMarked, orgs: Shield, time: Clock, graph: Network, clans: Castle, profile: User, theme: Palette };
 const extraTabs = [{ to: "/series", label: "Series", icon: "series" }, { to: "/orgs", label: "Organizations", icon: "orgs" }, { to: "/timeline", label: "Timeline", icon: "time" }, { to: "/graph", label: "Graph", icon: "graph" }, { to: "/clans", label: "Clans", icon: "clans" }] as const;
 
 /** A viewport-bound arc: five visible entries, with scroll/swipe access to every page. */

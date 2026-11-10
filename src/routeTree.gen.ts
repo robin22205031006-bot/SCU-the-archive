@@ -16,6 +16,7 @@ import { Route as InstallRouteImport } from './routes/install'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedAbilitiesRouteImport } from './routes/_authenticated/abilities'
+import { Route as AuthenticatedAbilityActionRouteImport } from './routes/_authenticated/ability-action'
 import { Route as AuthenticatedAbilityFxRouteImport } from './routes/_authenticated/ability-fx'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
@@ -71,6 +72,12 @@ const AuthenticatedAbilitiesRoute = AuthenticatedAbilitiesRouteImport.update({
   path: '/abilities',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAbilityActionRoute =
+  AuthenticatedAbilityActionRouteImport.update({
+    id: '/ability-action',
+    path: '/ability-action',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAbilityFxRoute = AuthenticatedAbilityFxRouteImport.update({
   id: '/ability-fx',
   path: '/ability-fx',
@@ -174,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/abilities': typeof AuthenticatedAbilitiesRoute
+  '/ability-action': typeof AuthenticatedAbilityActionRoute
   '/ability-fx': typeof AuthenticatedAbilityFxRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -201,6 +209,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/abilities': typeof AuthenticatedAbilitiesRoute
+  '/ability-action': typeof AuthenticatedAbilityActionRoute
   '/ability-fx': typeof AuthenticatedAbilityFxRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -230,6 +239,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/abilities': typeof AuthenticatedAbilitiesRoute
+  '/_authenticated/ability-action': typeof AuthenticatedAbilityActionRoute
   '/_authenticated/ability-fx': typeof AuthenticatedAbilityFxRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/.well-known/oauth-protected-resource'
     | '/abilities'
+    | '/ability-action'
     | '/ability-fx'
     | '/admin'
     | '/ai'
@@ -286,6 +297,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/.well-known/oauth-protected-resource'
     | '/abilities'
+    | '/ability-action'
     | '/ability-fx'
     | '/admin'
     | '/ai'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/abilities'
+    | '/_authenticated/ability-action'
     | '/_authenticated/ability-fx'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
@@ -394,6 +407,13 @@ declare module '@tanstack/react-router' {
       path: '/abilities'
       fullPath: '/abilities'
       preLoaderRoute: typeof AuthenticatedAbilitiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ability-action': {
+      id: '/_authenticated/ability-action'
+      path: '/ability-action'
+      fullPath: '/ability-action'
+      preLoaderRoute: typeof AuthenticatedAbilityActionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ability-fx': {
@@ -534,6 +554,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAbilitiesRoute: typeof AuthenticatedAbilitiesRoute
+  AuthenticatedAbilityActionRoute: typeof AuthenticatedAbilityActionRoute
   AuthenticatedAbilityFxRoute: typeof AuthenticatedAbilityFxRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
@@ -556,6 +577,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAbilitiesRoute: AuthenticatedAbilitiesRoute,
+  AuthenticatedAbilityActionRoute: AuthenticatedAbilityActionRoute,
   AuthenticatedAbilityFxRoute: AuthenticatedAbilityFxRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,

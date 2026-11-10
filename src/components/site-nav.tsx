@@ -24,7 +24,7 @@ import {
   WandSparkles,
   ZoomIn,
   ZoomOut,
-  Flame,
+  Flame, Swords,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
@@ -55,7 +55,7 @@ const ICONS = {
   orgs: Shield,
   chars: Users,
   abilities: WandSparkles,
-  fx: Flame,
+  fx: Flame, action: Swords,
   archive: Archive,
   series: BookMarked,
   book: BookOpen,
