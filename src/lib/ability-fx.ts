@@ -167,6 +167,13 @@ export const FX_LINEAGES: FxLineage[] = [
   { id: "nature", label: "Nature → Nature Guardian", steps: ["nature", "nature_guardian"] },
   { id: "elements", label: "Elemental convergence", steps: ["fire_guardian", "water_guardian", "wind_guardian", "earth_guardian", "omni_ergon"] },
   { id: "blade", label: "Blade ascension", steps: ["swordsman", "sword_master", "gladiokinesis"] },
+  { id: "vampire", label: "Vampiric blood (order unconfirmed)", steps: ["vampire", "vampire_hybrid"] },
+  { id: "arcane", label: "Arcane ascension (order unconfirmed)", steps: ["card_magic", "rune_magic", "arcane_magic", "aldercrest_arcane", "reality_bend"] },
+  { id: "chaos", label: "Chaos ascension (order unconfirmed)", steps: ["wild_energy", "chaos_magic", "chaos_order"] },
+  { id: "tech", label: "Tech ascension (order unconfirmed)", steps: ["tech_genius", "tech_suits", "kinetic_suits", "sentinel_frame_tech", "vanguard_x_protocol"] },
+  { id: "daggers", label: "Dagger portals (order unconfirmed)", steps: ["psychokinetic_daggers", "portal"] },
+  { id: "shadow", label: "Shadow ascension (order unconfirmed)", steps: ["shadow_steps", "assassin", "umbrakinesis", "dark_magic"] },
+  { id: "beast", label: "Animal forms (order unconfirmed)", steps: ["bestiakinesis", "beast_transformation", "hyena", "wolf", "tiger", "lion", "dragon"] },
 ];
 
 /** Validates admin-saved chains; returns null when the value is unusable. */

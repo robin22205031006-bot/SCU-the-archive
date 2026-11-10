@@ -2,9 +2,9 @@
 import { abilityFxRecipe, type FxMotif } from "@/lib/ability-fx";
 
 export type Gender = "male" | "female";
-export type PoseName = "stand" | "guard" | "crouch" | "dash" | "punch" | "kick" | "cast" | "raise" | "slashUp" | "slashDown" | "knee" | "stomp" | "leap" | "flip";
+export type PoseName = "stand" | "guard" | "crouch" | "dash" | "punch" | "kick" | "cast" | "raise" | "slashUp" | "slashDown" | "knee" | "stomp" | "leap" | "flip" | "windUp" | "lunge" | "spinCut" | "throw" | "kneelFinish";
 export type Fx = "charge" | "trail" | "projectile" | "impact" | "wave" | "slash" | "aura" | "beam";
-export interface Seg { pose: PoseName; d: number; x: number; y?: number; fx?: Fx[]; label: string }
+export interface Seg { pose: PoseName; d: number; x: number; y?: number; fx?: Fx[]; label: string; /** Seconds to freeze on the key pose before the next move (anime hold). */ hold?: number }
 export type ActionStyle = "dashStrike" | "speedBlitz" | "projectile" | "groundWave" | "spinBlade" | "slashCombo" | "beastPounce" | "aura" | "beam" | "blink";
 
 const MOTIF_STYLE: Record<FxMotif, ActionStyle> = {
@@ -55,10 +55,15 @@ export function choreography(name: string, g: Gender): Seg[] {
     case "groundWave": return [...open, f ? { pose: "leap", d: .35, x: -.22, y: .2, fx: ["trail"], label: "Leap" } : { pose: "knee", d: .4, x: -.32, fx: ["charge"], label: "Knee up" },
       { pose: "stomp", d: .15, x: f ? -.15 : -.3, label: f ? "Ground slam" : "Stomp" }, { pose: "stomp", d: .5, x: f ? -.15 : -.3, fx: ["wave"], label: "Eruption travels" },
       { pose: "guard", d: .5, x: f ? -.15 : -.3, fx: ["impact"], label: "Impact" }, { pose: "stand", d: .5, x: -.32, label: "Reset" }];
-    case "spinBlade": return [...open, { pose: "crouch", d: .3, x: -.32, fx: ["charge"], label: "Wind up" }, { pose: "kick", d: .3, x: -.25, y: f ? .1 : 0, fx: ["slash"], label: "Spin kick" },
+    case "spinBlade": return [...open, { pose: "crouch", d: .3, x: -.32, fx: ["charge"], label: "Wind up" }, f ? { pose: "spinCut", d: .32, x: -.25, y: .08, fx: ["slash"], label: "Spinning scarf cut", hold: .12 } : { pose: "kick", d: .3, x: -.25, fx: ["slash"], label: "Spin kick", hold: .1 },
       { pose: "guard", d: .45, x: -.25, fx: ["projectile"], label: "Blades fly" }, { pose: "guard", d: .5, x: -.25, fx: ["impact"], label: "Impact" }, { pose: "stand", d: .5, x: -.32, label: "Reset" }];
-    case "slashCombo": return [...open, { pose: "dash", d: .3, x: .1, fx: ["trail"], label: "Step in" }, { pose: "slashUp", d: .18, x: .14, fx: ["slash"], label: "Rising cut" },
-      { pose: "slashDown", d: .16, x: .16, fx: ["slash", "impact"], label: "Falling cut" }, { pose: f ? "flip" : "slashDown", d: .45, x: f ? .05 : .16, y: f ? .12 : 0, fx: ["impact"], label: "Finish" }, ...end];
+    case "slashCombo": return f
+      ? [...open, { pose: "windUp", d: .35, x: -.3, fx: ["charge"], label: "Raise the blade", hold: .15 }, { pose: "lunge", d: .22, x: .08, fx: ["trail"], label: "Lunge" },
+        { pose: "spinCut", d: .2, x: .12, fx: ["slash"], label: "Spinning cut", hold: .08 }, { pose: "leap", d: .3, x: .02, y: .18, label: "Leap back" },
+        { pose: "throw", d: .4, x: -.05, y: .1, fx: ["projectile"], label: "Thrown arc" }, { pose: "kneelFinish", d: .45, x: .12, fx: ["slash", "impact"], label: "Ground finish", hold: .2 }, ...end]
+      : [...open, { pose: "windUp", d: .4, x: -.3, fx: ["charge"], label: "Overhead wind-up", hold: .18 }, { pose: "dash", d: .25, x: .08, fx: ["trail"], label: "Step in" },
+        { pose: "slashDown", d: .18, x: .14, fx: ["slash", "impact"], label: "Attack 01 · crushing cut", hold: .15 }, { pose: "windUp", d: .25, x: .12, label: "Re-chamber" },
+        { pose: "spinCut", d: .2, x: .15, fx: ["slash"], label: "Attack 02 · sweeping crescent", hold: .12 }, { pose: "kneelFinish", d: .45, x: .15, fx: ["impact"], label: "Finish" }, ...end];
     case "beastPounce": return [...open, { pose: "crouch", d: .8, x: -.32, fx: ["charge", "aura"], label: "The beast takes over" }, { pose: "leap", d: .35, x: .05, y: .2, fx: ["trail"], label: "Pounce" },
       { pose: "crouch", d: .15, x: .16, fx: ["impact"], label: "Maul" }, { pose: hit, d: .4, x: .17, fx: ["impact"], label: "Rend" }, ...end];
     case "aura": return [...open, { pose: "raise", d: .7, x: -.25, fx: ["charge", "aura"], label: "Raise the field" }, { pose: "cast", d: .8, x: -.25, fx: ["aura", "wave"], label: "Field expands" },
@@ -67,4 +72,31 @@ export function choreography(name: string, g: Gender): Seg[] {
       { pose: f ? "kick" : "slashDown", d: .18, x: .42, fx: ["slash"], label: "Behind you" }, { pose: "guard", d: .45, x: .42, fx: ["impact"], label: "Impact" }, { pose: "dash", d: .15, x: -.32, fx: ["trail"], label: "Withdraw" }, { pose: "stand", d: .45, x: -.32, label: "Reset" }];
   }
 }
-export function totalDuration(segs: Seg[]) { return segs.reduce((a, s) => a + s.d, 0); }
+export function totalDuration(segs: Seg[]) { return segs.reduce((a, s) => a + s.d + (s.hold ?? 0), 0); }
+
+export type Weapon = "none" | "sword" | "spear";
+/** Bladed styles carry a weapon: men a heavy sword, women a spear/glaive (as in the fire-sword sheets). */
+export function weaponFor(name: string, g: Gender): Weapon {
+  const st = actionStyle(name); const r = abilityFxRecipe(name);
+  if (st === "slashCombo" || r.motif === "blade") return g === "female" ? "spear" : "sword";
+  if (st === "spinBlade" && g === "female") return "spear";
+  return "none";
+}
+
+/** A fight from the archive, replayed beat by beat. Quotes are verbatim from the imported lore. */
+export interface FightBeat { who: string; ability: string; gender: Gender; label: string }
+export interface StoryFight { id: string; title: string; when: string; quote: string; beats: FightBeat[]; note?: string }
+export const STORY_FIGHTS: StoryFight[] = [
+  { id: "lucas", title: "Zayn & Weston vs Lucas", when: "The Sentinels", quote: "when zayn and weston was fighting against lucas . who was a hybrid from dew from experiment...the fight was to intense for even these two..",
+    beats: [{ who: "Weston", ability: "white_lightning_drive", gender: "male", label: "Weston blitzes Lucas from every angle" }, { who: "Zayn", ability: "red_lightning", gender: "male", label: "Zayn fires Dorian's red lightning" }, { who: "Lucas", ability: "super_speed", gender: "male", label: "Lucas answers at the same speed" }] },
+  { id: "catastrophe", title: "The city-bomb catastrophe", when: "Season 5", quote: "Weston and Zayn fight a superstrong and very fast enemy who attempts to destroy the city with a bomb, but an injured Weston intercepts the blast with his own body while Zayn launches a final aerial attack.",
+    beats: [{ who: "Enemy", ability: "destructive", gender: "male", label: "The enemy charges the city-level blast" }, { who: "Weston", ability: "white_lightning_drive", gender: "male", label: "Injured Weston intercepts the blast" }, { who: "Zayn", ability: "crimson_astrapo", gender: "male", label: "Zayn's final aerial attack" }] },
+  { id: "diablo", title: "Dorian, Eldrich & Norman vs Diablo", when: "Dorian's youth", quote: "Dorian was not in his prime because he was only a kid back then.but his battle iq and potential he alongside eldrich and norman faught diablo and his army.",
+    beats: [{ who: "Dorian", ability: "red_lightning", gender: "male", label: "Young Dorian's red lightning" }, { who: "Norman", ability: "combat_specialist", gender: "male", label: "Norman's bravery up close" }], note: "Eldrich's ability isn't described in the story yet." },
+  { id: "cube", title: "John & Liam vs Khalid", when: "The Architect's Cube", quote: "John fights Khalid, unleashes a red lightning spark, and falls, prompting Liam to awaken his ancient magic and blast Khalid away.",
+    beats: [{ who: "John", ability: "red_lightning", gender: "male", label: "John's red lightning spark" }, { who: "Khalid", ability: "demonic_hemokinesis", gender: "male", label: "Khalid overpowers him" }, { who: "Liam", ability: "ancient_art", gender: "male", label: "Liam awakens his ancient magic" }] },
+  { id: "aariz", title: "Aariz vs Elizah", when: "Season 3", quote: "in season 3 mid,aariz fights elizah ,as he wants to fight the strongest and always hyped up for fighting strongest",
+    beats: [{ who: "Aariz", ability: "beast_transformation", gender: "male", label: "Aariz lets his beast instinct loose" }, { who: "Elizah", ability: "combat_specialist", gender: "male", label: "Elizah answers" }], note: "Which power Elizah uses here isn't written in the story; shown as close combat." },
+  { id: "agnus", title: "Zayn vs Agnus", when: "The Sentinels", quote: "after agnus and zayn fight where zayn ends agnus.his father.who is a greater in power.",
+    beats: [{ who: "Agnus", ability: "destructive_legendary", gender: "male", label: "Agnus, greater in power" }, { who: "Zayn", ability: "red_lightning", gender: "male", label: "Zayn ends it" }], note: "Agnus's exact power isn't described; shown as raw destruction." },
+];

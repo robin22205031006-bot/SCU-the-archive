@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FxRecipe } from "@/lib/ability-fx";
-import { PAINT, guardianAura, type PF } from "@/components/fx-painters";
+import { guardianAura, type PF } from "@/components/fx-painters";
+import { ALL_PAINT } from "@/components/fx-brush";
 
 type C = CanvasRenderingContext2D;
 interface F { c: C; t: number; p: number; s: number; r: FxRecipe; rnd: (i: number) => number; v: number }
@@ -266,7 +267,7 @@ export function AbilityFxCanvas({ recipe, className = "", playing = true, fps = 
         c.fillStyle = "#07070d"; c.fillRect(0, 0, w, h);
         const s = Math.min(w, h); c.save(); c.translate(w / 2, h / 2);
         const bg = c.createRadialGradient(0, 0, 0, 0, 0, s * .55); bg.addColorStop(0, recipe.palette[1] + "66"); bg.addColorStop(1, "transparent"); c.fillStyle = bg; c.fillRect(-w, -h, w * 2, h * 2);
-        const painter = PAINT[recipe.motif];
+        const painter = ALL_PAINT[recipe.motif];
         const pf: PF = { c, t, p: recipe.power, s, r: recipe, rnd, v: recipe.variant, step: Math.floor(t * 8) };
         const guardian = recipe.key.endsWith("_guardian");
         if (guardian) guardianAura(pf, true);
