@@ -27,3 +27,4 @@
 - Season rosters and identity overrides use the existing dossier map; season ability membership stays in character_abilities, with checked staff writes and shared query invalidation to keep counts, dots and dossiers synchronized without a new schema.
 - Archive revision capture uses database triggers on entities, character abilities and series memberships; snapshots are append-only for app users and admin-read-only so every write path is audited without trusting browser-supplied editor names.
 - UI styles share a persisted picker; keep the legacy classic key for original-style compatibility, and apply Minimal motion suppression at the shared shell so switching styles never changes data or permissions.
+- Nexus tab browsers use the shared presentation-only NexusExplorer and NexusWorkspace with existing filtered records and action handlers; this keeps focused browsing consistent without duplicating permissions, queries or writes.

@@ -1,3 +1,5 @@
+import { NexusExplorer } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/fandom")({
 const displayName = (email?: string | null) => (email ? email.split("@")[0] : "Sentinel");
 
 function Fandom() {
+  const nexus = useUiStyle() === "nexus";
   const qc = useQueryClient();
   const { data: user } = useSession();
   const isStaff = useIsStaff();
@@ -132,7 +135,44 @@ function Fandom() {
         </Button>
       </div>
 
-      <div className="mt-8 grid gap-3">
+      {nexus ? <div className="mt-8"><NexusExplorer label="Discussions" records={sorted.map(p => ({ id: p.id, title: p.title, group: p.votes > 0 ? "Trending" : "Recent", subtitle: `${p.author_name} · ${p.comments} comments`, post: p }))} renderDetail={({ post: p }) => (          <article className="glass rounded-2xl p-4">
+            <div className="flex gap-3">
+              <button
+                onClick={() => vote(p.id, p.mine)}
+                aria-label="Upvote"
+                className={`flex flex-col items-center text-xs ${p.mine ? "text-accent" : "text-muted-foreground"}`}
+              >
+                <ArrowBigUp className="h-6 w-6" />
+                {p.votes}
+              </button>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl font-medium">{p.title}</h2>
+                <p className="text-xs text-muted-foreground">
+                  {p.author_name} · {new Date(p.created_at).toLocaleDateString()}
+                </p>
+                <p className="mt-2 whitespace-pre-line text-sm">{p.body}</p>
+                <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
+                  <button
+                    onClick={() => setOpenPost(openPost === p.id ? null : p.id)}
+                    className="flex items-center gap-1 hover:text-foreground"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {p.comments} comments
+                  </button>
+                  {(isStaff || p.author_id === user?.id) && (
+                    <button
+                      onClick={() => remove(p.id)}
+                      className="flex items-center gap-1 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </button>
+                  )}
+                </div>
+                {openPost === p.id && <Comments postId={p.id} />}
+              </div>
+            </div>
+          </article>)} /></div> : <div className="mt-8 grid gap-3">
         {sorted.map((p) => (
           <article key={p.id} className="glass rounded-2xl p-4">
             <div className="flex gap-3">
@@ -178,7 +218,7 @@ function Fandom() {
             No discussions yet — start one.
           </p>
         )}
-      </div>
+      </div>}
     </main>
   );
 }

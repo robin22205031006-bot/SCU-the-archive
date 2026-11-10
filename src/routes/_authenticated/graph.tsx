@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RelationshipGraph } from "@/components/relationship-graph";
+import { ClanGraph } from "@/components/clan-graph";
+import { NexusWorkspace } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
+import { Network, Castle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/graph")({
   head: () => ({
@@ -22,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/graph")({
 });
 
 function Graph() {
+  const nexus = useUiStyle() === "nexus";
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
       <header className="mb-8">
@@ -32,7 +37,10 @@ function Graph() {
           bloodlines and organizations they serve.
         </p>
       </header>
-      <RelationshipGraph />
+      {nexus ? <NexusWorkspace views={[
+        { id: "relationships", title: "Relationships", icon: <Network className="h-4 w-4" />, content: <RelationshipGraph /> },
+        { id: "lineages", title: "Lineages", icon: <Castle className="h-4 w-4" />, content: <ClanGraph /> },
+      ]} /> : <RelationshipGraph />}
     </main>
   );
 }

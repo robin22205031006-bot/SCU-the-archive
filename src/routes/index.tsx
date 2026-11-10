@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SeriesPage } from "./_authenticated/series";
 import { UiStylePicker } from "@/components/ui-style-picker";
+import { useUiStyle } from "@/lib/ui-style";
+import { NexusExplorer } from "@/components/nexus-explorer";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,6 +52,13 @@ const sections = [
 ] as const;
 
 function Index() {
+  const nexus = useUiStyle() === "nexus";
+  if (nexus) return <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4"><h2 className="text-sm">UI Style</h2><UiStylePicker /></div>
+    <header className="mb-10"><p className="text-xs text-accent">SCU / NEXUS</p><h1 className="mt-3 break-words text-4xl font-medium sm:text-5xl">Sentinels Cinematic Universe</h1></header>
+    <NexusExplorer label="Archive sectors" records={sections.map(s => ({ id: s.to, title: s.t, group: s.to === "/series" || s.to === "/timeline" ? "Chronicle" : "Lore", subtitle: s.d, section: s }))} renderDetail={({ section: s }) => <div className="grid gap-5"><h2 className="text-3xl">{s.t}</h2><Button asChild><Link to={s.to}>Open {s.t}<ArrowRight className="h-4 w-4" /></Link></Button></div>} />
+    <div className="mt-12"><SeriesPage /></div>
+  </main>;
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-5 pb-20 pt-32">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4"><h2 className="text-sm">UI Style</h2><UiStylePicker /></div>

@@ -714,6 +714,28 @@ html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { l
 .nexus-shell [role="tab"] { border-radius: 0; transition: color .4s, background-color .4s, transform .4s; }
 .nexus-shell [role="tab"][data-state="active"] { border-bottom: 2px solid var(--accent); background: color-mix(in oklab, var(--accent) 10%, transparent); transform: translateY(-2px); }
 @keyframes nexus-grid-drift { to { transform: translateY(80px); } }
+.nexus-page > main, .nexus-page > div > main { min-width: 0; }
+.nexus-page:not([data-nexus-page="character"]) h1 { font-size: 2.5rem; line-height: 1.15; overflow-wrap: anywhere; }
+.nexus-page > main > header > div > p:not(:first-child), .nexus-page > main > header > p:not(:first-child) { display: none; }
+.nexus-explorer .nexus-record { transition: border-color .3s, background-color .3s; }
+.nexus-explorer .nexus-record:hover { border-color: var(--nexus-glow); }
+.nexus-explorer .nexus-record[aria-pressed="true"] { background: color-mix(in oklab, var(--nexus-glow) 12%, var(--card)); color: var(--foreground); }
+.nexus-explorer article { align-self: start; }
+.nexus-cluster { box-shadow: var(--nexus-shadow); }
+.nexus-workspace > [role="tabpanel"] > main { padding: 0; max-width: none; }
+.nexus-workspace > [role="tabpanel"] > main > header { margin-bottom: 1.25rem; }
+.nexus-explorer article .glass { border: none; background: transparent; box-shadow: none !important; }
+.nexus-explorer article h2 { overflow-wrap: anywhere; }
+.nexus-section-rail { align-self: start; }
+.nexus-tool-layout > div > main, .nexus-tool-layout > div > div { max-width: 100%; }
+.nexus-tool-layout .glass { border-radius: 8px; }
+.nexus-tool-layout [class*="font-display"] { font-family: var(--font-sans); }
+.nexus-tool-layout > div > main, .nexus-tool-layout > div > div { padding-top: 6rem; }
+.nexus-page[data-nexus-page="timeline"] > main > .glass { border-radius: 8px; }
+@media (max-width: 1023px) {
+  .nexus-tool-layout > div > main, .nexus-tool-layout > div > div { padding-top: 2rem; }
+  .nexus-explorer article { order: -1; }
+}
 html[data-nexus-motion="off"] .nexus-grid { animation: none; }
 html[data-nexus-motion="off"] .nexus-shell *, html[data-nexus-motion="off"] .nexus-shell *::before { animation-duration: 0s !important; transition-duration: 0s !important; }
 @media (prefers-reduced-motion: reduce) {

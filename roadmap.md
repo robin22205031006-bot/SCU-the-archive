@@ -1,3 +1,8 @@
+# Nexus across all tabs
+- [x] Add category-to-focused-record Nexus browsing for abilities, groups, series, timeline, stories, documents and community.
+- [x] Add immersive Nexus map/graph workspaces, Home navigation and shared section navigation for account/staff tools.
+- [x] Preserve existing edits, spoiler masks and data; verify signed-in browsing and mobile layout without changing Descrete or Minimal.
+
 # Nexus season and motion update
 - [x] Add immutable admin audit history with editor names, timestamps and revision comparison for all styles.
 - [x] Add Home UI Style choices: Descrete, Nexus and low-motion Minimal; verify switching.
@@ -20,6 +25,6 @@
 - [x] Preserve grounded lore and manual edits; refresh archive views after writes, including partial failures.
 - [x] Run regression tests and verify a signed-in PDF upload through the archive UI.
 
-# Gemini integration
-- [ ] Connect private-key Gemini extraction and the existing chat through a dedicated LoreChat component.
-- [ ] Preserve protected archive saves, grounding and manual fields; test and verify PDF and chat flows.
+# Gemini integration (completed in prior updates)
+- [x] Connect private-key Gemini extraction and the existing chat through a dedicated LoreChat component.
+- [x] Preserve protected archive saves, grounding and manual fields; test and verify PDF and chat flows.

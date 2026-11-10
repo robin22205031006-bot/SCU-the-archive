@@ -21,6 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { useSectionStyle } from "@/hooks/use-typography";
 import { entitiesQuery, GROUP_LINK_KINDS, timelineQuery, type TimelineEvent } from "@/lib/entities";
+import { NexusExplorer } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
 import { sfx } from "@/lib/scu-audio";
 
 export const Route = createFileRoute("/_authenticated/timeline")({
@@ -60,6 +62,7 @@ const EMPTY_FORM = { title: "", era: "", series: "", impact: 5, description: "" 
 type EventForm = typeof EMPTY_FORM;
 
 export function Timeline() {
+  const nexus = useUiStyle() === "nexus";
   const isAdmin = useIsAdmin();
   const sectionStyle = useSectionStyle("timeline");
   const qc = useQueryClient();
@@ -407,7 +410,7 @@ export function Timeline() {
       {adding && form}
       {editing && !adding && form}
 
-      {isLoading ? (
+      {nexus ? <NexusExplorer label="Events" loading={isLoading} records={events.map(ev => ({ id: ev.id, title: ev.title, group: ev.series || ev.era || "Canon", subtitle: ev.era || undefined, event: ev }))} renderDetail={({ event: ev }) => <div className="grid gap-4"><p className="text-xs text-accent">{[ev.series, ev.era].filter(Boolean).join(" · ")}</p><h2 className="break-words text-2xl">{ev.title}</h2><div className="h-1 overflow-hidden rounded-full bg-secondary"><div className="h-full bg-accent" style={{ width: `${Math.max(0, Math.min(10, ev.impact ?? 0)) * 10}%` }} /></div><p className="text-xs text-muted-foreground">Impact {ev.impact}/10 · {impactTier(ev.impact).label}</p><p className="whitespace-pre-line text-sm leading-relaxed">{ev.description}</p>{ev.source && <p className="text-xs text-muted-foreground">From {ev.source}</p>}{isAdmin && <div className="flex gap-2"><Button variant="outline" onClick={() => startEdit(ev)}><Pencil className="h-4 w-4" /> Edit</Button><Button variant="ghost" aria-label="Delete event" onClick={() => del(ev.id)}><Trash2 className="h-4 w-4" /></Button></div>}</div>} /> : isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : !events.length ? (
         <p className="py-16 text-center text-sm text-muted-foreground">No events yet.</p>

@@ -5,6 +5,8 @@ import { SectionBoundary } from "@/components/section-boundary";
 import { PanelSkeleton } from "@/components/route-skeleton";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { CrimsonBloodlineTheme } from "@/components/ability-canvas";
+import { NexusWorkspace } from "@/components/nexus-explorer";
+import { useUiStyle } from "@/lib/ui-style";
 
 const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
 const Clans = lazy(() => import("./clans").then((m) => ({ default: m.Clans })));
@@ -61,13 +63,14 @@ const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
 ];
 
 function Archive() {
+  const nexus = useUiStyle() === "nexus";
   const [module, setModule] = useState<Module>("orgs");
-  const active = MODULES.find((m) => m.id === module)!;
+  const active = MODULES.find((m) => m.id === module) ?? { t: "Archive" };
   useSpoilerMask("archive");
 
   return (
     <main className="relative mx-auto max-w-6xl px-4 pb-24 sm:px-5">
-      <CrimsonBloodlineTheme className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-25" />
+      {!nexus && <CrimsonBloodlineTheme className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-25" />}
       <header className="mb-6 pt-28">
         <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Lore Vault</p>
         <h1 className="mt-2 text-5xl font-medium glow-text">Archive</h1>
@@ -79,6 +82,7 @@ function Archive() {
         </div>
       </header>
 
+      {nexus ? <div data-spoiler="archive"><NexusWorkspace views={MODULES.map(m => ({ id: m.id, title: m.t, icon: <m.icon className="h-4 w-4" />, content: <SectionBoundary label={m.t}><Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>{m.id === "orgs" ? <Orgs /> : m.id === "clans" ? <Clans /> : m.id === "graph" ? <RelationshipGraph /> : <Timeline />}</Suspense></SectionBoundary> }))} /></div> : <>
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {MODULES.map((m) => (
           <button
@@ -109,6 +113,7 @@ function Archive() {
           </Suspense>
         </SectionBoundary>
       </section>
+      </>}
     </main>
   );
 }
