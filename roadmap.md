@@ -1,6 +1,6 @@
 # Distinct Nexus ability emblems
-- [ ] Replace shared/fallback artwork for every listed ability with a distinct lore-informed emblem.
-- [ ] Verify exact-name aliases, artwork isolation, animation and existing admin color controls.
+- [x] Replace shared/fallback artwork for every listed ability with a distinct lore-informed emblem.
+- [x] Verify exact-name aliases, artwork isolation, animation and existing admin color controls.
 
 # Nexus emblem corrections and anime presentation
 - [x] Fix sprite clipping and review ability classification, including vampire and unique apex emblems.
