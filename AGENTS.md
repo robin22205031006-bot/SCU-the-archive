@@ -12,7 +12,7 @@
 - Entity pictures are stored as resized data URLs in `entities.image_url` — workspace blocks public storage buckets.
 - PDF ingestion: text is extracted in the browser, AI output is filtered by `src/lib/lore-merge.ts` (verbatim-quote grounding) and admin-edited fields go into `locked_fields`, which ingestion never overwrites.
 - Admin role is granted by a signup trigger on a fixed email; roles live only in `user_roles` (why: avoid privilege escalation).
-- Synchronize account changes through `syncSessionCache` before router refresh; remove account-dependent cache data to prevent stale privileges and private results crossing sessions.
+- Synchronize account changes through `syncSessionCache` before router refresh; retain lore on same-user token refresh, but purge on identity changes, sign-out and user updates to prevent stale privileges and private results crossing sessions.
 - Lore application rechecks source quotes and resolves normalized exact names before writes; checked writes must surface partial failures instead of reporting false success.
 - Admin uploads use the browser-only PDF parser and admin controller to call authenticated lore server functions, then invalidate archive queries even on partial write failures; characters and organizations remain kinds in the shared entities table so existing views stay synchronized.
 - Gemini calls use the official SDK's web entry in authenticated server handlers with private credentials, because browser-prefixed secrets expose API keys and Node-specific SDK paths are incompatible with hosting.
@@ -34,4 +34,5 @@
 - Nexus emblem motion is device-local with Follow device (default, live reduced-motion updates) and Always static modes; preserve legacy static preferences and reuse the same colored artwork without changing shared admin presentation or background motion.
 - Series catalogue records are shared across UI styles; seriesSeasonNames resolves numbered seasons and named epics for the shared Series page so restored options remain staff-editable without separate style-specific catalogues.
 - SeriesTools edits positional season titles through checked authenticated admin writes; its separate series-question function uses AI Gateway with explicitly scoped archive evidence and blocks answers server-side when any spoiler mask is enabled, without modifying legacy LoreChat.
-- HUD navigation uses a shared viewport-bound arc and reactive device-local nav-mode store across all styles; it reuses staff roles and navigation visibility so sliding never exposes restricted tabs.
+- HUD navigation uses a collapsed circle and a shared Radix modal arc across all styles; focus trapping, background blur and scroll locking keep only navigation interactive, and selecting a destination closes it without changing visibility or staff rules.
+- Nexus route transitions mount the next page immediately and animate its entrance rather than waiting for the previous page to exit, so motion never delays archive data.

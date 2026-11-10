@@ -120,6 +120,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&display=swap" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap",
@@ -192,7 +193,7 @@ function RootComponent() {
         event !== "TOKEN_REFRESHED"
       )
         return;
-      syncSessionCache(queryClient, session?.user ?? null);
+      const identityChanged = syncSessionCache(queryClient, session?.user ?? null, event === "USER_UPDATED");
       if (event === "SIGNED_OUT") {
         // Strict sign-out: purge persisted offline cache so re-entry requires online auth.
         try {
@@ -201,7 +202,7 @@ function RootComponent() {
           /* storage unavailable */
         }
       }
-      queueMicrotask(() => {
+      if (identityChanged) queueMicrotask(() => {
         void router.invalidate();
         if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
       });

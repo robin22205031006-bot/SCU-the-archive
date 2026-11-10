@@ -81,31 +81,26 @@ function AbilitiesHub() {
     void (async () => {
       const { data } = await supabase
         .from("app_settings")
-        .select("value")
-        .eq("key", CUSTOM_SETTINGS_KEY)
-        .maybeSingle();
-      const list = Array.isArray(data?.value) ? (data.value as unknown as AbilityDef[]) : [];
-      if (!alive || !list.length) return;
+        .select("key,value")
+        .in("key", [CUSTOM_SETTINGS_KEY, OVERRIDES_SETTINGS_KEY]);
+      if (!alive) return;
+      const registry = data?.find(row => row.key === CUSTOM_SETTINGS_KEY)?.value;
+      const list = Array.isArray(registry) ? (registry as unknown as AbilityDef[]) : [];
       try {
         localStorage.setItem("scu_custom_abilities", JSON.stringify(list));
-        setCustomsVersion((v) => v + 1);
       } catch {
         /* storage optional */
       }
-      // Hydrate admin overrides (edited tiers/descriptions) the same way.
-      const { data: ov } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", OVERRIDES_SETTINGS_KEY)
-        .maybeSingle();
-      if (alive && ov?.value && typeof ov.value === "object" && !Array.isArray(ov.value)) {
+      // Fetch tiers/descriptions alongside the registry, not in a second round-trip.
+      const overrides = data?.find(row => row.key === OVERRIDES_SETTINGS_KEY)?.value;
+      if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
         try {
-          localStorage.setItem("scu_ability_overrides", JSON.stringify(ov.value));
-          setCustomsVersion((v) => v + 1);
+          localStorage.setItem("scu_ability_overrides", JSON.stringify(overrides));
         } catch {
           /* storage optional */
         }
       }
+      setCustomsVersion((v) => v + 1);
     })();
     return () => {
       alive = false;
