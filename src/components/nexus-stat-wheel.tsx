@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Fingerprint } from "lucide-react";
 import { abilityDef } from "@/lib/abilities";
 import { highestStatRadius } from "@/lib/nexus-season";
 import { Button } from "@/components/ui/button";
+import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 
 const CENTER = { x: 238, y: 210 };
 const point = (angle: number, radius: number) => {
@@ -55,11 +56,11 @@ export function NexusStatWheel({ stats, abilities, selected, onSelect }: {
         <text x={CENTER.x} y={CENTER.y + 9} textAnchor="middle" fontSize="20" fill="var(--foreground)">{average}</text>
         <text x={CENTER.x} y={CENTER.y + 21} textAnchor="middle" fontSize="6" fill="var(--muted-foreground)">AVERAGE</text>
       </svg>
-      <Icon aria-hidden className="pointer-events-none absolute h-3 w-3 text-nexus-wheel-label" style={{ left: `${CENTER.x / 460 * 100}%`, top: `${(CENTER.y - 17) / 420 * 100}%`, transform: "translate(-50%, -50%)" }} />
+      <span className="pointer-events-none absolute text-nexus-wheel-label" style={{ left: `${CENTER.x / 460 * 100}%`, top: `${(CENTER.y - 17) / 420 * 100}%`, transform: "translate(-50%, -50%)" }}>{selected ? <NexusAbilitySymbol name={selected} className="h-5 w-5" /> : <Icon aria-hidden className="h-3 w-3" />}</span>
       {visible.map((a, i) => {
         const p = point(115 + (i + 0.5) * step, 186);
         const AbilityIcon = a.icon;
-        return <Button key={a.name ?? "character"} variant="ghost" size="icon" aria-label={`Show ${a.label} stats`} aria-pressed={selected === a.name} title={a.label} onClick={() => onSelect(a.name)} className="nexus-wheel-option absolute h-9 w-9 rounded-full" style={{ left: `${p.x / 460 * 100}%`, top: `${p.y / 420 * 100}%`, transform: "translate(-50%, -50%)" }}><AbilityIcon className="h-4 w-4" /></Button>;
+        return <Button key={a.name ?? "character"} variant="ghost" size="icon" aria-label={`Show ${a.label} stats`} aria-pressed={selected === a.name} title={a.label} onClick={() => onSelect(a.name)} className="nexus-wheel-option absolute h-9 w-9 rounded-full" style={{ left: `${p.x / 460 * 100}%`, top: `${p.y / 420 * 100}%`, transform: "translate(-50%, -50%)" }}>{a.name ? <NexusAbilitySymbol name={a.name} className="h-7 w-7" /> : <AbilityIcon className="h-4 w-4" />}</Button>;
       })}
       {options.length > 5 && <>
         <Button variant="ghost" size="icon" className="absolute left-[18%] top-[4%] h-7 w-7" aria-label="Previous ability" disabled={active === 0} onClick={() => onSelect(options[active - 1]?.name ?? null)}><ChevronUp className="h-4 w-4" /></Button>

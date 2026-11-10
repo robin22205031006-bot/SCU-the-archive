@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
-import { NexusSign } from "@/components/nexus-sign";
+import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -534,9 +534,7 @@ Status · <span className="text-foreground">{status}</span>
 }
 
 function AbilityGlyph({ def, masked, className = "" }: { def: ReturnType<typeof abilityDef>; masked: boolean; className?: string }) {
-  const Icon = def.icon;
-  if (masked) return <span aria-hidden className={`nexus-mark ${className}`} />;
-  return <NexusSign className={className}><Icon aria-hidden className="h-full w-full" style={{ color: def.color }} /></NexusSign>;
+  return <NexusAbilitySymbol name={def.key} masked={masked} className={className} />;
 }
 
 function AbilityOrbit({

@@ -808,3 +808,30 @@ html[data-spoil-characters] [data-spoiler="char"] .nexus-sign *, html[data-spoil
 @keyframes nexus-sign-seal { 0%,100% { transform: translateY(0); filter: drop-shadow(0 0 1px currentColor); } 50% { transform: translateY(-1px); filter: drop-shadow(0 0 4px currentColor); } }
 @keyframes nexus-sign-mark { 0%,100% { transform: rotate(45deg) scale(1); } 50% { transform: rotate(135deg) scale(.88); } }
 @media (prefers-reduced-motion: reduce) { .nexus-sign, .nexus-sign * { animation: none !important; filter: none !important; } }
+
+/* Illustrated Nexus emblem palette and hand-drawn energy layers. */
+.nexus-ability-symbol { --emblem-energy: var(--fx-highlight); }
+.nexus-ability-symbol > svg { width: 100% !important; height: 100% !important; }
+.nexus-ability-symbol > svg > .nexus-emblem-art { width: 100px !important; height: 100px !important; }
+.nexus-ability-symbol > svg { animation: nexus-sign-seal 4s ease-in-out infinite; }
+.nexus-emblem-art { transform-origin: 50px 50px; }
+.nexus-emblem-current { fill: var(--emblem-energy); opacity: .13; mix-blend-mode: screen; transform-origin: 50px 75px; animation: nexus-cel-flare 2s ease-in-out infinite !important; }
+.nexus-emblem-particle { fill: var(--emblem-energy); animation: nexus-cel-rise 3s linear infinite; }
+.nexus-emblem-particle:nth-child(3) { animation-delay: -1.5s; }
+.nexus-emblem-glint { fill: var(--fx-highlight); animation: nexus-cel-glint 3.4s ease-in-out infinite !important; }
+[data-ability-art="fire"], [data-ability-art="destruction"], [data-ability-art="blood"] { --emblem-energy: var(--fx-fire); }
+[data-ability-art="water"], [data-ability-art="ice"], [data-ability-art="time"] { --emblem-energy: var(--fx-water); }
+[data-ability-art="wind"], [data-ability-art="speed"] { --emblem-energy: var(--fx-wind); }
+[data-ability-art="nature"], [data-ability-art="alchemy"], [data-ability-art="healing"] { --emblem-energy: var(--fx-nature); }
+[data-ability-art="shadow"], [data-ability-art="aether"], [data-ability-art="psychic"] { --emblem-energy: var(--fx-void); }
+[data-ability-art="lightning"] .nexus-emblem-art { animation: nexus-sign-charge 2.8s ease-in-out infinite; }
+[data-ability-art="wind"] .nexus-emblem-art, [data-ability-art="aether"] .nexus-emblem-art { animation: nexus-sign-orbit 24s linear infinite; }
+[data-ability-art="water"] .nexus-emblem-art, [data-ability-art="spirit"] .nexus-emblem-art { animation: nexus-cel-sway 4s ease-in-out infinite; }
+[data-ability-art="ice"] .nexus-emblem-art, [data-ability-art="light"] .nexus-emblem-art { animation: nexus-sign-charge 4s ease-in-out infinite; }
+@keyframes nexus-cel-flare { 0%,100% { transform: scale(.85,1); opacity: .05; } 50% { transform: scale(1.1,1.2) skewX(5deg); opacity: .2; } }
+@keyframes nexus-cel-rise { 0% { transform: translateY(14px); opacity: 0; } 25%,65% { opacity: .85; } 100% { transform: translateY(-32px); opacity: 0; } }
+@keyframes nexus-cel-glint { 0%,100% { opacity: .1; } 50% { opacity: .95; } }
+@keyframes nexus-cel-sway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.nexus-sign[data-sign-motion="off"] .nexus-emblem-current, .nexus-sign[data-sign-motion="off"] .nexus-emblem-glint { animation-play-state: paused !important; }
+html[data-nexus-motion="off"] .nexus-emblem-current, html[data-nexus-motion="off"] .nexus-emblem-glint { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .nexus-ability-symbol * { animation: none !important; } }
