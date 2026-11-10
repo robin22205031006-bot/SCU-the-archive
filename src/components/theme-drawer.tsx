@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Palette } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAppearance } from "@/hooks/use-appearance";
-import { navMode, setNavMode, type NavMode } from "@/components/floating-nav";
+import { useNavMode, setNavMode, type NavMode } from "@/lib/nav-mode";
 import { THEMES } from "@/lib/themes";
 import { UiStylePicker } from "@/components/ui-style-picker";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ export function ThemeDrawer({
 }: { open?: boolean; onOpenChange?: (o: boolean) => void } = {}) {
   const { theme, setTheme, zoom, scaleIndex } = useAppearance();
   const nexus = useUiStyle() === "nexus";
+  const navigationMode = useNavMode();
   const nexusTheme = useNexusTheme();
   const emblemMotion = useNexusEmblemMotion();
   const [tab, setTab] = useState<"live" | "plain">("live");
@@ -109,7 +110,7 @@ export function ThemeDrawer({
             A+
           </button>
         </div>
-        {!nexus && <div className="flex items-center justify-between border-t border-border px-4 pb-6 pt-4 text-sm">
+        {<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-border px-4 pb-6 pt-4 text-sm">
           <span className="text-muted-foreground">Navigation mode</span>
           <div className="flex gap-1.5">
             {(
@@ -118,13 +119,13 @@ export function ThemeDrawer({
                 ["hud", "HUD"],
               ] as [NavMode, string][]
             ).map(([m, label]) => (
-              <button
+              <Button variant="ghost" size="sm"
                 key={m}
                 onClick={() => setNavMode(m)}
-                className={`rounded-full px-3 py-1 text-xs ${navMode() === m ? "bg-accent text-accent-foreground" : "border text-muted-foreground"}`}
+                className={`rounded-full px-3 py-1 text-xs ${navigationMode === m ? "bg-accent text-accent-foreground" : "border text-muted-foreground"}`}
               >
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>}

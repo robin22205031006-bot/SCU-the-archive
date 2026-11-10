@@ -14,10 +14,12 @@ import { NexusSectionRail } from "@/components/nexus-section-rail";
 import { NexusFxLayer } from "@/components/nexus-fx";
 import { useNexusTheme } from "@/hooks/use-nexus-theme";
 import { NexusSign } from "@/components/nexus-sign";
+import { useNavMode } from "@/lib/nav-mode";
 import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
 
 export function NexusShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const hud = useNavMode() === "hud";
   const isStaff = useIsStaff();
   const enabled = useAnimationsEnabled();
   const moving = useNexusMotion();
@@ -45,15 +47,15 @@ export function NexusShell({ children }: { children: ReactNode }) {
   return <MotionConfig reducedMotion={moving ? "user" : "always"} transition={{ duration: moving ? 0.55 : 0 }}>
     <div className="nexus-shell relative min-h-dvh">
       <NexusFxLayer>
-      <header className={`nexus-command fixed z-40 flex items-center gap-2 border border-border bg-background/90 p-2 backdrop-blur-lg ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}>
+      {!hud && <header className={`nexus-command fixed z-40 flex items-center gap-2 border border-border bg-background/90 p-2 backdrop-blur-lg ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}>
         {pathname !== "/character" && <Link to="/" className="mr-auto flex items-center gap-2 font-mono text-xs tracking-widest text-accent"><Compass className="h-5 w-5" />SCU / NEXUS</Link>}
         <Button variant="ghost" size="icon" aria-label="Nexus navigation" aria-expanded={open} onClick={() => setOpen(v => !v)} title="Navigation">{open ? <X /> : <Compass />}</Button>
         <Button variant="ghost" size="icon" aria-label="Theme" title="Theme" onClick={() => setThemeOpen(true)}><Palette /></Button>
         <Button variant="ghost" size="icon" aria-label={enabled ? "Pause animations" : "Enable animations"} aria-pressed={enabled} title="Animations" onClick={() => setAnimationsEnabled(!enabled)}><Sparkles /></Button>
         <Button asChild variant="ghost" size="icon"><Link to="/profile" aria-label="Profile" title="Profile"><User /></Link></Button>
-      </header>
+      </header>}
       <AnimatePresence>
-        {open && <motion.nav aria-label="Nexus pages" initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }} className={`fixed inset-x-4 z-50 max-h-[70dvh] overflow-y-auto border border-border bg-background/95 p-4 backdrop-blur-xl ${pathname === "/character" ? "bottom-20" : "top-20"}`}>
+        {open && !hud && <motion.nav aria-label="Nexus pages" initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }} className={`fixed inset-x-4 z-50 max-h-[70dvh] overflow-y-auto border border-border bg-background/95 p-4 backdrop-blur-xl ${pathname === "/character" ? "bottom-20" : "top-20"}`}>
           <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
             {tabs.map((t, i) => <motion.div key={t.to} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: moving ? i * 0.025 : 0 }}>
               <Button asChild variant="ghost" className="nexus-nav-link h-20 w-full justify-start whitespace-normal border-b border-border text-left"><Link to={t.to} aria-current={pathname === t.to ? "page" : undefined}><NexusSign symbolName={t.label} className="shrink-0"><span className="nexus-mark h-4 w-4" /></NexusSign><span>{t.label}</span></Link></Button>

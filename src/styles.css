@@ -859,3 +859,40 @@ html[data-ui="nexus"][data-nexus-anime="on"] :is(h1,h2,h3) { font-style: italic;
 .nexus-sign[data-sign-static="on"] .nexus-emblem-cel,
 .nexus-sign[data-sign-static="on"] .nexus-emblem-glint,
 .nexus-sign[data-sign-static="on"]::after { display: none; }
+
+/* Reference-inspired sliding HUD; color follows the active style/theme. */
+.hud-navigation { width: 0; height: min(520px, 82dvh); touch-action: pan-x; }
+.hud-arc-panel { position: absolute; width: 270px; height: 100%; pointer-events: none; }
+.hud-arc-track { position: absolute; width: 390px; height: calc(100% - 48px); top: 24px; left: -247px; border: 1px solid var(--accent); border-radius: 50%; background: color-mix(in oklab, var(--background) 82%, transparent); box-shadow: 0 0 20px color-mix(in oklab, var(--accent) 12%, transparent); }
+.hud-arc-track::after { content: ""; position: absolute; inset: 8px; border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent); border-radius: inherit; }
+.hud-arc-items { position: absolute; inset: 54px 0; }
+.hud-entry { position: absolute; left: 0; width: 220px; height: 56px; pointer-events: auto; }
+.hud-slot-0 { top: 0; left: 54px; }
+.hud-slot-1 { top: 25%; left: 105px; }
+.hud-slot-2 { top: 50%; left: 121px; }
+.hud-slot-3 { top: 75%; left: 105px; }
+.hud-slot-4 { top: 100%; left: 54px; }
+.hud-entry { margin-top: -28px; }
+.hud-tab { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 9px; width: 100%; height: 56px; padding: 0; justify-content: start; background: transparent; color: var(--foreground); border-radius: 0; }
+.hud-tab:hover { background: transparent; color: var(--accent); }
+.hud-node { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--accent); background: var(--background); color: var(--accent); }
+.hud-node svg { width: 23px; height: 23px; }
+.hud-label { min-width: 0; justify-self: start; border-radius: 4px; padding: 4px 7px; background: color-mix(in oklab, var(--background) 92%, transparent); font-size: 12px; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
+.hud-tab-active .hud-node { outline: 1px solid var(--accent); outline-offset: 4px; box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 28%, transparent); }
+.hud-tab-active .hud-label { color: var(--accent); }
+.hud-scroll { position: absolute; left: 53px; pointer-events: auto; color: var(--accent); background: var(--background); border-radius: 50%; width: 32px; height: 32px; }
+.hud-scroll-up { top: 0; }
+.hud-scroll-down { bottom: 0; }
+.hud-counter { position: absolute; left: 96px; bottom: 8px; color: var(--muted-foreground); font-size: 10px; font-family: monospace; }
+.hud-toggle { position: absolute; top: calc(50% - 20px); left: 0; width: 28px; height: 40px; border-radius: 0 8px 8px 0; color: var(--accent); background: var(--background); }
+@media (max-width: 640px) {
+  .hud-arc-panel { width: 230px; }
+  .hud-arc-track { left: -273px; }
+  .hud-slot-0, .hud-slot-4 { left: 28px; }
+  .hud-slot-1, .hud-slot-3 { left: 79px; }
+  .hud-slot-2 { left: 95px; }
+  .hud-entry { width: 211px; }
+  .hud-scroll { left: 28px; }
+  .hud-counter { left: 70px; }
+}
+html[data-ui="minimal"] .hud-arc-track, html[data-ui="minimal"] .hud-tab-active .hud-node { box-shadow: none; }
