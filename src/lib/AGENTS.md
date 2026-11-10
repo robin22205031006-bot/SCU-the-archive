@@ -1,0 +1,3 @@
+- Shared archive writes (roster, memberships, series rows, entity edits) refresh every view through `invalidateArchive` in src/lib/archive-sync.ts; season roster saves also write entity_memberships and series_characters so Archive, Clan and Journey graphs stay in step with season dossiers.
+- Journey charts use the shared JourneyLine on a universe timeline ordered by app_settings `series_order` (release/story, admin-editable), so every style draws one continuous arc per character.
+- Family trees use family kinds (parent/sibling/spouse/ancestor) in entity_relations; PDF-drafted links are only proposals, kept when names resolve exactly and quotes appear verbatim, and staff accept them before saving.

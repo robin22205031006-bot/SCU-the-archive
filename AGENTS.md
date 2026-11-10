@@ -43,6 +43,4 @@
 - Series title styling lives in app_settings `series_styles` (per series id) and the shared Series page hosts staff series management and per-season roster editing for every UI style, so readers in any style see the same season data. Nexus-only animated title effects fall back to a static glow elsewhere.
 - AI Box, series Q&A and season-story drafting use AI Gateway in authenticated server functions; Gemini is only used for PDF ingestion/embeddings, because the Google keys are unreliable.
 - Duplicate-character prevention: adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicate names to the in-story card name (tested), so lore syncs never recreate merged cards.
-- Shared archive writes (roster, memberships, series rows, entity edits) refresh every view through `invalidateArchive` in src/lib/archive-sync.ts; season roster saves also write entity_memberships and series_characters so Archive, Clan and Journey graphs stay in step with season dossiers.
-- Journey charts use the shared JourneyLine on a universe timeline ordered by app_settings `series_order` (release/story, admin-editable), so every style draws one continuous arc per character.
-- Family trees use family kinds (parent/sibling/spouse/ancestor) in entity_relations; PDF-drafted links are only proposals, kept when names resolve exactly and quotes appear verbatim, and staff accept them before saving.
+- Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
