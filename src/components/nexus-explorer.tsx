@@ -54,7 +54,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
             return <motion.div key={g} whileHover={{ y: moving ? -4 : 0 }} transition={transition} className="nexus-cluster relative overflow-hidden rounded-lg border border-border bg-card/60">
               <Button variant="ghost" className="relative block h-auto min-h-48 w-full whitespace-normal p-4 text-left" onClick={() => { setGroup(g); setSelectedId(null); }} aria-label={`${g === "all" ? `All ${label.toLowerCase()}` : g}, ${members.length}`}>
                 <span className="block text-xs font-medium">{g === "all" ? `All ${label.toLowerCase()}` : g}</span>
-                <NexusSigil label={`${g === "all" ? label : g} ${label}`} className="mx-auto block h-28 w-36 max-w-full" />
+                <NexusSigil label={g === "all" ? label : g} className="mx-auto block h-28 w-36 max-w-full" />
                 <svg aria-hidden viewBox="0 0 160 120" className="hidden">
                   <circle cx="80" cy="60" r="43" fill="none" stroke="var(--nexus-border)" strokeDasharray="2 5" />
                   <circle cx="80" cy="60" r="26" fill="none" stroke="var(--nexus-border)" />
@@ -73,7 +73,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
           <div className={`grid content-start gap-2 ${selected ? "max-h-80 overflow-y-auto lg:max-h-[75dvh]" : "sm:grid-cols-2 lg:grid-cols-3"}`} role="list" aria-label={label}>
             {visible.map(r => <motion.div layout={moving ? "position" : false} key={r.id} transition={transition} role="listitem">
               <Button variant="ghost" aria-pressed={r.id === selectedId} className={`nexus-record h-auto min-h-20 w-full justify-start whitespace-normal rounded-lg border px-4 py-3 text-left ${r.id === selectedId ? "border-accent bg-accent/10" : "border-border bg-card/40"}`} onClick={() => setSelectedId(r.id)}>
-                {r.image ? <img src={r.image} alt="" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-md object-cover" /> : <NexusSigil label={`${r.title} ${label}`} />}
+                {r.image ? <img src={r.image} alt="" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-md object-cover" /> : <NexusSigil label={`${r.title} ${r.group}`} />}
                 <span className="min-w-0 flex-1"><span className="block break-words text-sm font-medium">{r.title}</span><span className="mt-1 block break-words text-xs text-muted-foreground">{r.subtitle ?? r.group}</span></span>
                 <ArrowRight className="h-3 w-3 shrink-0 text-accent" />
               </Button>
@@ -85,7 +85,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
                 <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)}><ArrowLeft className="h-4 w-4" /> {label}</Button>
                 <div className="flex items-center gap-1"><span className="mr-2 text-xs text-muted-foreground">{selectedIndex + 1} / {visible.length}</span><Button size="icon" variant="ghost" aria-label="Previous record" disabled={selectedIndex <= 0} onClick={() => setSelectedId(visible[selectedIndex - 1]?.id ?? null)}><ChevronLeft /></Button><Button size="icon" variant="ghost" aria-label="Next record" disabled={selectedIndex >= visible.length - 1} onClick={() => setSelectedId(visible[selectedIndex + 1]?.id ?? null)}><ChevronRight /></Button></div>
               </div>
-              <NexusSigil label={`${selected.title} ${label}`} className="mb-4 block h-28 w-28" />
+              <NexusSigil label={`${selected.title} ${selected.group}`} className="mb-4 block h-28 w-28" />
               {renderDetail(selected)}
             </motion.article>}
           </AnimatePresence>
