@@ -1,4 +1,6 @@
 import { abilityDef, type AbilityTier } from "@/lib/abilities";
+import { useUiStyle } from "@/lib/ui-style";
+import { NexusSigil } from "@/components/nexus-fx";
 
 const TIER_RANK: Record<AbilityTier, number> = {
   Mythic: 7,
@@ -13,6 +15,7 @@ const TIER_RANK: Record<AbilityTier, number> = {
 
 /** Compact ability badge with registry color/icon and tier tooltip. */
 export function AbilityBadge({ name, className = "" }: { name: string; className?: string }) {
+  const nexus = useUiStyle() === "nexus";
   const def = abilityDef(name);
   const Icon = def.icon;
   const mythic = def.tier === "Mythic";
@@ -20,6 +23,7 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
   const rarePlus = def.tier === "Rare" || def.tier === "Exceptional" || def.tier === "Unique";
   const ancient = def.tier === "Ancient";
   const title = `${def.label} — ${def.tier}${def.group === "beast" ? " · Beast trait" : ""}${def.description ? `\n${def.description}` : ""}`;
+  if (nexus) return <span title={title} className={`inline-flex items-center gap-1 border border-border text-xs text-accent ${className}`}><NexusSigil label={name} className="h-7 w-7" />{def.label}</span>;
   return (
     <span
       title={title}

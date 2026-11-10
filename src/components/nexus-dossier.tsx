@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
+import { NexusSigil } from "@/components/nexus-fx";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -550,7 +551,6 @@ function AbilityOrbit({
   const [core, ...rest] = abilities;
   if (!core)
     return <div className="grid h-72 place-items-center text-sm text-muted-foreground">No abilities recorded.</div>;
-  const CoreIcon = core.def.icon;
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[420px]">
       {[0.95, 0.72, 0.5].map((s, i) => (
@@ -581,14 +581,13 @@ function AbilityOrbit({
             className="absolute left-1/2 top-1/2 grid h-28 w-28 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-2 bg-background"
             style={{ borderColor: core.def.color, boxShadow: `0 0 60px -6px ${core.def.color}` }}
           >
-            <CoreIcon className="h-10 w-10" style={{ color: core.def.color }} />
+            <NexusSigil label={core.name} masked={masked} className="h-24 w-24" />
             <span className="absolute -bottom-6 whitespace-nowrap text-[10px] uppercase tracking-widest">
               {masked ? "Core" : core.def.label}
             </span>
           </motion.div>
           {rest.slice(0, 8).map((a, i, arr) => {
             const ang = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
-            const Icon = a.def.icon;
             return (
               <motion.div
                 key={a.name}
@@ -610,7 +609,7 @@ function AbilityOrbit({
                 onKeyDown={(ev) => (ev.key === "Enter" || ev.key === " ") && onSelect(a.name)}
                 title={a.def.label}
               >
-                <Icon className="h-5 w-5" style={{ color: a.def.color }} />
+                <NexusSigil label={a.name} masked={masked} className="h-10 w-10" />
               </motion.div>
             );
           })}

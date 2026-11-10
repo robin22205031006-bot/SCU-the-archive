@@ -122,7 +122,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -232,7 +232,7 @@ function RootComponent() {
         <TypographyProvider>
           <ErrorBoundary>
             <MotionConfig reducedMotion={uiStyle === "minimal" ? "always" : "user"} {...(uiStyle === "minimal" ? { transition: { duration: 0 } } : {})}>
-            <div className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : "ambient-bg"}`}>
+            <div className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : uiStyle === "nexus" ? "" : "ambient-bg"}`}>
               {uiStyle === "classic" && <AmbientField />}
               {uiStyle === "classic" && <PlexusWallpaper />}
               <ScrollProgress />

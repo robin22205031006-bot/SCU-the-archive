@@ -11,12 +11,15 @@ import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { ThemeDrawer } from "@/components/theme-drawer";
 import { NexusSectionRail } from "@/components/nexus-section-rail";
+import { NexusFxLayer, NexusSigil } from "@/components/nexus-fx";
+import { useNexusTheme } from "@/hooks/use-nexus-theme";
 
 export function NexusShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const isStaff = useIsStaff();
   const enabled = useAnimationsEnabled();
   const moving = useNexusMotion();
+  const nexusTheme = useNexusTheme();
   const [open, setOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const { data: visibility } = useQuery({
@@ -30,13 +33,14 @@ export function NexusShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset["ui"] = "nexus";
     document.documentElement.dataset["nexusMotion"] = moving ? "on" : "off";
-    return () => { delete document.documentElement.dataset["ui"]; delete document.documentElement.dataset["nexusMotion"]; };
-  }, [moving]);
+    document.documentElement.dataset["nexusTheme"] = nexusTheme;
+    return () => { delete document.documentElement.dataset["ui"]; delete document.documentElement.dataset["nexusMotion"]; delete document.documentElement.dataset["nexusTheme"]; };
+  }, [moving, nexusTheme]);
   useEffect(() => setOpen(false), [pathname]);
   const tabs = [...TABS, { to: "/series", label: "Series", icon: "book" }, { to: "/orgs", label: "Organizations", icon: "book" }, { to: "/timeline", label: "Timeline", icon: "book" }, { to: "/graph", label: "Graph", icon: "book" }, { to: "/clans", label: "Clans", icon: "book" }, ...(isStaff ? [STAFF_TAB] : [])].filter(t => visibility?.[t.to] ?? true);
   return <MotionConfig reducedMotion={moving ? "user" : "always"} transition={{ duration: moving ? 0.55 : 0 }}>
     <div className="nexus-shell relative min-h-dvh">
-      <div aria-hidden className="nexus-grid pointer-events-none fixed inset-0" />
+      <NexusFxLayer>
       <header className={`nexus-command fixed z-40 flex items-center gap-2 border border-border bg-background/90 p-2 backdrop-blur-lg ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}>
         {pathname !== "/character" && <Link to="/" className="mr-auto flex items-center gap-2 font-mono text-xs tracking-widest text-accent"><Compass className="h-5 w-5" />SCU / NEXUS</Link>}
         <Button variant="ghost" size="icon" aria-label="Nexus navigation" aria-expanded={open} onClick={() => setOpen(v => !v)} title="Navigation">{open ? <X /> : <Compass />}</Button>
@@ -48,13 +52,14 @@ export function NexusShell({ children }: { children: ReactNode }) {
         {open && <motion.nav aria-label="Nexus pages" initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }} className={`fixed inset-x-4 z-50 max-h-[70dvh] overflow-y-auto border border-border bg-background/95 p-4 backdrop-blur-xl ${pathname === "/character" ? "bottom-20" : "top-20"}`}>
           <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
             {tabs.map((t, i) => <motion.div key={t.to} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: moving ? i * 0.025 : 0 }}>
-              <Button asChild variant="ghost" className="nexus-nav-link h-20 w-full justify-start whitespace-normal border-b border-border text-left"><Link to={t.to} aria-current={pathname === t.to ? "page" : undefined}><span className="font-mono text-xs text-accent">{String(i + 1).padStart(2, "0")}</span><span>{t.label}</span></Link></Button>
+              <Button asChild variant="ghost" className="nexus-nav-link h-20 w-full justify-start whitespace-normal border-b border-border text-left"><Link to={t.to} aria-current={pathname === t.to ? "page" : undefined}><NexusSigil label={t.label} className="h-9 w-9" /><span>{t.label}</span></Link></Button>
             </motion.div>)}
           </div>
         </motion.nav>}
       </AnimatePresence>
       <ThemeDrawer open={themeOpen} onOpenChange={setThemeOpen} />
-      <motion.div key={pathname} data-nexus-page={pathname.slice(1) || "home"} initial={{ opacity: moving ? 0 : 1, y: moving ? 12 : 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: moving ? 0.45 : 0 }} className="nexus-page relative">{["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? <NexusSectionRail>{children}</NexusSectionRail> : children}</motion.div>
+      <AnimatePresence mode="wait" initial={false}><motion.div key={pathname} data-nexus-page={pathname.slice(1) || "home"} initial={{ opacity: moving ? 0 : 1, x: moving ? 24 : 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: moving ? -20 : 0 }} transition={{ duration: moving ? 0.5 : 0, ease: [0.22, 1, 0.36, 1] }} className="nexus-page relative">{["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? <NexusSectionRail>{children}</NexusSectionRail> : children}</motion.div></AnimatePresence>
+      </NexusFxLayer>
     </div>
   </MotionConfig>;
 }

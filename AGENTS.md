@@ -28,3 +28,4 @@
 - Archive revision capture uses database triggers on entities, character abilities and series memberships; snapshots are append-only for app users and admin-read-only so every write path is audited without trusting browser-supplied editor names.
 - UI styles share a persisted picker; keep the legacy classic key for original-style compatibility, and apply Minimal motion suppression at the shared shell so switching styles never changes data or permissions.
 - Nexus tab browsers use the shared presentation-only NexusExplorer and NexusWorkspace with existing filtered records and action handlers; this keeps focused browsing consistent without duplicating permissions, queries or writes.
+- Nexus CG effects use a persistent background canvas and a single scissored View canvas for visible sigils; independent theme storage and CSS tokens keep legacy appearance untouched, while masked lore uses neutral effects and paused/hidden views stop animation.
