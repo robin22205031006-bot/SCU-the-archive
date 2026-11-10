@@ -18,14 +18,16 @@ export function scopeLoreText(text: string, seriesTitle: string, season: number 
   const title = seriesTitle.toLowerCase().replace(/^the\s+/, "");
   const matchesSeries = (part: string) => part.toLowerCase().includes(title);
   if (season === null) return matchesSeries(text) ? text : "";
-  const parts = text.split(/(?=\b(?:S\d+|Season\s+\d+)\b)/i);
-  const selected = parts.filter(part => {
-    const number = part.match(/^(?:S|Season\s+)(\d+)\b/i)?.[1];
-    return Number(number) === season;
+  const markers = [...text.matchAll(/\b(?:(The Sentinels|Sentinels|Redline|Bloodlines?|Divine Beast)\s+)?(?:S|Season\s+)(\d+)\b/gi)];
+  let activeSeries = title === "sentinels" ? "sentinels" : matchesSeries(text) ? title : "";
+  const selected: string[] = [];
+  markers.forEach((marker, i) => {
+    if (marker[1]) activeSeries = marker[1].toLowerCase().replace(/^the\s+/, "").replace(/^bloodlines$/, "bloodline");
+    if (Number(marker[2]) !== season || activeSeries !== title.replace(/^bloodlines$/, "bloodline")) return;
+    const part = text.slice(marker.index, markers[i + 1]?.index ?? text.length);
+    selected.push(part);
   });
-  if (title === "sentinels" && !matchesSeries(text) && /redline|bloodlines?|divine beast/i.test(text)) return "";
-  // Bare S1 labels in archive notes refer to the principal Sentinels saga.
-  return selected.filter(part => matchesSeries(part) || (title === "sentinels" && !/redline|bloodlines?|divine beast/i.test(part))).join("\n");
+  return selected.join("\n");
 }
 export function loreQuestionsBlocked(mask: unknown) {
   if (!mask || typeof mask !== "object") return false;
