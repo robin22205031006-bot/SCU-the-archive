@@ -766,7 +766,7 @@ html[data-nexus-theme="frost"] { --nexus-glow: var(--fx-frost); }
 html[data-nexus-theme="wind"] { --nexus-glow: var(--fx-wind); }
 html[data-nexus-theme="nature"] { --nexus-glow: var(--fx-nature); }
 html[data-nexus-theme="void"] { --nexus-glow: var(--fx-void); }
-.nexus-fx-background { z-index: 0; opacity: .62; }
+.nexus-fx-background { z-index: 0; opacity: .24; }
 .nexus-fx-symbols { z-index: 60; }
 .nexus-fx-symbols, .nexus-fx-symbols *, .nexus-fx-background, .nexus-fx-background * { pointer-events: none !important; }
 .nexus-sigil { vertical-align: middle; }
@@ -778,4 +778,6 @@ html[data-ui="nexus"] .nexus-role-field { opacity: .22 !important; }
 html[data-ui="nexus"] .nexus-page :is(h1,h2,h3) { animation: nexus-type-in .65s cubic-bezier(.22,1,.36,1) both; }
 html[data-ui="nexus"] .nexus-explorer article :is(p,li) { animation: nexus-type-in .55s cubic-bezier(.22,1,.36,1) both; }
 @keyframes nexus-type-in { from { opacity: 0; transform: translate3d(16px,8px,0); } to { opacity: 1; transform: translate3d(0,0,0); } }
-@media (max-width: 640px) { .nexus-fx-background { opacity: .45; } }
+html[data-ui="nexus"] :is(h1,h2,h3,.font-display) { font-family: "Rajdhani", system-ui, sans-serif; }
+html[data-ui="nexus"] body { font-family: "Space Grotesk", system-ui, sans-serif; }
+@media (max-width: 640px) { .nexus-fx-background { opacity: .16; } }
