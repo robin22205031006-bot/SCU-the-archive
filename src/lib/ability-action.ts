@@ -3,8 +3,8 @@ import { abilityFxRecipe, type FxMotif } from "@/lib/ability-fx";
 
 export type Gender = "male" | "female";
 export type PoseName = "stand" | "guard" | "crouch" | "dash" | "punch" | "kick" | "cast" | "raise" | "slashUp" | "slashDown" | "knee" | "stomp" | "leap" | "flip" | "windUp" | "lunge" | "spinCut" | "throw" | "kneelFinish" | "waterDraw" | "waterSweep" | "assassinGuard" | "aerialTuck" | "swordDraw";
-export type Fx = "charge" | "trail" | "projectile" | "impact" | "wave" | "slash" | "aura" | "beam" | "waterRibbon" | "waterSpiral" | "waterCrash" | "shadowPool" | "shadowSlash" | "kunai";
-export type Cam = "wide" | "close" | "punch" | "track" | "low" | "air";
+export type Fx = "charge" | "trail" | "projectile" | "impact" | "wave" | "slash" | "aura" | "beam" | "waterRibbon" | "waterSpiral" | "waterCrash" | "shadowPool" | "shadowSlash" | "kunai" | "lightning" | "orb" | "blast" | "bloodSpike" | "bloodSpray" | "earthShatter" | "fireCleave" | "chaosRift" | "shockwave" | "ripple" | "debris" | "embers";
+export type Cam = "wide" | "close" | "punch" | "track" | "low" | "air" | "orbit" | "overhead" | "rush" | "dutch";
 export interface Seg { pose: PoseName; d: number; x: number; y?: number; roll?: number; fx?: Fx[]; label: string; /** Camera framing for this beat (auto from fx when omitted). */ cam?: Cam; /** Opponent launch height (fraction of stage). */ launch?: number; /** Seconds to freeze on the key pose before the next move (anime hold). */ hold?: number }
 export type ActionStyle = "dashStrike" | "speedBlitz" | "projectile" | "groundWave" | "spinBlade" | "slashCombo" | "beastPounce" | "aura" | "beam" | "blink";
 
@@ -113,7 +113,7 @@ function stylize(segs: Seg[], st: FightStyleId, g: Gender): Seg[] {
 }
 export function totalDuration(segs: Seg[]) { return segs.reduce((a, s) => a + s.d + (s.hold ?? 0), 0); }
 
-export type Weapon = "none" | "sword" | "spear" | "daggers" | "kara";
+export type Weapon = "none" | "sword" | "spear" | "daggers" | "kara" | "scythe" | "greatsword" | "hammer";
 /** Bladed styles carry a weapon: men a heavy sword, women a spear/glaive (as in the fire-sword sheets). */
 export function weaponFor(name: string, g: Gender): Weapon {
   const st = actionStyle(name); const r = abilityFxRecipe(name);

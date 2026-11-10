@@ -1,13 +1,14 @@
 /** User-reference demonstrations, not invented historical PDF fights. Browser-safe. */
 import type { Gender, Seg, Weapon } from "./ability-action";
 
-export type CombatSceneId = "nilanjona" | "valeria" | "valeria-sword";
-export type CombatBackdrop = "water" | "rooftop";
+export type CombatSceneId = "nilanjona" | "valeria" | "valeria-sword" | "nilanjona-sea" | "yoshiko" | "pristine" | "arzuna" | "elizah" | "valeria-duel" | "saya" | "vanguard" | "samuel" | "rowan" | "silas" | "tedmond" | "nyxia" | "kazumi" | "zayn" | "dorian" | "weston" | "ethan" | "grace";
+export type CombatBackdrop = "water" | "rooftop" | "ocean" | "shatter" | "arena" | "night" | "street" | "void" | "ember";
 export interface CharacterCombat {
   id: CombatSceneId; character: string; label: string; ability: string; gender: Gender;
   weapon: Weapon; backdrop: CombatBackdrop; note: string; beats: Seg[];
+  /** VFX glow / core / highlight colours. */ tint?: [string, string, string]; rim?: string; heavy?: boolean;
 }
-export const CHARACTER_COMBAT: CharacterCombat[] = [
+const BASE_COMBAT: CharacterCombat[] = [
   { id: "nilanjona", character: "Nilanjona", label: "Nilanjona · Water Guardian", ability: "water_guardian", gender: "female", weapon: "none", backdrop: "water",
     note: "Water follows her whole-body sweep, coils into a rising spiral, then breaks forward as a crashing wave.",
     beats: [
@@ -53,3 +54,122 @@ export const CHARACTER_COMBAT: CharacterCombat[] = [
     ] },
 ];
 export function characterCombat(id?: string | null) { return CHARACTER_COMBAT.find(scene => scene.id === id); }
+const LIGHT: [string, string, string] = ["#3aa0ff", "#bfe6ff", "#ffffff"];
+const WHITE: [string, string, string] = ["#cfe8ff", "#ffffff", "#ffffff"];
+const BLOOD: [string, string, string] = ["#c0102a", "#ff4a5e", "#ffd0d6"];
+const FIRE: [string, string, string] = ["#ff5a1a", "#ffb347", "#fff2b0"];
+const CHAOS: [string, string, string] = ["#8a3cff", "#e08bff", "#ffffff"];
+const STEEL: [string, string, string] = ["#9fb4c8", "#e6eef5", "#ffffff"];
+const ORB: [string, string, string] = ["#2f7bff", "#8fd0ff", "#e8f7ff"];
+const GRACE: [string, string, string] = ["#f2d27a", "#fff1c4", "#ffffff"];
+const b = (pose: Seg["pose"], d: number, x: number, label: string, extra: Partial<Seg> = {}): Seg => ({ pose, d, x, label, ...extra });
+
+const EXTRA: CharacterCombat[] = [
+  { id: "nilanjona-sea", character: "Nilanjona", label: "Nilanjona · Open-sea tidal kata", ability: "water_guardian", gender: "female", weapon: "none", backdrop: "ocean", rim: "#bff4ff",
+    note: "On open water each step rings outward; the camera orbits her flowing kata as a water wheel rises and breaks into a tidal surge.",
+    beats: [b("guard", .3, -.26, "Stand on the open sea", { cam: "overhead", fx: ["ripple"] }), b("crouch", .25, -.24, "Low sweeping step", { cam: "orbit", fx: ["ripple", "waterRibbon"] }),
+      b("waterSweep", .3, -.2, "Hip turn pulls the sea", { cam: "orbit", fx: ["ripple", "waterRibbon"] }), b("flip", .38, -.14, "Aerial spin", { y: .2, roll: -Math.PI * 2, cam: "air", fx: ["waterSpiral"] }),
+      b("raise", .4, -.1, "Water wheel rises", { y: .12, cam: "low", fx: ["waterSpiral", "waterRibbon"] }), b("lunge", .2, .04, "Drive the wheel forward", { cam: "rush", fx: ["waterCrash", "ripple"] }),
+      b("cast", .38, .06, "Tidal surge", { cam: "wide", fx: ["waterCrash", "impact"], hold: .1 }), b("guard", .45, -.24, "Sea calms", { cam: "overhead", fx: ["ripple"] })] },
+  { id: "yoshiko", character: "Yoshiko", label: "Yoshiko · Martial arts & ninja tools", ability: "earth", gender: "female", weapon: "daggers", backdrop: "shatter", tint: STEEL, rim: "#e8eef2",
+    note: "Snappy hand-to-hand: low sweep, spinning roundhouse, kunai mid-combo and a heel drop that shatters the stone field.",
+    beats: [b("guard", .22, -.3, "Ready stance on broken stone", { cam: "orbit" }), b("dash", .12, .05, "Burst in", { cam: "track", fx: ["trail"] }),
+      b("crouch", .12, .1, "Low leg sweep", { cam: "low", fx: ["slash"] }), b("kick", .14, .14, "Spinning roundhouse", { roll: -.3, cam: "punch", fx: ["impact"], launch: .1 }),
+      b("flip", .26, .02, "Back handspring", { y: .18, roll: Math.PI * 2, cam: "air" }), b("throw", .2, -.02, "Kunai volley", { y: .1, cam: "dutch", fx: ["kunai"] }),
+      b("leap", .2, .14, "Rising knee", { y: .25, cam: "air", fx: ["trail"] }), b("stomp", .22, .2, "Heel drop shatters the ground", { cam: "punch", fx: ["earthShatter", "shockwave", "impact"], hold: .08 }),
+      b("guard", .4, -.3, "Reset", { cam: "wide" })] },
+  { id: "pristine", character: "Pristine", label: "Pristine · Measured scythe arcs", ability: "blade", gender: "female", weapon: "scythe", backdrop: "arena", tint: ["#7fd6ff", "#d8f4ff", "#ffffff"], rim: "#d8f4ff",
+    note: "Composed and precise: the camera circles her ready stance, then each long scythe arc is placed exactly where the guard opens.",
+    beats: [b("swordDraw", .5, -.3, "Composed ready stance", { cam: "orbit" }), b("lunge", .2, .02, "Gliding advance", { cam: "track", fx: ["trail"] }),
+      b("spinCut", .3, .08, "Wide reaping arc", { cam: "wide", fx: ["slash"] }), b("slashUp", .22, .12, "Rising hook", { cam: "low", fx: ["slash", "impact"], launch: .15 }),
+      b("guard", .25, .06, "Measured pause", { cam: "close", hold: .15 }), b("slashDown", .22, .14, "Exact downward reap", { cam: "punch", fx: ["slash", "impact"] }),
+      b("swordDraw", .5, -.3, "Glide back", { cam: "orbit" })] },
+  { id: "arzuna", character: "Arzuna", label: "Arzuna · Aggressive scythe pressure", ability: "blade", gender: "female", weapon: "scythe", backdrop: "arena", tint: ["#ff6a4a", "#ffc0a8", "#ffffff"], rim: "#ffc0a8",
+    note: "Same long-weapon pattern as Pristine but relentless: heavier momentum, shorter pauses and a spinning finish that throws dust.",
+    beats: [b("windUp", .25, -.3, "Scythe over the shoulder", { cam: "low" }), b("dash", .12, .06, "Explosive lunge", { cam: "rush", fx: ["trail"] }),
+      b("spinCut", .2, .1, "Heavy reaping spin", { roll: -.4, cam: "dutch", fx: ["slash", "impact"] }), b("spinCut", .2, .14, "Second spin, no reset", { roll: .4, cam: "punch", fx: ["slash", "impact"] }),
+      b("leap", .22, .14, "Vault on the shaft", { y: .25, cam: "air" }), b("slashDown", .2, .18, "Crashing overhead reap", { cam: "punch", fx: ["slash", "shockwave", "impact"], hold: .08 }),
+      b("guard", .4, -.3, "Pull back", { cam: "wide" })] },
+  { id: "elizah", character: "Elizah", label: "Elizah · Demonic blood", ability: "demonic_hemokinesis", gender: "female", weapon: "sword", backdrop: "void", tint: BLOOD, rim: "#ff5a6a",
+    note: "Untouchable attitude: she weaves past strikes, then answers with blood spikes tearing out of the ground and a crimson blade.",
+    beats: [b("assassinGuard", .35, -.3, "Unbothered stance", { cam: "close", fx: ["aura"] }), b("crouch", .12, -.24, "Weave under the strike", { cam: "orbit" }),
+      b("dash", .1, .04, "Blood-step forward", { cam: "track", fx: ["trail"] }), b("cast", .35, .0, "Blood spikes erupt", { cam: "low", fx: ["bloodSpike", "impact"] }),
+      b("slashUp", .2, .12, "Crimson rising cut", { cam: "punch", fx: ["slash", "bloodSpray", "impact"], launch: .2 }), b("spinCut", .22, .16, "Spinning blood crescent", { y: .12, roll: -.6, cam: "air", fx: ["bloodSpray", "slash"] }),
+      b("kneelFinish", .3, .16, "Kneel as blood falls", { cam: "dutch", fx: ["bloodSpike"], hold: .1 }), b("assassinGuard", .4, -.3, "Walk away", { cam: "wide" })] },
+  { id: "valeria-duel", character: "Valeria", label: "Valeria · Katana parry duel", ability: "shadow_steps", gender: "female", weapon: "kara", backdrop: "arena", tint: ["#2fd3c4", "#bffff4", "#ffffff"], rim: "#86e9df",
+    note: "Millimetre-close evasion: duck, deflect, then a lethal Kara Yazgi counter before the opponent recovers.",
+    beats: [b("assassinGuard", .25, -.25, "Read the blade", { cam: "orbit" }), b("crouch", .1, -.2, "Duck the cut", { cam: "low" }),
+      b("guard", .1, -.16, "Deflect", { cam: "punch", fx: ["impact"] }), b("dash", .08, .1, "Shadow Step inside", { cam: "track", fx: ["shadowPool", "trail"] }),
+      b("slashUp", .14, .14, "Counter cut", { cam: "punch", fx: ["shadowSlash", "bloodSpray", "impact"] }), b("spinCut", .16, .2, "Reverse spin cut", { cam: "dutch", fx: ["shadowSlash"] }),
+      b("swordDraw", .45, .3, "Sheathe behind him", { cam: "wide", hold: .15 })] },
+  { id: "saya", character: "Saya", label: "Saya · Fluid acrobatics", ability: "super_speed", gender: "female", weapon: "none", backdrop: "arena", tint: ["#c9b4ff", "#efe6ff", "#ffffff"], rim: "#efe6ff",
+    note: "Elastic, unbroken flow: rolls, handsprings and hip pivots that land straight into kicks — flexible rather than straight-line fast.",
+    beats: [b("stand", .25, -.3, "Loose stance", { cam: "orbit" }), b("crouch", .18, -.2, "Forward roll", { roll: Math.PI * 2, cam: "low" }),
+      b("flip", .3, -.05, "Handspring", { y: .15, roll: -Math.PI * 2, cam: "air" }), b("kick", .16, .1, "Landing kick", { cam: "punch", fx: ["impact"] }),
+      b("crouch", .14, .12, "Hip pivot sweep", { cam: "low", fx: ["slash"] }), b("leap", .2, .14, "Corkscrew", { y: .2, roll: Math.PI * 2, cam: "orbit" }),
+      b("kick", .16, .16, "Axe kick", { cam: "punch", fx: ["impact", "shockwave"] }), b("stand", .4, -.3, "Flow back", { cam: "wide" })] },
+  { id: "vanguard", character: "Vanguard", label: "Vanguard · Ichor super-soldier", ability: "super_soldier", gender: "male", weapon: "none", backdrop: "street", tint: ["#ffa13a", "#ffd9a0", "#ffffff"], rim: "#ffd9a0", heavy: true,
+    note: "Weight-forward serum strength: each straight punch and kick lands with a shockwave and the ground dents under his recovery stomp.",
+    beats: [b("guard", .35, -.28, "Heavy guard", { cam: "low" }), b("windUp", .3, -.24, "Load the punch", { cam: "close" }),
+      b("punch", .12, .08, "Straight right · shockwave", { cam: "rush", fx: ["shockwave", "impact"], launch: .1, hold: .1 }), b("kick", .16, .12, "Front kick through", { cam: "punch", fx: ["shockwave", "impact"] }),
+      b("stomp", .28, .1, "Recovery stomp dents the road", { cam: "overhead", fx: ["earthShatter", "shockwave", "impact"], hold: .1 }), b("guard", .45, -.28, "Advance again", { cam: "wide" })] },
+  { id: "samuel", character: "Samuel", label: "Samuel · Improvised CQC", ability: "kinetic_suits", gender: "male", weapon: "none", backdrop: "street", tint: STEEL, rim: "#dfe6ee",
+    note: "The best hand-to-hand fighter: precise combinations, anything nearby becomes a weapon, and anger adds Vanguard-style weight without losing control.",
+    beats: [b("guard", .25, -.28, "Read everything", { cam: "orbit" }), b("throw", .2, -.24, "Hurl debris as a feint", { cam: "dutch", fx: ["debris"] }),
+      b("dash", .1, .04, "Close the gap", { cam: "track", fx: ["trail"] }), b("punch", .1, .1, "Jab", { cam: "punch", fx: ["impact"] }), b("knee", .1, .12, "Knee", { cam: "punch", fx: ["impact"] }),
+      b("kick", .12, .14, "Low kick", { cam: "low", fx: ["impact"] }), b("windUp", .18, .12, "Angry wind-up", { cam: "close" }),
+      b("punch", .14, .16, "Furious finishing cross", { cam: "rush", fx: ["shockwave", "impact"], launch: .2, hold: .1 }), b("guard", .4, -.28, "Controlled reset", { cam: "wide" })] },
+  { id: "rowan", character: "Rowan", label: "Rowan · Flexible berserker cleaves", ability: "flame", gender: "male", weapon: "greatsword", backdrop: "ember", tint: FIRE, rim: "#ffb347", heavy: true,
+    note: "An angry tank who keeps momentum: one burning cleave spins straight into the next before the ground erupts.",
+    beats: [b("windUp", .3, -.28, "Drag the burning blade", { cam: "low", fx: ["embers"] }), b("dash", .14, .02, "Charge", { cam: "rush", fx: ["trail", "embers"] }),
+      b("spinCut", .2, .08, "Burning cleave", { cam: "dutch", fx: ["fireCleave", "impact"] }), b("spinCut", .2, .12, "Spin into the second cleave", { roll: -.3, cam: "orbit", fx: ["fireCleave", "impact"] }),
+      b("slashDown", .25, .14, "Downward smash", { cam: "punch", fx: ["fireCleave", "earthShatter", "blast", "impact"], hold: .1 }), b("guard", .45, -.28, "Embers settle", { cam: "wide", fx: ["embers"] })] },
+  { id: "silas", character: "Silas", label: "Silas · Cratering power", ability: "earth_guardian", gender: "male", weapon: "hammer", backdrop: "ember", tint: FIRE, rim: "#ff8a4a", heavy: true,
+    note: "Slower than Rowan but catastrophic: a long wind-up, then a point-blank crater with molten debris.",
+    beats: [b("stand", .3, -.25, "Unmoving", { cam: "low" }), b("windUp", .6, -.2, "Hammer overhead", { cam: "close", fx: ["embers"] }),
+      b("lunge", .18, .04, "Step in", { cam: "rush" }), b("slashDown", .25, .08, "Point-blank crater", { cam: "overhead", fx: ["earthShatter", "blast", "shockwave", "impact"], launch: .25, hold: .15 }),
+      b("stomp", .3, .08, "Second quake", { cam: "punch", fx: ["earthShatter", "shockwave", "impact"] }), b("stand", .5, -.25, "Walk back", { cam: "wide", fx: ["embers"] })] },
+  { id: "tedmond", character: "Tedmond", label: "Tedmond · Unyielding greatsword", ability: "sword_master", gender: "male", weapon: "greatsword", backdrop: "arena", tint: STEEL, rim: "#e6eef5", heavy: true,
+    note: "Rock-solid footing: he absorbs a barrage with heavy parries, then answers with armour-denting two-handed execution swings.",
+    beats: [b("guard", .35, -.22, "Rooted stance", { cam: "low" }), b("guard", .1, -.22, "Parry", { cam: "punch", fx: ["impact"] }), b("guard", .1, -.22, "Parry", { cam: "punch", fx: ["impact"] }),
+      b("windUp", .4, -.15, "Two-handed lift", { cam: "close" }), b("slashDown", .25, .05, "Execution swing", { cam: "dutch", fx: ["slash", "shockwave", "impact"], hold: .12 }),
+      b("spinCut", .3, .08, "Follow-through sweep", { cam: "orbit", fx: ["slash", "impact"] }), b("stomp", .3, .08, "Command the ground", { cam: "overhead", fx: ["earthShatter", "shockwave"] }), b("guard", .45, -.22, "Stand firm", { cam: "wide" })] },
+  { id: "nyxia", character: "Xinea", label: "Xinea · Nyxia form chaos blade", ability: "aether_dominion", gender: "female", weapon: "sword", backdrop: "void", tint: CHAOS, rim: "#d38bff",
+    note: "Trained by Valeria, Yoshiko and Arashi: feral crouch, instant dash and chaotic angles that bypass the guard, with Aether ribbons in her wake.",
+    beats: [b("crouch", .3, -.3, "Predatory crouch", { cam: "low", fx: ["chaosRift"] }), b("dash", .08, .08, "Instant dash", { cam: "rush", fx: ["trail"] }),
+      b("slashUp", .1, .12, "Wild upward cut", { cam: "dutch", fx: ["slash", "impact"] }), b("spinCut", .1, .1, "Reverse angle", { roll: .5, cam: "punch", fx: ["slash", "chaosRift"] }),
+      b("flip", .2, .16, "Airborne blade spin", { y: .2, roll: -Math.PI * 2, cam: "air", fx: ["chaosRift", "slash"] }), b("slashDown", .14, .16, "Drop through the guard", { cam: "punch", fx: ["slash", "blast", "impact"], hold: .08 }),
+      b("dash", .1, -.3, "Vanish", { cam: "track", fx: ["trail"] }), b("crouch", .4, -.3, "Wait again", { cam: "orbit", fx: ["chaosRift"] })] },
+  { id: "kazumi", character: "Kazumi", label: "Kazumi · Twin-blade evasion", ability: "blades", gender: "female", weapon: "daggers", backdrop: "arena", tint: ["#7ef0c8", "#d6fff0", "#ffffff"], rim: "#d6fff0",
+    note: "Backward leap straight into a forward lunge; spins keep both blades moving so the pressure never stops.",
+    beats: [b("guard", .22, -.2, "Twin-blade guard", { cam: "orbit" }), b("flip", .25, -.3, "Back leap", { y: .15, roll: Math.PI * 2, cam: "air" }),
+      b("lunge", .12, .08, "Snap lunge", { cam: "rush", fx: ["trail", "slash"] }), b("spinCut", .14, .12, "Twin spin", { cam: "dutch", fx: ["slash", "impact"] }),
+      b("spinCut", .14, .14, "Twin spin", { roll: -.4, cam: "punch", fx: ["slash", "impact"] }), b("guard", .4, -.2, "Glide out", { cam: "wide" })] },
+  { id: "zayn", character: "Zayn Hayes", label: "Zayn · Lightning striker", ability: "lightning", gender: "male", weapon: "none", backdrop: "night", tint: LIGHT, rim: "#9fd4ff",
+    note: "High-voltage close strikes: crackling hand, an instant dash that leaves arcs in the air and an explosive lightning thrust.",
+    beats: [b("guard", .25, -.3, "Charge the hand", { cam: "close", fx: ["lightning", "charge"] }), b("dash", .1, .06, "Lightning dash", { cam: "track", fx: ["trail", "lightning"] }),
+      b("punch", .12, .12, "Lightning thrust", { cam: "punch", fx: ["lightning", "blast", "impact"], launch: .2, hold: .1 }), b("leap", .2, .14, "Chase into the air", { y: .25, cam: "air", fx: ["lightning"] }),
+      b("slashDown", .15, .14, "Thunder drop", { y: .05, cam: "overhead", fx: ["lightning", "shockwave", "impact"] }), b("guard", .4, -.3, "Sparks fade", { cam: "orbit" })] },
+  { id: "dorian", character: "Dorian", label: "Dorian · Controlled lightning blade", ability: "red_lightning", gender: "male", weapon: "sword", backdrop: "night", tint: ["#ff3a3a", "#ffb0a0", "#ffffff"], rim: "#ffb0a0",
+    note: "Tactical: a stun parry, then exact electric cuts placed where they disable rather than flashy bursts.",
+    beats: [b("swordDraw", .35, -.28, "Measure the distance", { cam: "orbit" }), b("guard", .12, -.22, "Stun parry", { cam: "punch", fx: ["lightning", "impact"] }),
+      b("lunge", .14, .08, "Precise step", { cam: "track" }), b("slashUp", .14, .12, "Electric cut", { cam: "dutch", fx: ["slash", "lightning", "impact"] }),
+      b("slashDown", .16, .12, "Disabling cut", { cam: "punch", fx: ["slash", "lightning", "impact"], hold: .1 }), b("swordDraw", .45, -.28, "Step back", { cam: "wide" })] },
+  { id: "weston", character: "Weston", label: "Weston · White lightning speed", ability: "white_lightning_drive", gender: "male", weapon: "none", backdrop: "night", tint: WHITE, rim: "#ffffff",
+    note: "Fastest runner in the SCU: lightning used for acceleration, crossing the field several times before a single strike.",
+    beats: [b("crouch", .25, -.32, "Sprinter's crouch", { cam: "low", fx: ["lightning"] }), b("dash", .07, .4, "Blink across", { cam: "track", fx: ["trail"] }),
+      b("dash", .07, -.35, "Back across", { cam: "track", fx: ["trail"] }), b("dash", .07, .1, "And in", { cam: "rush", fx: ["trail", "lightning"] }),
+      b("kick", .1, .13, "One white-line strike", { cam: "punch", fx: ["lightning", "shockwave", "impact"], hold: .1 }), b("crouch", .4, -.32, "Already gone", { cam: "wide" })] },
+  { id: "ethan", character: "Ethan", label: "Ethan · Compressed energy orb", ability: "energy", gender: "male", weapon: "none", backdrop: "night", tint: ORB, rim: "#8fd0ff",
+    note: "A dense spinning sphere charged in the palm, carried in low and driven into the opponent for a layered explosion.",
+    beats: [b("guard", .25, -.3, "Open palm", { cam: "close" }), b("cast", .5, -.3, "Compress the orb", { cam: "orbit", fx: ["orb", "charge"] }),
+      b("dash", .14, .06, "Low charge", { cam: "rush", fx: ["orb", "trail"] }), b("punch", .14, .11, "Drive it in", { cam: "punch", fx: ["orb", "impact"] }),
+      b("punch", .4, .11, "Detonation", { cam: "wide", fx: ["blast", "shockwave", "impact"], launch: .25, hold: .12 }), b("guard", .4, -.3, "Smoke clears", { cam: "orbit" })] },
+  { id: "grace", character: "Grace", label: "Grace · Pristine orb counter", ability: "energy", gender: "female", weapon: "none", backdrop: "night", tint: GRACE, rim: "#fff1c4",
+    note: "Rare and deliberate: she holds a pristine sphere defensively, lets the attack come, and releases it as an execution counter.",
+    beats: [b("stand", .3, -.25, "Calm", { cam: "orbit" }), b("cast", .45, -.25, "Contain the sphere", { cam: "close", fx: ["orb"] }),
+      b("guard", .2, -.25, "Absorb the attack", { cam: "punch", fx: ["orb", "impact"] }), b("lunge", .14, .06, "Step through", { cam: "track", fx: ["orb"] }),
+      b("cast", .35, .08, "Release", { cam: "wide", fx: ["blast", "shockwave", "impact"], launch: .2, hold: .1 }), b("stand", .4, -.25, "Composed", { cam: "orbit" })] },
+];
+
+export const CHARACTER_COMBAT: CharacterCombat[] = [...BASE_COMBAT, ...EXTRA];

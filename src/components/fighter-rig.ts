@@ -102,11 +102,13 @@ export function drawFighter(c: C, S: number, gx: number, gy: number, face: numbe
 
   // weapon in the front hand, continuing the forearm line
   let tip = ra.h;
-  if (look.weapon !== "none") { const long = look.weapon === "spear", L = H * (long ? .95 : look.weapon === "daggers" ? .25 : look.weapon === "kara" ? .72 : .55), back = long ? H * .35 : H * .06;
+  if (look.weapon !== "none") { const wp = look.weapon, long = wp === "spear" || wp === "scythe" || wp === "hammer", L = H * (wp === "scythe" ? 1.05 : wp === "hammer" ? .85 : long ? .95 : wp === "daggers" ? .25 : wp === "kara" ? .72 : wp === "greatsword" ? .9 : .55), back = long ? H * .35 : H * .06;
     const wd = Math.cos(ra.dir) > .6 ? ra.dir + Math.PI : ra.dir, dx = Math.sin(wd) * face, dy = Math.cos(wd); tip = { x: ra.h.x + dx * L, y: ra.h.y + dy * L }; const butt = { x: ra.h.x - dx * back, y: ra.h.y - dy * back };
-    c.shadowBlur = 0; c.strokeStyle = look.body; c.lineCap = "round"; c.lineWidth = long ? w * .3 : w * .42; c.beginPath(); c.moveTo(butt.x, butt.y); c.lineTo(tip.x, tip.y); c.stroke();
+    c.shadowBlur = 0; c.strokeStyle = look.body; c.lineCap = "round"; c.lineWidth = long ? w * .3 : wp === "greatsword" ? w * .7 : w * .42; c.beginPath(); c.moveTo(butt.x, butt.y); c.lineTo(tip.x, tip.y); c.stroke();
     c.fillStyle = look.rim; c.beginPath(); const bw = long ? w * .45 : w * .55, bx = tip.x - dx * (long ? H * .12 : L * .85), by = tip.y - dy * (long ? H * .12 : L * .85);
     c.moveTo(tip.x, tip.y); c.lineTo(bx - dy * bw, by + dx * bw); c.lineTo(bx + dy * bw, by - dx * bw); c.closePath(); c.globalAlpha = .55; c.fill(); c.globalAlpha = 1;
+    if (wp === "scythe") { c.fillStyle = look.rim; c.globalAlpha = .8; c.beginPath(); c.moveTo(tip.x, tip.y); c.quadraticCurveTo(tip.x - dy * H * .32 + dx * H * .05, tip.y + dx * H * .32 + dy * H * .05, tip.x - dy * H * .38 - dx * H * .14, tip.y + dx * H * .38 - dy * H * .14); c.quadraticCurveTo(tip.x - dy * H * .2, tip.y + dx * H * .2, tip.x - dx * H * .04, tip.y - dy * H * .04); c.closePath(); c.fill(); c.globalAlpha = 1; }
+    if (wp === "hammer") { c.save(); c.translate(tip.x, tip.y); c.rotate(Math.atan2(dy, dx)); c.fillStyle = look.body; c.fillRect(-H * .09, -H * .1, H * .18, H * .2); c.fillStyle = look.rim; c.globalAlpha = .6; c.fillRect(-H * .09, -H * .1, H * .03, H * .2); c.globalAlpha = 1; c.restore(); }
     if (!long) { c.strokeStyle = look.body; c.lineWidth = w * .35; c.beginPath(); c.moveTo(ra.h.x - dy * w * .9, ra.h.y + dx * w * .9); c.lineTo(ra.h.x + dy * w * .9, ra.h.y - dx * w * .9); c.stroke(); } }
   if (look.weapon === "daggers") { c.strokeStyle = look.rim; c.lineWidth = w * .28; c.beginPath(); c.moveTo(la.h.x, la.h.y); c.lineTo(la.h.x - Math.sin(la.dir) * H * .2 * face, la.h.y - Math.cos(la.dir) * H * .2); c.stroke(); }
   c.restore();

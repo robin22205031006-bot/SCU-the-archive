@@ -55,7 +55,7 @@ function AbilityActionPage() {
         <option value="auto">Style: ability default</option>{Object.entries(FIGHT_STYLES).map(([id, v]) => <option key={id} value={id}>Style: {v.label}</option>)}</select>
       <select className={sel} value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Playback speed">
         <option value={0.25}>0.25× (frame study)</option><option value={0.5}>0.5×</option><option value={1}>1×</option></select>
-      <select className={`${sel} max-w-full`} aria-label="Combat background" value={scene?.backdrop ?? backdrop} onChange={e => { setBackdrop(e.target.value as CombatBackdrop); setSceneId(undefined); }}><option value="rooftop">Moonlit rooftop</option><option value="water">Water courtyard</option></select>
+      <select className={`${sel} max-w-full`} aria-label="Combat background" value={scene?.backdrop ?? backdrop} onChange={e => { setBackdrop(e.target.value as CombatBackdrop); setSceneId(undefined); }}><option value="rooftop">Moonlit rooftop</option><option value="water">Water courtyard</option><option value="ocean">Open sea</option><option value="shatter">Shattered stone</option><option value="arena">Training arena</option><option value="night">Moonlit cliffs</option><option value="street">Highway</option><option value="void">Chaos void</option><option value="ember">Ember hall</option></select>
       <Button size="sm" variant="outline" onClick={() => { setFrame(undefined); setPlaying(p => !p); }}>{playing ? <Pause className="mr-1 h-4 w-4" /> : <Play className="mr-1 h-4 w-4" />}{playing ? "Pause" : "Play"}</Button>
     </div>
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border">

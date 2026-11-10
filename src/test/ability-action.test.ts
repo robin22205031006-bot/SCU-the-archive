@@ -4,7 +4,7 @@ import { FX_LINEAGES, FX_TABLE_KEYS, abilityFxRecipe } from "@/lib/ability-fx";
 import { ALL_PAINT } from "@/components/fx-brush";
 import lore from "../../public/lore-export/timeline_events.json";
 import ents from "../../public/lore-export/entities.json";
-import { characterCombat } from "@/lib/character-combat";
+import { CHARACTER_COMBAT, characterCombat } from "@/lib/character-combat";
 
 describe("ability in action", () => {
   it("Nilanjona uses water ribbons then a rising spiral and crashing wave", () => {
@@ -56,5 +56,24 @@ describe("ability in action", () => {
     expect(new Set(["Weston", "Zayn", "Dorian", "Khalid", "Aariz", "Liam", "Norman"].map(labels)).size).toBe(7);
     expect(choreography("red_lightning", "male", "aerial").some(s => (s.launch ?? 0) > 0)).toBe(true);
     expect(totalDuration(choreography("lightning", "male", "juggernaut"))).toBeGreaterThan(totalDuration(choreography("lightning", "male", "speedster")));
+  });
+  it("every character scene has its own choreography", () => {
+    const seqs = CHARACTER_COMBAT.map(c => c.beats.map(b => b.label).join("|"));
+    expect(new Set(seqs).size).toBe(CHARACTER_COMBAT.length);
+    expect(new Set(CHARACTER_COMBAT.map(c => c.id)).size).toBe(CHARACTER_COMBAT.length);
+  });
+  it("reference characters use their own powers", () => {
+    const fx = (id: string) => characterCombat(id)?.beats.flatMap(b => b.fx ?? []) ?? [];
+    expect(fx("zayn")).toContain("lightning"); expect(fx("dorian")).toContain("lightning");
+    expect(fx("ethan")).toContain("orb"); expect(fx("grace")).toContain("orb");
+    expect(fx("elizah")).toContain("bloodSpike"); expect(fx("nyxia")).toContain("chaosRift");
+    expect(fx("rowan")).toContain("fireCleave"); expect(fx("silas")).toContain("earthShatter");
+    expect(characterCombat("weston")?.beats.filter(b => b.fx?.includes("trail")).length).toBeGreaterThanOrEqual(3);
+    expect(characterCombat("pristine")?.weapon).toBe("scythe"); expect(characterCombat("arzuna")?.weapon).toBe("scythe");
+    expect(characterCombat("valeria-duel")?.weapon).toBe("kara");
+  });
+  it("Silas winds up slower than Rowan", () => {
+    const wind = (id: string) => characterCombat(id)?.beats.find(b => b.pose === "windUp")?.d ?? 0;
+    expect(wind("silas")).toBeGreaterThan(wind("rowan"));
   });
 });
