@@ -19,7 +19,7 @@ export function scopeLoreText(text: string, seriesTitle: string, season: number 
   const matchesSeries = (part: string) => part.toLowerCase().includes(title);
   if (season === null) return matchesSeries(text) ? text : "";
   const markers = [...text.matchAll(/\b(?:(The Sentinels|Sentinels|Redline|Bloodlines?|Divine Beast)\s+)?(?:S|Season\s+)(\d+)\b/gi)];
-  let activeSeries = title === "sentinels" ? "sentinels" : matchesSeries(text) ? title : "";
+  let activeSeries = "sentinels";
   const selected: string[] = [];
   markers.forEach((marker, i) => {
     if (marker[1]) activeSeries = marker[1].toLowerCase().replace(/^the\s+/, "").replace(/^bloodlines$/, "bloodline");
