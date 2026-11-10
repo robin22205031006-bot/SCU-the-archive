@@ -8,9 +8,9 @@ import { nexusEffect, type NexusEffect } from "@/lib/nexus-fx";
 
 const FxAvailable = createContext(false);
 class FxBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
+  override state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? null : this.props.children; }
+  override render() { return this.state.failed ? null : this.props.children; }
 }
 function usePalette(effect: NexusEffect) {
   const [colors, setColors] = useState<[Color, Color]>(() => [new Color(), new Color()]);
@@ -128,6 +128,6 @@ export function NexusSigil({ label, effect, className = "h-12 w-12", masked = fa
     return () => { observer.disconnect(); maskObserver.disconnect(); };
   }, []);
   return <span ref={ref} aria-hidden data-nexus-sigil={kind} className={`nexus-sigil relative inline-block shrink-0 ${className}`}>
-    {!hiddenSpoiler && (available && visible ? <View track={ref} index={2}><PerspectiveCamera makeDefault position={[0, 0, 4.6]} fov={42} /><ambientLight intensity={1.4} /><directionalLight position={[3, 3, 3]} intensity={3} /><Simulation effect={kind} moving={moving} /></View> : <span className="nexus-sigil-fallback absolute inset-2" />)}
+    {!hiddenSpoiler && (available && visible && ref.current ? <View track={{ current: ref.current }} index={2}><PerspectiveCamera makeDefault position={[0, 0, 4.6]} fov={42} /><ambientLight intensity={1.4} /><directionalLight position={[3, 3, 3]} intensity={3} /><Simulation effect={kind} moving={moving} /></View> : <span className="nexus-sigil-fallback absolute inset-2" />)}
   </span>;
 }
