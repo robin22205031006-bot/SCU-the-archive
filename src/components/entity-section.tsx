@@ -1,3 +1,4 @@
+import { seasonJourneyRows } from "@/lib/journey";
 import {
   memo,
   useEffect,
@@ -1031,7 +1032,7 @@ function DetailOverlay({
           )}
           {dossierTab === "progress" && (
             <div className="grid gap-4">
-              {uiToggles.showJourneyGraph && seasons.length > 1 && <JourneyGraph rows={seasons} />}
+              {uiToggles.showJourneyGraph && seasonJourneyRows(seasons, e.stats).length > 1 && <JourneyGraph rows={seasonJourneyRows(seasons, e.stats) as typeof seasons} />}
               {uiToggles.showJourneyGraph && e.kind === "character" && (
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -1054,7 +1055,7 @@ function DetailOverlay({
                 </div>
               )}
               {uiToggles.showJourneyGraph && journeyCompareId && compareSeasons.length > 0 && (
-                <JourneyGraph rows={compareSeasons} />
+                <JourneyGraph rows={seasonJourneyRows(compareSeasons, (allChars ?? []).find((c) => c.id === journeyCompareId)?.stats) as typeof compareSeasons} />
               )}
               {uiToggles.showJourneyGraph && journeyCompareId && compareSeasons.length === 0 && (
                 <p className="text-xs text-muted-foreground">

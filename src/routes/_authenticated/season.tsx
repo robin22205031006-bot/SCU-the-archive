@@ -13,6 +13,8 @@ import { useSpoilerMask, SpoilerToggle } from "@/lib/spoiler-mask";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { invalidateArchive, resolveGroupIds } from "@/lib/archive-sync";
 import { Button } from "@/components/ui/button";
+import { useServerFn } from "@tanstack/react-start";
+import { draftSeasonStory } from "@/lib/season-story.functions";
 
 export const Route = createFileRoute("/_authenticated/season")({
   validateSearch: (s: Record<string, unknown>): { series: string; n: number } => ({
@@ -39,6 +41,8 @@ function SeasonPage() {
   useSpoilerMask("series");
   const [editing, setEditing] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [filling, setFilling] = useState("");
+  const runDraft = useServerFn(draftSeasonStory);
   const { data: allSeries = [] } = useQuery(seriesQuery);
   const { data: chars = [] } = useQuery(entitiesQuery(["character"]));
   const { data: groups = [] } = useQuery(entitiesQuery(["organization", "clan", "bloodline", "faction"]));
@@ -71,6 +75,28 @@ function SeasonPage() {
     if (failed) toast.error(`${failed} update(s) could not be synced.`); else toast.success("Season synced to Archive, graphs and dossiers.");
   };
 
+  /** Staff: draft story/impact/philosophy from PDFs for every roster character, filling only empty fields. */
+  const fillAll = async () => {
+    let done = 0, skipped = 0;
+    for (const [i, c] of roster.entries()) {
+      setFilling(`${i + 1}/${roster.length}`);
+      const cur = readDossier(chars.find((x) => x.id === c.id)?.stats)[key] ?? {};
+      if (cur.story && cur.impact && cur.philosophy) continue;
+      const res = await runDraft({ data: { entityId: c.id, seriesId, season: n } }).catch(() => ({ story: "", error: "failed" }) as { story: string; impact?: string; philosophy?: string; error?: string });
+      if (res.error) { skipped++; continue; }
+      const { data: fresh } = await supabase.from("entities").select("stats,locked_fields").eq("id", c.id).single();
+      if (!fresh) { skipped++; continue; }
+      const stats = { ...(fresh.stats as Record<string, unknown>) };
+      const map = readDossier(stats); const d = map[key] ?? {};
+      stats["dossier"] = { ...map, [key]: { roster: true, ...d, story: d.story || res.story, impact: d.impact || res.impact || d.impact, philosophy: d.philosophy || res.philosophy || d.philosophy } };
+      const up = await supabase.from("entities").update({ stats: stats as never, locked_fields: [...new Set([...fresh.locked_fields, "stats"])] }).eq("id", c.id);
+      if (up.error) skipped++; else done++;
+    }
+    setFilling("");
+    await invalidateArchive(qc);
+    toast.success(`Filled ${done} character${done === 1 ? "" : "s"}${skipped ? ` · ${skipped} had no PDF text or failed` : ""}.`);
+  };
+
   return (
     <main className="mx-auto max-w-4xl px-4 pb-24 pt-28 sm:px-5">
       <Link to="/archive" className="text-xs text-accent">← Archive</Link>
@@ -79,6 +105,7 @@ function SeasonPage() {
       <div className="mt-3 flex flex-wrap gap-2">
         <SpoilerToggle scope="series" />
         {isStaff && <Button size="sm" variant="outline" onClick={() => setEditing(true)}>Edit season roster</Button>}
+        {isStaff && <Button size="sm" variant="outline" disabled={!!filling || !roster.length} onClick={fillAll}>{filling ? `Reading PDFs ${filling}…` : "Fill all stories from PDFs"}</Button>}
         {isStaff && <Button size="sm" variant="outline" disabled={syncing} onClick={resync}>{syncing ? "Syncing…" : "Resync everywhere"}</Button>}
       </div>
       <ul className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -90,6 +117,7 @@ function SeasonPage() {
               {c.alias && <p className="text-xs text-muted-foreground">{c.alias}</p>}
               <div data-spoiler="series" className="mt-2 space-y-1 text-xs">
                 <p>Role: {c.category || "—"} · Status: {c.status || "—"}</p>
+                {d.story && <p className="line-clamp-4 text-muted-foreground">{d.story}</p>}
                 {(d.bloodline || d.organizations?.length) && <p>Groups: {[d.bloodline, ...(d.organizations ?? [])].filter(Boolean).join(" · ")}</p>}
               </div>
             </li>

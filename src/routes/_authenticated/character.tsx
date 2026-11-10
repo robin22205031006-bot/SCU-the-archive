@@ -1,3 +1,4 @@
+import { seasonJourneyRows } from "@/lib/journey";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { stripMerged } from "@/lib/sanitize-lore";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -131,9 +132,11 @@ type JRow = {
 
 function CompareRowsLoader({
   id,
+  stats,
   onRows,
 }: {
   id: string;
+  stats?: unknown;
   onRows: (id: string, rows: JRow[]) => void;
 }) {
   const { data } = useQuery(characterSeriesQuery(id));
@@ -141,9 +144,9 @@ function CompareRowsLoader({
     if (data)
       onRows(
         id,
-        (data as JRow[]).filter((r) => r.series),
+        seasonJourneyRows((data as JRow[]).filter((r) => r.series), stats) as JRow[],
       );
-  }, [data, id, onRows]);
+  }, [data, id, onRows, stats]);
   return null;
 }
 
@@ -154,7 +157,7 @@ function CompareJourney({
 }: {
   baseName: string;
   baseRows: JRow[];
-  others: Array<{ id: string; name: string }>;
+  others: Array<{ id: string; name: string; stats?: unknown }>;
 }) {
   const [picked, setPicked] = useState<string[]>([]);
   const [rowsBy, setRowsBy] = useState<Record<string, JRow[]>>({});
@@ -180,7 +183,7 @@ function CompareJourney({
   return (
     <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-3">
       {picked.map((p) => (
-        <CompareRowsLoader key={p} id={p} onRows={onRows} />
+        <CompareRowsLoader key={p} id={p} stats={others.find((o) => o.id === p)?.stats} onRows={onRows} />
       ))}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest">
         <span className="text-accent">Compare Journey</span>
@@ -422,6 +425,7 @@ function ClassicDossier() {
   });
 
   const seasons = useMemo(() => (memberships ?? []).filter((r) => r.series), [memberships]);
+  const journeyRows = useMemo(() => seasonJourneyRows(seasons, e?.stats, Object.fromEntries((allSeries ?? []).map((x) => [x.id, x.title]))) as typeof seasons, [seasons, e?.stats, allSeries]);
   const cleanNotes = useMemo(() => {
     const seen = new Set<string>();
     const descText = (e?.description ?? "").toLowerCase();
@@ -902,13 +906,13 @@ function ClassicDossier() {
               )}
               {tab === "progress" && ui.showJourneyGraph && seasons.length > 0 && (
                 <div className="mb-4">
-                  <JourneyBars rows={seasons} />
+                  <JourneyBars rows={journeyRows} />
                 </div>
               )}
               {tab === "progress" && seasons.length > 0 && (
                 <CompareJourney
                   baseName={e.name}
-                  baseRows={seasons}
+                  baseRows={journeyRows}
                   others={(allChars ?? []).filter((c) => c.id !== id)}
                 />
               )}

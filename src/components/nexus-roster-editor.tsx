@@ -42,7 +42,7 @@ function RosterFields({ entity, seriesId, season, groups }: { entity: Entity; se
     try {
       const res = await runDraft({ data: { entityId: entity.id, seriesId, season } });
       if (res.error) toast.error(res.error);
-      else { setForm(f => ({ ...f, story: res.story })); toast.success("Draft added from the PDFs — review it, then Save season."); }
+      else { setForm(f => ({ ...f, story: res.story, ...(res.impact ? { impact: res.impact } : {}), ...(res.philosophy ? { philosophy: res.philosophy } : {}) })); toast.success("Draft added from the PDFs — review it, then Save season."); }
     } catch (err) { toast.error(err instanceof Error ? err.message : "Couldn't draft the story."); }
     finally { setDrafting(false); }
   };
