@@ -861,7 +861,8 @@ html[data-ui="nexus"][data-nexus-anime="on"] :is(h1,h2,h3) { font-style: italic;
 .nexus-sign[data-sign-static="on"]::after { display: none; }
 
 /* Reference-inspired sliding HUD; color follows the active style/theme. */
-.hud-navigation { width: 28px; height: min(520px, 82dvh); touch-action: pan-x; }
+.hud-navigation { width: min(350px, 100vw); height: min(520px, 82dvh); touch-action: pan-x; outline: none; }
+.hud-backdrop { background: color-mix(in oklab, var(--background) 60%, transparent); backdrop-filter: blur(10px); touch-action: none; }
 .hud-arc-panel { position: absolute; width: 270px; height: 100%; pointer-events: none; }
 .hud-arc-track { position: absolute; width: 390px; height: calc(100% - 48px); top: 24px; left: -247px; border: 1px solid var(--accent); border-radius: 50%; background: color-mix(in oklab, var(--background) 82%, transparent); box-shadow: 0 0 20px color-mix(in oklab, var(--accent) 12%, transparent); }
 .hud-arc-track::after { content: ""; position: absolute; inset: 8px; border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent); border-radius: inherit; }
@@ -884,7 +885,18 @@ html[data-ui="nexus"][data-nexus-anime="on"] :is(h1,h2,h3) { font-style: italic;
 .hud-scroll-up { top: 0; }
 .hud-scroll-down { bottom: 0; }
 .hud-counter { position: absolute; left: 96px; bottom: 8px; color: var(--muted-foreground); font-size: 10px; font-family: monospace; }
-.hud-toggle { position: absolute; top: calc(50% - 20px); left: 0; width: 28px; height: 40px; border-radius: 0 8px 8px 0; color: var(--accent); background: var(--background); }
+.hud-toggle { top: calc(50dvh - 22px); left: max(8px, env(safe-area-inset-left)); width: 44px; height: 44px; border-radius: 50%; color: var(--accent); background: var(--background); }
+.hud-navigation > .hud-toggle { position: absolute; top: calc(50% - 22px); }
+html[data-ui="nexus"] .hud-toggle { box-shadow: 0 0 20px color-mix(in oklab, var(--accent) 24%, transparent); }
+[data-hud-style="nexus"] .hud-arc-track::after { border-style: dashed; animation: hud-scan 18s linear infinite; }
+@keyframes hud-scan { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { [data-hud-style="nexus"] .hud-arc-track::after { animation: none; } }
+html[data-nexus-motion="off"] [data-hud-style="nexus"] .hud-arc-track::after { animation: none; }
+:root { --google-background: #FFFFFF; --google-border: #747775; --google-text: #1F1F1F; }
+.dark { --google-background: #131314; --google-border: #8E918F; --google-text: #E3E3E3; }
+.google-sign-in { background: var(--google-background); border: 1px solid var(--google-border); color: var(--google-text); gap: 10px; padding-inline: 12px; font-family: "Google Sans", var(--font-sans); font-size: 14px; font-weight: 500; line-height: 20px; }
+.google-sign-in:hover { background: var(--google-background); color: var(--google-text); }
+.google-sign-in > svg { width: 18px; height: 18px; }
 @media (max-width: 640px) {
   .hud-arc-panel { width: 230px; }
   .hud-arc-track { left: -273px; }
@@ -896,3 +908,10 @@ html[data-ui="nexus"][data-nexus-anime="on"] :is(h1,h2,h3) { font-style: italic;
   .hud-counter { left: 70px; }
 }
 html[data-ui="minimal"] .hud-arc-track, html[data-ui="minimal"] .hud-tab-active .hud-node { box-shadow: none; }
+@media (max-height: 460px) {
+  .hud-navigation { height: calc(100dvh - 20px); }
+  .hud-arc-items { inset-block: 48px; }
+  .hud-node { width: 36px; height: 36px; }
+  .hud-tab { height: 44px; grid-template-columns: 36px minmax(0, 1fr); }
+  .hud-node svg { width: 18px; height: 18px; }
+}
