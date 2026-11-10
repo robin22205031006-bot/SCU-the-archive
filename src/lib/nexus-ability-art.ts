@@ -1,8 +1,12 @@
-export const NEXUS_ABILITY_ART = ["fire", "water", "wind", "ice", "earth", "nature", "lightning", "light", "shadow", "aether", "time", "psychic", "sword", "bow", "alchemy", "shield", "blood", "beast", "tech", "speed", "art", "portal", "destruction", "judgement", "authority", "spirit", "cards", "sound", "tactics", "assassin", "healing", "shapeshift", "vampire", "aether-dominion", "omni-ergon"] as const;
+import { NEXUS_DISTINCT_ART, nexusDistinctArt } from "@/lib/nexus-distinct-art";
+
+export const NEXUS_ABILITY_ART = ["fire", "water", "wind", "ice", "earth", "nature", "lightning", "light", "shadow", "aether", "time", "psychic", "sword", "bow", "alchemy", "shield", "blood", "beast", "tech", "speed", "art", "portal", "destruction", "judgement", "authority", "spirit", "cards", "sound", "tactics", "assassin", "healing", "shapeshift", "vampire", "aether-dominion", "omni-ergon", ...NEXUS_DISTINCT_ART] as const;
 export type NexusAbilityArt = typeof NEXUS_ABILITY_ART[number];
 
 /** Presentation classification only: never changes ability membership or lore. */
 export function nexusAbilityArt(name: string, iconName = ""): NexusAbilityArt {
+  const distinct = nexusDistinctArt(name);
+  if (distinct) return distinct;
   const s = name.toLowerCase().replace(/[_-]/g, " ");
   const rules: Array<[RegExp, NexusAbilityArt]> = [
     [/aether dominion/, "aether-dominion"], [/omni (ergon|argon)/, "omni-ergon"],
