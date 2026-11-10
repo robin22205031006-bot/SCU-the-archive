@@ -23,6 +23,7 @@ export function scopeLoreText(text: string, seriesTitle: string, season: number 
     const number = part.match(/^(?:S|Season\s+)(\d+)\b/i)?.[1];
     return Number(number) === season;
   });
+  if (title === "sentinels" && !matchesSeries(text) && /redline|bloodlines?|divine beast/i.test(text)) return "";
   // Bare S1 labels in archive notes refer to the principal Sentinels saga.
   return selected.filter(part => matchesSeries(part) || (title === "sentinels" && !/redline|bloodlines?|divine beast/i.test(part))).join("\n");
 }
