@@ -1,12 +1,11 @@
-import { Component, createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Lightformer, PerspectiveCamera, View } from "@react-three/drei";
+import { Environment, Lightformer } from "@react-three/drei";
 import { AdditiveBlending, Color, Group, Mesh, ShaderMaterial } from "three";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useNexusTheme } from "@/hooks/use-nexus-theme";
-import { nexusEffect, type NexusEffect } from "@/lib/nexus-fx";
+import { type NexusEffect } from "@/lib/nexus-fx";
 
-const FxAvailable = createContext(false);
 class FxBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   override state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
@@ -93,7 +92,7 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", update);
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
-  return <FxAvailable.Provider value={supported}>
+  return <>
     <div ref={background} aria-hidden className="nexus-fx-background pointer-events-none fixed inset-0" data-fx-theme={theme}>
       {supported && <FxBoundary><Canvas dpr={[1, 1.25]} frameloop={moving && visible ? "always" : "demand"} camera={{ position: [0, 0, 7], fov: 45 }} gl={{ alpha: true, antialias: false }}>
         <ambientLight intensity={.65} /><Environment resolution={64}><Lightformer intensity={2} position={[0, 4, 3]} scale={8} /><Lightformer intensity={1} position={[-4, 0, 2]} scale={5} /></Environment>
@@ -101,33 +100,6 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
       </Canvas></FxBoundary>}
     </div>
     {children}
-    {supported && <div aria-hidden className="nexus-fx-symbols pointer-events-none fixed inset-0"><FxBoundary><Canvas dpr={1} frameloop={moving && visible ? "always" : "demand"} gl={{ alpha: true, antialias: false }}><View.Port /></Canvas></FxBoundary></div>}
-  </FxAvailable.Provider>;
+  </>;
 }
 
-export function NexusSigil({ label, effect, className = "h-12 w-12", masked = false }: { label: string; effect?: NexusEffect; className?: string; masked?: boolean }) {
-  const available = useContext(FxAvailable);
-  const moving = useNexusMotion();
-  const ref = useRef<HTMLSpanElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [hiddenSpoiler, setHiddenSpoiler] = useState(false);
-  const kind = masked ? "archive" : effect ?? nexusEffect(label);
-  useEffect(() => {
-    const target = ref.current;
-    if (!target) return;
-    const observer = new IntersectionObserver(entries => setVisible(entries.some(e => e.isIntersecting)), { rootMargin: "40px" });
-    observer.observe(target);
-    const updateMask = () => {
-      const parent = target.closest("[data-spoiler]");
-      const scope = parent?.getAttribute("data-spoiler");
-      setHiddenSpoiler((scope === "char" && document.documentElement.hasAttribute("data-spoil-characters")) || (scope === "archive" && document.documentElement.hasAttribute("data-spoil-archive")));
-    };
-    updateMask();
-    const maskObserver = new MutationObserver(updateMask);
-    maskObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-spoil-characters", "data-spoil-archive"] });
-    return () => { observer.disconnect(); maskObserver.disconnect(); };
-  }, []);
-  return <span ref={ref} aria-hidden data-nexus-sigil={kind} className={`nexus-sigil relative inline-block shrink-0 ${className}`}>
-    {!hiddenSpoiler && (available && visible ? <View as="span" className="absolute inset-0 block" index={2}><PerspectiveCamera makeDefault position={[0, 0, 4.6]} fov={42} /><ambientLight intensity={1.4} /><directionalLight position={[3, 3, 3]} intensity={3} /><Simulation effect={kind} moving={moving} /></View> : <span className="nexus-sigil-fallback absolute inset-2" />)}
-  </span>;
-}
