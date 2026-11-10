@@ -1,6 +1,6 @@
 # Nexus device-following emblem motion
 - [x] Add saved Follow device and Always static options while preserving existing preferences.
-- [ ] Verify live device-preference changes, saved selection and static artwork.
+- [x] Verify live device-preference changes, saved selection and static artwork.
 
 # Nexus static emblems
 - [x] Add a reader-controlled, saved static-emblem switch in Nexus Appearance.
