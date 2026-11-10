@@ -1,17 +1,31 @@
+import { describe, it, expect } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
+import type { User } from "@supabase/supabase-js";
 import { syncSessionCache } from "@/lib/session-cache";
 
-describe("session cache isolation", () => {
-  it("removes private documents and vote state on sign-out without refetching", () => {
+const user = (id: string) => ({ id } as User);
+describe("account-safe fast session cache", () => {
+  it("keeps loaded lore on same-account token refresh", () => {
     const client = new QueryClient();
-    client.setQueryData(["vault"], [{ title: "Private script" }]);
-    client.setQueryData(["posts"], [{ mine: true }]);
+    client.setQueryData(["session"], user("reader-a"));
+    client.setQueryData(["entities"], [{ name: "Ethan" }]);
+    syncSessionCache(client, user("reader-a"));
+    expect(client.getQueryData(["entities"])).toEqual([{ name: "Ethan" }]);
+  });
+  it("removes private results when switching accounts", () => {
+    const client = new QueryClient();
+    client.setQueryData(["session"], user("reader-a"));
     client.setQueryData(["roles"], ["admin"]);
-    syncSessionCache(client, null);
-    expect(client.getQueryData(["vault"])).toBeUndefined();
-    expect(client.getQueryData(["posts"])).toBeUndefined();
+    syncSessionCache(client, user("reader-b"));
     expect(client.getQueryData(["roles"])).toBeUndefined();
+    expect(client.getQueryData<User>(["session"])?.id).toBe("reader-b");
+  });
+  it("removes private results on sign out", () => {
+    const client = new QueryClient();
+    client.setQueryData(["session"], user("reader-a"));
+    client.setQueryData(["private-document"], "private");
+    syncSessionCache(client, null);
+    expect(client.getQueryData(["private-document"])).toBeUndefined();
     expect(client.getQueryData(["session"])).toBeNull();
   });
 });
