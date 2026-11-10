@@ -1,3 +1,5 @@
+import { JourneyLine } from "@/components/journey-line";
+import { seasonJourneyRows } from "@/lib/journey";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -415,6 +417,7 @@ Status · <span className="text-foreground">{status}</span>
                         {sd.impact || "No impact notes for this selection yet."}
                       </p>
                       {sd.philosophy && <p className="whitespace-pre-line"><span className="block text-xs text-muted-foreground">Philosophy</span>{sd.philosophy}</p>}
+                      <JourneyLine lines={[{ name: e.name, rows: seasonJourneyRows((memberships ?? []).filter((r) => r.series), e.stats, Object.fromEntries((allSeries ?? []).map((x) => [x.id, x.title]))) }]} />
                     </div>
                   )}
                   {menu === "details" && (

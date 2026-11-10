@@ -1,4 +1,5 @@
 import { seasonJourneyRows } from "@/lib/journey";
+import { JourneyLine } from "@/components/journey-line";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { stripMerged } from "@/lib/sanitize-lore";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -98,22 +99,6 @@ const SERIES_GROUPS: Array<{ key: string; title: string; match: RegExp; seasons:
 
 const SANITIZE = /^\[(conflict|merge|Auto-Merged|Auto-Stub|scope|resolved|Merged Info)/i;
 
-function journeyScore(r: {
-  arc_role?: string | null;
-  status?: string | null;
-  role_in_series?: string | null;
-}): number {
-  const role = `${r.arc_role ?? ""} ${r.role_in_series ?? ""}`.toLowerCase();
-  if (/main\s*protagonist|lead\s*protagonist/.test(role)) return 5;
-  if (/protagonist|legend/.test(role)) return 4;
-  if (/anti-?hero|antagonist|anti-?villain|villain/.test(role)) return 3;
-  if (/support|mentor|side/.test(role)) return 2;
-  if (/cameo/.test(role)) return 1;
-  const st = (r.status ?? "").toLowerCase();
-  if (st === "dead" || st === "presumed dead") return 1;
-  if (st === "alive") return 3;
-  return 2;
-}
 
 const COMPARE_COLORS = [
   "hsl(190 85% 60%)",
@@ -172,14 +157,6 @@ function CompareJourney({
       rows: rowsBy[p] ?? [],
     })),
   ];
-  const titles = Array.from(
-    new Set(lines.flatMap((l) => l.rows.map((r) => r.series?.title ?? "?"))),
-  );
-  const W = 560,
-    H = 140,
-    pad = 24;
-  const step = (W - pad * 2) / Math.max(titles.length - 1, 1);
-  const y = (s: number) => H - pad - (s / 5) * (H - pad * 2);
   return (
     <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-3">
       {picked.map((p) => (
@@ -230,114 +207,13 @@ function CompareJourney({
           </span>
         ))}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-        {[1, 2, 3, 4, 5].map((g) => (
-          <line key={g} x1={pad} x2={W - pad} y1={y(g)} y2={y(g)} stroke="rgba(255,255,255,0.06)" />
-        ))}
-        {lines.map((l, i) => {
-          const color = i === 0 ? "var(--accent)" : COMPARE_COLORS[(i - 1) % COMPARE_COLORS.length];
-          const pts = l.rows
-            .map((r) => ({
-              x: pad + titles.indexOf(r.series?.title ?? "?") * step,
-              y: y(journeyScore(r)),
-            }))
-            .sort((a, b) => a.x - b.x);
-          return (
-            <g key={i}>
-              <polyline
-                points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
-                fill="none"
-                stroke={color}
-                strokeWidth={2}
-              />
-              {pts.map((p, k) => (
-                <circle key={k} cx={p.x} cy={p.y} r={3.5} fill={color} />
-              ))}
-            </g>
-          );
-        })}
-        {titles.map((t, i) => (
-          <text
-            key={t}
-            x={pad + i * step}
-            y={H - 6}
-            fontSize={9}
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.55)"
-          >
-            {t.length > 14 ? t.slice(0, 13) + "…" : t}
-          </text>
-        ))}
-      </svg>
+      <JourneyLine title="Compare journey" lines={lines.map((l, i) => ({ name: l.name, rows: l.rows, color: i === 0 ? "var(--accent)" : COMPARE_COLORS[(i - 1) % COMPARE_COLORS.length]! }))} />
     </div>
   );
 }
 
-function JourneyBars({
-  rows,
-}: {
-  rows: Array<{
-    id: string;
-    series?: { title?: string | null } | null;
-    arc_role?: string | null;
-    status?: string | null;
-    role_in_series?: string | null;
-  }>;
-}) {
-  const pts = rows.map((r) => ({
-    label: r.series?.title ?? "?",
-    score: journeyScore(r),
-    role: r.arc_role ?? r.role_in_series ?? "",
-  }));
-  const W = 560,
-    H = 110,
-    pad = 22;
-  const bw = (W - pad * 2) / Math.max(pts.length, 1);
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-      {[1, 2, 3, 4, 5].map((g) => (
-        <line
-          key={g}
-          x1={pad}
-          x2={W - pad}
-          y1={H - pad - (g / 5) * (H - pad * 2)}
-          y2={H - pad - (g / 5) * (H - pad * 2)}
-          stroke="rgba(255,255,255,0.06)"
-        />
-      ))}
-      {pts.map((p, i) => {
-        const x = pad + i * bw + bw / 2;
-        const h = (p.score / 5) * (H - pad * 2);
-        const y = H - pad - h;
-        return (
-          <g key={i}>
-            <rect
-              x={x - bw * 0.32}
-              y={y}
-              width={bw * 0.64}
-              height={h}
-              rx={3}
-              fill="var(--accent)"
-              opacity={0.75}
-            />
-            <text x={x} y={H - 6} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.5)">
-              {p.label.replace(/^The\s*/i, "").slice(0, 10)}
-            </text>
-          </g>
-        );
-      })}
-      <polyline
-        points={pts
-          .map((p, i) => `${pad + i * bw + bw / 2},${H - pad - (p.score / 5) * (H - pad * 2)}`)
-          .join(" ")}
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth={1.5}
-        strokeDasharray="3 3"
-        opacity={0.6}
-      />
-    </svg>
-  );
+function JourneyBars({ rows }: { rows: JRow[] }) {
+  return <JourneyLine lines={[{ name: "Journey", rows }]} />;
 }
 
 function CharacterDossier() {

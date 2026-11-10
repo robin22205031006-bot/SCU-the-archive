@@ -24,6 +24,7 @@ import { SeriesTools } from "@/components/series-tools";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { useIsStaff } from "@/hooks/use-admin";
 import { AdminSeries } from "@/components/admin-series";
+import { SeriesOrderEditor } from "@/components/series-order-editor";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { entitiesQuery } from "@/lib/entities";
 import { SeriesStyleEditor, useSeriesTitleStyle } from "@/lib/series-style";
@@ -273,10 +274,13 @@ function StaffSeriesManager() {
   const isStaff = useIsStaff();
   if (!isStaff) return null;
   return (
+    <>
     <details className="glass mt-4 rounded-2xl p-4">
       <summary className="cursor-pointer text-sm font-medium">Manage series (add, rename, seasons)</summary>
       <div className="mt-3 min-w-0"><AdminSeries /></div>
     </details>
+    <SeriesOrderEditor />
+    </>
   );
 }
 

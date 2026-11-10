@@ -1,0 +1,2 @@
+ALTER TABLE public.entity_relations DROP CONSTRAINT IF EXISTS entity_relations_rel_check;
+ALTER TABLE public.entity_relations ADD CONSTRAINT entity_relations_rel_check CHECK (rel IN ('commands', 'ally', 'rival', 'mentor', 'kin', 'parent', 'sibling', 'spouse', 'ancestor'));

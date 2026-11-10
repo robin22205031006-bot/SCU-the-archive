@@ -20,6 +20,7 @@ export const SHARED_ARCHIVE_KEYS = [
   ["roster-abilities"],
   ["nexus-series-abilities"],
   ["char-relationships"],
+  ["entity-relations"],
 ] as const;
 
 export function invalidateArchive(qc: QueryClient) {
