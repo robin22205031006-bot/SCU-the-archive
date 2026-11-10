@@ -28,4 +28,11 @@ describe("account-safe fast session cache", () => {
     expect(client.getQueryData(["private-document"])).toBeUndefined();
     expect(client.getQueryData(["session"])).toBeNull();
   });
+  it("refreshes permissions on same-account user updates", () => {
+    const client = new QueryClient();
+    client.setQueryData(["session"], user("reader-a"));
+    client.setQueryData(["roles"], ["admin"]);
+    syncSessionCache(client, user("reader-a"), true);
+    expect(client.getQueryData(["roles"])).toBeUndefined();
+  });
 });

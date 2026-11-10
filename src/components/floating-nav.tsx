@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Archive, BookMarked, BookOpen, Bot, Castle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Compass, FileLock, Home, Map, MessagesSquare, Network, Palette, Shield, Sparkles, User, Users, WandSparkles } from "lucide-react";
+import { Archive, BookMarked, BookOpen, Bot, Castle, ChevronDown, ChevronLeft, ChevronUp, Clock, Compass, FileLock, Home, Map, MessagesSquare, Network, Palette, Shield, Sparkles, User, Users, WandSparkles } from "lucide-react";
 import { TABS, STAFF_TAB } from "@/lib/nav";
 import { useNavMode } from "@/lib/nav-mode";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
