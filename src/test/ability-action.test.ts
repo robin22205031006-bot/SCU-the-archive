@@ -4,8 +4,29 @@ import { FX_LINEAGES, FX_TABLE_KEYS, abilityFxRecipe } from "@/lib/ability-fx";
 import { ALL_PAINT } from "@/components/fx-brush";
 import lore from "../../public/lore-export/timeline_events.json";
 import ents from "../../public/lore-export/entities.json";
+import { characterCombat } from "@/lib/character-combat";
 
 describe("ability in action", () => {
+  it("Nilanjona uses water ribbons then a rising spiral and crashing wave", () => {
+    const scene = characterCombat("nilanjona"); expect(scene?.ability).toBe("water_guardian");
+    const beats = scene?.beats ?? [];
+    const ribbon = beats.findIndex(b => b.fx?.includes("waterRibbon"));
+    const spiral = beats.findIndex(b => b.fx?.includes("waterSpiral"));
+    const crash = beats.findIndex(b => b.fx?.includes("waterCrash"));
+    expect(ribbon).toBeGreaterThanOrEqual(0); expect(spiral).toBeGreaterThan(ribbon); expect(crash).toBeGreaterThan(spiral);
+  });
+  it("Valeria uses Shadow Steps, aerial rotation and throwing weapons", () => {
+    const scene = characterCombat("valeria"); expect(scene?.gender).toBe("female"); expect(scene?.ability).toBe("shadow_steps"); expect(scene?.weapon).toBe("daggers");
+    expect(scene?.beats.some(b => b.fx?.includes("shadowPool"))).toBe(true);
+    expect(scene?.beats.some(b => Math.abs(b.roll ?? 0) >= Math.PI)).toBe(true);
+    expect(scene?.beats.some(b => b.fx?.includes("kunai"))).toBe(true);
+  });
+  it("Valeria carries Kara Yazgi as a sword with rising and diving cuts", () => {
+    const scene = characterCombat("valeria-sword"); expect(scene?.weapon).toBe("kara");
+    expect(scene?.beats.some(b => b.pose === "slashUp")).toBe(true);
+    expect(scene?.beats.some(b => b.pose === "slashDown")).toBe(true);
+    expect(scene?.beats.some(b => b.fx?.includes("shadowSlash"))).toBe(true);
+  });
   it("Weston's white lightning is used for speed, not a beam", () => { expect(actionStyle("white_lightning_drive")).toBe("speedBlitz"); });
   it("female fighters kick where male fighters punch", () => {
     expect(choreography("lightning", "female").some(s => s.pose === "kick")).toBe(true);

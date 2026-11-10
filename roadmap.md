@@ -1,3 +1,8 @@
+# Nilanjona and Valeria combat
+- [x] Added separate reference-driven water, assassin movement and Kara Yazgi sequences with 24-fps frame study controls; these are demonstrations, not invented PDF events.
+- [x] Added tapered water ribbons, rising spiral, crashing wave, shadow pools, thrown weapons and sword arcs with two painted combat backgrounds.
+- [x] All 10 combat tests passed; signed-in playback, frame stepping and Android layout verified with no runtime errors or horizontal overflow.
+
 # Combat reference update
 - [x] Reviewed all six Pinterest pages and cover images; exact video choreography remains blocked because Pinterest exposes no playable videos here. Uploaded clips are needed for timing analysis.
 - [x] Replaced shared male/female fighter bodies with anatomical mannequins based on the supplied sheets, including opponents and afterimages.

@@ -13,6 +13,8 @@ export const POSES: Record<PoseName, P> = {
   leap: [30, -30, 95, 50, 100, 120, 10, 135, 10], flip: [-60, 60, 80, 110, 70, 150, 20, 170, 10],
   windUp: [-10, -28, 18, 32, 14, 150, 40, 195, 40], lunge: [42, -62, 20, 72, 62, -70, 15, 88, 0], spinCut: [18, -42, 22, 44, 22, -95, 0, 105, -5],
   throw: [22, -30, 25, 62, 35, -65, 20, 100, -10], kneelFinish: [32, -82, 150, 72, 92, -55, 25, 55, 0],
+  waterDraw: [-15, -38, 30, 40, 38, 70, 60, 115, 45], waterSweep: [24, -58, 40, 55, 45, -50, 18, 105, 20],
+  assassinGuard: [18, -35, 45, 38, 30, 35, 105, 70, 100], aerialTuck: [-40, 105, 125, 115, 130, 120, 110, 115, 95], swordDraw: [12, -30, 25, 40, 25, 85, 85, 40, 100],
 };
 
 export interface Look { body: string; back: string; rim: string; gender: Gender; weapon: Weapon; heavy?: boolean }
@@ -100,12 +102,13 @@ export function drawFighter(c: C, S: number, gx: number, gy: number, face: numbe
 
   // weapon in the front hand, continuing the forearm line
   let tip = ra.h;
-  if (look.weapon !== "none") { const long = look.weapon === "spear", L = H * (long ? .95 : .55), back = long ? H * .35 : H * .06;
+  if (look.weapon !== "none") { const long = look.weapon === "spear", L = H * (long ? .95 : look.weapon === "daggers" ? .25 : look.weapon === "kara" ? .72 : .55), back = long ? H * .35 : H * .06;
     const wd = Math.cos(ra.dir) > .6 ? ra.dir + Math.PI : ra.dir, dx = Math.sin(wd) * face, dy = Math.cos(wd); tip = { x: ra.h.x + dx * L, y: ra.h.y + dy * L }; const butt = { x: ra.h.x - dx * back, y: ra.h.y - dy * back };
     c.shadowBlur = 0; c.strokeStyle = look.body; c.lineCap = "round"; c.lineWidth = long ? w * .3 : w * .42; c.beginPath(); c.moveTo(butt.x, butt.y); c.lineTo(tip.x, tip.y); c.stroke();
     c.fillStyle = look.rim; c.beginPath(); const bw = long ? w * .45 : w * .55, bx = tip.x - dx * (long ? H * .12 : L * .85), by = tip.y - dy * (long ? H * .12 : L * .85);
     c.moveTo(tip.x, tip.y); c.lineTo(bx - dy * bw, by + dx * bw); c.lineTo(bx + dy * bw, by - dx * bw); c.closePath(); c.globalAlpha = .55; c.fill(); c.globalAlpha = 1;
     if (!long) { c.strokeStyle = look.body; c.lineWidth = w * .35; c.beginPath(); c.moveTo(ra.h.x - dy * w * .9, ra.h.y + dx * w * .9); c.lineTo(ra.h.x + dy * w * .9, ra.h.y - dx * w * .9); c.stroke(); } }
+  if (look.weapon === "daggers") { c.strokeStyle = look.rim; c.lineWidth = w * .28; c.beginPath(); c.moveTo(la.h.x, la.h.y); c.lineTo(la.h.x - Math.sin(la.dir) * H * .2 * face, la.h.y - Math.cos(la.dir) * H * .2); c.stroke(); }
   c.restore();
   // rim highlight on the leading edge + eye glint
   c.save(); c.globalCompositeOperation = "lighter"; c.strokeStyle = look.rim; c.globalAlpha = .45; c.lineWidth = Math.max(1, S * .003);
