@@ -12,6 +12,7 @@
 - Entity pictures are stored as resized data URLs in `entities.image_url` — workspace blocks public storage buckets.
 - PDF ingestion: text is extracted in the browser, AI output is filtered by `src/lib/lore-merge.ts` (verbatim-quote grounding) and admin-edited fields go into `locked_fields`, which ingestion never overwrites.
 - Admin role is granted by a signup trigger on a fixed email; roles live only in `user_roles` (why: avoid privilege escalation).
+- Role management verifies persisted roles before privileged access; superadmin bootstrap requires an Auth-verified confirmed identity and target protection uses Auth rather than editable profile emails, preventing forged privileges and owner demotion.
 - Synchronize account changes through `syncSessionCache` before router refresh; retain lore on same-user token refresh, but purge on identity changes, sign-out and user updates to prevent stale privileges and private results crossing sessions.
 - Lore application rechecks source quotes and resolves normalized exact names before writes; checked writes must surface partial failures instead of reporting false success.
 - Admin uploads use the browser-only PDF parser and admin controller to call authenticated lore server functions, then invalidate archive queries even on partial write failures; characters and organizations remain kinds in the shared entities table so existing views stay synchronized.
