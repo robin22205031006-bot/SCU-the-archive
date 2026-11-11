@@ -118,6 +118,20 @@ const ALIAS_MAP: Record<string, string> = {
   issabela: "issabela al-ahd",
   ayman: "ayaan siddique",
   echan: "ethan",
+  // Merged duplicates from the canon org breakdown PDF.
+  ramij: "ramiz al-ahd",
+  "rahim al-ahd": "ramiz al-ahd",
+  "rahim al ahd": "ramiz al-ahd",
+  dew: "d.e.w.",
+  ecap: "e.c.a.p.",
+  "the covenant": "covenant",
+  "the hidden ones": "hidden ones",
+  "the umbral": "the obsidians",
+  "the 9 bloodlines": "nine clans",
+  duskmoors: "duskmoor",
+  "duskmoor clan": "duskmoor",
+  "demon clan": "demonic clan",
+  "lucen vale": "lucan vale",
 };
 
 export interface SyncInput {

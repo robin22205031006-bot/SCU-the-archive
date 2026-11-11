@@ -7,6 +7,9 @@ describe("duplicate characters resolve to the in-story name card", () => {
   it("Zayn merges into Zayn Hayes", () => expect(canonicalCharacterName("Zayn")).toBe("zayn hayes"));
   it("Bunny merges into Ethan", () => expect(canonicalCharacterName("Bunny")).toBe("ethan"));
   it("real name Humayra resolves to Amaya", () => expect(canonicalCharacterName("Humayra")).toBe("amaya"));
+  it("Ramij resolves to Ramiz Al-Ahd", () => expect(canonicalCharacterName("Ramij")).toBe("ramiz al-ahd"));
+  it("The Umbral resolves to The Obsidians", () => expect(canonicalCharacterName("The Umbral")).toBe("the obsidians"));
+  it("DEW resolves to D.E.W.", () => expect(canonicalCharacterName("DEW")).toBe("d.e.w."));
   it("codename Nyxia resolves to Xinea", () => expect(canonicalCharacterName("Nyxia")).toBe("xinea"));
 });
 
