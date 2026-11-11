@@ -356,9 +356,11 @@ export function Timeline() {
                 dot={(p: {
                   cx: number;
                   cy: number;
+                  index?: number;
                   payload?: { impact: number; color: string };
                 }) => (
                   <Dot
+                    key={`d${p.index ?? `${p.cx}-${p.cy}`}`}
                     cx={p.cx}
                     cy={p.cy}
                     r={
