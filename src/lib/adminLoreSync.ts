@@ -114,7 +114,7 @@ const ALIAS_MAP: Record<string, string> = {
   maverick: "sean stone",
   shina: "shina nasrin",
   "major general stitch": "stitch",
-  asetra: "jessy",
+  jessy: "asetra",
   "anna la sarta": "anna al-ahd",
   "zaan al-murad": "zaan",
   mashiho: "mashiho kurohana",

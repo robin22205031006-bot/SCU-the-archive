@@ -64,6 +64,13 @@
       "when": 1794421722891,
       "tag": "0008_create_artifacts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794425290958,
+      "tag": "0009_allow_rename_to_merged_name",
+      "breakpoints": true
     }
   ]
 }
