@@ -44,4 +44,4 @@
 - AI Box, series Q&A and story drafting use AI Gateway in authenticated server functions; Gemini only for PDF ingestion/embeddings (keys unreliable).
 - adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicates to the in-story card name (tested), so syncs never recreate merged cards.
 - Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
-- Atlas maps live in browser-safe src/lib/nexus-atlas.ts (eras, top view, landmarks as image %, FX/transition tags); nexus-atlas.tsx is the full-screen portal (scenic/top/simulate), atlas-simulation.tsx a deterministic 24-fps canvas, and /atlas pages reuse them. Atlas canvases need inline sizing and the atlas-keep class because global CSS sets canvas height:auto and Minimal hides canvases.
+- Atlas map rules: see src/lib/AGENTS.md.
