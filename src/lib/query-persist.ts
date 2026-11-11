@@ -5,7 +5,7 @@ import type { QueryClient } from "@tanstack/react-query";
  * localStorage so a fresh offline load renders cached lore instantly.
  * Account-scoped keys are skipped to avoid leaking private data.
  */
-const KEY = "scu-rq-cache-v1";
+const KEY = "scu-rq-cache-v2";
 const MAX_BYTES = 1_500_000;
 const SKIP = /^\[(session|session-cache|admin|roles|banned)/;
 
@@ -33,12 +33,14 @@ function snapshot(qc: QueryClient) {
 
 export function restoreQueries(qc: QueryClient) {
   try {
+    localStorage.removeItem("scu-rq-cache-v1");
     const raw = localStorage.getItem(KEY);
     if (!raw) return;
     const entries = JSON.parse(raw) as Record<string, unknown>;
     for (const [key, data] of Object.entries(entries)) {
       try {
-        qc.setQueryData(JSON.parse(key), data);
+        // updatedAt 0 marks restored data stale so the live archive refetches at once
+        qc.setQueryData(JSON.parse(key), data, { updatedAt: 0 });
       } catch {
         /* bad key */
       }

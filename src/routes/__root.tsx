@@ -197,7 +197,7 @@ function RootComponent() {
       if (event === "SIGNED_OUT") {
         // Strict sign-out: purge persisted offline cache so re-entry requires online auth.
         try {
-          localStorage.removeItem("scu-rq-cache-v1");
+          localStorage.removeItem("scu-rq-cache-v2");
         } catch {
           /* storage unavailable */
         }

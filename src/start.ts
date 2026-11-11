@@ -1,7 +1,20 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+import { supabase } from "@/integrations/supabase/client";
+
+// Replaces the generated attacher: refreshes an expired/near-expiry session
+// before sending it, so stale tokens on reopened phones are never sent.
+const attachFreshAuth = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  let { data } = await supabase.auth.getSession();
+  const exp = data.session?.expires_at ?? 0;
+  if (data.session && exp * 1000 - Date.now() < 60_000) {
+    const r = await supabase.auth.refreshSession();
+    data = { session: r.data.session } as typeof data;
+  }
+  const token = data.session?.access_token;
+  return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
+});
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -26,6 +39,6 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  functionMiddleware: [attachFreshAuth],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));
