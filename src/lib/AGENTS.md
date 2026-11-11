@@ -3,3 +3,4 @@
 - Family trees use family kinds (parent/sibling/spouse/ancestor) in entity_relations; PDF-drafted links are only proposals, kept when names resolve exactly and quotes appear verbatim, and staff accept them before saving.
 - Atlas maps live in browser-safe src/lib/nexus-atlas.ts (eras, top view, landmarks as image %, FX/transition tags); nexus-atlas.tsx is the full-screen portal (scenic/top/simulate), atlas-simulation.tsx a deterministic 24-fps canvas, and /atlas pages reuse them. Atlas canvases need inline sizing and the atlas-keep class because global CSS sets canvas height:auto and Minimal hides canvases.
 - Merged names live in `entity_name_aliases`; a DB trigger and unique name index block resurrecting merged cards. Add merges there and to ALIAS_MAP.
+- PDF Vault uploads (admin) run the shared ingest pipeline (ingestAdminPdf → analyzeLore/applyLore) so vault and Lore Ingest never diverge; canonical-name merging stays in applyLore.
