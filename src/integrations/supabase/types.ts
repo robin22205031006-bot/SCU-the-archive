@@ -95,6 +95,54 @@ export type Database = {
         }
         Relationships: []
       }
+      artifacts: {
+        Row: {
+          category: string
+          colors: string | null
+          created_at: string
+          curse_level: number
+          how_it_works: string
+          id: string
+          lore: string
+          materials: string | null
+          name: string
+          source: string | null
+          updated_at: string
+          weapon_type: string | null
+          wielders: string[]
+        }
+        Insert: {
+          category?: string
+          colors?: string | null
+          created_at?: string
+          curse_level?: number
+          how_it_works?: string
+          id?: string
+          lore?: string
+          materials?: string | null
+          name: string
+          source?: string | null
+          updated_at?: string
+          weapon_type?: string | null
+          wielders?: string[]
+        }
+        Update: {
+          category?: string
+          colors?: string | null
+          created_at?: string
+          curse_level?: number
+          how_it_works?: string
+          id?: string
+          lore?: string
+          materials?: string | null
+          name?: string
+          source?: string | null
+          updated_at?: string
+          weapon_type?: string | null
+          wielders?: string[]
+        }
+        Relationships: []
+      }
       banned_users: {
         Row: {
           banned_by: string | null

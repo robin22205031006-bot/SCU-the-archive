@@ -116,3 +116,10 @@
 - [x] Live ability animation in Nexus ability showcase
 - [x] Timeline editor: placement, reorder, starters for Diablo War II / Redline
 - [x] Combat rebuild: Rowan Blue Flame, Arthur dragon, Samuel Ghost Mode, Corvani soldier
+
+# Implementation plan (Nov 11)
+- [x] Abilities tab with Catalog / Ability FX & Lineages / Ability in Action sub-tabs; old links redirect
+- [x] Arsenal & Relics page (weapons, cursed weapons, objects) with staff add/edit/delete
+- [x] Atlas: Pocket Dimension and Ottoman Istanbul 1417
+- [x] Standalone rosters: Zaan, Khalid, Issabela (added as 4th standalone)
+- [ ] Alister roster — waiting on Alister's story details; Kelvan has no character card yet

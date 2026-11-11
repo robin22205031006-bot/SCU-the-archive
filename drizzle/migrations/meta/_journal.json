@@ -57,6 +57,13 @@
       "when": 1794412010005,
       "tag": "0007_block_merged_entity_names",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794421722891,
+      "tag": "0008_create_artifacts",
+      "breakpoints": true
     }
   ]
 }

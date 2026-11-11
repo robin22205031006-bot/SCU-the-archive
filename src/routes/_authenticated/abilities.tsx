@@ -3,6 +3,8 @@ import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { AbilityFxLauncher } from "@/components/ability-fx-showcase";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AbilityFxPanel } from "@/components/ability-fx-panel";
+import { AbilityActionPanel } from "@/components/ability-action-panel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Pencil, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -63,8 +65,23 @@ export const Route = createFileRoute("/_authenticated/abilities")({
       },
     ],
   }),
-  component: AbilitiesHub,
+  validateSearch: (s: Record<string, unknown>): { tab?: "fx" | "action" | undefined } => (s["tab"] === "fx" || s["tab"] === "action" ? { tab: s["tab"] } : {}),
+  component: AbilitiesTabs,
 });
+
+const HUB_TABS = [["catalog", "Catalog"], ["fx", "Ability FX & Lineages"], ["action", "Ability in Action"]] as const;
+
+function AbilitiesTabs() {
+  const { tab = "catalog" } = Route.useSearch();
+  const nav = Route.useNavigate();
+  return <>
+    <div className="mx-auto max-w-6xl px-4 pt-24 sm:px-5">
+      <div role="tablist" aria-label="Abilities sections" className="flex flex-wrap gap-1.5">{HUB_TABS.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} onClick={() => nav({ search: id === "catalog" ? {} : { tab: id }, replace: true })}
+        className={`rounded-full border px-3.5 py-1.5 text-sm transition ${tab === id ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}>{label}</button>)}</div>
+    </div>
+    {tab === "fx" ? <AbilityFxPanel /> : tab === "action" ? <AbilityActionPanel /> : <AbilitiesHub />}
+  </>;
+}
 
 function AbilitiesHub() {
   const nexus = useUiStyle() === "nexus";
@@ -191,7 +208,7 @@ function AbilitiesHub() {
   );
 
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
+    <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-5">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>

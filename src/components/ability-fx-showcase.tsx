@@ -50,7 +50,7 @@ export function AbilityFxShowcase({ name, open, onOpenChange }: { name: string; 
             </li>; })}
           </ol>
         </div>}
-        <Link to="/ability-fx" onClick={() => onOpenChange(false)} className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Open the Ability FX library and combat simulator →</Link>
+        <Link to="/abilities" search={{ tab: "fx" }} onClick={() => onOpenChange(false)} className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Open the Ability FX library and combat simulator →</Link>
       </DialogContent>
     </Dialog>
   );

@@ -12,6 +12,10 @@ import topNila from "@/assets/maps/top-nilanjona.jpg";
 import topAeth from "@/assets/maps/top-aethmos.jpg";
 import topYas from "@/assets/maps/top-yasnaya.jpg";
 import topRuin from "@/assets/maps/top-ruincity.jpg";
+import pocket from "@/assets/maps/pocket-dimension.jpg";
+import topPocket from "@/assets/maps/top-pocket-dimension.jpg";
+import istanbul from "@/assets/maps/istanbul-1417.jpg";
+import topIstanbul from "@/assets/maps/top-istanbul-1417.jpg";
 
 /** Browser-safe atlas data for the Nexus full-screen maps. Coordinates are % of the map image. */
 export type AtlasFx = "snow" | "fireflies" | "mist" | "embers" | "wind" | "spores";
@@ -167,6 +171,42 @@ export const ATLAS: AtlasLocation[] = [
         { id: "market", name: "Dead Market", x: 40, y: 45, note: "Plazas swallowed by weeds and stagnant water." },
         { id: "gate", name: "Broken Gate", x: 38, y: 60, note: "Main gate, collapsed." },
         { id: "harbor", name: "Wrecked Harbor", x: 40, y: 80, note: "Sunken ships and rotting piers. Only animals now." },
+      ] },
+  ] },
+  { id: "pocket-dimension", name: "Pocket Dimension", epithet: "A fracture outside time", worldX: 92, worldY: 8, transition: "calm",
+    top: { image: topPocket, era: "Timeless", landmarks: [
+      { id: "gate", name: "Ring Gateway", x: 80, y: 13, note: "The way in and out of the dimension." },
+      { id: "forge", name: "Aeric's Forge", x: 50, y: 40, note: "Where Aeric Valenheart forged Kara Yazgi." },
+      { id: "monoliths", name: "Void Monoliths", x: 12, y: 40, note: "Floating stones along the rift lines." },
+      { id: "shards", name: "Shattered Platforms", x: 20, y: 80, note: "Broken obsidian islands." },
+    ] },
+    eras: [
+    { id: "timeless", label: "Timeless", image: pocket, fx: ["embers", "mist"],
+      summary: "A timeless fracture outside ordinary space and time. Aeric Valenheart was held here and forged the cursed blade Kara Yazgi.",
+      landmarks: [
+        { id: "forge", name: "Aeric's Forge", x: 47, y: 42, note: "Where Kara Yazgi was forged." },
+        { id: "gate", name: "Gateway Arch", x: 68, y: 30, note: "The way in and out." },
+        { id: "monoliths", name: "Void Monoliths", x: 12, y: 18, note: "Floating stones over the void." },
+        { id: "shards", name: "Shattered Platforms", x: 50, y: 78, note: "Broken obsidian ground with glowing rifts." },
+      ] },
+  ] },
+  { id: "istanbul-1417", name: "Ottoman Istanbul", epithet: "The city of the Architect Cube hunt, 1417", worldX: 30, worldY: 40, transition: "calm",
+    top: { image: topIstanbul, era: "1417", landmarks: [
+      { id: "mosque", name: "Great Domed Mosque", x: 68, y: 44, note: "Heart of the old city." },
+      { id: "bazaar", name: "Grand Bazaar", x: 28, y: 52, note: "Covered market streets." },
+      { id: "harbor", name: "Golden Horn Harbor", x: 40, y: 26, note: "Galleys and trade ships." },
+      { id: "walls", name: "Land Walls", x: 10, y: 60, note: "The city's great defensive walls." },
+      { id: "tower", name: "Harbor Tower", x: 84, y: 86, note: "Watches the strait." },
+    ] },
+    eras: [
+    { id: "1417", label: "1417", image: istanbul, fx: ["mist"],
+      summary: "Ottoman Istanbul in 1417, where Francisco (Nasab) and Ramiz searched for the Architect Cube.",
+      landmarks: [
+        { id: "mosque", name: "Great Domed Mosque", x: 16, y: 18, note: "Domes and minarets on the hill." },
+        { id: "walls", name: "City Walls", x: 42, y: 40, note: "Stone walls along the shore." },
+        { id: "harbor", name: "Golden Horn Harbor", x: 55, y: 58, note: "Galleys and trade ships." },
+        { id: "bazaar", name: "Bazaar Street", x: 12, y: 72, note: "Busy market lanes." },
+        { id: "ruins", name: "Old Ruins", x: 85, y: 70, note: "Older columns by the water." },
       ] },
   ] },
 ];
