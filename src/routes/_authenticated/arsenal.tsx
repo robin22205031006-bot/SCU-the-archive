@@ -9,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tables } from "@/integrations/supabase/types";
+import { useUiStyle } from "@/lib/ui-style";
+import { useNexusMotion } from "@/hooks/use-nexus-motion";
+import { ArtifactCard, NexusArtifactViewer } from "@/components/arsenal-card";
 
 type Artifact = Tables<"artifacts">;
-export const ARTIFACT_CATEGORIES = { weapon: "Weapon", cursed_weapon: "Cursed weapon", cosmic_object: "Cosmic object", relic: "Relic", serum_tech: "Serum / tech", other: "Other" } as const;
+export const ARTIFACT_CATEGORIES = { weapon: "Weapon", cursed_weapon: "Cursed weapon", cosmic_object: "Cosmic object", relic: "Relic", serum_tech: "Tech, suits & serum", other: "Other" } as const;
 type Cat = keyof typeof ARTIFACT_CATEGORIES;
 
 const artifactsQuery = queryOptions({
@@ -39,6 +42,9 @@ function ArsenalPage() {
   const staff = useIsStaff();
   const qc = useQueryClient();
   const [q, setQ] = useState(""); const [cat, setCat] = useState<Cat | "all">("all");
+  const style = useUiStyle();
+  const motion = useNexusMotion();
+  const [focus, setFocus] = useState<Artifact | null>(null);
   const [edit, setEdit] = useState<{ id?: string; v: typeof EMPTY } | null>(null);
   const list = useMemo(() => data.filter(a => (cat === "all" || a.category === cat) && `${a.name} ${a.wielders.join(" ")} ${a.lore}`.toLowerCase().includes(q.toLowerCase())), [data, q, cat]);
 
@@ -81,22 +87,10 @@ function ArsenalPage() {
       <Textarea className="sm:col-span-2" placeholder="Lore" {...f("lore")} />
       <div className="sm:col-span-2"><Button onClick={save}>Save</Button></div>
     </section>}
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {list.map(a => <article key={a.id} className="grid gap-2 rounded-2xl border border-border bg-card/70 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div><p className="text-[11px] uppercase tracking-widest text-accent">{ARTIFACT_CATEGORIES[a.category as Cat] ?? a.category}{a.weapon_type ? ` · ${a.weapon_type}` : ""}</p><h2 className="font-semibold text-foreground">{a.name}</h2></div>
-          {staff && <div className="flex shrink-0"><Button size="icon" variant="ghost" aria-label="Edit" onClick={() => open(a)}><Pencil className="size-4" /></Button><Button size="icon" variant="ghost" aria-label="Delete" onClick={() => remove(a)}><Trash2 className="size-4" /></Button></div>}
-        </div>
-        {a.curse_level > 0 && <p className="text-xs text-destructive">Curse level {a.curse_level}/5</p>}
-        {a.how_it_works && <p className="text-sm text-foreground/90">{a.how_it_works}</p>}
-        {a.lore && <p className="text-sm text-muted-foreground">{a.lore}</p>}
-        <dl className="grid gap-0.5 text-xs text-muted-foreground">
-          {a.wielders.length > 0 && <div><dt className="inline font-medium text-foreground">Wielders: </dt><dd className="inline">{a.wielders.join(", ")}</dd></div>}
-          {a.materials && <div><dt className="inline font-medium text-foreground">Materials: </dt><dd className="inline">{a.materials}</dd></div>}
-          {a.colors && <div><dt className="inline font-medium text-foreground">Colors: </dt><dd className="inline">{a.colors}</dd></div>}
-        </dl>
-      </article>)}
+    <div className={`grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      {list.map(a => <ArtifactCard key={a.id} a={a} style={style} motion={motion} staff={staff} onEdit={() => open(a)} onDelete={() => remove(a)} onOpen={() => setFocus(a)} />)}
       {list.length === 0 && <p className="text-sm text-muted-foreground">Nothing found.</p>}
     </div>
+    {focus && style === "nexus" && <NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocus(null)} />}
   </main>;
 }
