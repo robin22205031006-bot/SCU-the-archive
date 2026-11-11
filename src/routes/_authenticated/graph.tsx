@@ -3,6 +3,8 @@ import { RelationshipGraph } from "@/components/relationship-graph";
 import { ClanGraph } from "@/components/clan-graph";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
+import { NexusConstellation } from "@/components/nexus-constellation";
+import { NexusLineage } from "@/components/nexus-lineage";
 import { Network, Castle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/graph")({
@@ -38,8 +40,8 @@ function Graph() {
         </p>
       </header>
       {nexus ? <NexusWorkspace views={[
-        { id: "relationships", title: "Relationships", icon: <Network className="h-4 w-4" />, content: <RelationshipGraph /> },
-        { id: "lineages", title: "Lineages", icon: <Castle className="h-4 w-4" />, content: <ClanGraph /> },
+        { id: "relationships", title: "Relationships", icon: <Network className="h-4 w-4" />, content: <NexusConstellation /> },
+        { id: "lineages", title: "Lineages", icon: <Castle className="h-4 w-4" />, content: <NexusLineage /> },
       ]} /> : <RelationshipGraph />}
     </main>
   );

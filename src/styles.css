@@ -1014,3 +1014,11 @@ html[data-nexus-motion="off"] :is(.nexus-spotlight-ring,.nexus-spotlight-halo) {
 .atlas-compass { filter: drop-shadow(0 0 6px color-mix(in oklab, var(--primary) 60%, transparent)); animation: atlas-compass 12s ease-in-out infinite; }
 @keyframes atlas-compass { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) { .atlas-drift, .atlas-clouds, .atlas-compass { animation: none; } }
+
+/* Nexus lineage tree */
+.nx-lin-flow { stroke-dasharray: 6 8; animation: nx-lin-flow 1.2s linear infinite; filter: drop-shadow(0 0 4px currentColor); }
+@keyframes nx-lin-flow { to { stroke-dashoffset: 28; } }
+.nx-lin-crest { box-shadow: 0 0 30px var(--c), inset 0 0 20px var(--c); animation: nx-lin-pulse 3s ease-in-out infinite; }
+@keyframes nx-lin-pulse { 50% { box-shadow: 0 0 50px var(--c), inset 0 0 30px var(--c); } }
+.nx-lin-node { transition: transform .3s; } .nx-lin-node:hover { transform: translateY(-4px) scale(1.05); }
+@media (prefers-reduced-motion: reduce) { .nx-lin-flow, .nx-lin-crest { animation: none; } }
