@@ -672,7 +672,7 @@ html[data-ui="minimal"] { --glow-strength: 0; --glass-blur: 0px; --radius: 0.375
 html[data-ui="minimal"] *, html[data-ui="minimal"] *::before, html[data-ui="minimal"] *::after { animation: none !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
 .minimal-shell .glass { backdrop-filter: none; box-shadow: none; }
 .minimal-shell [class*="glow"], .minimal-shell [class*="tier-vfx"] { box-shadow: none !important; text-shadow: none !important; }
-.minimal-shell canvas, .minimal-shell .pointer-events-none.fixed { display: none; }
+.minimal-shell canvas:not(.atlas-keep), .minimal-shell .pointer-events-none.fixed { display: none; }
 .minimal-shell [data-card] { border-radius: 6px; box-shadow: none !important; }
 .nexus-shell > button[aria-label="Appearance"] { display: none; }
 html[data-ui="nexus"] h1, html[data-ui="nexus"] h2, html[data-ui="nexus"] h3 { letter-spacing: 0; }

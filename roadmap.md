@@ -110,3 +110,4 @@
 # Nexus Atlas maps
 - [x] Full-screen Nexus maps for Nilanjona, Aethmos, Yasnaya (3 eras) and Ruin City (2 eras) with landmarks, zoom, eras and FX.
 - [x] World Atlas showing all regions; verified on phone width.
+- [x] Before-Asetra Nilanjona era, premium top-view maps, frame-by-frame simulation, /atlas world page and per-place pages; verified on phone width.

@@ -63,8 +63,8 @@ export function AtlasSimulation({ loc }: { loc: AtlasLocation }) {
       for (let i = 0, y = 0; i < id.data.length; i += 4) {
         y = Math.floor(i / 4 / 40) / 70;
         const bias = loc.transition === "growth" ? y * 0.5 : loc.transition === "war" ? (1 - y) * 0.4 : 0;
-        const v = id.data[i]! / 255 * 0.6 + bias;
-        const alpha = Math.max(0, Math.min(1, (e * 1.6 - v) * 4));
+        const v = id.data[i]! / 255 * 0.8 + bias * 0.5;
+        const alpha = Math.max(0, Math.min(1, (e * 1.3 - 0.15 - v) * 6));
         id.data[i] = id.data[i + 1] = id.data[i + 2] = 255; id.data[i + 3] = alpha * 255;
       }
       mx.putImageData(id, 0, 0);
@@ -96,7 +96,7 @@ export function AtlasSimulation({ loc }: { loc: AtlasLocation }) {
   const label = single ? `${loc.eras[0]!.label} · day cycle` : seg!.a === seg!.b ? loc.eras[seg!.a]!.label : `${loc.eras[seg!.a]!.label} → ${loc.eras[seg!.b]!.label}`;
   const btn = "grid h-10 w-10 place-items-center rounded-full border border-border bg-background/70 backdrop-blur";
   return <div className="absolute inset-0">
-    <canvas ref={ref} className="h-full w-full" aria-label={`${loc.name} frame-by-frame simulation`} />
+    <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} className="atlas-keep block" aria-label={`${loc.name} frame-by-frame simulation`} />
     {!ready && <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">Loading frames…</div>}
     <div className="absolute inset-x-3 bottom-3 z-20 rounded-2xl border border-border bg-background/80 p-3 backdrop-blur-md sm:left-auto sm:w-[26rem]">
       <div className="flex items-center justify-between text-[11px]"><span className="uppercase tracking-[0.2em] text-accent">{label}</span><span className="tabular-nums text-muted-foreground">Frame {frame + 1}/{total} · {FPS} fps</span></div>

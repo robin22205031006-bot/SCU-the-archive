@@ -58,7 +58,7 @@ function AtlasFxLayer({ fx, active }: { fx: AtlasFx[]; active: boolean }) {
     document.addEventListener("visibilitychange", vis); raf = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); document.removeEventListener("visibilitychange", vis); };
   }, [fx, active]);
-  return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 h-full w-full" />;
+  return <canvas ref={ref} aria-hidden className="atlas-keep pointer-events-none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
 }
 
 function Controls({ zoomIn, zoomOut, reset }: { zoomIn: () => void; zoomOut: () => void; reset: () => void }) {
@@ -117,9 +117,9 @@ function ModeSwitch({ mode, setMode }: { mode: AtlasMode; setMode: (m: AtlasMode
   </div>;
 }
 
-function LocationView({ loc, onClose, onWorld, initialMode = "illustrated" }: { loc: AtlasLocation; onClose: () => void; onWorld: () => void; initialMode?: AtlasMode }) {
+function LocationView({ loc, onClose, onWorld, initialMode }: { loc: AtlasLocation; onClose: () => void; onWorld: () => void; initialMode?: AtlasMode | undefined }) {
   const moving = useNexusMotion();
-  const [mode, setMode] = useState<AtlasMode>(initialMode);
+  const [mode, setMode] = useState<AtlasMode>(initialMode ?? "illustrated");
   const [eraId, setEraId] = useState(loc.eras[loc.eras.length - 1]!.id);
   const [pin, setPin] = useState<string | null>(null);
   const [info, setInfo] = useState(true);
@@ -208,7 +208,7 @@ function WorldView({ onPick, onClose }: { onPick: (id: string) => void; onClose:
 }
 
 /** Full-screen map overlay: world view or a single location. */
-export function AtlasOverlay({ start, mode, onClose }: { start: string; mode?: AtlasMode; onClose: () => void }) {
+export function AtlasOverlay({ start, mode, onClose }: { start: string; mode?: AtlasMode | undefined; onClose: () => void }) {
   const [view, setView] = useState(start);
   useEffect(() => {
     const prev = document.body.style.overflow; document.body.style.overflow = "hidden";

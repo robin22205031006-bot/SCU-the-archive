@@ -19,7 +19,7 @@ function OpenButtons({ loc, open }: { loc: AtlasLocation; open: (id: string, m: 
 
 /** /atlas: whole world plus all four regions in one scroll. */
 export function WorldAtlasSections() {
-  const [open, setOpen] = useState<{ id: string; mode?: AtlasMode } | null>(null);
+  const [open, setOpen] = useState<{ id: string; mode?: AtlasMode | undefined } | null>(null);
   return <div className="space-y-20">
     <motion.section {...reveal} className="relative overflow-hidden rounded-3xl border border-border">
       <img src={WORLD_TOP} alt="The whole world map" width={1024} height={1792} className="h-[70vh] w-full object-cover atlas-drift" />
@@ -58,7 +58,7 @@ export function WorldAtlasSections() {
 /** /atlas/$place: one realm with eras, top view and an inline simulation. */
 export function PlaceAtlasSections({ loc }: { loc: AtlasLocation }) {
   const hydrated = useHydrated();
-  const [open, setOpen] = useState<{ id: string; mode?: AtlasMode } | null>(null);
+  const [open, setOpen] = useState<{ id: string; mode?: AtlasMode | undefined } | null>(null);
   return <div className="space-y-16">
     <OpenButtons loc={loc} open={(id, mode) => setOpen({ id, mode })} />
     <section className="space-y-6">
