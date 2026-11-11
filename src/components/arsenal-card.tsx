@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Pencil, Trash2, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
@@ -81,7 +82,7 @@ export function NexusArtifactViewer({ a, motion, onClose }: { a: Artifact; motio
     window.addEventListener("keydown", k);
     return () => { window.removeEventListener("keydown", k); document.body.style.overflow = prev; };
   }, [onClose]);
-  return (
+  return createPortal(
     <div role="dialog" aria-modal aria-label={a.name} className="fixed inset-0 z-[300] grid bg-background/95 backdrop-blur-md md:grid-cols-[1.4fr_1fr]" onClick={onClose}>
       <div className="relative h-[55vh] p-3 md:h-screen" onClick={e => e.stopPropagation()}><ArtFrame art={art} form={form} style="nexus" motion={motion} big /></div>
       <div className="grid content-start gap-3 overflow-y-auto p-5 pb-16" onClick={e => e.stopPropagation()}>
@@ -93,6 +94,7 @@ export function NexusArtifactViewer({ a, motion, onClose }: { a: Artifact; motio
         <FormTabs art={art} i={i} set={setI} />
         <Details a={a} form={form} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
