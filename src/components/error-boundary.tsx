@@ -23,6 +23,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   override componentDidCatch(error: unknown) {
     console.error("SCU fatal render error:", error);
+    // Usually a stale copy after an update: recover automatically once.
+    try {
+      const key = "scu-auto-recover-at";
+      const last = Number(sessionStorage.getItem(key) || 0);
+      if (Date.now() - last > 60_000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        void hardReload();
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   override render() {
@@ -36,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
             Something broke while rendering the archive. Your data is safe — reload to reconnect.
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => void hardReload()}
             className="mt-6 inline-flex items-center justify-center rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-accent-foreground transition-transform hover:scale-[1.03] active:scale-95"
           >
             Reload App
@@ -45,4 +56,26 @@ export class ErrorBoundary extends Component<Props, State> {
       </div>
     );
   }
+}
+
+async function hardReload() {
+  try {
+    // Drop persisted query cache + cached files that may reference old code.
+    Object.keys(localStorage)
+      .filter((k) => /query|cache/i.test(k) && !k.startsWith("sb-"))
+      .forEach((k) => localStorage.removeItem(k));
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch {
+    /* ignore */
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.set("r", String(Date.now()));
+  window.location.replace(url.toString());
 }
