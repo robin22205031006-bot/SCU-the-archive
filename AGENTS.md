@@ -45,4 +45,4 @@
 - adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicates to the in-story card name (tested), so syncs never recreate merged cards.
 - Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
 - Atlas map rules: see src/lib/AGENTS.md.
-- Merged names live in the `entity_name_aliases` table; a database trigger rejects new or renamed cards using a merged name and a unique normalized-name index blocks duplicates, so imports, syncs and manual edits can never resurrect merged characters. Add new merges there and to adminLoreSync ALIAS_MAP.
+- Merged names live in `entity_name_aliases`; a DB trigger and unique name index block resurrecting merged cards. Add merges there and to ALIAS_MAP.
