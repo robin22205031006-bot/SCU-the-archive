@@ -123,3 +123,4 @@
 - [x] Atlas: Pocket Dimension and Ottoman Istanbul 1417
 - [x] Standalone rosters: Zaan, Khalid, Issabela (added as 4th standalone)
 - [ ] Alister roster — waiting on Alister's story details; Kelvan has no character card yet
+- [ ] Arsenal: reference art + forms + Nexus FX + emblems on cards (all styles)

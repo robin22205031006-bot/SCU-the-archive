@@ -1022,3 +1022,14 @@ html[data-nexus-motion="off"] :is(.nexus-spotlight-ring,.nexus-spotlight-halo) {
 @keyframes nx-lin-pulse { 50% { box-shadow: 0 0 50px var(--c), inset 0 0 30px var(--c); } }
 .nx-lin-node { transition: transform .3s; } .nx-lin-node:hover { transform: translateY(-4px) scale(1.05); }
 @media (prefers-reduced-motion: reduce) { .nx-lin-flow, .nx-lin-crest { animation: none; } }
+
+/* Arsenal emblems and art motion */
+@keyframes arsenal-spin { to { transform: rotate(360deg); } }
+@keyframes arsenal-glow { 0%,100% { opacity: .85; } 50% { opacity: 1; filter: brightness(1.35); } }
+@keyframes arsenal-drift { 0%,100% { transform: scale(1.02) translateY(0); } 50% { transform: scale(1.06) translateY(-1.5%); } }
+@keyframes arsenal-morph { 0% { filter: brightness(3) blur(6px); opacity: 0; transform: scale(1.08); } 100% { filter: none; opacity: 1; transform: scale(1); } }
+.arsenal-emblem-spin { animation: arsenal-spin 14s linear infinite; }
+.arsenal-emblem-glow { animation: arsenal-glow 2.4s ease-in-out infinite; }
+.arsenal-drift { animation: arsenal-drift 9s ease-in-out infinite; }
+.arsenal-morph { animation: arsenal-morph .7s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .arsenal-emblem-spin, .arsenal-emblem-glow, .arsenal-drift, .arsenal-morph { animation: none; } }
