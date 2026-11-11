@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { Component, useMemo, useState, type ReactNode } from "react";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -33,7 +33,28 @@ export const Route = createFileRoute("/_authenticated/arsenal")({
   ] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(artifactsQuery),
   component: ArsenalPage,
+  errorComponent: ArsenalError,
 });
+
+function ArsenalError({ error }: { error: unknown }) {
+  const router = useRouter();
+  return <main className="mx-auto grid max-w-md gap-3 px-4 pt-28 text-center">
+    <h1 className="text-xl font-semibold text-foreground">The Arsenal couldn't load</h1>
+    <p className="break-words text-xs text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+    <Button onClick={() => router.invalidate()}>Try again</Button>
+  </main>;
+}
+
+/** Keeps one broken card (art/animation) from taking down the whole app. */
+class CardGuard extends Component<{ name: string; children: ReactNode }, { err: string | null }> {
+  override state = { err: null as string | null };
+  static getDerivedStateFromError(e: unknown) { return { err: e instanceof Error ? e.message : String(e) }; }
+  override componentDidCatch(e: unknown) { console.error("Arsenal card failed:", this.props.name, e); }
+  override render() {
+    if (this.state.err) return <div className="rounded-2xl border border-border bg-card p-4 text-sm"><p className="font-semibold text-foreground">{this.props.name}</p><p className="mt-1 break-words text-xs text-muted-foreground">Couldn't show this item: {this.state.err}</p></div>;
+    return this.props.children;
+  }
+}
 
 const EMPTY = { name: "", category: "weapon" as Cat, weapon_type: "", wielders: "", materials: "", colors: "", curse_level: 0, how_it_works: "", lore: "" };
 
@@ -88,9 +109,9 @@ function ArsenalPage() {
       <div className="sm:col-span-2"><Button onClick={save}>Save</Button></div>
     </section>}
     <div className={`grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
-      {list.map(a => <ArtifactCard key={a.id} a={a} style={style} motion={motion} staff={staff} onEdit={() => open(a)} onDelete={() => remove(a)} onOpen={() => setFocus(a)} />)}
+      {list.map(a => <CardGuard key={a.id} name={a.name}><ArtifactCard a={a} style={style} motion={motion} staff={staff} onEdit={() => open(a)} onDelete={() => remove(a)} onOpen={() => setFocus(a)} /></CardGuard>)}
       {list.length === 0 && <p className="text-sm text-muted-foreground">Nothing found.</p>}
     </div>
-    {focus && style === "nexus" && <NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocus(null)} />}
+    {focus && style === "nexus" && <CardGuard key={"v" + focus.id} name={focus.name}><NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocus(null)} /></CardGuard>}
   </main>;
 }
