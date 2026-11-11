@@ -113,4 +113,5 @@
 - [x] Before-Asetra Nilanjona era, premium top-view maps, frame-by-frame simulation, /atlas world page and per-place pages; verified on phone width.
 - [x] Nexus constellation Connections and ancestral clan tree
 - [ ] Combat rebuild for Rowan/Arthur/Samuel/Corvani (needs confirmed ability details)
-- [ ] Per-ability mini animations on ability cards
+- [x] Live ability animation in Nexus ability showcase
+- [x] Timeline editor: placement, reorder, starters for Diablo War II / Redline

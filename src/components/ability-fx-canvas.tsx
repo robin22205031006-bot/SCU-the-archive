@@ -256,8 +256,11 @@ export function AbilityFxCanvas({ recipe, className = "", playing = true, fps = 
     const cv = ref.current; if (!cv) return; const c = cv.getContext("2d"); if (!c) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const rnd = seeded(recipe.variant + recipe.key.length * 31);
-    let raf = 0; let last = -1; const start = performance.now();
+    let raf = 0; let last = -1; const start = performance.now(); let visible = true;
+    const io = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([e]) => { const was = visible; visible = !!e?.isIntersecting; if (visible && !was && playing && !reduce) raf = requestAnimationFrame(draw); }) : null;
+    io?.observe(cv);
     const draw = (now: number) => {
+      if (!visible) return; // paused off-screen; resumed by the observer
       const dpr = Math.min(2, window.devicePixelRatio || 1); const w = cv.clientWidth, h = cv.clientHeight;
       if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
       const frame = Math.floor(((now - start) / 1000) * fps);
@@ -280,7 +283,7 @@ export function AbilityFxCanvas({ recipe, className = "", playing = true, fps = 
       if (playing && !reduce) raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); io?.disconnect(); };
   }, [recipe, playing, fps]);
   return <canvas ref={ref} style={{ width: "100%", height: "100%" }} role="img" aria-label={label ?? `${recipe.key} animation`} className={`absolute inset-0 block h-full w-full ${className}`} />;
 }

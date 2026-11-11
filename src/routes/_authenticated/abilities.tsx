@@ -1,3 +1,5 @@
+import { abilityFxRecipe } from "@/lib/ability-fx";
+import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { AbilityFxLauncher } from "@/components/ability-fx-showcase";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -664,7 +666,7 @@ function EditAbilityForm({
 
 function NexusAbilityHero({ defs }: { defs: { key: string; label: string; tier: keyof typeof TIER_LABELS; group: keyof typeof ABILITY_GROUP_LABELS }[] }) {
   const moving = useNexusMotion();
-  const members = defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], icon: <NexusAbilitySymbol name={def.key} className="h-14 w-14" /> }));
+  const members = defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], icon: <span className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-border"><AbilityFxCanvas recipe={abilityFxRecipe(def.key)} label={`${def.label} animation`} /><NexusAbilitySymbol name={def.key} className="relative h-10 w-10 opacity-90" /></span> }));
   return <section aria-label="Ability showcase" className="nexus-cluster relative mb-6 overflow-hidden rounded-lg border border-border bg-card/40">
     <div className="relative h-48 sm:h-56"><NexusSpotlight members={members} offset={0} moving={moving} /></div>
     <p className="pb-3 text-center font-mono text-[10px] tracking-[.3em] text-muted-foreground">ABILITY CODEX · {defs.length} RECORDED</p>

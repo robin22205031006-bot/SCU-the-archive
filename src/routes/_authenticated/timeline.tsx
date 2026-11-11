@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -57,7 +57,12 @@ function impactTier(raw: number | null | undefined) {
   );
 }
 
-const EMPTY_FORM = { title: "", era: "", series: "", impact: 5, description: "" };
+const EMPTY_FORM = { title: "", era: "", series: "", impact: 5, description: "", after: "end" };
+/** Quick starters only prefill the heading fields; the admin writes what happened. */
+const STARTERS = [
+  { label: "Diablo War II", title: "Diablo War II", era: "Diablo War II", series: "", impact: 10 },
+  { label: "Redline vs Obsidian", title: "Redline vs Obsidian", era: "", series: "Redline", impact: 9 },
+];
 
 type EventForm = typeof EMPTY_FORM;
 
@@ -118,22 +123,41 @@ export function Timeline() {
 
   const add = async () => {
     if (!f.title.trim()) return;
-    const { error } = await supabase.from("timeline_events").insert({
+    const { data: inserted, error } = await supabase.from("timeline_events").insert({
       title: f.title,
       era: f.era || null,
       series: f.series || null,
       impact: Math.min(10, Math.max(1, f.impact)),
       description: f.description,
-      sort_order: Math.max(0, ...(data ?? []).map((event) => event.sort_order)) + 1,
-    });
+      sort_order: 0,
+    }).select("id").single();
     if (error) {
       toast.error(error.message);
       return;
     }
+    // place the new event: shift everything after the chosen position
+    const list = (data ?? []).map((x) => x.id);
+    const at = f.after === "start" ? 0 : f.after === "end" ? list.length : list.indexOf(f.after) + 1;
+    list.splice(at, 0, (inserted as { id: string }).id);
+    await writeOrder(list);
     sfx.add();
+    toast.success(`Added "${f.title}"`);
     setF(EMPTY_FORM);
     setAdding(false);
     refresh();
+  };
+
+  const writeOrder = async (ids: string[]) => {
+    const res = await Promise.all(ids.map((id, i) => supabase.from("timeline_events").update({ sort_order: i + 1 }).eq("id", id)));
+    const failed = res.filter((r) => r.error).length;
+    if (failed) toast.error(`${failed} events could not be reordered`);
+    refresh();
+  };
+  const move = async (id: string, dir: -1 | 1) => {
+    const ids = (data ?? []).map((x) => x.id); const i = ids.indexOf(id), j = i + dir;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j]!, ids[i]!];
+    await writeOrder(ids);
   };
 
   const startEdit = (ev: TimelineEvent) => {
@@ -144,8 +168,10 @@ export function Timeline() {
       series: ev.series ?? "",
       impact: ev.impact,
       description: ev.description ?? "",
+      after: "end",
     });
     setAdding(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const saveEdit = async () => {
@@ -172,6 +198,7 @@ export function Timeline() {
   };
 
   const del = async (id: string) => {
+    if (!window.confirm("Delete this event?")) return;
     const { error } = await supabase.from("timeline_events").delete().eq("id", id);
     if (error) toast.error(error.message);
     else {
@@ -183,12 +210,14 @@ export function Timeline() {
 
   const form = (
     <div className="glass mb-10 grid gap-3 rounded-2xl p-5">
+      <p className="text-[11px] uppercase tracking-[0.25em] text-accent">{editing ? "Edit event" : "New event"}</p>
+      {!editing && <div className="flex flex-wrap gap-1.5">{STARTERS.map((st) => <button key={st.label} type="button" onClick={() => setF({ ...f, title: st.title, era: st.era || f.era, series: st.series || f.series, impact: st.impact })} className="rounded-full border border-border px-3 py-1 text-xs hover:text-accent">Start: {st.label}</button>)}</div>}
       <Input
         placeholder="Title"
         value={f.title}
         onChange={(e) => setF({ ...f, title: e.target.value })}
       />
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <Input
           placeholder="Era / year"
           value={f.era}
@@ -217,9 +246,14 @@ export function Timeline() {
       </div>
       <Textarea
         placeholder="What happened"
+        rows={6}
         value={f.description}
         onChange={(e) => setF({ ...f, description: e.target.value })}
       />
+      {!editing && <select value={f.after} onChange={(e) => setF({ ...f, after: e.target.value })} className="h-9 rounded-md border bg-background px-2 text-sm" aria-label="Place in timeline">
+        <option value="end">Place at the end</option><option value="start">Place at the start</option>
+        {(data ?? []).map((x) => <option key={x.id} value={x.id}>After: {x.title}</option>)}
+      </select>}
       <div className="flex justify-end gap-2">
         <Button
           variant="secondary"
@@ -410,7 +444,7 @@ export function Timeline() {
       {adding && form}
       {editing && !adding && form}
 
-      {nexus ? <NexusExplorer label="Events" loading={isLoading} records={events.map(ev => ({ id: ev.id, title: ev.title, group: ev.series || ev.era || "Canon", subtitle: ev.era || undefined, event: ev }))} renderDetail={({ event: ev }) => <div className="grid gap-4"><p className="text-xs text-accent">{[ev.series, ev.era].filter(Boolean).join(" · ")}</p><h2 className="break-words text-2xl">{ev.title}</h2><div className="h-1 overflow-hidden rounded-full bg-secondary"><div className="h-full bg-accent" style={{ width: `${Math.max(0, Math.min(10, ev.impact ?? 0)) * 10}%` }} /></div><p className="text-xs text-muted-foreground">Impact {ev.impact}/10 · {impactTier(ev.impact).label}</p><p className="whitespace-pre-line text-sm leading-relaxed">{ev.description}</p>{ev.source && <p className="text-xs text-muted-foreground">From {ev.source}</p>}{isAdmin && <div className="flex gap-2"><Button variant="outline" onClick={() => startEdit(ev)}><Pencil className="h-4 w-4" /> Edit</Button><Button variant="ghost" aria-label="Delete event" onClick={() => del(ev.id)}><Trash2 className="h-4 w-4" /></Button></div>}</div>} /> : isLoading ? (
+      {nexus ? <NexusExplorer label="Events" loading={isLoading} records={events.map(ev => ({ id: ev.id, title: ev.title, group: ev.series || ev.era || "Canon", subtitle: ev.era || undefined, event: ev }))} renderDetail={({ event: ev }) => <div className="grid gap-4"><p className="text-xs text-accent">{[ev.series, ev.era].filter(Boolean).join(" · ")}</p><h2 className="break-words text-2xl">{ev.title}</h2><div className="h-1 overflow-hidden rounded-full bg-secondary"><div className="h-full bg-accent" style={{ width: `${Math.max(0, Math.min(10, ev.impact ?? 0)) * 10}%` }} /></div><p className="text-xs text-muted-foreground">Impact {ev.impact}/10 · {impactTier(ev.impact).label}</p><p className="whitespace-pre-line text-sm leading-relaxed">{ev.description}</p>{ev.source && <p className="text-xs text-muted-foreground">From {ev.source}</p>}{isAdmin && <div className="flex gap-2"><Button variant="outline" onClick={() => startEdit(ev)}><Pencil className="h-4 w-4" /> Edit</Button><Button variant="ghost" aria-label="Move earlier" onClick={() => move(ev.id, -1)}><ArrowUp className="h-4 w-4" /></Button><Button variant="ghost" aria-label="Move later" onClick={() => move(ev.id, 1)}><ArrowDown className="h-4 w-4" /></Button><Button variant="ghost" aria-label="Delete event" onClick={() => del(ev.id)}><Trash2 className="h-4 w-4" /></Button></div>}</div>} /> : isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : !events.length ? (
         <p className="py-16 text-center text-sm text-muted-foreground">No events yet.</p>
@@ -439,6 +473,8 @@ export function Timeline() {
                 <h2 className="text-2xl font-medium">{ev.title}</h2>
                 {isAdmin && (
                   <div className="flex items-center gap-1">
+                    <button aria-label="Move earlier" onClick={() => move(ev.id, -1)} className="text-muted-foreground hover:text-foreground"><ArrowUp className="h-3.5 w-3.5" /></button>
+                    <button aria-label="Move later" onClick={() => move(ev.id, 1)} className="text-muted-foreground hover:text-foreground"><ArrowDown className="h-3.5 w-3.5" /></button>
                     <button
                       aria-label="Edit event"
                       onClick={() => startEdit(ev)}
