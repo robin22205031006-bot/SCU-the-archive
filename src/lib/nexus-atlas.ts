@@ -170,3 +170,5 @@ export const ATLAS: AtlasLocation[] = [
       ] },
   ] },
 ];
+// Top views for these realms are drawn straight down from their latest painted era, so pins share its positions.
+for (const loc of ATLAS) if (loc.top && ["nilanjona", "aethmos", "yasnaya"].includes(loc.id)) loc.top.landmarks = loc.eras[loc.eras.length - 1]!.landmarks;
