@@ -71,6 +71,13 @@
       "when": 1794425290958,
       "tag": "0009_allow_rename_to_merged_name",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794432446580,
+      "tag": "0010_restrict_archive_reads",
+      "breakpoints": true
     }
   ]
 }
