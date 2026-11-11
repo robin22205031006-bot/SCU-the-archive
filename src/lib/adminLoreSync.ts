@@ -65,6 +65,9 @@ export interface SyncPlan {
 
 /** Historical/variant names → canonical entity name (normalized keys). */
 const ALIAS_MAP: Record<string, string> = {
+  "silas eldercrest": "Silas Duskmoor",
+  "silas aldercrest": "Silas Duskmoor",
+  eldercrest: "Aldercrest",
   "khalid ibn kharif": "khalid",
   "khalid ibn sharif": "khalid",
   "khalid el mansur": "khalid",
