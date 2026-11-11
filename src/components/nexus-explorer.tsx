@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
             return <motion.div key={g} whileHover={{ y: moving ? -4 : 0 }} transition={transition} className="nexus-cluster relative overflow-hidden rounded-lg border border-border bg-card/60">
               <Button variant="ghost" className="relative block h-auto min-h-48 w-full whitespace-normal p-4 text-left" onClick={() => { setGroup(g); setSelectedId(null); }} aria-label={`${g === "all" ? `All ${label.toLowerCase()}` : g}, ${members.length}`}>
                 <span className="block text-xs font-medium">{g === "all" ? `All ${label.toLowerCase()}` : g}</span>
-                <svg aria-hidden viewBox="0 0 160 120" className="mx-auto my-2 block h-28 w-36 max-w-full">
+                <span className="relative mx-auto my-2 block h-32 w-full max-w-[12rem]"><svg aria-hidden viewBox="0 0 160 120" className="absolute inset-0 m-auto h-28 w-36 max-w-full opacity-60">
                   <circle cx="80" cy="60" r="43" fill="none" stroke="var(--nexus-border)" strokeDasharray="2 5" />
                   <circle cx="80" cy="60" r="26" fill="none" stroke="var(--nexus-border)" />
                   {members.slice(0, 32).map((r, i) => {
@@ -63,7 +63,7 @@ export function NexusExplorer<T extends NexusRecord>({ records, label, renderDet
                     const x = 80 + Math.cos(a) * radius, y = 60 + Math.sin(a) * radius;
                     return <g key={r.id}><line x1="80" y1="60" x2={x} y2={y} stroke="var(--nexus-border)" /><circle cx={x} cy={y} r={i % 5 === 0 ? 3 : 2} fill={`var(--nexus-c${index % 6 + 1})`} /></g>;
                   })}
-                </svg>
+                </svg><NexusSpotlight members={members} offset={index} moving={moving} /></span>
                 <span className="flex items-center justify-between text-accent"><span className="font-mono text-lg">{members.length}</span><ArrowRight className="h-4 w-4" /></span>
               </Button>
             </motion.div>;
@@ -102,4 +102,26 @@ export function NexusWorkspace({ views }: { views: { id: string; title: string; 
     <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Workspace views">{views.map(v => <Button key={v.id} role="tab" id={`nexus-tab-${v.id}`} aria-controls={`nexus-panel-${v.id}`} aria-selected={view.id === v.id} variant={view.id === v.id ? "secondary" : "ghost"} onClick={() => setActive(v.id)}><NexusSign>{v.icon}</NexusSign>{v.title}</Button>)}</div>
     <AnimatePresence mode="wait" initial={false}><motion.div key={view.id} id={`nexus-panel-${view.id}`} role="tabpanel" aria-labelledby={`nexus-tab-${view.id}`} initial={{ opacity: 0, scale: moving ? 0.97 : 1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: moving ? 0.35 : 0 }} className="min-w-0">{view.content}</motion.div></AnimatePresence>
   </section>;
+}
+/** Cycles a cluster's own records through its card so no Nexus card sits blank. */
+export function NexusSpotlight({ members, offset, moving }: { members: NexusRecord[]; offset: number; moving: boolean }) {
+  const [i, setI] = useState(() => (offset * 7) % Math.max(1, members.length));
+  useEffect(() => {
+    if (!moving || members.length < 2) return;
+    const t = window.setInterval(() => setI(v => (v + 1) % members.length), 2400 + offset * 170);
+    return () => window.clearInterval(t);
+  }, [moving, members.length, offset]);
+  const r = members[i % Math.max(1, members.length)];
+  if (!r) return null;
+  return <span className="nexus-spotlight absolute inset-0" aria-hidden>
+    <span className="nexus-spotlight-ring" /><span className="nexus-spotlight-halo" />
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.span key={r.id} className="relative flex flex-col items-center gap-1"
+        initial={{ opacity: 0, scale: 0.6, filter: "blur(6px)", y: 8 }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }} exit={{ opacity: 0, scale: 1.25, filter: "blur(8px)", y: -6 }}
+        transition={{ duration: moving ? 0.55 : 0, ease: [0.22, 1, 0.36, 1] }}>
+        <span className="grid h-14 w-14 place-items-center text-accent">{r.image ? <img src={r.image} alt="" loading="lazy" decoding="async" className="h-14 w-14 rounded-full object-cover" /> : r.icon ?? <span className="nexus-mark h-4 w-4" />}</span>
+        <span className="max-w-[10rem] truncate text-[11px] text-foreground">{r.title}</span>
+      </motion.span>
+    </AnimatePresence>
+  </span>;
 }

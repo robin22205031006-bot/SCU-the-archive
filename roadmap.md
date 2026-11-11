@@ -98,3 +98,11 @@
 - [x] Series editor: per-season roles/status/abilities/stats/story, styling, spoiler toggle
 - [x] Series list showing 0 on published (works in preview; published needs republish)
 - [x] AI box on Lovable AI
+
+## Nexus upgrade (Nov 2026 reference stack)
+- [x] Animated page-specific nav icons (Nexus menu + HUD)
+- [x] 11 new lore themes with moving ambient backgrounds
+- [x] Ability codex showcase + cycling records in every Nexus category card
+- [ ] Constellation-style Graph / Clans / Bloodline views with flowing links
+- [ ] Nexus fantasy top-down maps: Aethmos, Nilanjona's glacial village, Yasnaya (Sky Guardian crater), RuinCity
+- [ ] Combat rebuild from references: Rowan blue flame + chains, Arthur, Samuel ghost mode, Corvani, Arashi, Yoshiko/Kazumi/Saya, Silas, Arzuna

@@ -31,7 +31,8 @@ import { AbilityBadge } from "@/components/ability-badge";
 import { EntityGridSkeleton } from "@/components/route-skeleton";
 import { sfx } from "@/lib/scu-audio";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
-import { NexusExplorer } from "@/components/nexus-explorer";
+import { NexusExplorer, NexusSpotlight } from "@/components/nexus-explorer";
+import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useUiStyle } from "@/lib/ui-style";
 import type { Json } from "@/integrations/supabase/types";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
@@ -230,6 +231,7 @@ function AbilitiesHub() {
         />
       )}
 
+      {nexus && defs.length > 0 && <NexusAbilityHero defs={defs} />}
       {nexus ? <NexusExplorer
         label="Abilities" loading={isLoading}
         records={defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], subtitle: ABILITY_GROUP_LABELS[def.group], icon: <NexusAbilitySymbol name={def.key} className="h-10 w-10" />, def }))}
@@ -658,4 +660,13 @@ function EditAbilityForm({
       </div>
     </div>
   );
+}
+
+function NexusAbilityHero({ defs }: { defs: { key: string; label: string; tier: keyof typeof TIER_LABELS; group: keyof typeof ABILITY_GROUP_LABELS }[] }) {
+  const moving = useNexusMotion();
+  const members = defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], icon: <NexusAbilitySymbol name={def.key} className="h-14 w-14" /> }));
+  return <section aria-label="Ability showcase" className="nexus-cluster relative mb-6 overflow-hidden rounded-lg border border-border bg-card/40">
+    <div className="relative h-48 sm:h-56"><NexusSpotlight members={members} offset={0} moving={moving} /></div>
+    <p className="pb-3 text-center font-mono text-[10px] tracking-[.3em] text-muted-foreground">ABILITY CODEX · {defs.length} RECORDED</p>
+  </section>;
 }

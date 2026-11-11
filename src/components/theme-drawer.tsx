@@ -49,7 +49,7 @@ export function ThemeDrawer({
           <UiStylePicker />
         </div>
         {nexus ? <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
-          {NEXUS_THEMES.map(t => <Button key={t.id} variant="ghost" aria-pressed={nexusTheme === t.id} onClick={() => setNexusTheme(t.id)} className={`nexus-theme-option flex h-auto min-h-32 flex-col gap-2 whitespace-normal rounded-lg border p-3 text-center ${nexusTheme === t.id ? "border-accent bg-accent/10" : "border-border"}`}><span aria-hidden className="nexus-theme-swatch h-14 w-14 rounded-full" style={{ background: `radial-gradient(circle at 32% 28%, var(--fx-highlight), var(--fx-${t.id}) 64%)` }} /><span>{t.label}</span></Button>)}
+          {NEXUS_THEMES.map(t => <Button key={t.id} variant="ghost" aria-pressed={nexusTheme === t.id} onClick={() => setNexusTheme(t.id)} className={`nexus-theme-option flex h-auto min-h-32 flex-col gap-2 whitespace-normal rounded-lg border p-3 text-center ${nexusTheme === t.id ? "border-accent bg-accent/10" : "border-border"}`}><span aria-hidden className="nexus-theme-swatch nexus-theme-swatch-anim h-14 w-14 rounded-full" style={{ background: `radial-gradient(circle at 32% 28%, var(--fx-highlight), var(--fx-${t.id}) 52%, color-mix(in oklab, var(--fx-${t.id}) 30%, black) 100%)` }} /><span>{t.label}</span></Button>)}
         </div> : <><div className="flex gap-1.5 px-4 pt-1">
           {(
             [

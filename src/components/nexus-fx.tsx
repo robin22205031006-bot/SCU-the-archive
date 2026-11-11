@@ -4,7 +4,7 @@ import { Environment, Lightformer } from "@react-three/drei";
 import { AdditiveBlending, Color, Group, Mesh, ShaderMaterial } from "three";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useNexusTheme } from "@/hooks/use-nexus-theme";
-import { type NexusEffect } from "@/lib/nexus-fx";
+import { type NexusEffect, nexusThemeBase } from "@/lib/nexus-fx";
 
 class FxBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   override state = { failed: false };
@@ -96,7 +96,7 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
     <div ref={background} aria-hidden className="nexus-fx-background pointer-events-none fixed inset-0" data-fx-theme={theme}>
       {supported && <FxBoundary><Canvas dpr={[1, 1.25]} frameloop={moving && visible ? "always" : "demand"} camera={{ position: [0, 0, 7], fov: 45 }} gl={{ alpha: true, antialias: false }}>
         <ambientLight intensity={.65} /><Environment resolution={64}><Lightformer intensity={2} position={[0, 4, 3]} scale={8} /><Lightformer intensity={1} position={[-4, 0, 2]} scale={5} /></Environment>
-        <Simulation key={theme} effect={theme} moving={moving && visible} background /><Ready container={background} />
+        <Simulation key={theme} effect={nexusThemeBase(theme)} moving={moving && visible} background /><Ready container={background} />
       </Canvas></FxBoundary>}
     </div>
     {children}

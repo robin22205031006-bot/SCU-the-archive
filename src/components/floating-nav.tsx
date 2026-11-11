@@ -14,6 +14,7 @@ import { ThemeDrawer } from "./theme-drawer";
 import { useNavHidden } from "@/lib/nav-visibility";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { useUiStyle } from "@/lib/ui-style";
+import { NexusNavGlyph } from "./nexus-nav-glyph";
 export { navMode, setNavMode, hudNavEnabled, setHudNav, type NavMode } from "@/lib/nav-mode";
 
 const icons = { home: Home, chars: Users, abilities: WandSparkles, fx: Flame, action: Swords, archive: Archive, book: BookOpen, map: Map, fandom: MessagesSquare, ai: Bot, vault: FileLock, admin: Sparkles, series: BookMarked, orgs: Shield, time: Clock, graph: Network, clans: Castle, profile: User, theme: Palette };
@@ -71,7 +72,7 @@ export function FloatingNav() {
                 const active = item.to === pathname;
                 return <motion.div key={item.to} className={`hud-entry hud-slot-${slot}`} layout={!reduce} initial={{ opacity: 0, y: reduce ? 0 : 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduce ? 0 : -24 }} transition={{ duration: reduce ? 0 : 0.25 }}>
                   <Button asChild={item.to !== "#theme"} variant="ghost" className={`hud-tab ${active ? "hud-tab-active" : ""}`} {...(item.to === "#theme" ? { onClick: () => { setOpen(false); setThemeOpen(true); }, "aria-label": "Theme" } : {})}>
-                    {item.to === "#theme" ? <><span className="hud-node"><Icon /></span><span className="hud-label">Theme</span></> : <Link to={item.to} preload="intent" onClick={() => setOpen(false)} aria-current={active ? "page" : undefined}><span className="hud-node"><Icon /></span><span className="hud-label">{item.label}</span></Link>}
+                    {item.to === "#theme" ? <><span className="hud-node">{style === "nexus" ? <NexusNavGlyph to="#theme" className="h-6 w-6" /> : <Icon />}</span><span className="hud-label">Theme</span></> : <Link to={item.to} preload="intent" onClick={() => setOpen(false)} aria-current={active ? "page" : undefined}><span className="hud-node">{style === "nexus" ? <NexusNavGlyph to={item.to} className="h-6 w-6" /> : <Icon />}</span><span className="hud-label">{item.label}</span></Link>}
                   </Button>
                 </motion.div>;
               })}

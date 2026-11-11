@@ -929,3 +929,76 @@ html[data-ui="minimal"] .hud-arc-track, html[data-ui="minimal"] .hud-tab-active 
 @keyframes series-ember { 0%,100% { text-shadow: 0 0 8px color-mix(in oklab, var(--series-color, var(--accent)) 50%, transparent); } 50% { text-shadow: 0 0 26px var(--series-color, var(--accent)), 0 -4px 18px color-mix(in oklab, var(--accent) 60%, transparent); } }
 @keyframes series-glitch { 0%,92%,100% { transform: none; text-shadow: none; } 94% { transform: translateX(-2px); text-shadow: 2px 0 var(--accent); } 97% { transform: translateX(2px); text-shadow: -2px 0 var(--destructive); } }
 @media (prefers-reduced-motion: reduce) { [class*="series-fx-nx-"] { animation: none !important; } }
+
+/* ── Nexus lore themes: palette + a cheap CSS ambient layer (no extra JS) ── */
+:root {
+  --fx-duskmoor: oklch(.72 .16 245);
+  --fx-draconic: oklch(.68 .23 30);
+  --fx-whiteline: oklch(.95 .04 230);
+  --fx-crimson: oklch(.62 .24 20);
+  --fx-karayazgi: oklch(.6 .2 15);
+  --fx-hemokinesis: oklch(.55 .22 22);
+  --fx-aether: oklch(.7 .2 300);
+  --fx-skyguardian: oklch(.9 .12 90);
+  --fx-aethmos: oklch(.8 .17 150);
+  --fx-glacier: oklch(.86 .1 210);
+  --fx-ruincity: oklch(.78 .14 160);
+}
+html[data-nexus-theme="duskmoor"] { --nexus-glow: var(--fx-duskmoor); --nexus-amb-a: oklch(.55 .18 250 / .35); --nexus-amb-b: oklch(.3 .1 260 / .5); }
+html[data-nexus-theme="draconic"] { --nexus-glow: var(--fx-draconic); --nexus-amb-a: oklch(.6 .22 35 / .35); --nexus-amb-b: oklch(.3 .14 20 / .5); }
+html[data-nexus-theme="whiteline"] { --nexus-glow: var(--fx-whiteline); --nexus-amb-a: oklch(.9 .05 230 / .22); --nexus-amb-b: oklch(.3 .05 250 / .5); }
+html[data-nexus-theme="crimson"] { --nexus-glow: var(--fx-crimson); --nexus-amb-a: oklch(.55 .24 20 / .35); --nexus-amb-b: oklch(.22 .08 15 / .55); }
+html[data-nexus-theme="karayazgi"] { --nexus-glow: var(--fx-karayazgi); --nexus-amb-a: oklch(.45 .2 15 / .3); --nexus-amb-b: oklch(.1 .01 280 / .7); }
+html[data-nexus-theme="hemokinesis"] { --nexus-glow: var(--fx-hemokinesis); --nexus-amb-a: oklch(.45 .22 20 / .4); --nexus-amb-b: oklch(.15 .06 10 / .6); }
+html[data-nexus-theme="aether"] { --nexus-glow: var(--fx-aether); --nexus-amb-a: oklch(.6 .2 300 / .35); --nexus-amb-b: oklch(.55 .16 230 / .3); }
+html[data-nexus-theme="skyguardian"] { --nexus-glow: var(--fx-skyguardian); --nexus-amb-a: oklch(.88 .12 90 / .3); --nexus-amb-b: oklch(.6 .08 230 / .3); }
+html[data-nexus-theme="aethmos"] { --nexus-glow: var(--fx-aethmos); --nexus-amb-a: oklch(.7 .16 150 / .3); --nexus-amb-b: oklch(.5 .1 190 / .35); }
+html[data-nexus-theme="glacier"] { --nexus-glow: var(--fx-glacier); --nexus-amb-a: oklch(.85 .1 210 / .3); --nexus-amb-b: oklch(.4 .1 240 / .4); }
+html[data-nexus-theme="ruincity"] { --nexus-glow: var(--fx-ruincity); --nexus-amb-a: oklch(.6 .12 150 / .25); --nexus-amb-b: oklch(.4 .03 240 / .5); }
+html[data-ui="nexus"] .nexus-shell::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background: radial-gradient(40% 35% at 20% 25%, var(--nexus-amb-a, transparent), transparent 70%), radial-gradient(45% 40% at 80% 75%, var(--nexus-amb-b, transparent), transparent 70%);
+  animation: nexus-amb-drift 22s ease-in-out infinite alternate; }
+html[data-ui="nexus"]:is([data-nexus-theme="whiteline"],[data-nexus-theme="crimson"],[data-nexus-theme="ruincity"]) .nexus-shell::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .18;
+  background: repeating-linear-gradient(100deg, transparent 0 46px, var(--nexus-glow) 47px, transparent 48px 140px); animation: nexus-amb-streak 3.2s linear infinite; }
+html[data-ui="nexus"]:is([data-nexus-theme="aethmos"],[data-nexus-theme="glacier"],[data-nexus-theme="duskmoor"],[data-nexus-theme="draconic"],[data-nexus-theme="hemokinesis"],[data-nexus-theme="aether"],[data-nexus-theme="skyguardian"],[data-nexus-theme="karayazgi"]) .nexus-shell::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
+  background-image: radial-gradient(2px 2px at 10% 90%, var(--nexus-glow), transparent), radial-gradient(1.5px 1.5px at 30% 80%, var(--nexus-glow), transparent), radial-gradient(2px 2px at 55% 95%, var(--nexus-glow), transparent), radial-gradient(1.5px 1.5px at 75% 85%, var(--nexus-glow), transparent), radial-gradient(2px 2px at 90% 92%, var(--nexus-glow), transparent);
+  background-size: 100% 100%; animation: nexus-amb-rise 9s linear infinite; }
+@keyframes nexus-amb-drift { from { transform: translate3d(-3%,-2%,0) scale(1); } to { transform: translate3d(3%,2%,0) scale(1.08); } }
+@keyframes nexus-amb-streak { from { background-position: 0 0; } to { background-position: 280px 0; } }
+@keyframes nexus-amb-rise { from { transform: translateY(0); opacity: 0; } 15% { opacity: .55; } to { transform: translateY(-85vh); opacity: 0; } }
+html[data-nexus-motion="off"] .nexus-shell::before, html[data-nexus-motion="off"] .nexus-shell::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .nexus-shell::before, .nexus-shell::after { animation: none !important; } }
+.nexus-theme-swatch-anim { animation: nexus-swatch-spin 6s linear infinite; }
+@keyframes nexus-swatch-spin { to { filter: hue-rotate(25deg) brightness(1.15); transform: rotate(360deg); } }
+
+/* ── Nexus navigation glyphs: tab-specific animated sigils ── */
+.nexus-glyph { width: 100%; height: 100%; overflow: visible; color: var(--nexus-glow); filter: drop-shadow(0 0 6px color-mix(in oklab, var(--nexus-glow) 60%, transparent)); }
+.nexus-glyph .g-spin { transform-origin: 24px 24px; animation: g-spin 9s linear infinite; }
+.nexus-glyph .g-spin-r { transform-origin: 24px 24px; animation: g-spin 14s linear infinite reverse; }
+.nexus-glyph .g-pulse { transform-origin: 24px 24px; animation: g-pulse 2.4s ease-in-out infinite; }
+.nexus-glyph .g-draw { stroke-dasharray: 120; animation: g-draw 3.6s ease-in-out infinite; }
+.nexus-glyph .g-flick { transform-origin: 24px 40px; animation: g-flick 1.4s ease-in-out infinite; }
+.nexus-glyph .g-bob { animation: g-bob 2.8s ease-in-out infinite; }
+.nexus-glyph .g-spark { animation: g-spark 1.6s ease-in-out infinite; }
+.nexus-glyph .g-spark:nth-of-type(2n) { animation-delay: -.8s; }
+.nexus-glyph .g-tick { transform-origin: 24px 24px; animation: g-tick 6s steps(12) infinite; }
+.nexus-glyph .g-clash-l { transform-origin: 14px 34px; animation: g-clash-l 1.8s ease-in-out infinite; }
+.nexus-glyph .g-clash-r { transform-origin: 34px 34px; animation: g-clash-r 1.8s ease-in-out infinite; }
+@keyframes g-spin { to { transform: rotate(360deg); } }
+@keyframes g-pulse { 50% { transform: scale(1.18); opacity: .7; } }
+@keyframes g-draw { 0% { stroke-dashoffset: 120; } 55%,100% { stroke-dashoffset: 0; } }
+@keyframes g-flick { 50% { transform: scale(1.08, .92) skewX(-4deg); } }
+@keyframes g-bob { 50% { transform: translateY(-2px); } }
+@keyframes g-spark { 0%,100% { opacity: .15; } 50% { opacity: 1; } }
+@keyframes g-tick { to { transform: rotate(360deg); } }
+@keyframes g-clash-l { 0%,100% { transform: rotate(0); } 45% { transform: rotate(14deg); } }
+@keyframes g-clash-r { 0%,100% { transform: rotate(0); } 45% { transform: rotate(-14deg); } }
+.hud-tab-active .nexus-glyph, .nexus-nav-link[aria-current="page"] .nexus-glyph { filter: drop-shadow(0 0 10px var(--nexus-glow)); }
+html[data-nexus-motion="off"] .nexus-glyph *, html[data-ui="minimal"] .nexus-glyph * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .nexus-glyph * { animation: none !important; } }
+
+/* ── Nexus spotlight: records cycle through cluster cards ── */
+.nexus-spotlight { position: relative; display: grid; place-items: center; min-height: 7.5rem; }
+.nexus-spotlight-ring { position: absolute; inset: 8% 22%; border-radius: 9999px; border: 1px dashed color-mix(in oklab, var(--nexus-glow) 45%, transparent); animation: g-spin 18s linear infinite; }
+.nexus-spotlight-halo { position: absolute; width: 5rem; height: 5rem; border-radius: 9999px; background: radial-gradient(circle, color-mix(in oklab, var(--nexus-glow) 35%, transparent), transparent 70%); animation: g-pulse 3s ease-in-out infinite; }
+html[data-nexus-motion="off"] :is(.nexus-spotlight-ring,.nexus-spotlight-halo) { animation: none; }
