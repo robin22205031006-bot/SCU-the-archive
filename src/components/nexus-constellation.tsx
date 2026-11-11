@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Crosshair, Minus, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { entitiesQuery, type Entity, type EntityMembership } from "@/lib/entities";
+import { entitiesQuery, entityRelationsQuery, type Entity, type EntityMembership } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { PanelSkeleton } from "@/components/route-skeleton";
 
@@ -11,6 +11,7 @@ const KINDS: Entity["kind"][] = ["character", "organization", "clan", "bloodline
 const HUE: Record<Entity["kind"], [number, number, number]> = {
   character: [240, 214, 120], organization: [125, 211, 252], clan: [134, 239, 172], bloodline: [196, 181, 253], faction: [251, 146, 60],
 };
+const BOND: Record<string, [number, number, number]> = { rival: [255, 90, 80], mentor: [120, 230, 255], ally: [140, 255, 170], commands: [255, 190, 90], kin: [255, 150, 230], parent: [255, 150, 230], sibling: [255, 150, 230], spouse: [255, 120, 180], ancestor: [220, 170, 255] };
 type N = { e: Entity; x: number; y: number; vx: number; vy: number; r: number; deg: number };
 
 export const membershipsQuery = {
@@ -28,6 +29,7 @@ export function NexusConstellation() {
   const masked = useSpoilerMask("characters");
   const { data: entities, isLoading } = useQuery({ ...entitiesQuery(KINDS), staleTime: 60_000 });
   const { data: mems } = useQuery(membershipsQuery);
+  const { data: rels } = useQuery(entityRelationsQuery);
   const [kinds, setKinds] = useState(new Set(KINDS));
   const [sel, setSel] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -46,6 +48,8 @@ export function NexusConstellation() {
       return { e, x: Math.cos(a) * rr, y: Math.sin(a) * rr, vx: 0, vy: 0, deg: d, r: e.kind === "character" ? 5 + Math.min(d, 6) : 11 + Math.min(d, 20) * 0.7 }; });
     const byId = new Map(nodes.map(n => [n.e.id, n]));
     const E = edges.map(m => [byId.get(m.character_id)!, byId.get(m.group_id)!] as const);
+    const B = (rels ?? []).filter(r => byId.has(r.source_id) && byId.has(r.target_id)).map(r => ({ a: byId.get(r.source_id)!, b: byId.get(r.target_id)!, rel: r.rel, label: r.label }));
+    for (const { a, b } of B) { a.r += 1.5; b.r += 1.5; }
     // settle layout once (deterministic) so the canvas only animates FX
     for (let it = 0; it < 220; it++) {
       const cool = 1 - it / 220;
@@ -53,14 +57,14 @@ export function NexusConstellation() {
         const a = nodes[i]!, b = nodes[j]!; let dx = a.x - b.x, dy = a.y - b.y; let d2 = dx * dx + dy * dy || rnd();
         if (d2 > 160000) continue; const f = 900 / d2; dx *= f; dy *= f; a.vx += dx; a.vy += dy; b.vx -= dx; b.vy -= dy;
       }
-      for (const [a, b] of E) { const dx = b.x - a.x, dy = b.y - a.y; a.vx += dx * 0.012; a.vy += dy * 0.012; b.vx -= dx * 0.012; b.vy -= dy * 0.012; }
+      for (const [a, b] of [...E, ...B.map(x => [x.a, x.b] as const)]) { const dx = b.x - a.x, dy = b.y - a.y; a.vx += dx * 0.012; a.vy += dy * 0.012; b.vx -= dx * 0.012; b.vy -= dy * 0.012; }
       for (const n of nodes) { n.vx -= n.x * 0.02; n.vy -= n.y * 0.02; n.x += Math.max(-20, Math.min(20, n.vx)) * cool; n.y += Math.max(-20, Math.min(20, n.vy)) * cool; n.vx *= 0.5; n.vy *= 0.5; }
     }
     const ext = Math.max(200, ...nodes.map(n => Math.max(Math.abs(n.x), Math.abs(n.y))));
-    return { nodes, E, byId, fit: Math.min(1, 190 / ext) };
-  }, [entities, mems, kinds]);
+    return { nodes, E, B, byId, fit: Math.min(1, 190 / ext) };
+  }, [entities, mems, rels, kinds]);
 
-  const linked = useMemo(() => { if (!sel) return null; const s = new Set([sel]); for (const [a, b] of graph.E) { if (a.e.id === sel) s.add(b.e.id); if (b.e.id === sel) s.add(a.e.id); } return s; }, [sel, graph]);
+  const linked = useMemo(() => { if (!sel) return null; const s = new Set([sel]); for (const [a, b] of graph.E) { if (a.e.id === sel) s.add(b.e.id); if (b.e.id === sel) s.add(a.e.id); } for (const x of graph.B) { if (x.a.e.id === sel) s.add(x.b.e.id); if (x.b.e.id === sel) s.add(x.a.e.id); } return s; }, [sel, graph]);
   const linkedRef = useRef(linked); linkedRef.current = linked;
   const qRef = useRef(q); qRef.current = q;
 
@@ -89,6 +93,15 @@ export function NexusConstellation() {
         if (on && (L || graph.E.length < 400)) { const p = (t * 0.35 + (a.x * 0.001)) % 1, q1 = 1 - p;
           const px = q1 * q1 * a.x + 2 * q1 * p * mx + p * p * b.x, py = q1 * q1 * a.y + 2 * q1 * p * my + p * p * b.y;
           ctx.fillStyle = `rgba(${r},${g},${bl},0.9)`; ctx.beginPath(); ctx.arc(px, py, 2 / v.k + 1, 0, 6.283); ctx.fill(); }
+      }
+      // character bonds: braided glowing light lines with travelling sparks both ways
+      for (const x of graph.B) { const { a, b } = x; const on = !L || (L.has(a.e.id) && L.has(b.e.id)); const [r, g, bl] = BOND[x.rel] ?? [255, 255, 255];
+        const al = on ? (L ? 1 : 0.6) : 0.05, fl = 0.75 + 0.25 * Math.sin(t * 3 + a.x * 0.01);
+        const mx = (a.x + b.x) / 2 - (a.y - b.y) * 0.18, my = (a.y + b.y) / 2 - (b.x - a.x) * 0.18;
+        for (const [lw, aa] of [[7, 0.12], [3, 0.35], [1.2, 0.95]] as const) { ctx.strokeStyle = `rgba(${r},${g},${bl},${aa * al * fl})`; ctx.lineWidth = lw / v.k; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(mx, my, b.x, b.y); ctx.stroke(); }
+        if (on) for (const ph of [0, 0.5]) { const p = (t * 0.25 + ph) % 1, q1 = 1 - p; const px = q1 * q1 * a.x + 2 * q1 * p * mx + p * p * b.x, py = q1 * q1 * a.y + 2 * q1 * p * my + p * p * b.y;
+          const gl = ctx.createRadialGradient(px, py, 0, px, py, 7 / v.k); gl.addColorStop(0, `rgba(255,255,255,${al})`); gl.addColorStop(0.4, `rgba(${r},${g},${bl},${0.8 * al})`); gl.addColorStop(1, `rgba(${r},${g},${bl},0)`);
+          ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px, py, 7 / v.k, 0, 6.283); ctx.fill(); }
       }
       for (const n of graph.nodes) {
         const on = !L || L.has(n.e.id), hit = qs && n.e.name.toLowerCase().includes(qs); const [r, g, b] = HUE[n.e.kind];
@@ -129,6 +142,7 @@ export function NexusConstellation() {
   const runSearch = () => { const s = q.trim().toLowerCase(); const n = graph.nodes.find(n => n.e.name.toLowerCase().includes(s)); if (n) focus(n.e.id); };
   const selected = sel ? graph.byId.get(sel)?.e : null;
   const bonds = selected ? graph.E.filter(([a, b]) => a.e.id === sel || b.e.id === sel).map(([a, b]) => (a.e.id === sel ? b : a).e) : [];
+  const ties = selected ? graph.B.filter(x => x.a.e.id === sel || x.b.e.id === sel).map(x => ({ ...x, o: (x.a.e.id === sel ? x.b : x.a).e })) : [];
   const btn = "grid h-9 w-9 place-items-center rounded-full border border-border bg-background/70 backdrop-blur";
 
   if (isLoading) return <PanelSkeleton />;
@@ -152,7 +166,9 @@ export function NexusConstellation() {
           {selected.role && <p className="text-xs text-muted-foreground" data-spoiler={masked || undefined}>{masked ? "Role hidden (spoiler)" : selected.role}</p>}</div>
         <button className={btn} aria-label="Close" onClick={() => setSel(null)}><X className="h-4 w-4" /></button>
       </div>
-      <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">{bonds.length} bonds</p>
+      {ties.length > 0 && <div className="mt-3 space-y-1.5" data-spoiler={masked || undefined}>{ties.map(x => <button key={x.o.id + x.rel} onClick={() => focus(x.o.id)} className="block w-full rounded-xl border border-border px-2.5 py-1.5 text-left text-[11px]">
+        <span className="uppercase tracking-wider" style={{ color: `rgb(${(BOND[x.rel] ?? [255, 255, 255]).join(",")})` }}>{x.rel}</span> · {x.o.name}{x.label && !masked && <span className="block text-muted-foreground">{x.label}</span>}</button>)}</div>}
+      <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">{bonds.length} groups</p>
       <div className="mt-1 flex max-h-24 flex-wrap gap-1 overflow-auto">{bonds.map(b => <button key={b.id} onClick={() => focus(b.id)} className="rounded-full border border-border px-2 py-0.5 text-[11px]" style={{ color: `rgb(${HUE[b.kind].join(",")})` }}>{b.name}</button>)}</div>
       <button onClick={() => nav({ to: "/reader", search: { e: selected.id } })} className="mt-3 inline-flex items-center gap-1.5 text-xs text-accent"><BookOpen className="h-3.5 w-3.5" /> Open dossier</button>
     </div>}

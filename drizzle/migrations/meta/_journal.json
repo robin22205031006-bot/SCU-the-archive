@@ -43,6 +43,13 @@
       "when": 1794349395221,
       "tag": "0005_family_relation_kinds",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794365462597,
+      "tag": "0006_seed_lore_bonds_and_clans",
+      "breakpoints": true
     }
   ]
 }
