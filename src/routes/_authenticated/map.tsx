@@ -4,7 +4,8 @@ import { TacticalMap } from "@/components/tactical-map";
 import { useSectionStyle } from "@/hooks/use-typography";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
-import { Map, Radio } from "lucide-react";
+import { Map, Radio, Globe2 } from "lucide-react";
+import { NexusAtlas } from "@/components/nexus-atlas";
 
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
@@ -41,6 +42,7 @@ function MapPage() {
         </p>
       </header>
       {nexus ? <NexusWorkspace views={[
+        { id: "atlas", title: "Atlas", icon: <Globe2 className="h-4 w-4" />, content: <NexusAtlas /> },
         { id: "world", title: "World & Eras", icon: <Map className="h-4 w-4" />, content: <LoreLocations /> },
         { id: "deployments", title: "Deployments", icon: <Radio className="h-4 w-4" />, content: <TacticalMap /> },
       ]} /> : <><LoreLocations /><TacticalMap /></>}

@@ -106,3 +106,7 @@
 - [ ] Constellation-style Graph / Clans / Bloodline views with flowing links
 - [ ] Nexus fantasy top-down maps: Aethmos, Nilanjona's glacial village, Yasnaya (Sky Guardian crater), RuinCity
 - [ ] Combat rebuild from references: Rowan blue flame + chains, Arthur, Samuel ghost mode, Corvani, Arashi, Yoshiko/Kazumi/Saya, Silas, Arzuna
+
+# Nexus Atlas maps
+- [x] Full-screen Nexus maps for Nilanjona, Aethmos, Yasnaya (3 eras) and Ruin City (2 eras) with landmarks, zoom, eras and FX.
+- [x] World Atlas showing all regions; verified on phone width.

@@ -44,3 +44,4 @@
 - AI Box, series Q&A and story drafting use AI Gateway in authenticated server functions; Gemini only for PDF ingestion/embeddings (keys unreliable).
 - adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicates to the in-story card name (tested), so syncs never recreate merged cards.
 - Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
+- Nexus Atlas maps live in browser-safe src/lib/nexus-atlas.ts (eras, landmarks as image %, FX tags) rendered by src/components/nexus-atlas.tsx as a full-screen portal; it overrides the global dialog size cap and pauses canvas FX under reduced motion.
