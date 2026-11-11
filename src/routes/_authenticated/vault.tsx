@@ -13,6 +13,9 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { embedVaultTexts } from "@/lib/pdf-vault.functions";
+import { analyzeLore, applyLore } from "@/lib/ingest.functions";
+import { ingestAdminPdf } from "@/controllers/adminController.js";
+import { invalidateArchive } from "@/lib/archive-sync";
 import { chunkText } from "@/lib/pdf-chunks";
 import { parsePdf } from "@/utils/pdfParser";
 import { sfx } from "@/lib/scu-audio";
@@ -60,6 +63,9 @@ function Vault() {
   const [isPublic, setIsPublic] = useState(true);
   const [downloadable, setDownloadable] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [autoSync, setAutoSync] = useState(true);
+  const analyze = useServerFn(analyzeLore);
+  const applyFn = useServerFn(applyLore);
 
   // ---- RAG vault state ----
   const embed = useServerFn(embedVaultTexts);
@@ -108,11 +114,28 @@ function Vault() {
       toast.error(error.message);
       return;
     }
+    const uploaded = file;
     setFile(null);
     setTitle("");
     qc.invalidateQueries({ queryKey: ["vault"] });
     qc.invalidateQueries({ queryKey: ["search-index"] });
     toast.success("Uploaded");
+    if (autoSync && uploaded) {
+      // Read the PDF and sync its lore into the archive; name merging rules
+      // (alias map + database guard) apply automatically during the write.
+      const t = toast.loading("Reading PDF and syncing lore…");
+      try {
+        const r = await ingestAdminPdf(uploaded, {
+          analyze,
+          apply: applyFn,
+          onStage: () => {},
+          refresh: async () => invalidateArchive(qc),
+        });
+        toast.success(`Synced: ${r.created} added, ${r.updated} updated, ${r.events} events`, { id: t });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Lore sync failed", { id: t });
+      }
+    }
   };
 
   /** Extract -> chunk -> embed -> store, so the AI Box can cite this PDF. */
@@ -242,6 +265,10 @@ function Vault() {
             <Label className="flex items-center gap-2">
               <Switch checked={downloadable} onCheckedChange={setDownloadable} />
               Downloadable
+            </Label>
+            <Label className="flex items-center gap-2">
+              <Switch checked={autoSync} onCheckedChange={setAutoSync} />
+              Read &amp; sync lore
             </Label>
             <Button className="ml-auto" size="sm" disabled={!file || busy} onClick={upload}>
               <Upload className="h-4 w-4" />

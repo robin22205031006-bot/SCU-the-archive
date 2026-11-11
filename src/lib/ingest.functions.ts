@@ -40,20 +40,36 @@ export const analyzeLore = createServerFn({ method: "POST" })
     if (error) throw new Error("The archive could not be loaded. Please try again.");
     const names = (existing ?? []).map((e) => `${e.name} (${e.kind})`).join("; ") || "none";
 
-    const { generateGemini, pickGeminiKey } = await import("./gemini.server");
-    const raw = await generateGemini(pickGeminiKey("admin"), {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: `Existing archive entries: ${names}\n\nSTORY TEXT:\n${data.text}` }],
+    const userText = `Existing archive entries: ${names}\n\nSTORY TEXT:\n${data.text}`;
+    let raw: string;
+    try {
+      const { generateGemini, pickGeminiKey } = await import("./gemini.server");
+      raw = await generateGemini(pickGeminiKey("admin"), {
+        contents: [{ role: "user", parts: [{ text: userText }] }],
+        config: {
+          systemInstruction: loreExtractionPrompt,
+          responseMimeType: "application/json",
+          responseJsonSchema: loreJsonSchema,
         },
-      ],
-      config: {
-        systemInstruction: loreExtractionPrompt,
-        responseMimeType: "application/json",
-        responseJsonSchema: loreJsonSchema,
-      },
-    });
+      });
+    } catch {
+      // Gemini keys are unreliable; fall back to the AI Gateway with the same prompt.
+      const { generateResponse } = await import("@lovable.dev/ai-gateway");
+      const response = await generateResponse({
+        model: "openai/gpt-6-astra",
+        instructions:
+          loreExtractionPrompt +
+          "\nReturn ONLY a JSON object matching this JSON schema, no prose:\n" +
+          JSON.stringify(loreJsonSchema),
+        input: [{ role: "user", content: userText }],
+      });
+      raw = "";
+      for (const item of response.output ?? [])
+        if (item.type === "message")
+          for (const c of item.content) if (c.type === "output_text") raw += c.text;
+      raw = raw.replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+      if (!raw) throw new Error("The lore reader is busy. Nothing was saved; try again shortly.");
+    }
     try {
       return parseLoreExtraction(raw, data.text);
     } catch {
