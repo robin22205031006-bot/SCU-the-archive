@@ -37,6 +37,8 @@ import { Route as AuthenticatedStoryRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTimelineRouteImport } from './routes/_authenticated/timeline'
 import { Route as AuthenticatedVaultRouteImport } from './routes/_authenticated/vault'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as AuthenticatedAtlasIndexRouteImport } from './routes/_authenticated/atlas.index'
+import { Route as AuthenticatedAtlasPlaceRouteImport } from './routes/_authenticated/atlas.$place'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -179,6 +181,16 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAtlasIndexRoute = AuthenticatedAtlasIndexRouteImport.update({
+  id: '/atlas/',
+  path: '/atlas/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAtlasPlaceRoute = AuthenticatedAtlasPlaceRouteImport.update({
+  id: '/atlas/$place',
+  path: '/atlas/$place',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -208,6 +220,8 @@ export interface FileRoutesByFullPath {
   '/timeline': typeof AuthenticatedTimelineRoute
   '/vault': typeof AuthenticatedVaultRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/atlas/$place': typeof AuthenticatedAtlasPlaceRoute
+  '/atlas/': typeof AuthenticatedAtlasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -237,6 +251,8 @@ export interface FileRoutesByTo {
   '/timeline': typeof AuthenticatedTimelineRoute
   '/vault': typeof AuthenticatedVaultRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/atlas/$place': typeof AuthenticatedAtlasPlaceRoute
+  '/atlas': typeof AuthenticatedAtlasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -268,6 +284,8 @@ export interface FileRoutesById {
   '/_authenticated/timeline': typeof AuthenticatedTimelineRoute
   '/_authenticated/vault': typeof AuthenticatedVaultRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/_authenticated/atlas/$place': typeof AuthenticatedAtlasPlaceRoute
+  '/_authenticated/atlas/': typeof AuthenticatedAtlasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -299,6 +317,8 @@ export interface FileRouteTypes {
     | '/timeline'
     | '/vault'
     | '/.lovable/oauth/consent'
+    | '/atlas/$place'
+    | '/atlas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -328,6 +348,8 @@ export interface FileRouteTypes {
     | '/timeline'
     | '/vault'
     | '/.lovable/oauth/consent'
+    | '/atlas/$place'
+    | '/atlas'
   id:
     | '__root__'
     | '/'
@@ -358,6 +380,8 @@ export interface FileRouteTypes {
     | '/_authenticated/timeline'
     | '/_authenticated/vault'
     | '/.lovable/oauth/consent'
+    | '/_authenticated/atlas/$place'
+    | '/_authenticated/atlas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -568,6 +592,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/atlas/': {
+      id: '/_authenticated/atlas/'
+      path: '/atlas'
+      fullPath: '/atlas/'
+      preLoaderRoute: typeof AuthenticatedAtlasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/atlas/$place': {
+      id: '/_authenticated/atlas/$place'
+      path: '/atlas/$place'
+      fullPath: '/atlas/$place'
+      preLoaderRoute: typeof AuthenticatedAtlasPlaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -593,6 +631,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStoryRoute: typeof AuthenticatedStoryRoute
   AuthenticatedTimelineRoute: typeof AuthenticatedTimelineRoute
   AuthenticatedVaultRoute: typeof AuthenticatedVaultRoute
+  AuthenticatedAtlasPlaceRoute: typeof AuthenticatedAtlasPlaceRoute
+  AuthenticatedAtlasIndexRoute: typeof AuthenticatedAtlasIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -617,6 +657,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStoryRoute: AuthenticatedStoryRoute,
   AuthenticatedTimelineRoute: AuthenticatedTimelineRoute,
   AuthenticatedVaultRoute: AuthenticatedVaultRoute,
+  AuthenticatedAtlasPlaceRoute: AuthenticatedAtlasPlaceRoute,
+  AuthenticatedAtlasIndexRoute: AuthenticatedAtlasIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

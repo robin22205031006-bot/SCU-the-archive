@@ -18,7 +18,7 @@ import { NexusNavGlyph } from "./nexus-nav-glyph";
 export { navMode, setNavMode, hudNavEnabled, setHudNav, type NavMode } from "@/lib/nav-mode";
 
 const icons = { home: Home, chars: Users, abilities: WandSparkles, fx: Flame, action: Swords, archive: Archive, book: BookOpen, map: Map, fandom: MessagesSquare, ai: Bot, vault: FileLock, admin: Sparkles, series: BookMarked, orgs: Shield, time: Clock, graph: Network, clans: Castle, profile: User, theme: Palette };
-const extraTabs = [{ to: "/series", label: "Series", icon: "series" }, { to: "/orgs", label: "Organizations", icon: "orgs" }, { to: "/timeline", label: "Timeline", icon: "time" }, { to: "/graph", label: "Graph", icon: "graph" }, { to: "/clans", label: "Clans", icon: "clans" }] as const;
+const extraTabs = [{ to: "/atlas", label: "World Atlas", icon: "map" }, { to: "/series", label: "Series", icon: "series" }, { to: "/orgs", label: "Organizations", icon: "orgs" }, { to: "/timeline", label: "Timeline", icon: "time" }, { to: "/graph", label: "Graph", icon: "graph" }, { to: "/clans", label: "Clans", icon: "clans" }] as const;
 
 /** A viewport-bound arc: five visible entries, with scroll/swipe access to every page. */
 export function FloatingNav() {

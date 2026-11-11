@@ -1002,3 +1002,15 @@ html[data-nexus-motion="off"] .nexus-glyph *, html[data-ui="minimal"] .nexus-gly
 .nexus-spotlight-ring { position: absolute; inset: 8% 22%; border-radius: 9999px; border: 1px dashed color-mix(in oklab, var(--nexus-glow) 45%, transparent); animation: g-spin 18s linear infinite; }
 .nexus-spotlight-halo { position: absolute; width: 5rem; height: 5rem; border-radius: 9999px; background: radial-gradient(circle, color-mix(in oklab, var(--nexus-glow) 35%, transparent), transparent 70%); animation: g-pulse 3s ease-in-out infinite; }
 html[data-nexus-motion="off"] :is(.nexus-spotlight-ring,.nexus-spotlight-halo) { animation: none; }
+
+/* Atlas maps */
+.atlas-vignette { background: radial-gradient(ellipse at center, transparent 55%, color-mix(in oklab, var(--background) 70%, transparent) 100%), linear-gradient(to bottom, color-mix(in oklab, var(--background) 35%, transparent), transparent 18%, transparent 82%, color-mix(in oklab, var(--background) 45%, transparent)); }
+.atlas-clouds { background: radial-gradient(40% 25% at 20% 30%, rgb(0 0 0 / .22), transparent 70%), radial-gradient(35% 20% at 75% 65%, rgb(0 0 0 / .18), transparent 70%), radial-gradient(30% 18% at 50% 90%, rgb(255 255 255 / .06), transparent 70%); background-size: 200% 200%; animation: atlas-clouds 60s linear infinite; mix-blend-mode: multiply; }
+@keyframes atlas-clouds { from { background-position: 0% 0%, 100% 0%, 0% 100%; } to { background-position: 200% 100%, -100% 100%, 200% 0%; } }
+.atlas-drift { animation: atlas-drift 40s ease-in-out infinite alternate; transform-origin: 50% 40%; }
+@keyframes atlas-drift { from { transform: scale(1.02) translate3d(0,0,0); } to { transform: scale(1.07) translate3d(-1.2%, -1%, 0); } }
+.atlas-label { background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--background) 80%, transparent) 15%, color-mix(in oklab, var(--background) 80%, transparent) 85%, transparent); text-shadow: 0 1px 2px var(--background); }
+.atlas-banner { border: 1px solid color-mix(in oklab, var(--primary) 70%, transparent); background: linear-gradient(180deg, color-mix(in oklab, var(--background) 90%, transparent), color-mix(in oklab, var(--background) 70%, transparent)); border-radius: 4px; box-shadow: 0 0 20px color-mix(in oklab, var(--primary) 45%, transparent); letter-spacing: .08em; text-transform: uppercase; }
+.atlas-compass { filter: drop-shadow(0 0 6px color-mix(in oklab, var(--primary) 60%, transparent)); animation: atlas-compass 12s ease-in-out infinite; }
+@keyframes atlas-compass { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .atlas-drift, .atlas-clouds, .atlas-compass { animation: none; } }
