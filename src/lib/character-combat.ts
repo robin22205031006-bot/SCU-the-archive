@@ -1,7 +1,7 @@
 /** User-reference demonstrations, not invented historical PDF fights. Browser-safe. */
 import type { Gender, Seg, Weapon } from "./ability-action";
 
-export type CombatSceneId = "nilanjona" | "valeria" | "valeria-sword" | "nilanjona-sea" | "yoshiko" | "pristine" | "arzuna" | "elizah" | "valeria-duel" | "saya" | "vanguard" | "samuel" | "rowan" | "silas" | "tedmond" | "nyxia" | "kazumi" | "zayn" | "dorian" | "weston" | "ethan" | "grace";
+export type CombatSceneId = "nilanjona" | "valeria" | "valeria-sword" | "nilanjona-sea" | "yoshiko" | "pristine" | "arzuna" | "elizah" | "valeria-duel" | "saya" | "vanguard" | "samuel" | "rowan" | "silas" | "tedmond" | "nyxia" | "kazumi" | "zayn" | "dorian" | "weston" | "ethan" | "grace" | "arthur" | "corvani";
 export type CombatBackdrop = "water" | "rooftop" | "ocean" | "shatter" | "arena" | "night" | "street" | "void" | "ember";
 export interface CharacterCombat {
   id: CombatSceneId; character: string; label: string; ability: string; gender: Gender;
@@ -113,17 +113,19 @@ const EXTRA: CharacterCombat[] = [
     beats: [b("guard", .35, -.28, "Heavy guard", { cam: "low" }), b("windUp", .3, -.24, "Load the punch", { cam: "close" }),
       b("punch", .12, .08, "Straight right · shockwave", { cam: "rush", fx: ["shockwave", "impact"], launch: .1, hold: .1 }), b("kick", .16, .12, "Front kick through", { cam: "punch", fx: ["shockwave", "impact"] }),
       b("stomp", .28, .1, "Recovery stomp dents the road", { cam: "overhead", fx: ["earthShatter", "shockwave", "impact"], hold: .1 }), b("guard", .45, -.28, "Advance again", { cam: "wide" })] },
-  { id: "samuel", character: "Samuel", label: "Samuel · Improvised CQC", ability: "kinetic_suits", gender: "male", weapon: "none", backdrop: "street", tint: STEEL, rim: "#dfe6ee",
-    note: "The best hand-to-hand fighter: precise combinations, anything nearby becomes a weapon, and anger adds Vanguard-style weight without losing control.",
-    beats: [b("guard", .25, -.28, "Read everything", { cam: "orbit" }), b("throw", .2, -.24, "Hurl debris as a feint", { cam: "dutch", fx: ["debris"] }),
-      b("dash", .1, .04, "Close the gap", { cam: "track", fx: ["trail"] }), b("punch", .1, .1, "Jab", { cam: "punch", fx: ["impact"] }), b("knee", .1, .12, "Knee", { cam: "punch", fx: ["impact"] }),
-      b("kick", .12, .14, "Low kick", { cam: "low", fx: ["impact"] }), b("windUp", .18, .12, "Angry wind-up", { cam: "close" }),
-      b("punch", .14, .16, "Furious finishing cross", { cam: "rush", fx: ["shockwave", "impact"], launch: .2, hold: .1 }), b("guard", .4, -.28, "Controlled reset", { cam: "wide" })] },
-  { id: "rowan", character: "Rowan", label: "Rowan · Flexible berserker cleaves", ability: "flame", gender: "male", weapon: "greatsword", backdrop: "ember", tint: FIRE, rim: "#ffb347", heavy: true,
-    note: "An angry tank who keeps momentum: one burning cleave spins straight into the next before the ground erupts.",
-    beats: [b("windUp", .3, -.28, "Drag the burning blade", { cam: "low", fx: ["embers"] }), b("dash", .14, .02, "Charge", { cam: "rush", fx: ["trail", "embers"] }),
-      b("spinCut", .2, .08, "Burning cleave", { cam: "dutch", fx: ["fireCleave", "impact"] }), b("spinCut", .2, .12, "Spin into the second cleave", { roll: -.3, cam: "orbit", fx: ["fireCleave", "impact"] }),
-      b("slashDown", .25, .14, "Downward smash", { cam: "punch", fx: ["fireCleave", "earthShatter", "blast", "impact"], hold: .1 }), b("guard", .45, -.28, "Embers settle", { cam: "wide", fx: ["embers"] })] },
+  { id: "samuel", character: "Samuel", label: "Samuel · Ghost Mode", ability: "kinetic_suits", gender: "male", weapon: "none", backdrop: "street", tint: STEEL, rim: "#dfe6ee",
+    note: "Ghost Mode: when Samuel is pushed to real anger he switches into a cold, professional combat-specialist agent and becomes brutal. No wasted motion, no mercy: every strike is meant to end the fight.",
+    beats: [b("guard", .35, -.28, "Goes quiet · Ghost Mode", { cam: "close", hold: .15 }), b("dash", .08, .04, "Closes without warning", { cam: "track", fx: ["trail"] }),
+      b("guard", .08, .08, "Parries the strike", { cam: "punch", fx: ["impact"] }), b("punch", .07, .1, "Throat jab", { cam: "punch", fx: ["impact"] }),
+      b("knee", .08, .12, "Knee to the body", { cam: "punch", fx: ["impact"], hold: .05 }), b("punch", .07, .12, "Elbow", { cam: "dutch", fx: ["impact", "bloodSpray"] }),
+      b("kick", .1, .13, "Breaks the stance", { cam: "low", fx: ["impact"] }), b("throw", .16, .13, "Hurls him into the wall", { cam: "rush", fx: ["debris", "impact"], launch: .15, hold: .1 }),
+      b("stomp", .2, .14, "Finishes on the ground", { cam: "overhead", fx: ["impact", "debris"], hold: .12 }), b("guard", .45, -.1, "Calm again", { cam: "wide" })] },
+  { id: "rowan", character: "Rowan", label: "Rowan · Blue Flame", ability: "blue_flame", gender: "male", weapon: "greatsword", backdrop: "ember", tint: ["#1f6bff", "#7fc4ff", "#e8f6ff"], rim: "#7fc4ff", heavy: true,
+    note: "Blue Flame: an angry, flexible tank. Blue fire runs down the blade and one burning cleave spins straight into the next before the ground erupts in blue flame.",
+    beats: [b("windUp", .3, -.28, "Blade ignites blue", { cam: "low", fx: ["embers", "charge"] }), b("dash", .14, .02, "Charge", { cam: "rush", fx: ["trail", "embers"] }),
+      b("spinCut", .2, .08, "Blue flame cleave", { cam: "dutch", fx: ["fireCleave", "impact"] }), b("spinCut", .2, .12, "Spin into the second cleave", { roll: -.3, cam: "orbit", fx: ["fireCleave", "impact"] }),
+      b("slashDown", .2, .14, "Overhead blue fire smash", { cam: "punch", fx: ["fireCleave", "earthShatter", "impact"], hold: .1 }),
+      b("stomp", .3, .14, "Ground erupts in blue flame", { cam: "overhead", fx: ["blast", "shockwave", "embers"], hold: .12 }), b("guard", .45, -.28, "Blue embers drift", { cam: "wide", fx: ["embers"] })] },
   { id: "silas", character: "Silas", label: "Silas · Cratering power", ability: "earth_guardian", gender: "male", weapon: "hammer", backdrop: "ember", tint: FIRE, rim: "#ff8a4a", heavy: true,
     note: "Slower than Rowan but catastrophic: a long wind-up, then a point-blank crater with molten debris.",
     beats: [b("stand", .3, -.25, "Unmoving", { cam: "low" }), b("windUp", .6, -.2, "Hammer overhead", { cam: "close", fx: ["embers"] }),
@@ -170,6 +172,19 @@ const EXTRA: CharacterCombat[] = [
     beats: [b("stand", .3, -.25, "Calm", { cam: "orbit" }), b("cast", .45, -.25, "Contain the sphere", { cam: "close", fx: ["orb"] }),
       b("guard", .2, -.25, "Absorb the attack", { cam: "punch", fx: ["orb", "impact"] }), b("lunge", .14, .06, "Step through", { cam: "track", fx: ["orb"] }),
       b("cast", .35, .08, "Release", { cam: "wide", fx: ["blast", "shockwave", "impact"], launch: .2, hold: .1 }), b("stand", .4, -.25, "Composed", { cam: "orbit" })] },
+  { id: "arthur", character: "Arthur", label: "Arthur · Dragon power", ability: "dragon", gender: "male", weapon: "none", backdrop: "ember", tint: ["#ff8a1a", "#ffd27a", "#fff6d8"], rim: "#ffd27a", heavy: true,
+    note: "Raw dragon power: dragon features surface on his arms, every punch carries dragon weight, and each hit throws out a shockwave.",
+    beats: [b("guard", .3, -.28, "Dragon aura rises", { cam: "low", fx: ["aura", "embers"] }), b("windUp", .35, -.26, "Scales spread down his arms", { cam: "close", fx: ["aura", "charge"] }),
+      b("dash", .12, .04, "Heavy charge cracks the ground", { cam: "rush", fx: ["trail", "debris"] }), b("punch", .12, .1, "Dragon fist · shockwave", { cam: "punch", fx: ["shockwave", "impact", "aura"], launch: .15, hold: .1 }),
+      b("punch", .12, .12, "Second fist · bigger shockwave", { cam: "dutch", fx: ["shockwave", "blast", "impact"], launch: .25, hold: .1 }),
+      b("leap", .2, .12, "Leaps after him", { y: .2, cam: "air", fx: ["aura"] }), b("slashDown", .16, .14, "Hammer-fist drop", { cam: "overhead", fx: ["earthShatter", "shockwave", "impact"], hold: .14 }),
+      b("guard", .45, -.2, "Dragon aura settles", { cam: "wide", fx: ["aura", "embers"] })] },
+  { id: "corvani", character: "Corvani", label: "Corvani · Trained soldier", ability: "combat_training", gender: "male", weapon: "daggers", backdrop: "street", tint: ["#b7c2a0", "#e4ead6", "#ffffff"], rim: "#e4ead6",
+    note: "A specialised, highly trained soldier with no abilities, only human strength and weapons skill: knife work, tight angles and very strong blows.",
+    beats: [b("guard", .3, -.28, "Combat knife ready", { cam: "close" }), b("lunge", .12, .04, "Cuts the angle", { cam: "track", fx: ["trail"] }),
+      b("slashUp", .1, .1, "Knife slash", { cam: "punch", fx: ["slash", "impact"] }), b("punch", .1, .12, "Heavy hook", { cam: "dutch", fx: ["impact"], hold: .05 }),
+      b("kick", .12, .13, "Breaks the knee line", { cam: "low", fx: ["impact"] }), b("throw", .14, .13, "Throws him down", { cam: "rush", fx: ["debris", "impact"], launch: .12 }),
+      b("kneelFinish", .2, .14, "Pins him with the knife", { cam: "punch", fx: ["slash", "impact"], hold: .12 }), b("guard", .45, -.28, "Back to cover", { cam: "wide" })] },
 ];
 
 export const CHARACTER_COMBAT: CharacterCombat[] = [...BASE_COMBAT, ...EXTRA];

@@ -1,3 +1,4 @@
+import { characterCombat as ccScene } from "@/lib/character-combat";
 import { describe, expect, it } from "vitest";
 import { STORY_FIGHTS, actionStyle, choreography, styleFor, totalDuration, weaponFor } from "@/lib/ability-action";
 import { FX_LINEAGES, FX_TABLE_KEYS, abilityFxRecipe } from "@/lib/ability-fx";
@@ -76,4 +77,11 @@ describe("ability in action", () => {
     const wind = (id: string) => characterCombat(id)?.beats.find(b => b.pose === "windUp")?.d ?? 0;
     expect(wind("silas")).toBeGreaterThan(wind("rowan"));
   });
+});
+
+describe("user-confirmed combat styles", () => {
+  it("Rowan uses Blue Flame", () => { expect(ccScene("rowan")!.tint![0]).toBe("#1f6bff"); expect(ccScene("rowan")!.label).toContain("Blue Flame"); });
+  it("Arthur hits with shockwaves", () => { expect(ccScene("arthur")!.beats.flatMap(b => b.fx ?? [])).toContain("shockwave"); });
+  it("Samuel's scene is Ghost Mode", () => { expect(ccScene("samuel")!.label).toContain("Ghost Mode"); });
+  it("Corvani uses no ability effects", () => { const fx = ccScene("corvani")!.beats.flatMap(b => b.fx ?? []); for (const f of ["lightning","fireCleave","orb","aura","chaosRift","waterCrash","shockwave"]) expect(fx).not.toContain(f); });
 });
