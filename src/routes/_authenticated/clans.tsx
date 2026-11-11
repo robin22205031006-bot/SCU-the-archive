@@ -7,6 +7,7 @@ import { NexusConstellation } from "@/components/nexus-constellation";
 import { NexusLineage } from "@/components/nexus-lineage";
 import { Network, Castle, GitBranch } from "lucide-react";
 import { FamilyTree } from "@/components/family-tree";
+import { NexusFamilyTree } from "@/components/nexus-family-tree";
 
 export const Route = createFileRoute("/_authenticated/clans")({
   head: () => ({
@@ -43,7 +44,7 @@ export function Clans() {
       </header>
       {nexus ? <NexusWorkspace views={[
         { id: "clans", title: "Clan structures", icon: <Castle className="h-4 w-4" />, content: <NexusLineage /> },
-        { id: "family", title: "Family tree", icon: <GitBranch className="h-4 w-4" />, content: <FamilyTree /> },
+        { id: "family", title: "Family tree", icon: <GitBranch className="h-4 w-4" />, content: <NexusFamilyTree /> },
         { id: "bonds", title: "Connections", icon: <Network className="h-4 w-4" />, content: <NexusConstellation /> },
         { id: "editor", title: "Hierarchy editor", icon: <Castle className="h-4 w-4" />, content: <ClanGraph /> },
       ]} /> : <div className="grid gap-10"><ClanGraph /><section aria-label="Family tree"><h2 className="mb-3 text-2xl font-medium">Family tree</h2><FamilyTree /></section></div>}

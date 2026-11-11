@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery, entityRelationsQuery, type Entity, type EntityMembership } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { PanelSkeleton } from "@/components/route-skeleton";
+import { NexusBondEditor } from "@/components/nexus-bond-editor";
 
 const KINDS: Entity["kind"][] = ["character", "organization", "clan", "bloodline", "faction"];
 const HUE: Record<Entity["kind"], [number, number, number]> = {
@@ -146,7 +147,7 @@ export function NexusConstellation() {
   const btn = "grid h-9 w-9 place-items-center rounded-full border border-border bg-background/70 backdrop-blur";
 
   if (isLoading) return <PanelSkeleton />;
-  return <div className="relative h-[72vh] min-h-[460px] overflow-hidden rounded-3xl border border-border">
+  return <><div className="relative h-[72vh] min-h-[460px] overflow-hidden rounded-3xl border border-border">
     <canvas ref={cv} className="atlas-keep touch-none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} aria-label="Constellation of characters and groups. Drag to pan, pinch or scroll to zoom, tap a star to focus." />
     <div className="absolute inset-x-3 top-3 flex flex-wrap items-center gap-2">
       <form onSubmit={e => { e.preventDefault(); runSearch(); }} className="flex-1 min-w-[10rem]"><input value={q} onChange={e => setQ(e.target.value)} placeholder="Find a star…" className="h-9 w-full rounded-full border border-border bg-background/70 px-4 text-sm backdrop-blur" aria-label="Search the constellation" /></form>
@@ -172,5 +173,5 @@ export function NexusConstellation() {
       <div className="mt-1 flex max-h-24 flex-wrap gap-1 overflow-auto">{bonds.map(b => <button key={b.id} onClick={() => focus(b.id)} className="rounded-full border border-border px-2 py-0.5 text-[11px]" style={{ color: `rgb(${HUE[b.kind].join(",")})` }}>{b.name}</button>)}</div>
       <button onClick={() => nav({ to: "/reader", search: { e: selected.id } })} className="mt-3 inline-flex items-center gap-1.5 text-xs text-accent"><BookOpen className="h-3.5 w-3.5" /> Open dossier</button>
     </div>}
-  </div>;
+  </div><NexusBondEditor /></>;
 }

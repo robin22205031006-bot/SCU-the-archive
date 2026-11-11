@@ -72,7 +72,7 @@ export function FamilyTree() {
   );
 }
 
-function FamilyEditor({ chars, family }: { chars: { id: string; name: string }[]; family: { id: string; source_id: string; target_id: string; rel: string }[] }) {
+export function FamilyEditor({ chars, family }: { chars: { id: string; name: string }[]; family: { id: string; source_id: string; target_id: string; rel: string }[] }) {
   const qc = useQueryClient();
   const [a, setA] = useState(""); const [rel, setRel] = useState<FamilyRel>("parent"); const [b, setB] = useState("");
   const [proposals, setProposals] = useState<FamilyProposal[]>([]);
