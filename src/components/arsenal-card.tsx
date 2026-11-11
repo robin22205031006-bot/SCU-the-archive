@@ -19,7 +19,7 @@ function ArtFrame({ art, form, style, motion, big = false }: { art: ArsenalArt; 
     <div className={`relative overflow-hidden ${big ? "h-full" : "aspect-[4/5]"} ${nexus ? "rounded-xl" : "rounded-lg"} bg-background`}>
       <div key={form.label} className={`absolute inset-0 ${nexus && motion ? "arsenal-morph" : ""}`}>
         {url
-          ? <img src={url} alt={form.label} loading="lazy" decoding="async" className={`h-full w-full ${big ? "object-contain" : "object-cover"} ${motion && style !== "minimal" ? "arsenal-drift" : ""}`} style={{ objectPosition: big && !form.crop ? undefined : pos, transform: form.crop && big ? `scale(1.6) translateX(${form.crop === "left" ? "18%" : "-18%"})` : undefined }} />
+          ? <img src={url} alt={form.label} loading="lazy" decoding="async" className={`h-full w-full ${big ? "object-contain" : "object-cover"} ${motion && style !== "minimal" ? "arsenal-drift" : ""}`} style={{ height: "100%", width: "100%", objectPosition: big && !form.crop ? undefined : pos, transform: form.crop && big ? `scale(1.6) translateX(${form.crop === "left" ? "18%" : "-18%"})` : undefined }} />
           : <div className="grid h-full w-full place-items-center" style={{ background: `radial-gradient(circle at 50% 45%, hsl(${art.hue} 70% 22%), hsl(${art.hue} 40% 6%) 70%)` }}><ArsenalEmblem glyph={art.glyph} hue={art.hue} nexus animate={motion} className="size-2/5" /></div>}
       </div>
       {style !== "minimal" && <ArsenalFx layers={form.fx} animate={motion} density={nexus ? (big ? 1.4 : 1) : .55} fps={nexus ? 24 : 18} />}
@@ -60,7 +60,7 @@ export function ArtifactCard({ a, style, motion, staff, onEdit, onDelete, onOpen
       </button>
       <div className="flex items-start gap-2">
         <ArsenalEmblem glyph={art.glyph} hue={art.hue} nexus={nexus} animate={motion} className={nexus ? "size-11 shrink-0" : "size-9 shrink-0"} />
-        <div className="min-w-0 flex-1"><p className="text-[11px] uppercase tracking-widest text-accent">{CAT[a.category] ?? a.category}{a.weapon_type ? ` · ${a.weapon_type}` : ""}</p><h2 className="font-semibold text-foreground">{a.name}</h2></div>
+        <div className="min-w-0 flex-1"><p className="text-[11px] uppercase tracking-widest text-accent">{CAT[a.category] ?? a.category}{a.weapon_type ? ` · ${a.weapon_type}` : ""}</p><p className="text-base font-semibold leading-tight text-foreground">{a.name}</p></div>
         {staff && <div className="flex shrink-0"><Button size="icon" variant="ghost" aria-label="Edit" onClick={onEdit}><Pencil className="size-4" /></Button><Button size="icon" variant="ghost" aria-label="Delete" onClick={onDelete}><Trash2 className="size-4" /></Button></div>}
       </div>
       <FormTabs art={art} i={i} set={setI} />
@@ -82,12 +82,12 @@ export function NexusArtifactViewer({ a, motion, onClose }: { a: Artifact; motio
     return () => { window.removeEventListener("keydown", k); document.body.style.overflow = prev; };
   }, [onClose]);
   return (
-    <div role="dialog" aria-modal aria-label={a.name} className="fixed inset-0 z-[80] grid bg-background/90 backdrop-blur-md md:grid-cols-[1.4fr_1fr]" onClick={onClose}>
+    <div role="dialog" aria-modal aria-label={a.name} className="fixed inset-0 z-[300] grid bg-background/95 backdrop-blur-md md:grid-cols-[1.4fr_1fr]" onClick={onClose}>
       <div className="relative h-[55vh] p-3 md:h-screen" onClick={e => e.stopPropagation()}><ArtFrame art={art} form={form} style="nexus" motion={motion} big /></div>
       <div className="grid content-start gap-3 overflow-y-auto p-5 pb-16" onClick={e => e.stopPropagation()}>
         <div className="flex items-start gap-3">
           <ArsenalEmblem glyph={art.glyph} hue={art.hue} nexus animate={motion} className="size-14 shrink-0" />
-          <div className="min-w-0 flex-1"><p className="text-[11px] uppercase tracking-widest text-accent">{CAT[a.category] ?? a.category}{a.weapon_type ? ` · ${a.weapon_type}` : ""}</p><h2 className="text-2xl font-bold text-foreground">{a.name}</h2></div>
+          <div className="min-w-0 flex-1"><p className="text-[11px] uppercase tracking-widest text-accent">{CAT[a.category] ?? a.category}{a.weapon_type ? ` · ${a.weapon_type}` : ""}</p><p className="text-2xl font-bold leading-tight text-foreground">{a.name}</p></div>
           <Button size="icon" variant="ghost" aria-label="Close" onClick={onClose}><X className="size-5" /></Button>
         </div>
         <FormTabs art={art} i={i} set={setI} />
