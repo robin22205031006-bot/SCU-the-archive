@@ -391,6 +391,24 @@ export type Database = {
           },
         ]
       }
+      entity_name_aliases: {
+        Row: {
+          alias_norm: string
+          canonical_name: string
+          created_at: string
+        }
+        Insert: {
+          alias_norm: string
+          canonical_name: string
+          created_at?: string
+        }
+        Update: {
+          alias_norm?: string
+          canonical_name?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       entity_relations: {
         Row: {
           created_at: string

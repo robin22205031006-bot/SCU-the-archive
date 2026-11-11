@@ -12,7 +12,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { loreExtractionPrompt, loreJsonSchema, parseLoreExtraction } from "./lore-extraction";
 import { isSuperadminEmail } from "./roles";
-import { planLoreSync, type SyncInput } from "./adminLoreSync";
+import { canonicalCharacterName, planLoreSync, type SyncInput } from "./adminLoreSync";
 
 const kinds = ["character", "organization", "clan", "bloodline", "faction"] as const;
 
@@ -136,12 +136,15 @@ export const applyLore = createServerFn({ method: "POST" })
       const key = normalize(entry.name);
       byName.set(key, [...(byName.get(key) ?? []), entry]);
     }
-    const find = (name: string) => {
+    const findExact = (name: string) => {
       const matches = byName.get(normalize(name)) ?? [];
       if (matches.length > 1)
         throw new Error(`Multiple entries named ${name}. Resolve them before importing.`);
       return matches[0];
     };
+    // Real names, codenames and merged duplicates always resolve to the in-story card,
+    // so PDF imports can never recreate a merged character.
+    const find = (name: string) => findExact(name) ?? findExact(canonicalCharacterName(name));
     const checked = <T>(result: { data: T; error: unknown }) => {
       if (result.error) {
         const detail =
