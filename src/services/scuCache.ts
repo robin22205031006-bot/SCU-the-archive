@@ -20,7 +20,10 @@ export const scuCache = {
   async getOrganizations() {
     if (navigator.onLine) {
       try {
-        const { data, error } = await supabase.from("entities").select("*").eq("kind", "organization");
+        const { data, error } = await supabase
+          .from("entities")
+          .select("*")
+          .eq("kind", "organization");
         if (!error && data) {
           localStorage.setItem("scu_organizations_cache", JSON.stringify(data));
           return data;

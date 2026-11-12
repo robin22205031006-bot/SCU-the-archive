@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Entity } from "@/lib/entities";
 import { sfx } from "@/lib/scu-audio";
+import { invalidateArchive } from "@/lib/archive-sync";
 
 interface Candidate {
   id: string;
@@ -97,12 +98,20 @@ export function MergeEntityDialog({
       if (error) throw error;
       const moved = (data as { notes_moved?: number } | null)?.notes_moved ?? 0;
       sfx.merge();
+      // Record in entity_name_aliases to block recreation of the merged-away entity name
+      const normAlias = entity.name.toLowerCase().replace(/\s+/g, " ").trim();
+      const normCanon = target.name.toLowerCase().replace(/\s+/g, " ").trim();
+      await supabase
+        .from("entity_name_aliases")
+        .insert({ alias_norm: normAlias, canonical_name: normCanon })
+        .then(() => {})
+        .catch(() => {});
+
       toast.success(
         `Merged "${entity.name}" into "${target.name}" — ${moved} lore note(s) transferred.`,
       );
-      qc.invalidateQueries({ queryKey: ["entities"] });
+      await invalidateArchive(qc);
       qc.invalidateQueries({ queryKey: ["notes"] });
-      qc.invalidateQueries({ queryKey: ["search-index"] });
       qc.removeQueries({ queryKey: ["notes", entity.id] });
       onOpenChange(false);
     } catch (err) {

@@ -100,8 +100,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Sentinels Cinematic Universe" },
-      { name: "description", content: "The archive of the Sentinels Cinematic Universe." },
+      { title: "SCU - The Archive" },
+      {
+        name: "description",
+        content:
+          "The interactive archive and lore explorer for the Sentinels Cinematic Universe (SCU).",
+      },
+      { property: "og:title", content: "SCU - The Archive" },
+      {
+        property: "og:description",
+        content:
+          "The interactive archive and lore explorer for the Sentinels Cinematic Universe (SCU).",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "theme-color", content: "#0a0d14" },

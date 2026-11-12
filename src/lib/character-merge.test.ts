@@ -35,4 +35,49 @@ describe("latest merges", () => {
     expect(canonicalCharacterName("Vanguard")).toBe("derek miles"));
   it("Alter Ethan resolves to Alt Ethan", () =>
     expect(canonicalCharacterName("Alter Ethan")).toBe("alt ethan"));
+  it("Corvani resolves to Marcello Corvani", () =>
+    expect(canonicalCharacterName("Corvani")).toBe("marcello corvani"));
+  it("Aariz resolves to Aariz Maddox", () =>
+    expect(canonicalCharacterName("Aariz")).toBe("aariz maddox"));
+  it("Damian resolves to Damian Brown", () =>
+    expect(canonicalCharacterName("Damian")).toBe("damian brown"));
+  it("Silas resolves to Silas Duskmoor", () =>
+    expect(canonicalCharacterName("Silas")).toBe("silas duskmoor"));
+  it("Anna resolves to Anna Al-Ahd", () =>
+    expect(canonicalCharacterName("Anna")).toBe("anna al-ahd"));
+  it("Sparda resolves to Prince of Demons (Sparda)", () =>
+    expect(canonicalCharacterName("Sparda")).toBe("prince of demons (sparda)"));
+  it("Ayaan Siddiqi resolves to Ayaan Siddique", () =>
+    expect(canonicalCharacterName("Ayaan Siddiqi")).toBe("ayaan siddique"));
+  it("Prime Nyxia resolves to Xinea", () =>
+    expect(canonicalCharacterName("Prime Nyxia")).toBe("xinea"));
+});
+
+describe("canonical series and standalone epics", () => {
+  it("provides 5 canonical series", async () => {
+    const { DEFAULT_CANON_SERIES } = await import("./series");
+    const titles = DEFAULT_CANON_SERIES.map((s) => s.title);
+    expect(titles).toEqual([
+      "The Sentinels",
+      "Redline",
+      "Bloodline",
+      "Divine Beast",
+      "Standalone Epics",
+    ]);
+  });
+
+  it("Standalone Epics includes Zaan, Khalid, and Alister", async () => {
+    const { DEFAULT_CANON_SERIES } = await import("./series");
+    const standalone = DEFAULT_CANON_SERIES.find((s) => s.title === "Standalone Epics");
+    expect(standalone).toBeDefined();
+    expect(standalone?.season_names).toEqual(["Zaan", "Khalid", "Alister"]);
+  });
+
+  it("canonical rosters cover core characters in Standalone Epics", async () => {
+    const { CANON_SERIES_ROSTERS } = await import("./series");
+    const standaloneRoster = CANON_SERIES_ROSTERS["Standalone Epics"];
+    expect(standaloneRoster).toBeDefined();
+    const names = standaloneRoster.map((r) => r.characterName);
+    expect(names).toEqual(expect.arrayContaining(["Zaan", "Khalid", "Alistair Quinn"]));
+  });
 });
