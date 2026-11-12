@@ -1,18 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  buildUpdatePatch,
-  filterGrounded,
-  normalize,
-  validEntityCategory,
-  validLoreStatus,
-} from "./lore-merge";
+import { filterGrounded, normalize } from "./lore-merge";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { loreExtractionPrompt, loreJsonSchema, parseLoreExtraction } from "./lore-extraction";
 import { isSuperadminEmail } from "./roles";
-import { canonicalCharacterName, planLoreSync, type SyncInput } from "./adminLoreSync";
+import {
+  ALIAS_MAP,
+  aliasesForCanonical,
+  canonicalCharacterName,
+  planLoreSync,
+  type SyncInput,
+  type SyncPlan,
+} from "./adminLoreSync";
+import { CANON_CHARACTER_ABILITIES } from "./abilities";
 
 const kinds = ["character", "organization", "clan", "bloodline", "faction"] as const;
 
@@ -31,16 +33,169 @@ function claimEmail(claims: unknown): string | null {
   return typeof email === "string" ? email : null;
 }
 
+/** Load custom runtime aliases from entity_name_aliases if the table exists. */
+async function loadDynamicAliases(sb: SupabaseClient<Database>): Promise<Record<string, string>> {
+  try {
+    const { data, error } = await sb
+      .from("entity_name_aliases")
+      .select("alias_norm, canonical_name");
+    if (error || !data) return {};
+    const out: Record<string, string> = {};
+    for (const row of data) {
+      if (row.alias_norm && row.canonical_name) {
+        out[normalize(row.alias_norm)] = normalize(row.canonical_name);
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Best-effort backfill of canonical character abilities where unlocked and empty. */
+async function backfillCanonAbilities(sb: SupabaseClient<Database>) {
+  try {
+    const { data: chars, error } = await sb
+      .from("entities")
+      .select("id, name, abilities, locked_fields")
+      .eq("kind", "character");
+    if (error || !chars) return;
+    for (const ch of chars) {
+      const locks = ch.locked_fields ?? [];
+      if (locks.includes("abilities")) continue;
+      if ((ch.abilities?.length ?? 0) > 0) continue;
+      const canonAbilities = CANON_CHARACTER_ABILITIES[canonicalCharacterName(ch.name)];
+      if (!canonAbilities?.length) continue;
+      await sb
+        .from("entities")
+        .update({ abilities: canonAbilities, updated_at: new Date().toISOString() })
+        .eq("id", ch.id);
+    }
+  } catch {
+    /* non-fatal best-effort ability hydration */
+  }
+}
+
+async function executeSyncPlan(sb: SupabaseClient<Database>, plan: SyncPlan, filename: string) {
+  const checked = <T>(result: { data: T; error: unknown }, label = "write") => {
+    if (result.error) {
+      const detail =
+        typeof result.error === "object" && result.error !== null && "message" in result.error
+          ? String((result.error as { message: unknown }).message)
+          : String(result.error);
+      console.error(`[loreSync] ${label} failed:`, result.error);
+      throw new Error(
+        `The sync could not finish (${label}): ${detail}. Some entries may have saved; review the archive before retrying.`,
+      );
+    }
+    return result.data;
+  };
+
+  for (const ins of plan.entityInserts) {
+    const inserted = checked(
+      await sb
+        .from("entities")
+        .insert({
+          kind: ins.kind,
+          name: ins.name,
+          alias: ins.alias,
+          role: ins.role,
+          status: ins.status ?? (ins.kind === "character" ? "Alive" : "Active"),
+          category: ins.category,
+          description: ins.description,
+          image_url: ins.image_url,
+        })
+        .select("id")
+        .single(),
+      `entity insert '${ins.name}'`,
+    );
+    if (!inserted) {
+      throw new Error(
+        `The sync could not finish (entity insert '${ins.name}'). Some entries may have saved; review the archive before retrying.`,
+      );
+    }
+    for (const note of ins.notes) {
+      checked(
+        await sb
+          .from("lore_notes")
+          .insert({ entity_id: inserted.id, text: note, source: ins.source }),
+        `conflict note for '${ins.name}'`,
+      );
+    }
+  }
+
+  for (const note of plan.loreNoteInserts) {
+    checked(await sb.from("lore_notes").insert(note), `lore note for entity ${note.entity_id}`);
+  }
+
+  for (const upd of plan.entityUpdates) {
+    checked(
+      await sb
+        .from("entities")
+        .update({ ...upd.patch, updated_at: new Date().toISOString() })
+        .eq("id", upd.id),
+      `entity update ${upd.id}`,
+    );
+  }
+
+  for (const ev of plan.timelineInserts) {
+    checked(
+      await sb.from("timeline_events").insert({
+        title: ev.title,
+        era: ev.era,
+        description: ev.description,
+        source: ev.source,
+        sort_order: ev.sort_order,
+      }),
+      `timeline event '${ev.title}'`,
+    );
+  }
+
+  await backfillCanonAbilities(sb);
+
+  const updatedIds = new Set<string>([
+    ...plan.entityUpdates.map((u) => u.id),
+    ...plan.loreNoteInserts.map((n) => n.entity_id),
+  ]);
+
+  const summary = {
+    created: plan.entityInserts.length,
+    notes: plan.loreNoteInserts.length,
+    updated: updatedIds.size,
+    events: plan.timelineInserts.length,
+    warnings: plan.warnings,
+  };
+
+  checked(await sb.from("ingest_jobs").insert({ filename, summary }), "ingest_jobs insert");
+
+  return summary;
+}
+
 export const analyzeLore = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ text: z.string().min(20).max(400_000) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId, claimEmail(context.claims));
-    const { data: existing, error } = await context.supabase.from("entities").select("name, kind");
+    const [{ data: existing, error }, dynamicAliases] = await Promise.all([
+      context.supabase.from("entities").select("name, kind, alias"),
+      loadDynamicAliases(context.supabase),
+    ]);
     if (error) throw new Error("The archive could not be loaded. Please try again.");
-    const names = (existing ?? []).map((e) => `${e.name} (${e.kind})`).join("; ") || "none";
 
-    const userText = `Existing archive entries: ${names}\n\nSTORY TEXT:\n${data.text}`;
+    const names =
+      (existing ?? [])
+        .map((e) => `${e.name} (${e.kind}${e.alias ? `; aliases: ${e.alias}` : ""})`)
+        .join("; ") || "none";
+
+    const aliasPairs = Object.entries({ ...ALIAS_MAP, ...dynamicAliases })
+      .map(([a, c]) => `${a} -> ${c}`)
+      .join(", ");
+
+    const userText =
+      `Existing archive entries: ${names}\n` +
+      `Known merged aliases (always map these in updates using the existing archive entry name): ${aliasPairs}\n\n` +
+      `STORY TEXT:\n${data.text}`;
+
     let raw: string;
     try {
       const { generateGemini, pickGeminiKey } = await import("./gemini.server");
@@ -71,7 +226,7 @@ export const analyzeLore = createServerFn({ method: "POST" })
       if (!raw) throw new Error("The lore reader is busy. Nothing was saved; try again shortly.");
     }
     try {
-      return parseLoreExtraction(raw, data.text);
+      return parseLoreExtraction(raw, data.text, dynamicAliases);
     } catch {
       throw new Error(
         "Gemini returned invalid lore data. Nothing was saved; analyze the PDF again.",
@@ -137,7 +292,10 @@ export const applyLore = createServerFn({ method: "POST" })
     const sb = context.supabase;
     await assertAdmin(sb, context.userId, claimEmail(context.claims));
     const src = data.filename;
-    const grounded = filterGrounded(data, data.source_text);
+    const dynamicAliases = await loadDynamicAliases(sb);
+    const grounded = filterGrounded(data, data.source_text, (name) =>
+      aliasesForCanonical(name, undefined, dynamicAliases),
+    );
     if (
       grounded.new_entities.length !== data.new_entities.length ||
       grounded.updates.length !== data.updates.length ||
@@ -145,122 +303,43 @@ export const applyLore = createServerFn({ method: "POST" })
     ) {
       throw new Error("Some selected lore is no longer supported by the PDF. Analyze it again.");
     }
-    const archive = await sb.from("entities").select("id, name, kind, status, locked_fields");
-    if (archive.error) throw new Error("The archive could not be loaded. Nothing was saved.");
-    const byName = new Map<string, NonNullable<typeof archive.data>>();
-    for (const entry of archive.data ?? []) {
-      const key = normalize(entry.name);
-      byName.set(key, [...(byName.get(key) ?? []), entry]);
-    }
-    const findExact = (name: string) => {
-      const matches = byName.get(normalize(name)) ?? [];
-      if (matches.length > 1)
-        throw new Error(`Multiple entries named ${name}. Resolve them before importing.`);
-      return matches[0];
-    };
-    // Real names, codenames and merged duplicates always resolve to the in-story card,
-    // so PDF imports can never recreate a merged character.
-    const find = (name: string) => findExact(name) ?? findExact(canonicalCharacterName(name));
-    const checked = <T>(result: { data: T; error: unknown }) => {
-      if (result.error) {
-        const detail =
-          typeof result.error === "object" && result.error !== null && "message" in result.error
-            ? String((result.error as { message: unknown }).message)
-            : String(result.error);
-        console.error("[applyLore] write failed:", result.error);
-        throw new Error(
-          `The import could not finish: ${detail}. Some entries may have saved; review the archive before retrying.`,
-        );
-      }
-      return result.data;
-    };
-    // Resolve ambiguous names before performing any writes.
-    for (const e of grounded.new_entities) find(e.name);
-    for (const u of grounded.updates) find(u.existing_name);
-    let created = 0,
-      updated = 0,
-      events = 0;
 
-    for (const e of grounded.new_entities) {
-      const dup = find(e.name);
-      if (dup) {
-        checked(
-          await sb
-            .from("lore_notes")
-            .insert({ entity_id: dup.id, text: e.description, source: src }),
-        );
-        updated++;
-        continue;
-      }
-      const isChar = e.kind === "character";
-      const entry = checked(
-        await sb
-          .from("entities")
-          .insert({
-            kind: e.kind,
-            name: e.name,
-            alias: e.alias,
-            role: e.role,
-            status: validLoreStatus(e.kind, e.status) ?? (isChar ? "Alive" : "Active"),
-            category: validEntityCategory(e.kind, e.category ?? null),
-            description: e.description,
-            image_url: null,
-          })
-          .select("id, name, kind, status, locked_fields")
-          .single(),
-      );
-      if (entry) byName.set(normalize(entry.name), [entry]);
-      created++;
-    }
-
-    for (const u of grounded.updates) {
-      const target = find(u.existing_name);
-      if (!target)
-        throw new Error(
-          `The entry ${u.existing_name} no longer exists. Some entries may have saved; review the archive before retrying.`,
-        );
-      if (u.new_facts.trim())
-        checked(
-          await sb
-            .from("lore_notes")
-            .insert({ entity_id: target.id, text: u.new_facts, source: src }),
-        );
-      const patch = buildUpdatePatch(target, u);
-      if (Object.keys(patch).length)
-        checked(
-          await sb
-            .from("entities")
-            .update({ ...patch, updated_at: new Date().toISOString() })
-            .eq("id", target.id),
-        );
-      updated++;
-    }
-
-    const last = checked(
-      await sb
+    const [archive, existingTimeline] = await Promise.all([
+      sb.from("entities").select("id, name, alias, kind, status, category, locked_fields"),
+      sb
         .from("timeline_events")
-        .select("sort_order")
-        .order("sort_order", { ascending: false })
-        .limit(1),
-    );
-    let order = last?.[0]?.sort_order ?? 0;
-    for (const ev of grounded.events) {
-      checked(
-        await sb.from("timeline_events").insert({
-          title: ev.title,
-          era: ev.era,
-          description: ev.description,
-          source: src,
-          sort_order: ++order,
-        }),
-      );
-      events++;
-    }
+        .select("title, era, sort_order")
+        .order("sort_order", { ascending: false }),
+    ]);
+    if (archive.error) throw new Error("The archive could not be loaded. Nothing was saved.");
+    if (existingTimeline.error)
+      throw new Error("The timeline could not be loaded. Nothing was saved.");
 
-    checked(
-      await sb.from("ingest_jobs").insert({ filename: src, summary: { created, updated, events } }),
+    const lastSortOrder = existingTimeline.data?.[0]?.sort_order ?? 0;
+    const plan = planLoreSync(
+      (archive.data ?? []).map((e) => ({ ...e, locked_fields: e.locked_fields ?? [] })),
+      [
+        {
+          source: src,
+          new_entities: grounded.new_entities,
+          updates: grounded.updates,
+          events: grounded.events,
+        },
+      ],
+      lastSortOrder,
+      {
+        dynamicAliases,
+        existingTimeline: existingTimeline.data ?? [],
+      },
     );
-    return { created, updated, events };
+
+    const summary = await executeSyncPlan(sb, plan, src);
+    return {
+      created: summary.created,
+      updated: summary.updated,
+      events: summary.events,
+      warnings: summary.warnings,
+    };
   });
 
 const consolidatedEntity = z.object({
@@ -312,7 +391,7 @@ const consolidatedEvent = z.object({
  * Bulk-sync the consolidated lore-export JSON (entities/updates/events already
  * grounded per-file by lore-batch.mjs) through the non-destructive planLoreSync
  * planner: inserts new entities, appends lore_notes for known names, patches only
- * unlocked status fields, and appends timeline events.
+ * unlocked status/alias fields, and appends deduplicated timeline events.
  */
 export const syncLoreExport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -329,16 +408,17 @@ export const syncLoreExport = createServerFn({ method: "POST" })
     const sb = context.supabase;
     await assertAdmin(sb, context.userId, claimEmail(context.claims));
 
-    const archive = await sb
-      .from("entities")
-      .select("id, name, kind, status, category, locked_fields");
+    const [archive, existingTimeline, dynamicAliases] = await Promise.all([
+      sb.from("entities").select("id, name, alias, kind, status, category, locked_fields"),
+      sb
+        .from("timeline_events")
+        .select("title, era, sort_order")
+        .order("sort_order", { ascending: false }),
+      loadDynamicAliases(sb),
+    ]);
     if (archive.error) throw new Error("The archive could not be loaded. Nothing was saved.");
-    const last = await sb
-      .from("timeline_events")
-      .select("sort_order")
-      .order("sort_order", { ascending: false })
-      .limit(1);
-    if (last.error) throw new Error("The timeline could not be loaded. Nothing was saved.");
+    if (existingTimeline.error)
+      throw new Error("The timeline could not be loaded. Nothing was saved.");
 
     // Group items by PDF source so lore_notes keep their provenance.
     const groups = new Map<string, SyncInput>();
@@ -380,91 +460,16 @@ export const syncLoreExport = createServerFn({ method: "POST" })
       });
     }
 
+    const lastSortOrder = existingTimeline.data?.[0]?.sort_order ?? 0;
     const plan = planLoreSync(
       (archive.data ?? []).map((e) => ({ ...e, locked_fields: e.locked_fields ?? [] })),
       [...groups.values()],
-      last.data?.[0]?.sort_order ?? 0,
+      lastSortOrder,
+      {
+        dynamicAliases,
+        existingTimeline: existingTimeline.data ?? [],
+      },
     );
 
-    const checked = <T>(result: { data: T; error: unknown }, label = "write") => {
-      if (result.error) {
-        const detail =
-          typeof result.error === "object" && result.error !== null && "message" in result.error
-            ? String((result.error as { message: unknown }).message)
-            : String(result.error);
-        console.error(`[syncLoreExport] ${label} failed:`, result.error);
-        throw new Error(
-          `The sync could not finish (${label}): ${detail}. Some entries may have saved; review the archive before retrying.`,
-        );
-      }
-      return result.data;
-    };
-
-    for (const ins of plan.entityInserts) {
-      const inserted = checked(
-        await sb
-          .from("entities")
-          .insert({
-            kind: ins.kind,
-            name: ins.name,
-            alias: ins.alias,
-            role: ins.role,
-            status: ins.status ?? (ins.kind === "character" ? "Alive" : "Active"),
-            category: ins.category,
-            description: ins.description,
-            image_url: ins.image_url,
-          })
-          .select("id")
-          .single(),
-        `entity insert '${ins.name}'`,
-      );
-      if (!inserted)
-        throw new Error(
-          `The sync could not finish (entity insert '${ins.name}'). Some entries may have saved; review the archive before retrying.`,
-        );
-      for (const note of ins.notes) {
-        checked(
-          await sb
-            .from("lore_notes")
-            .insert({ entity_id: inserted.id, text: note, source: ins.source }),
-          `conflict note for '${ins.name}'`,
-        );
-      }
-    }
-    for (const note of plan.loreNoteInserts)
-      checked(await sb.from("lore_notes").insert(note), `lore note for entity ${note.entity_id}`);
-    for (const upd of plan.entityUpdates) {
-      checked(
-        await sb
-          .from("entities")
-          .update({ ...upd.patch, updated_at: new Date().toISOString() })
-          .eq("id", upd.id),
-        `entity update ${upd.id}`,
-      );
-    }
-    for (const ev of plan.timelineInserts) {
-      checked(
-        await sb.from("timeline_events").insert({
-          title: ev.title,
-          era: ev.era,
-          description: ev.description,
-          source: ev.source,
-          sort_order: ev.sort_order,
-        }),
-        `timeline event '${ev.title}'`,
-      );
-    }
-
-    const summary = {
-      created: plan.entityInserts.length,
-      notes: plan.loreNoteInserts.length,
-      updated: plan.entityUpdates.length,
-      events: plan.timelineInserts.length,
-      warnings: plan.warnings,
-    };
-    checked(
-      await sb.from("ingest_jobs").insert({ filename: "lore-export batch", summary }),
-      "ingest_jobs insert",
-    );
-    return summary;
+    return executeSyncPlan(sb, plan, "lore-export batch");
   });

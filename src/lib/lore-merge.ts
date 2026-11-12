@@ -72,6 +72,7 @@ export interface Extraction {
 export const normalize = (s: string) =>
   s
     .toLowerCase()
+    .replace(/\u00ad/g, "")
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201c\u201d]/g, '"')
     .replace(/\s+/g, " ")
@@ -84,15 +85,27 @@ export function isGrounded(quote: string, sourceNorm: string): boolean {
 }
 
 /** Drop anything whose quote or name isn't literally in the PDF text. */
-export function filterGrounded(ex: Extraction, source: string): Extraction {
+export function filterGrounded(
+  ex: Extraction,
+  source: string,
+  resolveAliases?: (name: string) => string[],
+): Extraction {
   const src = normalize(source);
+  const nameInSource = (name: string, allowAliases = false): boolean => {
+    const n = normalize(name);
+    if (!n) return false;
+    if (src.includes(n)) return true;
+    if (!allowAliases || !resolveAliases) return false;
+    return resolveAliases(name).some((alt) => {
+      const a = normalize(alt);
+      return a.length > 0 && src.includes(a);
+    });
+  };
   return {
     new_entities: ex.new_entities
       .filter(
         (e) =>
-          normalize(e.name).length > 0 &&
-          isGrounded(e.quote, src) &&
-          src.includes(normalize(e.name)),
+          normalize(e.name).length > 0 && isGrounded(e.quote, src) && nameInSource(e.name, false),
       )
       .map((e) => ({
         ...e,
@@ -103,7 +116,7 @@ export function filterGrounded(ex: Extraction, source: string): Extraction {
       (u) =>
         normalize(u.existing_name).length > 0 &&
         isGrounded(u.quote, src) &&
-        src.includes(normalize(u.existing_name)),
+        nameInSource(u.existing_name, true),
     ),
     events: ex.events.filter((e) => isGrounded(e.quote, src)),
   };

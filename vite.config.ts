@@ -98,6 +98,11 @@ function supabaseProxyPlugin(targetOrigin: string): Plugin {
 
 export default defineConfig({
   vite: {
+    server: {
+      host: "0.0.0.0",
+      port: 3000,
+      allowedHosts: true,
+    },
     plugins: [supabaseProxyPlugin(url)],
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(url),

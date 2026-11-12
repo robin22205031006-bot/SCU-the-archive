@@ -11,6 +11,7 @@ import { useIsAdmin, useIsStaff } from "@/hooks/use-admin";
 import { isSuperadminEmail } from "@/lib/roles";
 import { listUserRoles, setUserRole } from "@/lib/roles.functions";
 import { syncLoreExport } from "@/lib/ingest.functions";
+import { invalidateArchive } from "@/lib/archive-sync";
 import { AdminEpisodes } from "@/components/admin-episodes";
 import { AdminSeries } from "@/components/admin-series";
 import { AdminTypography } from "@/components/admin-typography";
@@ -118,7 +119,8 @@ function Admin() {
         if (warns.length > 5)
           toast.warning(`…and ${warns.length - 5} more sync notices`, { duration: 8000 });
       }
-      qc.invalidateQueries({ queryKey: ["entities"] });
+      await invalidateArchive(qc);
+      qc.invalidateQueries({ queryKey: ["notes"] });
       qc.invalidateQueries({ queryKey: ["timeline"] });
       qc.invalidateQueries({ queryKey: ["admin"] });
       qc.invalidateQueries({ queryKey: ["admin-conflicts"] });

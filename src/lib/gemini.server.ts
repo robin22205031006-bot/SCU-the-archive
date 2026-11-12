@@ -9,12 +9,17 @@ export function pickGeminiKey(pool: "admin" | "chat"): string | undefined {
   const env = process.env;
   const keys = (
     pool === "admin"
-      ? [env["GOOGLE_API_KEY"], env["GOOGLE_API_KEY_2"]]
-      : [env["GOOGLE_API_KEY_3"], env["GOOGLE_API_KEY_4"], env["GOOGLE_API_KEY"]]
+      ? [env["GOOGLE_API_KEY"], env["GOOGLE_API_KEY_2"], env["GEMINI_API_KEY"]]
+      : [
+          env["GOOGLE_API_KEY_3"],
+          env["GOOGLE_API_KEY_4"],
+          env["GOOGLE_API_KEY"],
+          env["GEMINI_API_KEY"],
+        ]
   ).filter((k): k is string => !!k && !k.startsWith("gen-lang-client-"));
   // Fall back to any valid key so a pool with only placeholder IDs still works.
   if (!keys.length) {
-    const all = [env["GOOGLE_API_KEY"], env["GOOGLE_API_KEY_2"]].filter(
+    const all = [env["GOOGLE_API_KEY"], env["GOOGLE_API_KEY_2"], env["GEMINI_API_KEY"]].filter(
       (k): k is string => !!k && !k.startsWith("gen-lang-client-"),
     );
     keys.push(...all);

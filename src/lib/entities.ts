@@ -70,8 +70,18 @@ import {
   resolveEntityId,
   getMergedSecondaryIds,
 } from "./character-card-merge";
+import { canonicalCharacterName } from "./adminLoreSync";
+import { CANON_CHARACTER_ABILITIES } from "./abilities";
 
 export { mergeCharacterCards, resolveEntityId, getMergedSecondaryIds };
+
+function hydrateCanonAbilities<T extends Entity>(entity: T): T {
+  if (entity.kind !== "character") return entity;
+  if ((entity.abilities?.length ?? 0) > 0) return entity;
+  if (entity.locked_fields?.includes("abilities")) return entity;
+  const fallback = CANON_CHARACTER_ABILITIES[canonicalCharacterName(entity.name)];
+  return fallback?.length ? { ...entity, abilities: [...fallback] } : entity;
+}
 
 export const entitiesQuery = (kinds: string[]) =>
   queryOptions({
@@ -93,7 +103,8 @@ export const entitiesQuery = (kinds: string[]) =>
         throw error;
       }
       const raw = (data ?? []) as Entity[];
-      return kinds.includes("character") ? mergeCharacterCards(raw) : raw;
+      const merged = kinds.includes("character") ? mergeCharacterCards(raw) : raw;
+      return merged.map((e) => hydrateCanonAbilities(e));
     },
   });
 
@@ -118,7 +129,7 @@ export const entityByIdQuery = (id: string) => {
         }
         throw error;
       }
-      return data;
+      return data ? hydrateCanonAbilities(data) : null;
     },
   });
 };

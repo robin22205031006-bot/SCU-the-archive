@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { getMergedSecondaryIds, type Entity } from "@/lib/entities";
+import { canonicalCharacterName } from "@/lib/adminLoreSync";
 
 export type Series = Tables<"series">;
 export type SeriesCharacter = Tables<"series_characters">;
@@ -267,6 +268,60 @@ export const CANON_SERIES_ROSTERS: Record<string, CanonRosterEntry[]> = {
       role_in_series: "Shadow Guardian of the Throne",
       status: "Alive",
     },
+    {
+      characterName: "Elina Quins",
+      arc_role: "Support",
+      role_in_series: "Eldrich's Loved One",
+      status: "Dead",
+    },
+    {
+      characterName: "Norman",
+      arc_role: "Support",
+      role_in_series: "Veteran Tactician & Brawler",
+      status: "Alive",
+    },
+    {
+      characterName: "Elizabeth Pristine",
+      arc_role: "Antagonist",
+      role_in_series: "Shape-Shifting Infiltrator",
+      status: "Alive",
+    },
+    {
+      characterName: "Damian Brown",
+      arc_role: "Support",
+      role_in_series: "Aldercrest Heir",
+      status: "Dead",
+    },
+    {
+      characterName: "Weston Hale",
+      arc_role: "Support",
+      role_in_series: "White Lightning Speedster",
+      status: "Alive",
+    },
+    {
+      characterName: "Nur",
+      arc_role: "Support",
+      role_in_series: "Demonic Clan Companion",
+      status: "Alive",
+    },
+    {
+      characterName: "Lucas",
+      arc_role: "Antagonist",
+      role_in_series: "DEW Speedster Hybrid",
+      status: "Alive",
+    },
+    {
+      characterName: "Amaya",
+      arc_role: "Support",
+      role_in_series: "Sentinel Ally (Humayra)",
+      status: "Alive",
+    },
+    {
+      characterName: "Evan Grant",
+      arc_role: "Support",
+      role_in_series: "Sentinel Ally (Mubasshir)",
+      status: "Alive",
+    },
   ],
   // Redline
   "00000000-0000-4000-a000-000000000002": [
@@ -323,6 +378,60 @@ export const CANON_SERIES_ROSTERS: Record<string, CanonRosterEntry[]> = {
       arc_role: "Support",
       role_in_series: "Rescued Ally S2",
       status: "Alive",
+    },
+    {
+      characterName: "Arvin",
+      arc_role: "Support",
+      role_in_series: "Redline Operative S1-S2",
+      status: "Alive",
+    },
+    {
+      characterName: "Saya",
+      arc_role: "Support",
+      role_in_series: "Ex-DEW Operative & Obsidian Recruit",
+      status: "Alive",
+    },
+    {
+      characterName: "Ayaan Siddique",
+      arc_role: "Protagonist",
+      role_in_series: "Frontliner S1 & Commanding Lead S2",
+      status: "Alive",
+    },
+    {
+      characterName: "Yoshiko Arashi",
+      arc_role: "Support",
+      role_in_series: "Field Spy S1 & Obsidian S2",
+      status: "Alive",
+    },
+    {
+      characterName: "Derek Miles",
+      arc_role: "Support",
+      role_in_series: "Acting Commanding Officer S2",
+      status: "Alive",
+    },
+    {
+      characterName: "Samuel Sterling",
+      arc_role: "Protagonist",
+      role_in_series: "Ghost-01 Operative",
+      status: "Alive",
+    },
+    {
+      characterName: "Kazumi Kurahana",
+      arc_role: "Support",
+      role_in_series: "Kara Clan & Obsidians Recruit",
+      status: "Alive",
+    },
+    {
+      characterName: "Mashiho Kurohana",
+      arc_role: "Support",
+      role_in_series: "Kara Clan Rebuilder & Obsidians",
+      status: "Alive",
+    },
+    {
+      characterName: "Alistair Quinn",
+      arc_role: "Support",
+      role_in_series: "Redline Evaluator",
+      status: "Legend",
     },
   ],
   // Bloodline
@@ -381,6 +490,48 @@ export const CANON_SERIES_ROSTERS: Record<string, CanonRosterEntry[]> = {
       role_in_series: "Twin Blade of Kurohana",
       status: "Alive",
     },
+    {
+      characterName: "Kensho Arashi",
+      arc_role: "Legend",
+      role_in_series: "Seraph Patriarch & Nullborn Leader",
+      status: "Dead",
+    },
+    {
+      characterName: "Freya",
+      arc_role: "Legend",
+      role_in_series: "Dragonic Bloodline Matriarch",
+      status: "Alive",
+    },
+    {
+      characterName: "Gabriel",
+      arc_role: "Legend",
+      role_in_series: "Dragonic Patriarch",
+      status: "Alive",
+    },
+    {
+      characterName: "Arthur",
+      arc_role: "Antagonist",
+      role_in_series: "Dragon Heir of the Old Line",
+      status: "Alive",
+    },
+    {
+      characterName: "Khalid",
+      arc_role: "Protagonist",
+      role_in_series: "Demon-Human Bloodline & Nullborn",
+      status: "Alive",
+    },
+    {
+      characterName: "Zaan",
+      arc_role: "Protagonist",
+      role_in_series: "Founder of the Hidden Ones",
+      status: "Alive",
+    },
+    {
+      characterName: "Asetra",
+      arc_role: "Antagonist",
+      role_in_series: "Balance Host Origin",
+      status: "Missing",
+    },
   ],
   // Divine Beast
   "00000000-0000-4000-a000-000000000004": [
@@ -421,7 +572,7 @@ export const CANON_SERIES_ROSTERS: Record<string, CanonRosterEntry[]> = {
       status: "Alive",
     },
     {
-      characterName: "Sparda",
+      characterName: "Prince of Demons (Sparda)",
       arc_role: "Antagonist",
       role_in_series: "Prince of Demons",
       status: "Alive",
@@ -579,17 +730,28 @@ export const seriesCharactersQuery = (seriesId: string) =>
       const roster = CANON_SERIES_ROSTERS[canonKey];
       if (!roster?.length) return [] as SeriesCharacter[];
 
-      // Resolve character IDs from entities
+      // Resolve character IDs from entities using canonical merge names too
       const { data: entities } = await supabase
         .from("entities")
         .select("id, name")
         .eq("kind", "character");
-      const byName = new Map((entities ?? []).map((e) => [norm(e.name), e.id]));
+      const byName = new Map<string, string>();
+      for (const e of entities ?? []) {
+        const exact = norm(e.name);
+        const canon = canonicalCharacterName(e.name);
+        byName.set(exact, e.id);
+        if (!byName.has(canon) || exact === canon) {
+          byName.set(canon, e.id);
+        }
+      }
 
       const synthetic: SeriesCharacter[] = [];
+      const seenIds = new Set<string>();
       for (const entry of roster) {
-        const charId = byName.get(norm(entry.characterName));
-        if (charId) {
+        const canonEntry = canonicalCharacterName(entry.characterName);
+        const charId = byName.get(norm(entry.characterName)) ?? byName.get(canonEntry);
+        if (charId && !seenIds.has(charId)) {
+          seenIds.add(charId);
           synthetic.push({
             id: `canon-${seriesId}-${charId}`,
             series_id: seriesId,
@@ -634,13 +796,22 @@ export const characterSeriesQuery = (characterId: string) =>
       if (!ent) return [];
 
       const charNorm = norm(ent.name);
+      const charCanon = canonicalCharacterName(ent.name);
       const out: (SeriesCharacter & {
         series: Pick<Series, "id" | "title" | "cover_image_url"> | null;
       })[] = [];
+      const seenSeries = new Set<string>();
 
       for (const [sid, roster] of Object.entries(CANON_SERIES_ROSTERS)) {
-        const match = roster.find((r) => norm(r.characterName) === charNorm);
+        if (!sid.startsWith("00000000-")) continue;
+        if (seenSeries.has(sid)) continue;
+        const match = roster.find(
+          (r) =>
+            norm(r.characterName) === charNorm ||
+            canonicalCharacterName(r.characterName) === charCanon,
+        );
         if (match) {
+          seenSeries.add(sid);
           const s = DEFAULT_CANON_SERIES.find((x) => x.id === sid);
           out.push({
             id: `canon-${sid}-${characterId}`,

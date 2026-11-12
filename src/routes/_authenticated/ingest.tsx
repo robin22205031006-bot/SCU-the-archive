@@ -9,6 +9,7 @@ import { useIsAdmin } from "@/hooks/use-admin";
 import { analyzeLore, applyLore } from "@/lib/ingest.functions";
 import { ingestAdminPdf } from "@/controllers/adminController.js";
 import type { IngestStage } from "@/controllers/adminController.js";
+import { invalidateArchive } from "@/lib/archive-sync";
 
 export const Route = createFileRoute("/_authenticated/ingest")({
   head: () => ({
@@ -54,13 +55,20 @@ function Ingest() {
         onStage: setStage,
         refresh: () =>
           Promise.all([
-            qc.invalidateQueries({ queryKey: ["entities"] }),
+            invalidateArchive(qc),
             qc.invalidateQueries({ queryKey: ["notes"] }),
             qc.invalidateQueries({ queryKey: ["timeline"] }),
-            qc.invalidateQueries({ queryKey: ["search-index"] }),
+            qc.invalidateQueries({ queryKey: ["admin"] }),
+            qc.invalidateQueries({ queryKey: ["admin-conflicts"] }),
           ]),
       });
       toast.success(`Added ${r.created}, updated ${r.updated}, ${r.events} timeline events`);
+      const warns = ("warnings" in r && Array.isArray(r.warnings) ? r.warnings : []) as string[];
+      if (warns.length) {
+        warns.slice(0, 5).forEach((w) => toast.warning(w, { duration: 8000 }));
+        if (warns.length > 5)
+          toast.warning(`…and ${warns.length - 5} more merge notices`, { duration: 8000 });
+      }
       setFile(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "The PDF could not be imported.");

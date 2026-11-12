@@ -129,11 +129,23 @@ function Vault() {
           analyze,
           apply: applyFn,
           onStage: () => {},
-          refresh: async () => invalidateArchive(qc),
+          refresh: async () => {
+            await invalidateArchive(qc);
+            await Promise.all([
+              qc.invalidateQueries({ queryKey: ["notes"] }),
+              qc.invalidateQueries({ queryKey: ["timeline"] }),
+            ]);
+          },
         });
         toast.success(`Synced: ${r.created} added, ${r.updated} updated, ${r.events} events`, {
           id: t,
         });
+        const warns = ("warnings" in r && Array.isArray(r.warnings) ? r.warnings : []) as string[];
+        if (warns.length) {
+          warns.slice(0, 5).forEach((w) => toast.warning(w, { duration: 8000 }));
+          if (warns.length > 5)
+            toast.warning(`…and ${warns.length - 5} more merge notices`, { duration: 8000 });
+        }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Lore sync failed", { id: t });
       }

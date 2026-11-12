@@ -1,15 +1,5 @@
 import React, { useState } from "react";
-import { GoogleGenAI } from "@google/genai";
-import { scuCache } from "../services/scuCache";
-
-// Lazy-init: constructing GoogleGenAI at module scope throws during import if
-// VITE_GEMINI_API_KEY is absent at build time, which white-screens any route
-// that pulls this module in.
-let ai: GoogleGenAI | null = null;
-function getAi(): GoogleGenAI {
-  if (!ai) ai = new GoogleGenAI({ apiKey: import.meta.env["VITE_GEMINI_API_KEY"] });
-  return ai;
-}
+import { askLore } from "@/lib/ai-box.functions";
 
 export function ArchivistChat() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([
@@ -26,30 +16,23 @@ export function ArchivistChat() {
     if (!input.trim() || loading) return;
 
     const userMessage = input;
+    const nextMessages = [...messages, { role: "user", content: userMessage }];
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setMessages(nextMessages);
     setLoading(true);
 
     try {
-      const chars = await scuCache.getCharacters();
-      const orgs = await scuCache.getOrganizations();
-      const timeline = await scuCache.getTimeline();
-
-      const context = `
-        SCU Data Context:
-        Characters: ${JSON.stringify(chars)}
-        Organizations: ${JSON.stringify(orgs)}
-        Timeline: ${JSON.stringify(timeline)}
-      `;
-
-      const response = await getAi().models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `${context}\n\nUser Query: ${userMessage}`,
-      });
+      const apiMessages = nextMessages
+        .filter(
+          (m): m is { role: "user" | "assistant"; content: string } =>
+            m.role === "user" || m.role === "assistant",
+        )
+        .map((m) => ({ role: m.role, content: m.content }));
+      const response = await askLore({ data: { messages: apiMessages } });
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: response.text || "No data found in archives." },
+        { role: "assistant", content: response.reply || "No data found in archives." },
       ]);
     } catch (err) {
       console.error(err);
