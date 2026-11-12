@@ -4,7 +4,7 @@ export const scuCache = {
   async getCharacters() {
     if (navigator.onLine) {
       try {
-        const { data, error } = await supabase.from("characters").select("*");
+        const { data, error } = await supabase.from("entities").select("*").eq("kind", "character");
         if (!error && data) {
           localStorage.setItem("scu_characters_cache", JSON.stringify(data));
           return data;
@@ -20,7 +20,7 @@ export const scuCache = {
   async getOrganizations() {
     if (navigator.onLine) {
       try {
-        const { data, error } = await supabase.from("organizations").select("*");
+        const { data, error } = await supabase.from("entities").select("*").eq("kind", "organization");
         if (!error && data) {
           localStorage.setItem("scu_organizations_cache", JSON.stringify(data));
           return data;

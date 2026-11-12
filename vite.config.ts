@@ -62,11 +62,9 @@ function supabaseProxyPlugin(targetOrigin: string): Plugin {
           }
 
           const response = await fetch(fullTargetUrl, {
-            method: req.method,
+            method: req.method ?? "GET",
             headers,
-            body: body ? body : undefined,
-            // @ts-expect-error Node fetch duplex option
-            duplex: body ? "half" : undefined,
+            ...(body ? { body: new Uint8Array(body), duplex: "half" } : {}),
           });
 
           res.statusCode = response.status;

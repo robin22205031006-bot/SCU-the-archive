@@ -350,7 +350,7 @@ export function ArsenalIsolatedView({
 
   // Sound and visual surge trigger
   const triggerOverdrive = () => {
-    sfx.portal();
+    sfx.whoosh();
     setBoostSurge(true);
     setTimeout(() => setBoostSurge(false), 2400);
   };
@@ -496,7 +496,7 @@ export function ArsenalIsolatedView({
           intensity={boostLevel}
           fps={fps}
           boostActive={boostSurge}
-          hueOverride={art?.hue}
+          {...(art?.hue !== undefined ? { hueOverride: art.hue } : {})}
         />
 
         {/* Overdrive Shockwave Ring on Burst */}
@@ -683,7 +683,7 @@ export function ArsenalIsolatedView({
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {filtered.map((item, idx) => {
-            const isSelected = item.id === current.id;
+            const isSelected = item.id === current?.id;
             const itemArt = artFor(item.name, item.weapon_type, item.category);
             const thumbUrl = itemArt.forms[0]?.art ? artUrl(itemArt.forms[0].art) : null;
 

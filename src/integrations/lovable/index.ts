@@ -32,7 +32,7 @@ export const lovable = {
             options: {
               redirectTo:
                 opts?.redirect_uri ||
-                (typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined),
+                (typeof window !== "undefined" ? `${window.location.origin}/auth` : "/auth"),
             },
           });
           if (error) return { error };
@@ -57,7 +57,7 @@ export const lovable = {
             options: {
               redirectTo:
                 opts?.redirect_uri ||
-                (typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined),
+                (typeof window !== "undefined" ? `${window.location.origin}/auth` : "/auth"),
             },
           });
           if (error) return { error };
