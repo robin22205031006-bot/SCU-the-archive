@@ -136,11 +136,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+// Recovers from a white screen caused by an outdated cached copy after an update:
+// if app files fail to load, clear caches and reload once (at most every 60s).
+const STALE_RECOVERY = `(function(){var K="scu-stale-reload";function go(){try{var t=+sessionStorage.getItem(K)||0;if(Date.now()-t<60000)return;sessionStorage.setItem(K,String(Date.now()));}catch(e){}var done=function(){var u=new URL(location.href);u.searchParams.set("r",String(Date.now()));location.replace(u.toString());};try{var p=[];if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}));Promise.all(p).then(done,done);}catch(e){done();}}window.addEventListener("vite:preloadError",function(e){e.preventDefault();go();});window.addEventListener("error",function(e){var t=e.target;if(t&&(t.tagName==="SCRIPT"||t.tagName==="LINK")&&/\\/assets\\//.test(t.src||t.href||""))go();},true);window.addEventListener("unhandledrejection",function(e){var m=String(e.reason&&e.reason.message||e.reason||"");if(/dynamically imported module|Importing a module script failed|error loading dynamically/i.test(m))go();});setTimeout(function(){var b=document.body;if(b&&!b.innerText.trim()&&!document.querySelector("canvas,img,svg"))go();},12000);})();`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark" style={{ backgroundColor: "#020408", colorScheme: "dark" }}>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: STALE_RECOVERY }} />
       </head>
       <body style={{ backgroundColor: "#020408" }}>
         {children}

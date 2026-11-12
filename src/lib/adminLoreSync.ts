@@ -87,6 +87,11 @@ const ALIAS_MAP: Record<string, string> = {
   robi: "elizah",
   vanguard: "derek miles",
   "alter ethan": "alt ethan",
+  rowan: "rowan colloway",
+  "rowan duskmoor": "rowan colloway",
+  "rowan calloway": "rowan colloway",
+  victor: "william victor",
+  hisam: "hisham",
   ravenblade: "valeria",
   // Real names, codenames and duplicate cards → in-story name (character chart PDF).
   bunny: "ethan",

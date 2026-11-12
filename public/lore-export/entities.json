@@ -2068,26 +2068,6 @@
   },
   {
     "kind": "character",
-    "name": "Rowan",
-    "alias": "Rowan Duskmoor",
-    "role": "Protagonist",
-    "status": "Alive",
-    "description": "A severely injured warrior who refuses to yield to Arthur and roars in defiance. A powerhouse fighter characterized by extreme durability and the use of a heavy chain weapon imbued with blue flame. Character unable to lift Silas's body.",
-    "quote": "Rowan moves. His fingers twitch first. Then his shoulder jerks as he forces himself upright.",
-    "sources": [
-      "Arthur vs Rowan.pdf",
-      "SCU timeline from start to present_20261102-031135/SCU timeline from start to present_20261102-031135_compressed-compressed-pages-2.pdf",
-      "straight s1-s5.pdf"
-    ],
-    "category": "Protagonist",
-    "evidence_quotes": [
-      "Rowan moves. His fingers twitch first. Then his shoulder jerks as he forces himself upright.",
-      "The links wrap the hybrid's arm mid-charge with the speed of something that has been thrown correctly, and Rowan pulls. The physics are simple: the hybrid's momentum is now Rowan's to direct.",
-      "Rowan cannot lift Silas’s body."
-    ]
-  },
-  {
-    "kind": "character",
     "name": "Saery",
     "alias": "Grandmother",
     "role": null,
@@ -2483,34 +2463,6 @@
     ],
     "evidence_quotes": [
       "The Guardian — Liam’s father — saw it coming. Khalid came to claim the Architect’s Cube. The Guardian and Liam fought with all they had."
-    ]
-  },
-  {
-    "kind": "character",
-    "name": "Victor",
-    "alias": null,
-    "role": "ECAP Chairperson",
-    "status": "Alive",
-    "description": "Became ECAP Chairperson following his son's death, described as gentle and moral but too soft to stop Stitch's radical shift. A renowned scientist, creator of advanced robotics, and idol of Ayman who attempted to protect him from corruption within ECAP. The leader of the ECAP organization who recruits Ethan. An associate at ECAP who supports Corvani's decision to bring Orion.",
-    "quote": "Victor becomes ECAP Chairperson Gentle, moral, but too soft to stop Stitch's radical shift.",
-    "sources": [
-      "aeric, corvani and elizah (1).pdf",
-      "rise of ayaan (1).pdf",
-      "s1 roadmap.pdf",
-      "Whale and Beast meeting.pdf"
-    ],
-    "category": null,
-    "evidence_quotes": [
-      "Victor becomes ECAP Chairperson Gentle, moral, but too soft to stop Stitch's radical shift.",
-      "it's about ayaan /ayman.as you know he is a tech genius who in the first season was the guy in the chair,helping the sentinels with digital infos,weakness of enemies and analysing them.",
-      "stitch- meet the head of ecap,Victor.",
-      "Victor smiles: VICTOR: “He saw potential, Stitch. Isn’t that what you used to do?”"
-    ],
-    "conflicts": [
-      "status conflict: 'Alive' vs 'Dead' (rise of ayaan (1).pdf)",
-      "role conflict: 'ECAP Chairperson' vs 'Scientist' (rise of ayaan (1).pdf)",
-      "role conflict: 'ECAP Chairperson' vs 'Head of ECAP' (s1 roadmap.pdf)",
-      "role conflict: 'ECAP Chairperson' vs 'ECAP personnel' (Whale and Beast meeting.pdf)"
     ]
   },
   {
