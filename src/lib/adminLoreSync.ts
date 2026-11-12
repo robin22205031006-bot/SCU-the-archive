@@ -80,6 +80,13 @@ const ALIAS_MAP: Record<string, string> = {
   "nasab ibn khalil": "francisco",
   kelvan: "khalid",
   "alt david": "alter david",
+  "agnus el-mansur": "altan el-mansur",
+  "fahad duskmoor": "rowan colloway",
+  "liam aldercrest": "eldrich aldercrest",
+  "rohan aldercrest": "damian brown",
+  robi: "elizah",
+  vanguard: "derek miles",
+  "alter ethan": "alt ethan",
   ravenblade: "valeria",
   // Real names, codenames and duplicate cards → in-story name (character chart PDF).
   bunny: "ethan",

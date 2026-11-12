@@ -28,3 +28,11 @@ describe("per-season options", () => {
       expect.arrayContaining(["Main Protagonist", "Main Antagonist", "Impactful Character"]),
     ));
 });
+
+describe("latest merges", () => {
+  it("Robi resolves to Elizah", () => expect(canonicalCharacterName("Robi")).toBe("elizah"));
+  it("Vanguard resolves to Derek Miles", () =>
+    expect(canonicalCharacterName("Vanguard")).toBe("derek miles"));
+  it("Alter Ethan resolves to Alt Ethan", () =>
+    expect(canonicalCharacterName("Alter Ethan")).toBe("alt ethan"));
+});
