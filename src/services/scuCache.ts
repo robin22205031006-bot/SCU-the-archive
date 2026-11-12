@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { mergeCharacterCards } from "../lib/character-card-merge";
 
 export const scuCache = {
   async getCharacters() {
@@ -6,15 +7,17 @@ export const scuCache = {
       try {
         const { data, error } = await supabase.from("entities").select("*").eq("kind", "character");
         if (!error && data) {
-          localStorage.setItem("scu_characters_cache", JSON.stringify(data));
-          return data;
+          const merged = mergeCharacterCards(data);
+          localStorage.setItem("scu_characters_cache", JSON.stringify(merged));
+          return merged;
         }
       } catch (err) {
         console.warn("Network query failed, reading offline cache:", err);
       }
     }
     const cached = localStorage.getItem("scu_characters_cache");
-    return cached ? JSON.parse(cached) : [];
+    const list = cached ? JSON.parse(cached) : [];
+    return mergeCharacterCards(list);
   },
 
   async getOrganizations() {

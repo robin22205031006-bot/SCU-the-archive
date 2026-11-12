@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-admin";
+import { mergeCharacterCards } from "@/lib/entities";
 
 const PAGES = [
   { to: "/", label: "Home", icon: Home },
@@ -39,8 +40,14 @@ export function UniversalSearch() {
         supabase.from("lore_notes").select("entity_id, text"),
       ]);
       for (const result of [e, t, d, n]) if (result.error) throw result.error;
+      const rawEntities = (e.data ?? []) as Array<{
+        id: string;
+        name: string;
+        alias: string | null;
+        kind: string;
+      }>;
       return {
-        entities: e.data ?? [],
+        entities: mergeCharacterCards(rawEntities),
         events: t.data ?? [],
         docs: d.data ?? [],
         notes: n.data ?? [],

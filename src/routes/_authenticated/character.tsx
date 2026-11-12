@@ -6,8 +6,15 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Heart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { entityByIdQuery, notesQuery, type Entity } from "@/lib/entities";
 import { characterSeriesQuery, seriesQuery } from "@/lib/series";
+import {
+  entityByIdQuery,
+  notesQuery,
+  getMergedSecondaryIds,
+  resolveEntityId,
+  mergeCharacterCards,
+  type Entity,
+} from "@/lib/entities";
 import { AbilityCardCanvas } from "@/components/ability-canvas";
 import { AbilityBadge } from "@/components/ability-badge";
 import {
@@ -246,7 +253,8 @@ function JourneyBars({ rows }: { rows: JRow[] }) {
 
 function CharacterDossier() {
   const style = useUiStyle();
-  const { e: id, series, season } = Route.useSearch();
+  const { e: rawId, series, season } = Route.useSearch();
+  const id = resolveEntityId(rawId) || rawId;
   const { data } = useQuery({ ...entityByIdQuery(id ?? ""), enabled: !!id && style === "nexus" });
   if (style === "nexus" && data && data.kind === "character")
     return (
@@ -260,7 +268,8 @@ function CharacterDossier() {
 }
 
 function ClassicDossier() {
-  const { e: id } = Route.useSearch();
+  const { e: rawId } = Route.useSearch();
+  const id = resolveEntityId(rawId) || rawId;
   const nav = useNavigate();
   const qc = useQueryClient();
   const ui = useUiToggles();
@@ -310,10 +319,11 @@ function ClassicDossier() {
     queryFn: async () => {
       const { data } = await supabase
         .from("entities")
-        .select("id, name")
+        .select("id, name, kind")
         .eq("kind", "character")
         .order("name");
-      return data ?? [];
+      const list = (data ?? []) as Entity[];
+      return mergeCharacterCards(list);
     },
   });
   useEffect(() => {
@@ -330,7 +340,11 @@ function ClassicDossier() {
     queryKey: ["character-abilities", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data } = await supabase.from("character_abilities").select("*").eq("entity_id", id!);
+      const allIds = [id!, ...getMergedSecondaryIds(id!)];
+      const { data } = await supabase
+        .from("character_abilities")
+        .select("*")
+        .in("entity_id", allIds);
       return data ?? [];
     },
   });

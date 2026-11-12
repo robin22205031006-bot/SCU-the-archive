@@ -65,6 +65,14 @@ export const CHARACTER_STATUSES = [
 export const GROUP_STATUSES = ["Active", "Inactive"];
 export { CHARACTER_CATEGORIES, GROUP_CATEGORIES };
 
+import {
+  mergeCharacterCards,
+  resolveEntityId,
+  getMergedSecondaryIds,
+} from "./character-card-merge";
+
+export { mergeCharacterCards, resolveEntityId, getMergedSecondaryIds };
+
 export const entitiesQuery = (kinds: string[]) =>
   queryOptions({
     queryKey: ["entities", kinds],
@@ -84,20 +92,22 @@ export const entitiesQuery = (kinds: string[]) =>
         }
         throw error;
       }
-      return data;
+      const raw = (data ?? []) as Entity[];
+      return kinds.includes("character") ? mergeCharacterCards(raw) : raw;
     },
   });
 
-export const entityByIdQuery = (id: string) =>
-  queryOptions({
-    queryKey: ["entity", id],
-    enabled: !!id,
+export const entityByIdQuery = (id: string) => {
+  const targetId = resolveEntityId(id) || id;
+  return queryOptions({
+    queryKey: ["entity", targetId],
+    enabled: !!targetId,
     staleTime: 300_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entities")
         .select("*")
-        .eq("id", id)
+        .eq("id", targetId)
         .maybeSingle();
       if (error) {
         if (
@@ -111,6 +121,7 @@ export const entityByIdQuery = (id: string) =>
       return data;
     },
   });
+};
 
 /** Memberships where this entity is the character side. */
 export const characterLinksQuery = (characterId: string) =>
@@ -228,10 +239,11 @@ export const notesQuery = (entityId: string) =>
     queryKey: ["notes", entityId],
     staleTime: 300_000,
     queryFn: async () => {
+      const allIds = [entityId, ...getMergedSecondaryIds(entityId)];
       const { data, error } = await supabase
         .from("lore_notes")
         .select("*")
-        .eq("entity_id", entityId)
+        .in("entity_id", allIds)
         .order("created_at");
       if (error) {
         if (

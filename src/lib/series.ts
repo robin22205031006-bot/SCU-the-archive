@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import type { Entity } from "@/lib/entities";
+import { getMergedSecondaryIds, type Entity } from "@/lib/entities";
 
 export type Series = Tables<"series">;
 export type SeriesCharacter = Tables<"series_characters">;
@@ -613,10 +613,11 @@ export const characterSeriesQuery = (characterId: string) =>
     enabled: !!characterId,
     staleTime: 30_000,
     queryFn: async () => {
+      const allIds = [characterId, ...getMergedSecondaryIds(characterId)];
       const { data, error } = await supabase
         .from("series_characters")
         .select("*, series:series_id(id, title, cover_image_url)")
-        .eq("character_id", characterId);
+        .in("character_id", allIds);
       if (error && !missingTable(error)) throw error;
       if (data?.length) {
         return data as unknown as (SeriesCharacter & {

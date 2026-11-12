@@ -43,8 +43,10 @@ import { useIsAdmin } from "@/hooks/use-admin";
 import {
   entitiesQuery,
   entityByIdQuery,
+  getMergedSecondaryIds,
   matchesSearch,
   notesQuery,
+  resolveEntityId,
   type Entity,
 } from "@/lib/entities";
 import { sfx } from "@/lib/scu-audio";
@@ -312,7 +314,11 @@ function DetailOverlay({
     queryKey: ["character-abilities", e.id],
     enabled: e.kind === "character",
     queryFn: async () => {
-      const { data } = await supabase.from("character_abilities").select("*").eq("entity_id", e.id);
+      const allIds = [e.id, ...getMergedSecondaryIds(e.id)];
+      const { data } = await supabase
+        .from("character_abilities")
+        .select("*")
+        .in("entity_id", allIds);
       return data ?? [];
     },
   });
@@ -1433,12 +1439,16 @@ export function EntitySection({
   const opened = openedInList ?? openedFetched ?? null;
 
   // Deep link (?open=<id>): open that entity's dossier once it resolves.
-  const { data: deepLinked } = useQuery({ ...entityByIdQuery(openId ?? ""), enabled: !!openId });
+  const resolvedOpenId = resolveEntityId(openId) || openId;
+  const { data: deepLinked } = useQuery({
+    ...entityByIdQuery(resolvedOpenId ?? ""),
+    enabled: !!resolvedOpenId,
+  });
   useEffect(() => {
-    if (!openId || open) return;
-    const found = (data ?? []).find((e) => e.id === openId) ?? deepLinked;
+    if (!resolvedOpenId || open) return;
+    const found = (data ?? []).find((e) => e.id === resolvedOpenId) ?? deepLinked;
     if (found) setOpen({ id: found.id, rect: null });
-  }, [openId, data, deepLinked, open]);
+  }, [resolvedOpenId, data, deepLinked, open]);
 
   // Filter tabs = built-in categories plus any custom sectors present in the archive.
   const allCategories = useMemo(() => {
