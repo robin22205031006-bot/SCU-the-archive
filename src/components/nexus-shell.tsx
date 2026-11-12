@@ -71,14 +71,14 @@ export function NexusShell({ children }: { children: ReactNode }) {
         <NexusFxLayer>
           {!hud && (
             <header
-              className={`nexus-command fixed z-40 flex items-center gap-2 border border-border bg-background/90 p-2 backdrop-blur-lg ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}
+              className={`nexus-command fixed z-40 flex items-center gap-2 rounded-2xl border border-nexus-glow/30 bg-background/85 p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}
             >
               {pathname !== "/character" && (
                 <Link
                   to="/"
-                  className="mr-auto flex items-center gap-2 font-mono text-xs tracking-widest text-accent"
+                  className="mr-auto flex items-center gap-2 font-mono text-xs tracking-widest text-accent hover:text-nexus-glow transition-colors"
                 >
-                  <Compass className="h-5 w-5" />
+                  <Compass className="h-5 w-5 animate-[spin_25s_linear_infinite]" />
                   SCU / NEXUS
                 </Link>
               )}
@@ -89,6 +89,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 aria-expanded={open}
                 onClick={() => setOpen((v) => !v)}
                 title="Navigation"
+                className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
               >
                 {open ? <X /> : <Compass />}
               </Button>
@@ -98,6 +99,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 aria-label="Theme"
                 title="Theme"
                 onClick={() => setThemeOpen(true)}
+                className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
               >
                 <Palette />
               </Button>
@@ -108,10 +110,16 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 aria-pressed={enabled}
                 title="Animations"
                 onClick={() => setAnimationsEnabled(!enabled)}
+                className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
               >
-                <Sparkles />
+                <Sparkles className={enabled ? "text-nexus-glow" : ""} />
               </Button>
-              <Button asChild variant="ghost" size="icon">
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
+              >
                 <Link to="/profile" aria-label="Profile" title="Profile">
                   <User />
                 </Link>
@@ -125,9 +133,9 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 initial={{ opacity: 0, y: 16, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 16, scale: 0.96 }}
-                className={`fixed inset-x-4 z-50 max-h-[70dvh] overflow-y-auto border border-border bg-background/95 p-4 backdrop-blur-xl ${pathname === "/character" ? "bottom-20" : "top-20"}`}
+                className={`fixed inset-x-4 z-50 max-h-[70dvh] overflow-y-auto rounded-2xl border border-nexus-glow/30 bg-background/95 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.7)] backdrop-blur-2xl ${pathname === "/character" ? "bottom-20" : "top-20"}`}
               >
-                <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   {tabs.map((t, i) => (
                     <motion.div
                       key={t.to}
@@ -138,11 +146,16 @@ export function NexusShell({ children }: { children: ReactNode }) {
                       <Button
                         asChild
                         variant="ghost"
-                        className="nexus-nav-link h-20 w-full justify-start whitespace-normal border-b border-border text-left"
+                        className="nexus-nav-link group h-20 w-full justify-start whitespace-normal rounded-xl border border-border/60 bg-card/40 p-3 text-left transition-all hover:border-nexus-glow/70 hover:bg-card/80 hover:shadow-md"
                       >
                         <Link to={t.to} aria-current={pathname === t.to ? "page" : undefined}>
-                          <NexusNavGlyph to={t.to} className="h-9 w-9" />
-                          <span>{t.label}</span>
+                          <NexusNavGlyph
+                            to={t.to}
+                            className="h-9 w-9 transition-transform group-hover:scale-110"
+                          />
+                          <span className="font-medium text-foreground group-hover:text-nexus-glow transition-colors">
+                            {t.label}
+                          </span>
                         </Link>
                       </Button>
                     </motion.div>

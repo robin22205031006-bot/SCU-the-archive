@@ -13,27 +13,65 @@ type SignInOptions = {
 export const lovable = {
   auth: {
     signInWithOAuth: async (provider: OAuthProvider, opts?: SignInOptions) => {
-      const result = await lovableAuth.signInWithOAuth(provider, {
-        ...opts,
-        extraParams: {
-          ...opts?.extraParams,
-        },
-      });
-
-      if (result.redirected) {
-        return result;
-      }
-
-      if (result.error) {
-        return result;
-      }
-
       try {
-        await supabase.auth.setSession(result.tokens);
-      } catch (e) {
-        return { error: e instanceof Error ? e : new Error(String(e)) };
+        const result = await lovableAuth.signInWithOAuth(provider, {
+          ...opts,
+          extraParams: {
+            ...opts?.extraParams,
+          },
+        });
+
+        if (result.redirected) {
+          return result;
+        }
+
+        if (result.error) {
+          // Fall back to direct Supabase OAuth if Lovable broker is unavailable
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: provider as "google",
+            options: {
+              redirectTo:
+                opts?.redirect_uri ||
+                (typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined),
+            },
+          });
+          if (error) return { error };
+          if (data?.url && typeof window !== "undefined") {
+            window.location.assign(data.url);
+            return { redirected: true };
+          }
+          return result;
+        }
+
+        try {
+          await supabase.auth.setSession(result.tokens);
+        } catch (e) {
+          return { error: e instanceof Error ? e : new Error(String(e)) };
+        }
+        return result;
+      } catch {
+        // Fall back to direct Supabase OAuth
+        try {
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: provider as "google",
+            options: {
+              redirectTo:
+                opts?.redirect_uri ||
+                (typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined),
+            },
+          });
+          if (error) return { error };
+          if (data?.url && typeof window !== "undefined") {
+            window.location.assign(data.url);
+            return { redirected: true };
+          }
+        } catch (fallbackErr) {
+          return {
+            error: fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr)),
+          };
+        }
+        return { error: new Error("Unable to start OAuth login") };
       }
-      return result;
     },
   },
 };

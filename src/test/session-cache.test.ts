@@ -3,7 +3,7 @@ import { QueryClient } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
 import { syncSessionCache } from "@/lib/session-cache";
 
-const user = (id: string) => ({ id } as User);
+const user = (id: string) => ({ id }) as User;
 describe("account-safe fast session cache", () => {
   it("keeps loaded lore on same-account token refresh", () => {
     const client = new QueryClient();

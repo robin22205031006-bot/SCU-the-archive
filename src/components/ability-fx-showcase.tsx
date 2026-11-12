@@ -22,10 +22,13 @@ export function AbilityFxShowcase({
 }) {
   const [current, setCurrent] = useState(name);
   const [ascending, setAscending] = useState(false);
+  const [boosted, setBoosted] = useState(false);
+  const [fps, setFps] = useState<24 | 30 | 60>(30);
   useEffect(() => {
     if (open) {
       setCurrent(name);
       setAscending(false);
+      setBoosted(false);
     }
   }, [open, name]);
   const lineages = useAbilityLineages();
@@ -68,15 +71,51 @@ export function AbilityFxShowcase({
               exit={{ opacity: 0, scale: 1.15, filter: "blur(6px)" }}
               transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
             >
-              <AbilityFxCanvas recipe={recipe} label={`${def.label} animation`} />
+              <AbilityFxCanvas
+                recipe={recipe}
+                label={`${def.label} animation`}
+                boosted={boosted}
+                fps={fps}
+              />
             </motion.div>
           </AnimatePresence>
-          <span
-            className="absolute left-3 top-3 rounded-full border border-border bg-background/70 px-2 py-0.5 text-[10px] uppercase tracking-widest"
-            style={{ color: recipe.palette[0] }}
-          >
-            Power {recipe.power}/8
-          </span>
+          <div className="absolute left-3 top-3 flex items-center gap-2">
+            <span
+              className="rounded-full border border-border bg-background/80 px-2 py-0.5 text-[10px] uppercase tracking-widest backdrop-blur font-mono"
+              style={{ color: recipe.palette[0] }}
+            >
+              Power {recipe.power}/8
+            </span>
+          </div>
+
+          {/* Overdrive and FPS overlay controls */}
+          <div className="absolute right-3 top-3 flex items-center gap-1.5">
+            <button
+              onClick={() => setBoosted((b) => !b)}
+              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition backdrop-blur-sm ${
+                boosted
+                  ? "border-amber-400 bg-amber-500/25 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+                  : "border-border/80 bg-background/70 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${boosted ? "bg-amber-400 animate-ping" : "bg-zinc-500"}`}
+              />
+              <span>{boosted ? "BOOST: OVERDRIVE" : "Boost"}</span>
+            </button>
+
+            <div className="flex items-center rounded-full border border-border/80 bg-background/70 p-0.5 text-[10px] backdrop-blur-sm font-mono">
+              {([24, 30, 60] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFps(f)}
+                  className={`rounded-full px-1.5 py-0.5 ${fps === f ? "bg-accent text-accent-foreground font-bold" : "text-muted-foreground"}`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         {lineage && (
           <div className="grid gap-3">

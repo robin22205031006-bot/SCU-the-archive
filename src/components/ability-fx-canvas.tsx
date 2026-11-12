@@ -1186,19 +1186,58 @@ const DRAW: Record<FxRecipe["motif"], (f: F) => void> = {
   },
 };
 
-function aura(c: C, s: number, t: number, r: FxRecipe) {
-  if (r.power < 6) return;
+function aura(c: C, s: number, t: number, r: FxRecipe, boosted = false) {
+  const p = r.power + (boosted ? 2 : 0);
+  const [a, b, hi] = r.palette;
+
+  // Level 1+: Soft breathing glow ring and celestial motes
   c.save();
-  c.rotate(-t * 0.25);
-  ring(c, s * 0.46, r.palette[0] + "aa", r.power >= 8 ? 3 : 1.5, [s * 0.02, s * 0.04]);
+  const pulse = Math.sin(t * 3.2) * 0.03;
+  ring(c, s * (0.42 + pulse), a + (boosted ? "99" : "44"), boosted ? 2 : 1, [s * 0.02, s * 0.03]);
   c.restore();
-  if (r.power >= 8) {
+
+  // Floating ambient motes for every power level
+  for (let m = 0; m < 4 + p; m++) {
+    const k = (t * 0.35 + ((m * 47) % 100) / 100) % 1;
+    const ang = m * 1.618 * TAU + t * 0.15;
+    const dist = s * (0.28 + k * 0.18);
+    dot(c, Math.cos(ang) * dist, Math.sin(ang) * dist, s * (0.008 + (1 - k) * 0.012), hi);
+  }
+
+  // Level 4+: Inner resonant harmonic ring with counter-rotation
+  if (p >= 4) {
     c.save();
-    c.rotate(t * 0.4);
+    c.rotate(t * 0.35);
+    ring(c, s * 0.36, b + (boosted ? "cc" : "66"), boosted ? 2.5 : 1.2, [s * 0.04, s * 0.03]);
+    c.restore();
+  }
+
+  // Level 6+: Rotating outer runic celestial compass ring with tick marks
+  if (p >= 6) {
+    c.save();
+    c.rotate(-t * 0.25);
+    ring(c, s * 0.46, a + (boosted ? "ff" : "aa"), p >= 8 || boosted ? 3 : 1.8, [
+      s * 0.025,
+      s * 0.04,
+    ]);
+    const ticks = p >= 8 ? 16 : 8;
+    for (let i = 0; i < ticks; i++) {
+      c.rotate(TAU / ticks);
+      c.fillStyle = i % 2 === 0 ? hi : a;
+      c.fillRect(s * 0.45, -1, s * 0.035, 2);
+    }
+    c.restore();
+  }
+
+  // Level 8+ (Apex / Mythic / Overcharged): Coronal bursts and geometric diamond flares
+  if (p >= 8) {
+    c.save();
+    c.rotate(t * 0.45);
     for (let i = 0; i < 8; i++) {
       c.rotate(TAU / 8);
-      c.fillStyle = r.palette[2];
-      c.fillRect(s * 0.44, -1, s * 0.04, 2);
+      c.fillStyle = hi;
+      c.fillRect(s * 0.44, -1.5, s * 0.05, 3);
+      star(c, 4, s * 0.01, s * 0.03, t * 2 + i, hi);
     }
     c.restore();
   }
@@ -1211,12 +1250,14 @@ export function AbilityFxCanvas({
   playing = true,
   fps = 24,
   label,
+  boosted = false,
 }: {
   recipe: FxRecipe;
   className?: string;
   playing?: boolean;
   fps?: number;
   label?: string;
+  boosted?: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -1248,11 +1289,12 @@ export function AbilityFxCanvas({
         cv.width = Math.round(w * dpr);
         cv.height = Math.round(h * dpr);
       }
-      const frame = Math.floor(((now - start) / 1000) * fps);
+      const frame = Math.floor(((now - start) / 1000) * (boosted ? fps * 1.25 : fps));
       if (frame !== last || !playing || reduce) {
         last = frame;
         const t =
-          ((reduce || !playing ? (2.9 * recipe.tempo) / 1.6 : frame / fps) / recipe.tempo) * 1.6;
+          ((reduce || !playing ? (2.9 * recipe.tempo) / 1.6 : frame / fps) / recipe.tempo) *
+          (boosted ? 2.2 : 1.6);
         c.setTransform(dpr, 0, 0, dpr, 0, 0);
         c.clearRect(0, 0, w, h);
         c.fillStyle = "#07070d";
@@ -1260,21 +1302,22 @@ export function AbilityFxCanvas({
         const s = Math.min(w, h);
         c.save();
         c.translate(w / 2, h / 2);
-        const bg = c.createRadialGradient(0, 0, 0, 0, 0, s * 0.55);
-        bg.addColorStop(0, recipe.palette[1] + "66");
+        const bg = c.createRadialGradient(0, 0, 0, 0, 0, s * (boosted ? 0.75 : 0.55));
+        bg.addColorStop(0, recipe.palette[1] + (boosted ? "99" : "66"));
         bg.addColorStop(1, "transparent");
         c.fillStyle = bg;
         c.fillRect(-w, -h, w * 2, h * 2);
         const painter = ALL_PAINT[recipe.motif];
+        const effectivePower = Math.min(8, recipe.power + (boosted ? 2 : 0));
         const pf: PF = {
           c,
           t,
-          p: recipe.power,
+          p: effectivePower,
           s,
           r: recipe,
           rnd,
           v: recipe.variant,
-          step: Math.floor(t * 8),
+          step: Math.floor(t * (boosted ? 12 : 8)),
         };
         const guardian = recipe.key.endsWith("_guardian");
         if (guardian) guardianAura(pf, true);
@@ -1283,13 +1326,21 @@ export function AbilityFxCanvas({
           painter(pf);
           c.globalCompositeOperation = "source-over";
           c.globalAlpha = 1;
-          glow(c, recipe.palette[0], 6);
-          aura(c, s, t, recipe);
+          glow(c, recipe.palette[0], boosted ? 14 : 6);
+          aura(c, s, t, recipe, boosted);
           c.shadowBlur = 0;
         } else {
-          glow(c, recipe.palette[0], 8 + recipe.power * 2);
-          aura(c, s, t, recipe);
-          DRAW[recipe.motif]({ c, t, p: recipe.power, s, r: recipe, rnd, v: recipe.variant % 8 });
+          glow(c, recipe.palette[0], (8 + recipe.power * 2) * (boosted ? 1.5 : 1));
+          aura(c, s, t, recipe, boosted);
+          DRAW[recipe.motif]({
+            c,
+            t,
+            p: effectivePower,
+            s,
+            r: recipe,
+            rnd,
+            v: recipe.variant % 8,
+          });
         }
         if (guardian) {
           c.shadowBlur = 0;
@@ -1307,7 +1358,7 @@ export function AbilityFxCanvas({
       cancelAnimationFrame(raf);
       io?.disconnect();
     };
-  }, [recipe, playing, fps]);
+  }, [recipe, playing, fps, boosted]);
   return (
     <canvas
       ref={ref}

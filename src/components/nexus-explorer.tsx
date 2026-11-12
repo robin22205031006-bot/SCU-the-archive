@@ -102,20 +102,20 @@ export function NexusExplorer<T extends NexusRecord>({
                   return (
                     <motion.div
                       key={g}
-                      whileHover={{ y: moving ? -4 : 0 }}
+                      whileHover={{ y: moving ? -5 : 0, scale: moving ? 1.015 : 1 }}
                       transition={transition}
-                      className="nexus-cluster relative overflow-hidden rounded-lg border border-border bg-card/60"
+                      className="nexus-cluster nexus-card-holo relative overflow-hidden rounded-xl border border-border/80 bg-card/60 backdrop-blur-sm"
                     >
                       <Button
                         variant="ghost"
-                        className="relative block h-auto min-h-48 w-full whitespace-normal p-4 text-left"
+                        className="relative block h-auto min-h-48 w-full whitespace-normal p-4 text-left group"
                         onClick={() => {
                           setGroup(g);
                           setSelectedId(null);
                         }}
                         aria-label={`${g === "all" ? `All ${label.toLowerCase()}` : g}, ${members.length}`}
                       >
-                        <span className="block text-xs font-medium">
+                        <span className="block text-xs font-semibold tracking-wide text-foreground group-hover:text-nexus-glow transition-colors">
                           {g === "all" ? `All ${label.toLowerCase()}` : g}
                         </span>
                         <span className="relative mx-auto my-2 block h-32 w-full max-w-[12rem]">
@@ -199,7 +199,11 @@ export function NexusExplorer<T extends NexusRecord>({
                       <Button
                         variant="ghost"
                         aria-pressed={r.id === selectedId}
-                        className={`nexus-record h-auto min-h-20 w-full justify-start whitespace-normal rounded-lg border px-4 py-3 text-left ${r.id === selectedId ? "border-accent bg-accent/10" : "border-border bg-card/40"}`}
+                        className={`nexus-record h-auto min-h-20 w-full justify-start whitespace-normal rounded-xl border px-4 py-3 text-left transition-all duration-200 ${
+                          r.id === selectedId
+                            ? "border-accent/90 bg-accent/15 shadow-[0_0_20px_rgba(56,189,248,0.25)] scale-[1.015]"
+                            : "border-border/80 bg-card/45 hover:border-nexus-glow/60 hover:bg-card/75 hover:shadow-lg hover:-translate-y-0.5"
+                        }`}
                         onClick={() => setSelectedId(r.id)}
                       >
                         {r.image ? (
@@ -209,24 +213,26 @@ export function NexusExplorer<T extends NexusRecord>({
                               alt=""
                               loading="lazy"
                               decoding="async"
-                              className="h-12 w-12 rounded-md object-cover"
+                              className="h-12 w-12 rounded-lg object-cover transition-transform duration-300 group-hover:scale-105"
                             />
                           </NexusSign>
                         ) : (
                           <NexusSign
                             symbolName={r.title}
-                            className="h-10 w-10 shrink-0 text-accent"
+                            className="h-10 w-10 shrink-0 text-accent transition-transform duration-300 group-hover:rotate-6"
                           >
                             {r.icon ?? <span className="nexus-mark h-4 w-4" />}
                           </NexusSign>
                         )}
                         <span className="min-w-0 flex-1">
-                          <span className="block break-words text-sm font-medium">{r.title}</span>
-                          <span className="mt-1 block break-words text-xs text-muted-foreground">
+                          <span className="block break-words text-sm font-semibold text-foreground">
+                            {r.title}
+                          </span>
+                          <span className="mt-0.5 block break-words text-xs text-muted-foreground">
                             {r.subtitle ?? r.group}
                           </span>
                         </span>
-                        <ArrowRight className="h-3 w-3 shrink-0 text-accent" />
+                        <ArrowRight className="h-4 w-4 shrink-0 text-accent transition-transform group-hover:translate-x-1" />
                       </Button>
                     </motion.div>
                   ))}

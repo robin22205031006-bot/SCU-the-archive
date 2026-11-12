@@ -718,7 +718,7 @@ function DossierPanel({
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 60, scale: 0.96, transition: { duration: 0.25 } }}
       transition={{ duration: 0.6, ease: EASE }}
-      className="relative w-full shrink-0 overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-bg/95 p-4 backdrop-blur lg:w-80"
+      className="nexus-card-holo relative w-full shrink-0 overflow-hidden rounded-2xl border border-nexus-glow/30 bg-nexus-bg/95 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md lg:w-80"
     >
       <motion.div
         variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } } }}
@@ -726,13 +726,13 @@ function DossierPanel({
         animate="show"
       >
         <motion.div variants={item} className="flex items-start justify-between gap-2">
-          <h3 className="text-xl font-medium" style={{ color }}>
+          <h3 className="text-xl font-bold tracking-tight" style={{ color }}>
             {e.name}
           </h3>
           <button
             onClick={onClose}
             aria-label="Close dossier"
-            className="rounded-full p-1 text-nexus-muted hover:bg-nexus-fg/10 hover:text-nexus-fg"
+            className="rounded-full p-1 text-nexus-muted hover:bg-nexus-fg/10 hover:text-nexus-fg transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -740,9 +740,9 @@ function DossierPanel({
 
         <motion.div
           variants={item}
-          className="relative mt-3 grid aspect-[4/3] place-items-center overflow-hidden rounded-xl border border-nexus-glow/20"
+          className="relative mt-3 grid aspect-[4/3] place-items-center overflow-hidden rounded-xl border border-nexus-glow/30 shadow-inner"
           style={{
-            background: `radial-gradient(circle, color-mix(in oklab, ${color} 25%, transparent), transparent 70%)`,
+            background: `radial-gradient(circle at 50% 50%, color-mix(in oklab, ${color} 30%, transparent), transparent 75%)`,
           }}
         >
           {e.image_url ? (
@@ -759,7 +759,16 @@ function DossierPanel({
               {e.name[0]}
             </span>
           )}
-          <span className="absolute bottom-2 left-2 h-3 w-3 border-b border-l border-nexus-glow/60" />
+          {/* Holographic scanner sweep */}
+          <div
+            className="pointer-events-none absolute inset-x-0 h-8 bg-gradient-to-b from-transparent via-cyan-400/25 to-transparent"
+            style={{ animation: "nexus-scanline 3.2s ease-in-out infinite" }}
+          />
+          {/* HUD Tech Reticle Corners */}
+          <span className="absolute top-2 left-2 h-3 w-3 border-t-2 border-l-2 border-nexus-glow/70" />
+          <span className="absolute top-2 right-2 h-3 w-3 border-t-2 border-r-2 border-nexus-glow/70" />
+          <span className="absolute bottom-2 left-2 h-3 w-3 border-b-2 border-l-2 border-nexus-glow/70" />
+          <span className="absolute bottom-2 right-2 h-3 w-3 border-b-2 border-r-2 border-nexus-glow/70" />
         </motion.div>
 
         <motion.p
