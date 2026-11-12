@@ -24,7 +24,9 @@ export const SHARED_ARCHIVE_KEYS = [
 ] as const;
 
 export function invalidateArchive(qc: QueryClient) {
-  return Promise.all(SHARED_ARCHIVE_KEYS.map((queryKey) => qc.invalidateQueries({ queryKey: [...queryKey] })));
+  return Promise.all(
+    SHARED_ARCHIVE_KEYS.map((queryKey) => qc.invalidateQueries({ queryKey: [...queryKey] })),
+  );
 }
 
 const norm = (s: string) => s.trim().toLowerCase();

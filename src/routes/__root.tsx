@@ -120,7 +120,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&display=swap",
+      },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap",
@@ -193,7 +196,11 @@ function RootComponent() {
         event !== "TOKEN_REFRESHED"
       )
         return;
-      const identityChanged = syncSessionCache(queryClient, session?.user ?? null, event === "USER_UPDATED");
+      const identityChanged = syncSessionCache(
+        queryClient,
+        session?.user ?? null,
+        event === "USER_UPDATED",
+      );
       if (event === "SIGNED_OUT") {
         // Strict sign-out: purge persisted offline cache so re-entry requires online auth.
         try {
@@ -202,10 +209,11 @@ function RootComponent() {
           /* storage unavailable */
         }
       }
-      if (identityChanged) queueMicrotask(() => {
-        void router.invalidate();
-        if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
-      });
+      if (identityChanged)
+        queueMicrotask(() => {
+          void router.invalidate();
+          if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
+        });
       if (event === "SIGNED_IN" && session) {
         setTimeout(() => playWelcome(), 400);
         const key = `scu-logged-${session.user.id}-${new Date().toDateString()}`;
@@ -232,22 +240,33 @@ function RootComponent() {
       <AppearanceProvider>
         <TypographyProvider>
           <ErrorBoundary>
-            <MotionConfig reducedMotion={uiStyle === "minimal" ? "always" : "user"} {...(uiStyle === "minimal" ? { transition: { duration: 0 } } : {})}>
-            <div className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : uiStyle === "nexus" ? "" : "ambient-bg"}`}>
-              {uiStyle === "classic" && <AmbientField />}
-              {uiStyle === "classic" && <PlexusWallpaper />}
-              <ScrollProgress />
-              {uiStyle !== "nexus" && <SiteNav />}
-              <FloatingNav />
-              {uiStyle === "classic" && <WelcomeVfx />}
-              {offline && (
-                <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
-                  <WifiOff className="h-3.5 w-3.5" />
-                  Offline — showing cached archive data
-                </div>
-              )}
-              {uiStyle === "nexus" ? <NexusShell><Outlet /></NexusShell> : <Outlet />}
-            </div>
+            <MotionConfig
+              reducedMotion={uiStyle === "minimal" ? "always" : "user"}
+              {...(uiStyle === "minimal" ? { transition: { duration: 0 } } : {})}
+            >
+              <div
+                className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : uiStyle === "nexus" ? "" : "ambient-bg"}`}
+              >
+                {uiStyle === "classic" && <AmbientField />}
+                {uiStyle === "classic" && <PlexusWallpaper />}
+                <ScrollProgress />
+                {uiStyle !== "nexus" && <SiteNav />}
+                <FloatingNav />
+                {uiStyle === "classic" && <WelcomeVfx />}
+                {offline && (
+                  <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
+                    <WifiOff className="h-3.5 w-3.5" />
+                    Offline — showing cached archive data
+                  </div>
+                )}
+                {uiStyle === "nexus" ? (
+                  <NexusShell>
+                    <Outlet />
+                  </NexusShell>
+                ) : (
+                  <Outlet />
+                )}
+              </div>
             </MotionConfig>
           </ErrorBoundary>
           <Toaster />

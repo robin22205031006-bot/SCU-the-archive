@@ -6,7 +6,10 @@
     <meta name="theme-color" content="#0a0d14" />
     <title>SCU — Offline</title>
     <style>
-      * { margin: 0; box-sizing: border-box; }
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
       body {
         min-height: 100vh;
         display: flex;
@@ -33,8 +36,17 @@
         background: #f59e0b;
         border-radius: 50%;
       }
-      h1 { font-size: 1.5rem; letter-spacing: 0.12em; text-transform: uppercase; }
-      p { margin-top: 0.75rem; font-family: system-ui, sans-serif; font-size: 0.9rem; color: #a1a1aa; }
+      h1 {
+        font-size: 1.5rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      p {
+        margin-top: 0.75rem;
+        font-family: system-ui, sans-serif;
+        font-size: 0.9rem;
+        color: #a1a1aa;
+      }
       button {
         margin-top: 1.75rem;
         padding: 0.6rem 1.6rem;
@@ -46,16 +58,24 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
         cursor: pointer;
-        transition: border-color 0.15s, color 0.15s;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
       }
-      button:hover { border-color: #dc2626; color: #fca5a5; }
+      button:hover {
+        border-color: #dc2626;
+        color: #fca5a5;
+      }
     </style>
   </head>
   <body>
     <main>
       <div class="ring" aria-hidden="true"></div>
       <h1>Signal Lost</h1>
-      <p>The archive is unreachable. Reconnect to resume syncing — cached records remain available inside the app once it loads.</p>
+      <p>
+        The archive is unreachable. Reconnect to resume syncing — cached records remain available
+        inside the app once it loads.
+      </p>
       <button onclick="location.reload()">Retry Connection</button>
     </main>
   </body>

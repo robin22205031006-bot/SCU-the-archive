@@ -943,7 +943,9 @@ function DetailOverlay({
           )}
           {dossierTab === "progress" && (
             <div className="grid gap-4">
-              {uiToggles.showJourneyGraph && seasonJourneyRows(seasons, e.stats).length > 1 && <JourneyGraph rows={seasonJourneyRows(seasons, e.stats) as typeof seasons} />}
+              {uiToggles.showJourneyGraph && seasonJourneyRows(seasons, e.stats).length > 1 && (
+                <JourneyGraph rows={seasonJourneyRows(seasons, e.stats) as typeof seasons} />
+              )}
               {uiToggles.showJourneyGraph && e.kind === "character" && (
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -966,7 +968,14 @@ function DetailOverlay({
                 </div>
               )}
               {uiToggles.showJourneyGraph && journeyCompareId && compareSeasons.length > 0 && (
-                <JourneyGraph rows={seasonJourneyRows(compareSeasons, (allChars ?? []).find((c) => c.id === journeyCompareId)?.stats) as typeof compareSeasons} />
+                <JourneyGraph
+                  rows={
+                    seasonJourneyRows(
+                      compareSeasons,
+                      (allChars ?? []).find((c) => c.id === journeyCompareId)?.stats,
+                    ) as typeof compareSeasons
+                  }
+                />
               )}
               {uiToggles.showJourneyGraph && journeyCompareId && compareSeasons.length === 0 && (
                 <p className="text-xs text-muted-foreground">
@@ -1541,13 +1550,53 @@ export function EntitySection({
       {nexus ? (
         isLoading ? (
           <EntityGridSkeleton />
-        ) : (
-          view === "characters" ? <NexusView
+        ) : view === "characters" ? (
+          <NexusView
             data={data ?? []}
             categories={allCategories}
             isAdmin={isAdmin}
             onEdit={(e) => setEditing(e)}
-          /> : <div data-spoiler="archive"><NexusExplorer label={title} initialQuery={initialQuery} records={(data ?? []).map(e => ({ id: e.id, title: e.name, group: e.category || e.kind, image: e.image_url, subtitle: e.alias || e.kind, entity: e }))} renderDetail={({ entity: e }) => <div className="grid gap-4"><h2 className="break-words text-2xl">{e.name}</h2>{e.image_url && <img src={e.image_url} alt={e.name} className="h-52 w-full rounded-lg object-contain" />}<p className="whitespace-pre-line text-sm leading-relaxed">{e.description || "No description recorded."}</p><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setOpen({ id: e.id, rect: null })}><BookOpen className="h-4 w-4" /> Full dossier</Button>{isAdmin && <Button variant="outline" onClick={() => setEditing(e)}><Pencil className="h-4 w-4" /> Edit</Button>}</div></div>} /></div>
+          />
+        ) : (
+          <div data-spoiler="archive">
+            <NexusExplorer
+              label={title}
+              initialQuery={initialQuery}
+              records={(data ?? []).map((e) => ({
+                id: e.id,
+                title: e.name,
+                group: e.category || e.kind,
+                image: e.image_url,
+                subtitle: e.alias || e.kind,
+                entity: e,
+              }))}
+              renderDetail={({ entity: e }) => (
+                <div className="grid gap-4">
+                  <h2 className="break-words text-2xl">{e.name}</h2>
+                  {e.image_url && (
+                    <img
+                      src={e.image_url}
+                      alt={e.name}
+                      className="h-52 w-full rounded-lg object-contain"
+                    />
+                  )}
+                  <p className="whitespace-pre-line text-sm leading-relaxed">
+                    {e.description || "No description recorded."}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => setOpen({ id: e.id, rect: null })}>
+                      <BookOpen className="h-4 w-4" /> Full dossier
+                    </Button>
+                    {isAdmin && (
+                      <Button variant="outline" onClick={() => setEditing(e)}>
+                        <Pencil className="h-4 w-4" /> Edit
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            />
+          </div>
         )
       ) : (
         <>

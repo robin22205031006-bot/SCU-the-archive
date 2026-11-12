@@ -75,7 +75,15 @@ export const entitiesQuery = (kinds: string[]) =>
         .select("*")
         .in("kind", kinds as Entity["kind"][])
         .order("name");
-      if (error) throw error;
+      if (error) {
+        if (
+          (error as { code?: string }).code === "PGRST205" ||
+          /entities|schema cache|does not exist/i.test(error.message)
+        ) {
+          return [] as Entity[];
+        }
+        throw error;
+      }
       return data;
     },
   });
@@ -91,7 +99,15 @@ export const entityByIdQuery = (id: string) =>
         .select("*")
         .eq("id", id)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        if (
+          (error as { code?: string }).code === "PGRST205" ||
+          /entities|schema cache|does not exist/i.test(error.message)
+        ) {
+          return null;
+        }
+        throw error;
+      }
       return data;
     },
   });
@@ -109,7 +125,10 @@ export const characterLinksQuery = (characterId: string) =>
         .eq("character_id", characterId);
       if (error) {
         // Table may not exist yet if the SQL migration hasn't been applied.
-        if (/entity_memberships|schema cache|does not exist/i.test(error.message))
+        if (
+          (error as { code?: string }).code === "PGRST205" ||
+          /entity_memberships|schema cache|does not exist/i.test(error.message)
+        )
           return [] as EntityMembership[];
         throw error;
       }
@@ -129,7 +148,10 @@ export const groupLinksQuery = (groupId: string) =>
         .select("*")
         .eq("group_id", groupId);
       if (error) {
-        if (/entity_memberships|schema cache|does not exist/i.test(error.message))
+        if (
+          (error as { code?: string }).code === "PGRST205" ||
+          /entity_memberships|schema cache|does not exist/i.test(error.message)
+        )
           return [] as EntityMembership[];
         throw error;
       }
@@ -143,7 +165,10 @@ export const entityRelationsQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase.from("entity_relations").select("*");
     if (error) {
-      if (/entity_relations|schema cache|does not exist/i.test(error.message))
+      if (
+        (error as { code?: string }).code === "PGRST205" ||
+        /entity_relations|schema cache|does not exist/i.test(error.message)
+      )
         return [] as EntityRelation[];
       throw error;
     }
@@ -163,7 +188,10 @@ export const characterRelationshipsQuery = (entityId: string) =>
         .select("*")
         .or(`character_id_1.eq.${entityId},character_id_2.eq.${entityId}`);
       if (error) {
-        if (/character_relationships|schema cache|does not exist/i.test(error.message))
+        if (
+          (error as { code?: string }).code === "PGRST205" ||
+          /character_relationships|schema cache|does not exist/i.test(error.message)
+        )
           return [] as CharacterRelationship[];
         throw error;
       }
@@ -184,7 +212,11 @@ export const childEntitiesQuery = (parentId: string) =>
         .eq("parent_id", parentId)
         .order("name");
       if (error) {
-        if (/parent_id|schema cache|does not exist/i.test(error.message)) return [] as Entity[];
+        if (
+          (error as { code?: string }).code === "PGRST205" ||
+          /parent_id|schema cache|does not exist/i.test(error.message)
+        )
+          return [] as Entity[];
         throw error;
       }
       return data;
@@ -201,7 +233,14 @@ export const notesQuery = (entityId: string) =>
         .select("*")
         .eq("entity_id", entityId)
         .order("created_at");
-      if (error) throw error;
+      if (error) {
+        if (
+          (error as { code?: string }).code === "PGRST205" ||
+          /lore_notes|schema cache|does not exist/i.test(error.message)
+        )
+          return [];
+        throw error;
+      }
       return data;
     },
   });
@@ -211,7 +250,14 @@ export const timelineQuery = queryOptions({
   staleTime: 300_000,
   queryFn: async () => {
     const { data, error } = await supabase.from("timeline_events").select("*").order("sort_order");
-    if (error) throw error;
+    if (error) {
+      if (
+        (error as { code?: string }).code === "PGRST205" ||
+        /timeline_events|schema cache|does not exist/i.test(error.message)
+      )
+        return [];
+      throw error;
+    }
     return data;
   },
 });

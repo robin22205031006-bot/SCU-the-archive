@@ -29,7 +29,9 @@ if (!url || !key) {
 // New sb_secret_ keys are opaque, not bearer JWTs — strip Authorization like client.server.ts does.
 const isNewKey = key.startsWith("sb_publishable_") || key.startsWith("sb_secret_");
 const adminFetch = (input, init) => {
-  const headers = new Headers(typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined);
+  const headers = new Headers(
+    typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+  );
   if (init?.headers) new Headers(init.headers).forEach((v, k) => headers.set(k, v));
   if (isNewKey && headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
   headers.set("apikey", key);
@@ -45,7 +47,10 @@ const normalize = (s) =>
   s.toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim();
 const ENTITY_KINDS = ["character", "organization", "clan", "bloodline", "faction"];
 function validLoreStatus(kind, status) {
-  const allowed = kind === "character" ? ["Alive", "Dead", "Retired", "Missing", "Legend"] : ["Active", "Inactive"];
+  const allowed =
+    kind === "character"
+      ? ["Alive", "Dead", "Retired", "Missing", "Legend"]
+      : ["Active", "Inactive"];
   return status && allowed.includes(status) ? status : null;
 }
 const CHARACTER_CATEGORIES = ["Protagonist", "Antagonist", "Anti-Hero", "Anti-Villain", "Support"];
@@ -57,7 +62,8 @@ function validEntityCategory(kind, category) {
 function buildUpdatePatch(target, update) {
   const patch = {};
   const status = validLoreStatus(target.kind ?? "character", update.status);
-  if (status && !(target.locked_fields ?? []).includes("status") && status !== target.status) patch.status = status;
+  if (status && !(target.locked_fields ?? []).includes("status") && status !== target.status)
+    patch.status = status;
   return patch;
 }
 
@@ -71,7 +77,8 @@ function planLoreSync(archive, inputs, lastSortOrder = 0) {
   }
   const find = (name) => {
     const matches = byName.get(normalize(name)) ?? [];
-    if (matches.length > 1) throw new Error(`Multiple entries named ${name}. Resolve them before importing.`);
+    if (matches.length > 1)
+      throw new Error(`Multiple entries named ${name}. Resolve them before importing.`);
     return matches[0];
   };
   for (const input of inputs) {
@@ -87,17 +94,23 @@ function planLoreSync(archive, inputs, lastSortOrder = 0) {
       const conflictNotes = (e.conflicts ?? []).map((c) => `[conflict] ${c}`);
       if (dup) {
         if (dup.id.startsWith("pending:")) {
-          const pendingInsert = plan.entityInserts.find((i) => normalize(i.name) === normalize(e.name));
+          const pendingInsert = plan.entityInserts.find(
+            (i) => normalize(i.name) === normalize(e.name),
+          );
           if (pendingInsert) {
             if (e.description && !pendingInsert.description.includes(e.description)) {
               pendingInsert.description = `${pendingInsert.description} ${e.description}`.trim();
             }
             if (e.kind !== pendingInsert.kind) {
-              pendingInsert.notes.push(`[conflict] kind: kept '${pendingInsert.kind}' but also extracted as '${e.kind}'`);
+              pendingInsert.notes.push(
+                `[conflict] kind: kept '${pendingInsert.kind}' but also extracted as '${e.kind}'`,
+              );
             }
             const eCat = validEntityCategory(e.kind, e.category);
             if (eCat && pendingInsert.category && eCat !== pendingInsert.category) {
-              pendingInsert.notes.push(`[conflict] category: kept '${pendingInsert.category}' but also extracted as '${eCat}'`);
+              pendingInsert.notes.push(
+                `[conflict] category: kept '${pendingInsert.category}' but also extracted as '${eCat}'`,
+              );
             }
             pendingInsert.notes.push(...conflictNotes);
           }
@@ -105,25 +118,46 @@ function planLoreSync(archive, inputs, lastSortOrder = 0) {
         }
         plan.loreNoteInserts.push({ entity_id: dup.id, text: e.description, source: src });
         if (dup.kind && e.kind !== dup.kind) {
-          plan.loreNoteInserts.push({ entity_id: dup.id, text: `[conflict] kind: archived '${dup.kind}' vs extracted '${e.kind}'`, source: src });
+          plan.loreNoteInserts.push({
+            entity_id: dup.id,
+            text: `[conflict] kind: archived '${dup.kind}' vs extracted '${e.kind}'`,
+            source: src,
+          });
         }
         const eCat = validEntityCategory(e.kind, e.category);
         if (eCat && dup.category && eCat !== dup.category) {
-          plan.loreNoteInserts.push({ entity_id: dup.id, text: `[conflict] category: archived '${dup.category}' vs extracted '${eCat}'`, source: src });
+          plan.loreNoteInserts.push({
+            entity_id: dup.id,
+            text: `[conflict] category: archived '${dup.category}' vs extracted '${eCat}'`,
+            source: src,
+          });
         }
-        for (const c of conflictNotes) plan.loreNoteInserts.push({ entity_id: dup.id, text: c, source: src });
+        for (const c of conflictNotes)
+          plan.loreNoteInserts.push({ entity_id: dup.id, text: c, source: src });
         continue;
       }
       const isChar = e.kind === "character";
       plan.entityInserts.push({
-        kind: e.kind, name: e.name, alias: e.alias, role: e.role,
+        kind: e.kind,
+        name: e.name,
+        alias: e.alias,
+        role: e.role,
         status: validLoreStatus(e.kind, e.status) ?? (isChar ? "Alive" : "Active"),
         category: validEntityCategory(e.kind, e.category),
-        description: e.description, image_url: null,
-        source: src, notes: conflictNotes,
+        description: e.description,
+        image_url: null,
+        source: src,
+        notes: conflictNotes,
       });
       byName.set(normalize(e.name), [
-        { id: `pending:${normalize(e.name)}`, name: e.name, kind: e.kind, status: plan.entityInserts.at(-1).status, category: plan.entityInserts.at(-1).category, locked_fields: [] },
+        {
+          id: `pending:${normalize(e.name)}`,
+          name: e.name,
+          kind: e.kind,
+          status: plan.entityInserts.at(-1).status,
+          category: plan.entityInserts.at(-1).category,
+          locked_fields: [],
+        },
       ]);
     }
   }
@@ -132,7 +166,9 @@ function planLoreSync(archive, inputs, lastSortOrder = 0) {
     for (const u of input.updates) {
       const target = find(u.existing_name);
       if (!target) throw new Error(`The entry ${u.existing_name} no longer exists.`);
-      const pendingInsert = plan.entityInserts.find((i) => normalize(i.name) === normalize(target.name));
+      const pendingInsert = plan.entityInserts.find(
+        (i) => normalize(i.name) === normalize(target.name),
+      );
       if (u.new_facts.trim() && !target.id.startsWith("pending:")) {
         plan.loreNoteInserts.push({ entity_id: target.id, text: u.new_facts, source: src });
       } else if (u.new_facts.trim() && pendingInsert) {
@@ -156,44 +192,70 @@ function planLoreSync(archive, inputs, lastSortOrder = 0) {
   for (const input of inputs) {
     const src = input.source;
     for (const ev of input.events) {
-      plan.timelineInserts.push({ title: ev.title, era: ev.era, description: ev.description, source: src, sort_order: ++order });
+      plan.timelineInserts.push({
+        title: ev.title,
+        era: ev.era,
+        description: ev.description,
+        source: src,
+        sort_order: ++order,
+      });
     }
   }
   return plan;
 }
 
 async function main() {
-  const [entities, updates, events] = ["entities.json", "updates.json", "timeline_events.json"].map((f) =>
-    JSON.parse(fs.readFileSync(path.join(EXPORT_DIR, f), "utf8")),
+  const [entities, updates, events] = ["entities.json", "updates.json", "timeline_events.json"].map(
+    (f) => JSON.parse(fs.readFileSync(path.join(EXPORT_DIR, f), "utf8")),
   );
-  for (const e of entities) if (!ENTITY_KINDS.includes(e.kind)) throw new Error(`Bad kind on entity ${e.name}: ${e.kind}`);
+  for (const e of entities)
+    if (!ENTITY_KINDS.includes(e.kind)) throw new Error(`Bad kind on entity ${e.name}: ${e.kind}`);
 
-  const { data: archive, error: aErr } = await sb.from("entities").select("id, name, kind, status, category, locked_fields");
+  const { data: archive, error: aErr } = await sb
+    .from("entities")
+    .select("id, name, kind, status, category, locked_fields");
   if (aErr) throw new Error(`Failed to load entities: ${aErr.message}`);
-  const { data: lastRow, error: tErr } = await sb.from("timeline_events").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+  const { data: lastRow, error: tErr } = await sb
+    .from("timeline_events")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1);
   if (tErr) throw new Error(`Failed to load timeline: ${tErr.message}`);
 
   // Group by PDF source for lore_notes provenance (same as syncLoreExport).
   const groups = new Map();
   const groupFor = (source) => {
-    if (!groups.has(source)) groups.set(source, { source, new_entities: [], updates: [], events: [] });
+    if (!groups.has(source))
+      groups.set(source, { source, new_entities: [], updates: [], events: [] });
     return groups.get(source);
   };
   for (const e of entities) {
     groupFor((e.sources ?? []).join("; ") || "lore-export").new_entities.push({
-      kind: e.kind, name: e.name, alias: e.alias, role: e.role, status: e.status, description: e.description, quote: e.quote ?? "",
+      kind: e.kind,
+      name: e.name,
+      alias: e.alias,
+      role: e.role,
+      status: e.status,
+      description: e.description,
+      quote: e.quote ?? "",
       ...(e.category ? { category: e.category } : {}),
       conflicts: e.conflicts,
     });
   }
   for (const u of updates) {
     groupFor(u.source ?? "lore-export").updates.push({
-      existing_name: u.existing_name, new_facts: u.new_facts, status: u.status, quote: u.quote ?? "",
+      existing_name: u.existing_name,
+      new_facts: u.new_facts,
+      status: u.status,
+      quote: u.quote ?? "",
     });
   }
   for (const ev of events) {
     groupFor((ev.sources ?? []).join("; ") || "lore-export").events.push({
-      title: ev.title, era: ev.era, description: ev.description, quote: ev.quote ?? "",
+      title: ev.title,
+      era: ev.era,
+      description: ev.description,
+      quote: ev.quote ?? "",
     });
   }
 
@@ -203,9 +265,14 @@ async function main() {
     lastRow?.[0]?.sort_order ?? 0,
   );
 
-  console.log(`Plan: ${plan.entityInserts.length} inserts, ${plan.loreNoteInserts.length} lore notes, ${plan.entityUpdates.length} updates, ${plan.timelineInserts.length} timeline events`);
+  console.log(
+    `Plan: ${plan.entityInserts.length} inserts, ${plan.loreNoteInserts.length} lore notes, ${plan.entityUpdates.length} updates, ${plan.timelineInserts.length} timeline events`,
+  );
   if (DRY_RUN) {
-    console.log("Dry run — no writes. Sample inserts:", plan.entityInserts.slice(0, 5).map((i) => i.name));
+    console.log(
+      "Dry run — no writes. Sample inserts:",
+      plan.entityInserts.slice(0, 5).map((i) => i.name),
+    );
     return;
   }
 
@@ -219,31 +286,56 @@ async function main() {
   };
 
   await run("entities", plan.entityInserts, async (r) => {
-    const { data: inserted, error } = await sb.from("entities").insert({
-      kind: r.kind, name: r.name, alias: r.alias, role: r.role, status: r.status,
-      category: r.category, description: r.description, image_url: r.image_url,
-    }).select("id").single();
+    const { data: inserted, error } = await sb
+      .from("entities")
+      .insert({
+        kind: r.kind,
+        name: r.name,
+        alias: r.alias,
+        role: r.role,
+        status: r.status,
+        category: r.category,
+        description: r.description,
+        image_url: r.image_url,
+      })
+      .select("id")
+      .single();
     if (error) return { error };
     for (const note of r.notes) {
-      const { error: nErr } = await sb.from("lore_notes").insert({ entity_id: inserted.id, text: note, source: r.source });
+      const { error: nErr } = await sb
+        .from("lore_notes")
+        .insert({ entity_id: inserted.id, text: note, source: r.source });
       if (nErr) return { error: nErr };
     }
     return { error: null };
   });
   await run("lore_notes", plan.loreNoteInserts, (r) => sb.from("lore_notes").insert(r));
   await run("entity_updates", plan.entityUpdates, (r) =>
-    sb.from("entities").update({ ...r.patch, updated_at: new Date().toISOString() }).eq("id", r.id),
+    sb
+      .from("entities")
+      .update({ ...r.patch, updated_at: new Date().toISOString() })
+      .eq("id", r.id),
   );
   await run("timeline_events", plan.timelineInserts, (r) =>
-    sb.from("timeline_events").insert({ title: r.title, era: r.era, description: r.description, source: r.source, sort_order: r.sort_order }),
+    sb.from("timeline_events").insert({
+      title: r.title,
+      era: r.era,
+      description: r.description,
+      source: r.source,
+      sort_order: r.sort_order,
+    }),
   );
 
   const summary = {
-    created: plan.entityInserts.length, notes: plan.loreNoteInserts.length,
-    updated: plan.entityUpdates.length, events: plan.timelineInserts.length,
+    created: plan.entityInserts.length,
+    notes: plan.loreNoteInserts.length,
+    updated: plan.entityUpdates.length,
+    events: plan.timelineInserts.length,
     errors: errors.length,
   };
-  const { error: jobErr } = await sb.from("ingest_jobs").insert({ filename: "lore-export batch (script)", summary });
+  const { error: jobErr } = await sb
+    .from("ingest_jobs")
+    .insert({ filename: "lore-export batch (script)", summary });
   if (jobErr) console.warn("ingest_jobs insert failed:", jobErr.message);
 
   console.log(`Done. ${JSON.stringify(summary)}`);
@@ -254,4 +346,7 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

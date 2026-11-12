@@ -65,22 +65,46 @@ export const Route = createFileRoute("/_authenticated/abilities")({
       },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { tab?: "fx" | "action" | undefined } => (s["tab"] === "fx" || s["tab"] === "action" ? { tab: s["tab"] } : {}),
+  validateSearch: (s: Record<string, unknown>): { tab?: "fx" | "action" | undefined } =>
+    s["tab"] === "fx" || s["tab"] === "action" ? { tab: s["tab"] } : {},
   component: AbilitiesTabs,
 });
 
-const HUB_TABS = [["catalog", "Catalog"], ["fx", "Ability FX & Lineages"], ["action", "Ability in Action"]] as const;
+const HUB_TABS = [
+  ["catalog", "Catalog"],
+  ["fx", "Ability FX & Lineages"],
+  ["action", "Ability in Action"],
+] as const;
 
 function AbilitiesTabs() {
   const { tab = "catalog" } = Route.useSearch();
   const nav = Route.useNavigate();
-  return <>
-    <div className="mx-auto max-w-6xl px-4 pt-24 sm:px-5">
-      <div role="tablist" aria-label="Abilities sections" className="flex flex-wrap gap-1.5">{HUB_TABS.map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} onClick={() => nav({ search: id === "catalog" ? {} : { tab: id }, replace: true })}
-        className={`rounded-full border px-3.5 py-1.5 text-sm transition ${tab === id ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}>{label}</button>)}</div>
-    </div>
-    {tab === "fx" ? <AbilityFxPanel /> : tab === "action" ? <AbilityActionPanel /> : <AbilitiesHub />}
-  </>;
+  return (
+    <>
+      <div className="mx-auto max-w-6xl px-4 pt-24 sm:px-5">
+        <div role="tablist" aria-label="Abilities sections" className="flex flex-wrap gap-1.5">
+          {HUB_TABS.map(([id, label]) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => nav({ search: id === "catalog" ? {} : { tab: id }, replace: true })}
+              className={`rounded-full border px-3.5 py-1.5 text-sm transition ${tab === id ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {tab === "fx" ? (
+        <AbilityFxPanel />
+      ) : tab === "action" ? (
+        <AbilityActionPanel />
+      ) : (
+        <AbilitiesHub />
+      )}
+    </>
+  );
 }
 
 function AbilitiesHub() {
@@ -105,7 +129,7 @@ function AbilitiesHub() {
         .select("key,value")
         .in("key", [CUSTOM_SETTINGS_KEY, OVERRIDES_SETTINGS_KEY]);
       if (!alive) return;
-      const registry = data?.find(row => row.key === CUSTOM_SETTINGS_KEY)?.value;
+      const registry = data?.find((row) => row.key === CUSTOM_SETTINGS_KEY)?.value;
       const list = Array.isArray(registry) ? (registry as unknown as AbilityDef[]) : [];
       try {
         localStorage.setItem("scu_custom_abilities", JSON.stringify(list));
@@ -113,7 +137,7 @@ function AbilitiesHub() {
         /* storage optional */
       }
       // Fetch tiers/descriptions alongside the registry, not in a second round-trip.
-      const overrides = data?.find(row => row.key === OVERRIDES_SETTINGS_KEY)?.value;
+      const overrides = data?.find((row) => row.key === OVERRIDES_SETTINGS_KEY)?.value;
       if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
         try {
           localStorage.setItem("scu_ability_overrides", JSON.stringify(overrides));
@@ -251,76 +275,106 @@ function AbilitiesHub() {
       )}
 
       {nexus && defs.length > 0 && <NexusAbilityHero defs={defs} />}
-      {nexus ? <NexusExplorer
-        label="Abilities" loading={isLoading}
-        records={defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], subtitle: ABILITY_GROUP_LABELS[def.group], icon: <NexusAbilitySymbol name={def.key} className="h-10 w-10" />, def }))}
-        renderDetail={({ def }) => <div><AbilityFxLauncher name={def.key} /><AbilityCard def={def} holders={holders.get(def.key) ?? []} open onToggle={() => {}} isAdmin={isAdmin} isCustom={customKeys.has(def.key)} onEdit={() => setEditingDef(def)} onDeleteCustom={() => { removeCustomAbility(def.key); setCustomsVersion(v => v + 1); toast.success(`Removed "${def.label}" from the registry.`); }} /></div>}
-      /> : <>
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search abilities or characters…"
-            className="glass h-9 w-64 rounded-full pl-8 text-sm"
-          />
-        </div>
-        <button
-          onClick={() => setTier("all")}
-          className={`rounded-full px-3 py-1 text-xs ${tier === "all" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          All
-        </button>
-        {TIER_ORDER.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTier(tier === t ? "all" : t)}
-            className={`rounded-full px-3 py-1 text-xs ${tier === t ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            {TIER_LABELS[t]}
-          </button>
-        ))}
-      </div>
-
-      {isLoading ? (
-        <EntityGridSkeleton count={6} />
-      ) : filtered.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">No abilities match.</p>
-      ) : (
-        presentTiers.map((t) => (
-          <section key={t} className="mb-8">
-            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: tierColor(t) }} />
-              {TIER_LABELS[t]}{" "}
-              <span className="text-muted-foreground/60">({byTier.get(t)?.length ?? 0})</span>
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(byTier.get(t) ?? []).map((d) => (
-                <AbilityCard
-                  key={d.key}
-                  def={d}
-                  holders={holders.get(d.key) ?? []}
-                  open={openKey === d.key}
-                  onToggle={() => {
-                    sfx.click();
-                    setOpenKey(openKey === d.key ? null : d.key);
-                  }}
-                  isAdmin={isAdmin}
-                  isCustom={customKeys.has(d.key)}
-                  onEdit={() => setEditingDef(d)}
-                  onDeleteCustom={() => {
-                    removeCustomAbility(d.key);
-                    setCustomsVersion((v) => v + 1);
-                    toast.success(`Removed "${d.label}" from the registry.`);
-                  }}
-                />
-              ))}
+      {nexus ? (
+        <NexusExplorer
+          label="Abilities"
+          loading={isLoading}
+          records={defs.map((def) => ({
+            id: def.key,
+            title: def.label,
+            group: TIER_LABELS[def.tier],
+            subtitle: ABILITY_GROUP_LABELS[def.group],
+            icon: <NexusAbilitySymbol name={def.key} className="h-10 w-10" />,
+            def,
+          }))}
+          renderDetail={({ def }) => (
+            <div>
+              <AbilityFxLauncher name={def.key} />
+              <AbilityCard
+                def={def}
+                holders={holders.get(def.key) ?? []}
+                open
+                onToggle={() => {}}
+                isAdmin={isAdmin}
+                isCustom={customKeys.has(def.key)}
+                onEdit={() => setEditingDef(def)}
+                onDeleteCustom={() => {
+                  removeCustomAbility(def.key);
+                  setCustomsVersion((v) => v + 1);
+                  toast.success(`Removed "${def.label}" from the registry.`);
+                }}
+              />
             </div>
-          </section>
-        ))
+          )}
+        />
+      ) : (
+        <>
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search abilities or characters…"
+                className="glass h-9 w-64 rounded-full pl-8 text-sm"
+              />
+            </div>
+            <button
+              onClick={() => setTier("all")}
+              className={`rounded-full px-3 py-1 text-xs ${tier === "all" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              All
+            </button>
+            {TIER_ORDER.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTier(tier === t ? "all" : t)}
+                className={`rounded-full px-3 py-1 text-xs ${tier === t ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {TIER_LABELS[t]}
+              </button>
+            ))}
+          </div>
+
+          {isLoading ? (
+            <EntityGridSkeleton count={6} />
+          ) : filtered.length === 0 ? (
+            <p className="py-16 text-center text-sm text-muted-foreground">No abilities match.</p>
+          ) : (
+            presentTiers.map((t) => (
+              <section key={t} className="mb-8">
+                <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: tierColor(t) }} />
+                  {TIER_LABELS[t]}{" "}
+                  <span className="text-muted-foreground/60">({byTier.get(t)?.length ?? 0})</span>
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {(byTier.get(t) ?? []).map((d) => (
+                    <AbilityCard
+                      key={d.key}
+                      def={d}
+                      holders={holders.get(d.key) ?? []}
+                      open={openKey === d.key}
+                      onToggle={() => {
+                        sfx.click();
+                        setOpenKey(openKey === d.key ? null : d.key);
+                      }}
+                      isAdmin={isAdmin}
+                      isCustom={customKeys.has(d.key)}
+                      onEdit={() => setEditingDef(d)}
+                      onDeleteCustom={() => {
+                        removeCustomAbility(d.key);
+                        setCustomsVersion((v) => v + 1);
+                        toast.success(`Removed "${d.label}" from the registry.`);
+                      }}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+        </>
       )}
-      </>}
     </main>
   );
 }
@@ -380,7 +434,11 @@ function AbilityCard({
             boxShadow: `0 0 10px ${def.color}44`,
           }}
         >
-          {nexus ? <NexusAbilitySymbol name={def.key} className="h-10 w-10" /> : <Icon className="h-5 w-5" />}
+          {nexus ? (
+            <NexusAbilitySymbol name={def.key} className="h-10 w-10" />
+          ) : (
+            <Icon className="h-5 w-5" />
+          )}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
@@ -681,11 +739,39 @@ function EditAbilityForm({
   );
 }
 
-function NexusAbilityHero({ defs }: { defs: { key: string; label: string; tier: keyof typeof TIER_LABELS; group: keyof typeof ABILITY_GROUP_LABELS }[] }) {
+function NexusAbilityHero({
+  defs,
+}: {
+  defs: {
+    key: string;
+    label: string;
+    tier: keyof typeof TIER_LABELS;
+    group: keyof typeof ABILITY_GROUP_LABELS;
+  }[];
+}) {
   const moving = useNexusMotion();
-  const members = defs.map(def => ({ id: def.key, title: def.label, group: TIER_LABELS[def.tier], icon: <span className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-border"><AbilityFxCanvas recipe={abilityFxRecipe(def.key)} label={`${def.label} animation`} /><NexusAbilitySymbol name={def.key} className="relative h-10 w-10 opacity-90" /></span> }));
-  return <section aria-label="Ability showcase" className="nexus-cluster relative mb-6 overflow-hidden rounded-lg border border-border bg-card/40">
-    <div className="relative h-48 sm:h-56"><NexusSpotlight members={members} offset={0} moving={moving} /></div>
-    <p className="pb-3 text-center font-mono text-[10px] tracking-[.3em] text-muted-foreground">ABILITY CODEX · {defs.length} RECORDED</p>
-  </section>;
+  const members = defs.map((def) => ({
+    id: def.key,
+    title: def.label,
+    group: TIER_LABELS[def.tier],
+    icon: (
+      <span className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-border">
+        <AbilityFxCanvas recipe={abilityFxRecipe(def.key)} label={`${def.label} animation`} />
+        <NexusAbilitySymbol name={def.key} className="relative h-10 w-10 opacity-90" />
+      </span>
+    ),
+  }));
+  return (
+    <section
+      aria-label="Ability showcase"
+      className="nexus-cluster relative mb-6 overflow-hidden rounded-lg border border-border bg-card/40"
+    >
+      <div className="relative h-48 sm:h-56">
+        <NexusSpotlight members={members} offset={0} moving={moving} />
+      </div>
+      <p className="pb-3 text-center font-mono text-[10px] tracking-[.3em] text-muted-foreground">
+        ABILITY CODEX · {defs.length} RECORDED
+      </p>
+    </section>
+  );
 }

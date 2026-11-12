@@ -13,7 +13,22 @@ import { sfx } from "@/lib/scu-audio";
 export const Route = createFileRoute("/_authenticated/story")({
   validateSearch: (s: Record<string, unknown>): { ep?: string } =>
     typeof s["ep"] === "string" ? { ep: s["ep"] } : {},
-  head: () => ({ meta: [{ title: "Story — SCU" }, { name: "description", content: "Read published episodes and stories from the Sentinels Cinematic Universe." }, { property: "og:title", content: "Story — SCU" }, { property: "og:description", content: "Read published episodes and stories from the Sentinels Cinematic Universe." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  head: () => ({
+    meta: [
+      { title: "Story — SCU" },
+      {
+        name: "description",
+        content: "Read published episodes and stories from the Sentinels Cinematic Universe.",
+      },
+      { property: "og:title", content: "Story — SCU" },
+      {
+        property: "og:description",
+        content: "Read published episodes and stories from the Sentinels Cinematic Universe.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Story,
 });
 
@@ -172,29 +187,56 @@ function Story() {
       <p className="mt-1 text-sm text-muted-foreground">
         Official SCU epics and published stories.
       </p>
-      {nexus ? <div className="mt-6"><NexusExplorer label="Stories" records={(episodes ?? []).map(e => ({ id: e.id, title: e.title, group: e.series || "Standalone", subtitle: e.status, episode: e }))} renderDetail={({ episode: e }) => <div className="grid gap-4"><BookOpen className="h-8 w-8 text-accent" /><h2 className="break-words text-2xl">{e.title}</h2><p className="text-sm text-muted-foreground">{e.series}</p><Button asChild><Link to="/story" search={{ ep: e.id }} onClick={() => sfx.whoosh()}><BookOpen className="h-4 w-4" /> Read story</Link></Button></div>} /></div> : <ul className="mt-6 grid gap-2">
-        {(episodes ?? []).map((e) => (
-          <li key={e.id}>
-            <Link
-              to="/story"
-              search={{ ep: e.id }}
-              onClick={() => sfx.whoosh()}
-              className="glass flex items-center justify-between rounded-2xl px-4 py-3 transition hover:border-accent/50"
-            >
-              <span>
-                <span className="block font-medium">{e.title}</span>
-                {e.series && <span className="text-xs text-muted-foreground">{e.series}</span>}
-              </span>
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                {e.status}
-              </span>
-            </Link>
-          </li>
-        ))}
-        {(episodes ?? []).length === 0 && (
-          <li className="text-sm text-muted-foreground">No published stories yet.</li>
-        )}
-      </ul>}
+      {nexus ? (
+        <div className="mt-6">
+          <NexusExplorer
+            label="Stories"
+            records={(episodes ?? []).map((e) => ({
+              id: e.id,
+              title: e.title,
+              group: e.series || "Standalone",
+              subtitle: e.status,
+              episode: e,
+            }))}
+            renderDetail={({ episode: e }) => (
+              <div className="grid gap-4">
+                <BookOpen className="h-8 w-8 text-accent" />
+                <h2 className="break-words text-2xl">{e.title}</h2>
+                <p className="text-sm text-muted-foreground">{e.series}</p>
+                <Button asChild>
+                  <Link to="/story" search={{ ep: e.id }} onClick={() => sfx.whoosh()}>
+                    <BookOpen className="h-4 w-4" /> Read story
+                  </Link>
+                </Button>
+              </div>
+            )}
+          />
+        </div>
+      ) : (
+        <ul className="mt-6 grid gap-2">
+          {(episodes ?? []).map((e) => (
+            <li key={e.id}>
+              <Link
+                to="/story"
+                search={{ ep: e.id }}
+                onClick={() => sfx.whoosh()}
+                className="glass flex items-center justify-between rounded-2xl px-4 py-3 transition hover:border-accent/50"
+              >
+                <span>
+                  <span className="block font-medium">{e.title}</span>
+                  {e.series && <span className="text-xs text-muted-foreground">{e.series}</span>}
+                </span>
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {e.status}
+                </span>
+              </Link>
+            </li>
+          ))}
+          {(episodes ?? []).length === 0 && (
+            <li className="text-sm text-muted-foreground">No published stories yet.</li>
+          )}
+        </ul>
+      )}
     </div>
   );
 }

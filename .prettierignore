@@ -6,3 +6,8 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+lore-export
+public/lore-export
+android
+drizzle/migrations
+

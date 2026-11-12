@@ -8,6 +8,10 @@ const subscribe = (notify: () => void) => {
 };
 export function useNexusMotion() {
   const enabled = useAnimationsEnabled();
-  const reduced = useSyncExternalStore(subscribe, () => window.matchMedia("(prefers-reduced-motion: reduce)").matches, () => true);
+  const reduced = useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => true,
+  );
   return enabled && !reduced;
 }

@@ -9,10 +9,7 @@
   "background_color": "#0a0d14",
   "theme_color": "#0a0d14",
   "lang": "en",
-  "categories": [
-    "entertainment",
-    "books"
-  ],
+  "categories": ["entertainment", "books"],
   "icons": [
     {
       "src": "/icons/icon-192.png",

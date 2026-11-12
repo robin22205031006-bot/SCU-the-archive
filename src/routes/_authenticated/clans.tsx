@@ -42,12 +42,44 @@ export function Clans() {
           and organizations of the archive.
         </p>
       </header>
-      {nexus ? <NexusWorkspace views={[
-        { id: "clans", title: "Clan structures", icon: <Castle className="h-4 w-4" />, content: <NexusLineage /> },
-        { id: "family", title: "Family tree", icon: <GitBranch className="h-4 w-4" />, content: <NexusFamilyTree /> },
-        { id: "bonds", title: "Connections", icon: <Network className="h-4 w-4" />, content: <NexusConstellation /> },
-        { id: "editor", title: "Hierarchy editor", icon: <Castle className="h-4 w-4" />, content: <ClanGraph /> },
-      ]} /> : <div className="grid gap-10"><ClanGraph /><section aria-label="Family tree"><h2 className="mb-3 text-2xl font-medium">Family tree</h2><FamilyTree /></section></div>}
+      {nexus ? (
+        <NexusWorkspace
+          views={[
+            {
+              id: "clans",
+              title: "Clan structures",
+              icon: <Castle className="h-4 w-4" />,
+              content: <NexusLineage />,
+            },
+            {
+              id: "family",
+              title: "Family tree",
+              icon: <GitBranch className="h-4 w-4" />,
+              content: <NexusFamilyTree />,
+            },
+            {
+              id: "bonds",
+              title: "Connections",
+              icon: <Network className="h-4 w-4" />,
+              content: <NexusConstellation />,
+            },
+            {
+              id: "editor",
+              title: "Hierarchy editor",
+              icon: <Castle className="h-4 w-4" />,
+              content: <ClanGraph />,
+            },
+          ]}
+        />
+      ) : (
+        <div className="grid gap-10">
+          <ClanGraph />
+          <section aria-label="Family tree">
+            <h2 className="mb-3 text-2xl font-medium">Family tree</h2>
+            <FamilyTree />
+          </section>
+        </div>
+      )}
     </main>
   );
 }

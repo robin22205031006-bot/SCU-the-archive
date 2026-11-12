@@ -20,7 +20,10 @@ export const Route = createFileRoute("/_authenticated/archive")({
   head: () => ({
     meta: [
       { property: "og:title", content: "Archive — Sentinels Cinematic Universe" },
-      { property: "og:description", content: "Organizations, clans, bloodlines, knowledge graph and canon timeline of the SCU." },
+      {
+        property: "og:description",
+        content: "Organizations, clans, bloodlines, knowledge graph and canon timeline of the SCU.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { title: "Archive — Sentinels Cinematic Universe" },
@@ -37,7 +40,12 @@ export const Route = createFileRoute("/_authenticated/archive")({
 type Module = "series" | "orgs" | "clans" | "graph" | "timeline";
 
 const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
-  { id: "series", icon: BookOpen, t: "Series & Seasons", d: "Every series and season, each with its own roster page." },
+  {
+    id: "series",
+    icon: BookOpen,
+    t: "Series & Seasons",
+    d: "Every series and season, each with its own roster page.",
+  },
   {
     id: "orgs",
     icon: Shield,
@@ -72,7 +80,9 @@ function Archive() {
 
   return (
     <main className="relative mx-auto max-w-6xl px-4 pb-24 sm:px-5">
-      {!nexus && <CrimsonBloodlineTheme className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-25" />}
+      {!nexus && (
+        <CrimsonBloodlineTheme className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-25" />
+      )}
       <header className="mb-6 pt-28">
         <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Lore Vault</p>
         <h1 className="mt-2 text-5xl font-medium glow-text">Archive</h1>
@@ -84,39 +94,68 @@ function Archive() {
         </div>
       </header>
 
-      {nexus ? <div data-spoiler="archive"><NexusWorkspace views={MODULES.map(m => ({ id: m.id, title: m.t, icon: <m.icon className="h-4 w-4" />, content: <SectionBoundary label={m.t}><Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>{m.id === "series" ? <ArchiveSeasons /> : m.id === "orgs" ? <Orgs /> : m.id === "clans" ? <Clans /> : m.id === "graph" ? <RelationshipGraph /> : <Timeline />}</Suspense></SectionBoundary> }))} /></div> : <>
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {MODULES.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => setModule(m.id)}
-            className={`glass rounded-2xl p-5 text-left transition-all hover:-translate-y-0.5 ${module === m.id ? "glow-ring border-accent/50" : "hover:glow-ring"}`}
-          >
-            <m.icon
-              className={`h-6 w-6 ${module === m.id ? "text-accent" : "text-muted-foreground"}`}
-            />
-            <h2 className="mt-3 text-lg font-medium">{m.t}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">{m.d}</p>
-          </button>
-        ))}
-      </div>
+      {nexus ? (
+        <div data-spoiler="archive">
+          <NexusWorkspace
+            views={MODULES.map((m) => ({
+              id: m.id,
+              title: m.t,
+              icon: <m.icon className="h-4 w-4" />,
+              content: (
+                <SectionBoundary label={m.t}>
+                  <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+                    {m.id === "series" ? (
+                      <ArchiveSeasons />
+                    ) : m.id === "orgs" ? (
+                      <Orgs />
+                    ) : m.id === "clans" ? (
+                      <Clans />
+                    ) : m.id === "graph" ? (
+                      <RelationshipGraph />
+                    ) : (
+                      <Timeline />
+                    )}
+                  </Suspense>
+                </SectionBoundary>
+              ),
+            }))}
+          />
+        </div>
+      ) : (
+        <>
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {MODULES.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setModule(m.id)}
+                className={`glass rounded-2xl p-5 text-left transition-all hover:-translate-y-0.5 ${module === m.id ? "glow-ring border-accent/50" : "hover:glow-ring"}`}
+              >
+                <m.icon
+                  className={`h-6 w-6 ${module === m.id ? "text-accent" : "text-muted-foreground"}`}
+                />
+                <h2 className="mt-3 text-lg font-medium">{m.t}</h2>
+                <p className="mt-1 text-xs text-muted-foreground">{m.d}</p>
+              </button>
+            ))}
+          </div>
 
-      <section aria-label={active.t} data-spoiler="archive">
-        <SectionBoundary key={module} label={active.t}>
-          <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
-            {module === "series" && <ArchiveSeasons />}
-            {module === "orgs" && <Orgs />}
-            {module === "clans" && <Clans />}
-            {module === "graph" && (
-              <div className="glass rounded-2xl p-4">
-                <RelationshipGraph />
-              </div>
-            )}
-            {module === "timeline" && <Timeline />}
-          </Suspense>
-        </SectionBoundary>
-      </section>
-      </>}
+          <section aria-label={active.t} data-spoiler="archive">
+            <SectionBoundary key={module} label={active.t}>
+              <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+                {module === "series" && <ArchiveSeasons />}
+                {module === "orgs" && <Orgs />}
+                {module === "clans" && <Clans />}
+                {module === "graph" && (
+                  <div className="glass rounded-2xl p-4">
+                    <RelationshipGraph />
+                  </div>
+                )}
+                {module === "timeline" && <Timeline />}
+              </Suspense>
+            </SectionBoundary>
+          </section>
+        </>
+      )}
     </main>
   );
 }

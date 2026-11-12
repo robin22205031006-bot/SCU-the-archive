@@ -39,10 +39,26 @@ function Graph() {
           bloodlines and organizations they serve.
         </p>
       </header>
-      {nexus ? <NexusWorkspace views={[
-        { id: "relationships", title: "Relationships", icon: <Network className="h-4 w-4" />, content: <NexusConstellation /> },
-        { id: "lineages", title: "Lineages", icon: <Castle className="h-4 w-4" />, content: <NexusLineage /> },
-      ]} /> : <RelationshipGraph />}
+      {nexus ? (
+        <NexusWorkspace
+          views={[
+            {
+              id: "relationships",
+              title: "Relationships",
+              icon: <Network className="h-4 w-4" />,
+              content: <NexusConstellation />,
+            },
+            {
+              id: "lineages",
+              title: "Lineages",
+              icon: <Castle className="h-4 w-4" />,
+              content: <NexusLineage />,
+            },
+          ]}
+        />
+      ) : (
+        <RelationshipGraph />
+      )}
     </main>
   );
 }

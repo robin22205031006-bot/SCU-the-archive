@@ -41,11 +41,35 @@ function MapPage() {
           the SCU theater.
         </p>
       </header>
-      {nexus ? <NexusWorkspace views={[
-        { id: "atlas", title: "Atlas", icon: <Globe2 className="h-4 w-4" />, content: <NexusAtlas /> },
-        { id: "world", title: "World & Eras", icon: <Map className="h-4 w-4" />, content: <LoreLocations /> },
-        { id: "deployments", title: "Deployments", icon: <Radio className="h-4 w-4" />, content: <TacticalMap /> },
-      ]} /> : <><LoreLocations /><TacticalMap /></>}
+      {nexus ? (
+        <NexusWorkspace
+          views={[
+            {
+              id: "atlas",
+              title: "Atlas",
+              icon: <Globe2 className="h-4 w-4" />,
+              content: <NexusAtlas />,
+            },
+            {
+              id: "world",
+              title: "World & Eras",
+              icon: <Map className="h-4 w-4" />,
+              content: <LoreLocations />,
+            },
+            {
+              id: "deployments",
+              title: "Deployments",
+              icon: <Radio className="h-4 w-4" />,
+              content: <TacticalMap />,
+            },
+          ]}
+        />
+      ) : (
+        <>
+          <LoreLocations />
+          <TacticalMap />
+        </>
+      )}
     </main>
   );
 }

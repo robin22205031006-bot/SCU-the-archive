@@ -26,19 +26,33 @@ import { useUiStyle } from "@/lib/ui-style";
 import { NexusDossier } from "@/components/nexus-dossier";
 
 export const Route = createFileRoute("/_authenticated/character")({
-  validateSearch: (s: Record<string, unknown>): { e?: string; series?: string | undefined; season?: number | undefined } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { e?: string; series?: string | undefined; season?: number | undefined } => ({
     ...(typeof s["e"] === "string" ? { e: s["e"] } : {}),
     ...(typeof s["series"] === "string" ? { series: s["series"] } : {}),
-    ...(Number.isInteger(Number(s["season"])) && Number(s["season"]) > 0 ? { season: Number(s["season"]) } : {}),
+    ...(Number.isInteger(Number(s["season"])) && Number(s["season"]) > 0
+      ? { season: Number(s["season"]) }
+      : {}),
   }),
-  head: () => ({ meta: [
-    { title: "Character Dossier — SCU" },
-    { name: "description", content: "Explore SCU character stories, season identities, abilities and stats in Classic or Nexus." },
-    { property: "og:title", content: "Character Dossier — SCU" },
-    { property: "og:description", content: "Character stories, identities and season dossiers from the Sentinels Cinematic Universe." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Character Dossier — SCU" },
+      {
+        name: "description",
+        content:
+          "Explore SCU character stories, season identities, abilities and stats in Classic or Nexus.",
+      },
+      { property: "og:title", content: "Character Dossier — SCU" },
+      {
+        property: "og:description",
+        content:
+          "Character stories, identities and season dossiers from the Sentinels Cinematic Universe.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   errorComponent: ({ error }) => (
     <div className="grid min-h-screen place-items-center bg-[#020408] p-8 text-center">
       <div>
@@ -99,7 +113,6 @@ const SERIES_GROUPS: Array<{ key: string; title: string; match: RegExp; seasons:
 
 const SANITIZE = /^\[(conflict|merge|Auto-Merged|Auto-Stub|scope|resolved|Merged Info)/i;
 
-
 const COMPARE_COLORS = [
   "hsl(190 85% 60%)",
   "hsl(30 90% 60%)",
@@ -129,7 +142,10 @@ function CompareRowsLoader({
     if (data)
       onRows(
         id,
-        seasonJourneyRows((data as JRow[]).filter((r) => r.series), stats) as JRow[],
+        seasonJourneyRows(
+          (data as JRow[]).filter((r) => r.series),
+          stats,
+        ) as JRow[],
       );
   }, [data, id, onRows, stats]);
   return null;
@@ -160,7 +176,12 @@ function CompareJourney({
   return (
     <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-3">
       {picked.map((p) => (
-        <CompareRowsLoader key={p} id={p} stats={others.find((o) => o.id === p)?.stats} onRows={onRows} />
+        <CompareRowsLoader
+          key={p}
+          id={p}
+          stats={others.find((o) => o.id === p)?.stats}
+          onRows={onRows}
+        />
       ))}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest">
         <span className="text-accent">Compare Journey</span>
@@ -207,7 +228,14 @@ function CompareJourney({
           </span>
         ))}
       </div>
-      <JourneyLine title="Compare journey" lines={lines.map((l, i) => ({ name: l.name, rows: l.rows, color: i === 0 ? "var(--accent)" : COMPARE_COLORS[(i - 1) % COMPARE_COLORS.length]! }))} />
+      <JourneyLine
+        title="Compare journey"
+        lines={lines.map((l, i) => ({
+          name: l.name,
+          rows: l.rows,
+          color: i === 0 ? "var(--accent)" : COMPARE_COLORS[(i - 1) % COMPARE_COLORS.length]!,
+        }))}
+      />
     </div>
   );
 }
@@ -220,7 +248,14 @@ function CharacterDossier() {
   const style = useUiStyle();
   const { e: id, series, season } = Route.useSearch();
   const { data } = useQuery({ ...entityByIdQuery(id ?? ""), enabled: !!id && style === "nexus" });
-  if (style === "nexus" && data && data.kind === "character") return <NexusDossier key={`${data.id}:${series ?? ""}:${season ?? ""}`} e={data} initialSeason={series && season ? { seriesId: series, n: season } : null} />;
+  if (style === "nexus" && data && data.kind === "character")
+    return (
+      <NexusDossier
+        key={`${data.id}:${series ?? ""}:${season ?? ""}`}
+        e={data}
+        initialSeason={series && season ? { seriesId: series, n: season } : null}
+      />
+    );
   return <ClassicDossier />;
 }
 
@@ -301,7 +336,15 @@ function ClassicDossier() {
   });
 
   const seasons = useMemo(() => (memberships ?? []).filter((r) => r.series), [memberships]);
-  const journeyRows = useMemo(() => seasonJourneyRows(seasons, e?.stats, Object.fromEntries((allSeries ?? []).map((x) => [x.id, x.title]))) as typeof seasons, [seasons, e?.stats, allSeries]);
+  const journeyRows = useMemo(
+    () =>
+      seasonJourneyRows(
+        seasons,
+        e?.stats,
+        Object.fromEntries((allSeries ?? []).map((x) => [x.id, x.title])),
+      ) as typeof seasons,
+    [seasons, e?.stats, allSeries],
+  );
   const cleanNotes = useMemo(() => {
     const seen = new Set<string>();
     const descText = (e?.description ?? "").toLowerCase();

@@ -18,12 +18,21 @@ export function scopeLoreText(text: string, seriesTitle: string, season: number 
   const title = seriesTitle.toLowerCase().replace(/^the\s+/, "");
   const matchesSeries = (part: string) => part.toLowerCase().includes(title);
   if (season === null) return matchesSeries(text) ? text : "";
-  const markers = [...text.matchAll(/\b(?:(The Sentinels|Sentinels|Redline|Bloodlines?|Divine Beast)\s+)?(?:S|Season\s+)(\d+)\b/gi)];
+  const markers = [
+    ...text.matchAll(
+      /\b(?:(The Sentinels|Sentinels|Redline|Bloodlines?|Divine Beast)\s+)?(?:S|Season\s+)(\d+)\b/gi,
+    ),
+  ];
   let activeSeries = "sentinels";
   const selected: string[] = [];
   markers.forEach((marker, i) => {
-    if (marker[1]) activeSeries = marker[1].toLowerCase().replace(/^the\s+/, "").replace(/^bloodlines$/, "bloodline");
-    if (Number(marker[2]) !== season || activeSeries !== title.replace(/^bloodlines$/, "bloodline")) return;
+    if (marker[1])
+      activeSeries = marker[1]
+        .toLowerCase()
+        .replace(/^the\s+/, "")
+        .replace(/^bloodlines$/, "bloodline");
+    if (Number(marker[2]) !== season || activeSeries !== title.replace(/^bloodlines$/, "bloodline"))
+      return;
     const part = text.slice(marker.index, markers[i + 1]?.index ?? text.length);
     selected.push(part);
   });
@@ -32,13 +41,27 @@ export function scopeLoreText(text: string, seriesTitle: string, season: number 
 export function loreQuestionsBlocked(mask: unknown) {
   if (!mask || typeof mask !== "object") return false;
   const settings = mask as Record<string, unknown>;
-  return settings["characters"] === true || settings["abilities"] === true || settings["archive"] === true;
+  return (
+    settings["characters"] === true ||
+    settings["abilities"] === true ||
+    settings["archive"] === true
+  );
 }
 
 export type LoreEvidence = { label: string; text: string };
 export function rankLoreEvidence(evidence: LoreEvidence[], question: string) {
   const words = question.toLowerCase().match(/[a-z]{3,}/g) ?? [];
-  return evidence.filter(e => e.text.trim()).map((entry, index) => ({
-    entry, index, score: words.reduce((sum, word) => sum + (entry.text.toLowerCase().includes(word) ? 1 : 0), 0),
-  })).sort((a, b) => b.score - a.score || a.index - b.index).slice(0, 24).map(e => e.entry);
+  return evidence
+    .filter((e) => e.text.trim())
+    .map((entry, index) => ({
+      entry,
+      index,
+      score: words.reduce(
+        (sum, word) => sum + (entry.text.toLowerCase().includes(word) ? 1 : 0),
+        0,
+      ),
+    }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, 24)
+    .map((e) => e.entry);
 }

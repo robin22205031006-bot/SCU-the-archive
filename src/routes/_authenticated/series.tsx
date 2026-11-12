@@ -34,31 +34,57 @@ import { Pencil } from "lucide-react";
 function SeriesTitle({ series, className = "" }: { series: Series; className?: string }) {
   const nexus = useUiStyle() === "nexus";
   const t = useSeriesTitleStyle(series.id, nexus);
-  return <span className={`${className} ${t.className}`} style={t.style}>{series.title}</span>;
+  return (
+    <span className={`${className} ${t.className}`} style={t.style}>
+      {series.title}
+    </span>
+  );
 }
 
 /** Season buttons for readers plus a per-season roster editor for admins/mods (all UI styles). */
 function SeasonList({ series }: { series: Series }) {
   const isStaff = useIsStaff();
   const [editing, setEditing] = useState<number | null>(null);
-  const { data: characters = [] } = useQuery({ ...entitiesQuery(["character"]), enabled: isStaff && editing !== null });
+  const { data: characters = [] } = useQuery({
+    ...entitiesQuery(["character"]),
+    enabled: isStaff && editing !== null,
+  });
   const names = seriesSeasonNames(series);
   return (
     <div className="grid gap-2 sm:grid-cols-2" aria-label={`${series.title} seasons`}>
       {names.map((name, i) => (
         <div key={i} className="flex min-w-0 gap-2">
-          <Button asChild variant="outline" className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal text-left">
-            <Link to="/characters" search={{ series: series.id, season: i + 1 }}>{name}<Users className="h-4 w-4 shrink-0" /></Link>
+          <Button
+            asChild
+            variant="outline"
+            className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal text-left"
+          >
+            <Link to="/characters" search={{ series: series.id, season: i + 1 }}>
+              {name}
+              <Users className="h-4 w-4 shrink-0" />
+            </Link>
           </Button>
           {isStaff && (
-            <Button variant="secondary" className="h-auto min-h-12 shrink-0" aria-label={`Edit ${name} roster`} onClick={() => setEditing(i + 1)}>
+            <Button
+              variant="secondary"
+              className="h-auto min-h-12 shrink-0"
+              aria-label={`Edit ${name} roster`}
+              onClick={() => setEditing(i + 1)}
+            >
               <Pencil className="h-4 w-4" />
             </Button>
           )}
         </div>
       ))}
       {isStaff && editing !== null && characters.length > 0 && (
-        <NexusRosterEditor open onClose={() => setEditing(null)} entities={characters} seriesId={series.id} season={editing} label={`${series.title} · ${names[editing - 1] ?? ""}`} />
+        <NexusRosterEditor
+          open
+          onClose={() => setEditing(null)}
+          entities={characters}
+          seriesId={series.id}
+          season={editing}
+          label={`${series.title} · ${names[editing - 1] ?? ""}`}
+        />
       )}
     </div>
   );
@@ -148,7 +174,9 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
               )}
               <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Series</p>
-                <h2 className="mt-1 break-words text-3xl font-medium glow-text">{series ? <SeriesTitle series={series} /> : "…"}</h2>
+                <h2 className="mt-1 break-words text-3xl font-medium glow-text">
+                  {series ? <SeriesTitle series={series} /> : "…"}
+                </h2>
               </div>
             </div>
             <button
@@ -275,11 +303,15 @@ function StaffSeriesManager() {
   if (!isStaff) return null;
   return (
     <>
-    <details className="glass mt-4 rounded-2xl p-4">
-      <summary className="cursor-pointer text-sm font-medium">Manage series (add, rename, seasons)</summary>
-      <div className="mt-3 min-w-0"><AdminSeries /></div>
-    </details>
-    <SeriesOrderEditor />
+      <details className="glass mt-4 rounded-2xl p-4">
+        <summary className="cursor-pointer text-sm font-medium">
+          Manage series (add, rename, seasons)
+        </summary>
+        <div className="mt-3 min-w-0">
+          <AdminSeries />
+        </div>
+      </details>
+      <SeriesOrderEditor />
     </>
   );
 }
@@ -328,77 +360,125 @@ export function SeriesPage() {
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
           Story arcs and sagas — who lived, died, or vanished in each.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2"><SpoilerToggle scope="series" /></div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <SpoilerToggle scope="series" />
+        </div>
         <StaffSeriesManager />
       </header>
 
-      {nexus ? <NexusExplorer label="Series" loading={isLoading} records={(series ?? []).map(s => ({ id: s.id, title: s.title, group: "Sagas", image: s.cover_image_url, subtitle: `${seriesSeasonNames(s).length} seasons`, series: s }))} renderDetail={({ series: saga }) => <div className="grid gap-5"><h2 className="break-words text-3xl"><SeriesTitle series={saga} /></h2>{saga.cover_image_url && <img src={saga.cover_image_url} alt={saga.title} className="max-h-72 w-full rounded-lg object-contain" />}<p className="whitespace-pre-line text-sm leading-relaxed">{saga.description}</p><SeasonList series={saga} /><SeriesStyleEditor seriesId={saga.id} /><Button variant="outline" onClick={() => navigate({ search: { s: saga.id } })}><BookMarked className="h-4 w-4" /> Series dossier</Button></div>} /> : <>
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search series…"
-          className="glass h-11 rounded-full pl-10"
-        />
-      </div>
-
-      {!q.trim() && (
-        <SeriesHero
-          series={list.slice(0, 8)}
-          counts={counts}
-          onOpen={(id) => navigate({ search: { s: id } })}
-        />
-      )}
-
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : list.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">
-          {series?.length
-            ? "No matches."
-            : "No series defined yet — an admin can add them from the Admin panel."}
-        </p>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => navigate({ search: { s: s.id } })}
-              className="glass group flex gap-4 rounded-2xl p-4 text-left transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring"
-            >
-              {s.cover_image_url ? (
+      {nexus ? (
+        <NexusExplorer
+          label="Series"
+          loading={isLoading}
+          records={(series ?? []).map((s) => ({
+            id: s.id,
+            title: s.title,
+            group: "Sagas",
+            image: s.cover_image_url,
+            subtitle: `${seriesSeasonNames(s).length} seasons`,
+            series: s,
+          }))}
+          renderDetail={({ series: saga }) => (
+            <div className="grid gap-5">
+              <h2 className="break-words text-3xl">
+                <SeriesTitle series={saga} />
+              </h2>
+              {saga.cover_image_url && (
                 <img
-                  src={s.cover_image_url}
-                  alt={s.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                  src={saga.cover_image_url}
+                  alt={saga.title}
+                  className="max-h-72 w-full rounded-lg object-contain"
                 />
-              ) : (
-                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
-                  <BookMarked className="h-6 w-6" />
-                </div>
               )}
-              <span className="min-w-0 flex-1">
-                <SeriesTitle series={s} className="block truncate text-xl font-medium" />
-                <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Users className="h-3.5 w-3.5" />
-                  {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
-                </span>
-                {s.description && (
-                  <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
-                    {s.description}
+              <p className="whitespace-pre-line text-sm leading-relaxed">{saga.description}</p>
+              <SeasonList series={saga} />
+              <SeriesStyleEditor seriesId={saga.id} />
+              <Button variant="outline" onClick={() => navigate({ search: { s: saga.id } })}>
+                <BookMarked className="h-4 w-4" /> Series dossier
+              </Button>
+            </div>
+          )}
+        />
+      ) : (
+        <>
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search series…"
+              className="glass h-11 rounded-full pl-10"
+            />
+          </div>
+
+          {!q.trim() && (
+            <SeriesHero
+              series={list.slice(0, 8)}
+              counts={counts}
+              onOpen={(id) => navigate({ search: { s: id } })}
+            />
+          )}
+
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : list.length === 0 ? (
+            <p className="py-16 text-center text-sm text-muted-foreground">
+              {series?.length
+                ? "No matches."
+                : "No series defined yet — an admin can add them from the Admin panel."}
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {list.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => navigate({ search: { s: s.id } })}
+                  className="glass group flex gap-4 rounded-2xl p-4 text-left transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring"
+                >
+                  {s.cover_image_url ? (
+                    <img
+                      src={s.cover_image_url}
+                      alt={s.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
+                      <BookMarked className="h-6 w-6" />
+                    </div>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <SeriesTitle series={s} className="block truncate text-xl font-medium" />
+                    <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" />
+                      {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
+                    </span>
+                    {s.description && (
+                      <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
+                        {s.description}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-            </button>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      {nexus && (
+        <div className="mt-6 grid gap-3" aria-label="Series controls">
+          {(series ?? []).map((saga) => (
+            <div
+              key={saga.id}
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3"
+            >
+              <h3 className="text-sm font-medium">{saga.title}</h3>
+              <SeriesTools series={saga} />
+            </div>
           ))}
         </div>
       )}
-
-      </>}
-      {nexus && <div className="mt-6 grid gap-3" aria-label="Series controls">{(series ?? []).map(saga => <div key={saga.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3"><h3 className="text-sm font-medium">{saga.title}</h3><SeriesTools series={saga} /></div>)}</div>}
       {(episodes?.length ?? 0) > 0 && (
         <section className="mt-14">
           <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>

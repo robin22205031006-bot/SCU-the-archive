@@ -257,7 +257,7 @@ export function EntityDialog({
     if (entity) sfx.click();
     else sfx.add();
     toast.success(entity ? "Saved" : "Created");
-    void invalidateArchive(qc)
+    void invalidateArchive(qc);
     qc.invalidateQueries({ queryKey: ["search-index"] });
     onOpenChange(false);
   };

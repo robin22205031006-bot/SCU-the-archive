@@ -38,7 +38,13 @@ const MENU: Array<{ key: Menu; label: string; icon: typeof BookOpen }> = [
 
 type SeriesCard = { id: string; title: string; cover: string | null; seasons: string[] };
 
-export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSeason?: { seriesId: string; n: number } | null }) {
+export function NexusDossier({
+  e,
+  initialSeason = null,
+}: {
+  e: Entity;
+  initialSeason?: { seriesId: string; n: number } | null;
+}) {
   const qc = useQueryClient();
   const isStaff = useIsStaff();
   const masked = useSpoilerMask("characters");
@@ -52,7 +58,9 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
   const { data: memberships } = useQuery(characterSeriesQuery(e.id));
   const { data: allSeries } = useQuery(seriesQuery);
   const { data: links } = useQuery(characterLinksQuery(e.id));
-  const { data: groups } = useQuery(entitiesQuery(["organization", "clan", "bloodline", "faction"]));
+  const { data: groups } = useQuery(
+    entitiesQuery(["organization", "clan", "bloodline", "faction"]),
+  );
   const { data: charAbilities } = useQuery({
     queryKey: ["character-abilities", e.id],
     queryFn: async () => {
@@ -61,33 +69,48 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
     },
   });
 
-  const alterName = ({ ethan: "Elizah", elizah: "Ethan" } as Record<string, string>)[e.name.toLowerCase()];
+  const alterName = ({ ethan: "Elizah", elizah: "Ethan" } as Record<string, string>)[
+    e.name.toLowerCase()
+  ];
   const { data: alter } = useQuery({
     queryKey: ["alter-ego", alterName],
     enabled: !!alterName,
     queryFn: async () => {
       if (!alterName) return null;
       return (
-        await supabase.from("entities").select("id").eq("kind", "character").ilike("name", alterName).maybeSingle()
+        await supabase
+          .from("entities")
+          .select("id")
+          .eq("kind", "character")
+          .ilike("name", alterName)
+          .maybeSingle()
       ).data;
     },
   });
 
   const stats = (e.stats ?? {}) as Record<string, unknown>;
-  const baseBloodline = typeof stats["bloodline"] === "string" ? (stats["bloodline"] as string) : null;
+  const baseBloodline =
+    typeof stats["bloodline"] === "string" ? (stats["bloodline"] as string) : null;
   const realName = typeof stats["real_name"] === "string" ? (stats["real_name"] as string) : null;
   const dossier = readDossier(e.stats);
   const seasonKey = season ? `${season.seriesId}:${season.n}` : null;
   const sd: SeasonDossier = dossier[seasonKey ?? "all"] ?? {};
   const bloodline = sd.bloodline ?? baseBloodline;
-  const status = sd.status ?? (memberships ?? []).find(m => m.series_id === season?.seriesId)?.status ?? e.status;
+  const status =
+    sd.status ??
+    (memberships ?? []).find((m) => m.series_id === season?.seriesId)?.status ??
+    e.status;
   const membership = (memberships ?? []).find((m) => m.series_id === season?.seriesId);
 
   // The row under the hero shows the series this character actually appears in.
   const seriesCards = useMemo<SeriesCard[]>(
     () =>
       (allSeries ?? [])
-        .filter(full => (memberships ?? []).some(m => m.series_id === full.id) || Object.keys(dossier).some(key => key.startsWith(`${full.id}:`)))
+        .filter(
+          (full) =>
+            (memberships ?? []).some((m) => m.series_id === full.id) ||
+            Object.keys(dossier).some((key) => key.startsWith(`${full.id}:`)),
+        )
         .map((full) => {
           const names = full?.season_names ?? [];
           const count = Math.max(full?.season_count ?? 0, names.length, 1);
@@ -119,8 +142,10 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
 
   const seasonLabel = season
     ? `${seriesCards.find((s) => s.id === season.seriesId)?.title ?? editorSeries.find((s) => s.id === season.seriesId)?.title ?? ""} · ${
-        (seriesCards.find((s) => s.id === season.seriesId) ?? editorSeries.find((s) => s.id === season.seriesId))
-          ?.seasons[season.n - 1] ?? ""
+        (
+          seriesCards.find((s) => s.id === season.seriesId) ??
+          editorSeries.find((s) => s.id === season.seriesId)
+        )?.seasons[season.n - 1] ?? ""
       }`
     : "All seasons";
 
@@ -140,9 +165,10 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
         )
       : rows;
     const m = new Map<string, number>();
-    scoped.filter(r => sd.abilityKeys === undefined || sd.abilityKeys.includes(r.ability_key)).forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
-    if (!season)
-      (e.abilities ?? []).forEach((a) => !m.has(a) && m.set(a, 1));
+    scoped
+      .filter((r) => sd.abilityKeys === undefined || sd.abilityKeys.includes(r.ability_key))
+      .forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
+    if (!season) (e.abilities ?? []).forEach((a) => !m.has(a) && m.set(a, 1));
     return [...m.entries()]
       .map(([name, level]) => ({ name, level, def: abilityDef(name) }))
       .sort((a, b) => b.level - a.level);
@@ -150,9 +176,12 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
 
   const core = abilities[0];
   const coreColor = core?.def.color ?? "var(--accent)";
-  const abilitySelection = abilities.some((a) => a.name === selectedAbility) ? selectedAbility : null;
+  const abilitySelection = abilities.some((a) => a.name === selectedAbility)
+    ? selectedAbility
+    : null;
   const statVals = resolveNexusStats(e.stats, seasonKey, abilitySelection);
-  const roleBadge = sd.role || membership?.arc_role || membership?.role_in_series || e.category || "Unclassified";
+  const roleBadge =
+    sd.role || membership?.arc_role || membership?.role_in_series || e.category || "Unclassified";
   const roleTone = nexusRole(roleBadge, masked);
   const codename = sd.codename ?? e.alias;
   const selectSeason = (value: { seriesId: string; n: number } | null) => {
@@ -215,7 +244,12 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
               </Link>
             )}
             {isStaff && (
-              <Button size="sm" variant="outline" className={alter ? "" : "ml-auto"} onClick={() => setEditing(true)}>
+              <Button
+                size="sm"
+                variant="outline"
+                className={alter ? "" : "ml-auto"}
+                onClick={() => setEditing(true)}
+              >
                 <Pencil className="mr-1 h-3.5 w-3.5" />
                 Edit {season ? "this season" : "dossier"}
               </Button>
@@ -230,15 +264,22 @@ export function NexusDossier({ e, initialSeason = null }: { e: Entity; initialSe
               transition={{ duration: 0.7, ease: EASE }}
               className="order-2 md:order-1"
             >
-              <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground">{seasonLabel}</p>
-              <h1 className="mt-1 [font-family:var(--font-display)] text-4xl tracking-wide md:text-5xl">{e.name}</h1>
+              <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
+                {seasonLabel}
+              </p>
+              <h1 className="mt-1 [font-family:var(--font-display)] text-4xl tracking-wide md:text-5xl">
+                {e.name}
+              </h1>
               {codename && (
                 <p data-spoiler="char" className="mt-1 text-sm italic text-accent">
                   {codename}
                 </p>
               )}
-              <p data-spoiler="char" className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
-Status · <span className="text-foreground">{status}</span>
+              <p
+                data-spoiler="char"
+                className="mt-3 text-xs uppercase tracking-widest text-muted-foreground"
+              >
+                Status · <span className="text-foreground">{status}</span>
               </p>
             </motion.div>
 
@@ -260,15 +301,23 @@ Status · <span className="text-foreground">{status}</span>
 
             <div className="order-3" data-spoiler="char">
               <p className="mb-2 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                {abilitySelection ? abilityDef(abilitySelection).label : "Character stats"} · {seasonLabel}
+                {abilitySelection ? abilityDef(abilitySelection).label : "Character stats"} ·{" "}
+                {seasonLabel}
               </p>
-              <NexusStatWheel stats={statVals} abilities={abilities} selected={abilitySelection} onSelect={setSelectedAbility} />
+              <NexusStatWheel
+                stats={statVals}
+                abilities={abilities}
+                selected={abilitySelection}
+                onSelect={setSelectedAbility}
+              />
             </div>
           </div>
 
           {/* Series cards with season drawers */}
           <div className="mt-8">
-            <p className="mb-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">Series</p>
+            <p className="mb-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
+              Series
+            </p>
             <div className="flex gap-3 overflow-x-auto pb-2">
               <button
                 onClick={() => {
@@ -276,7 +325,9 @@ Status · <span className="text-foreground">{status}</span>
                   setOpenSeries(null);
                 }}
                 className={`shrink-0 rounded-lg border px-4 py-6 text-xs uppercase tracking-widest transition ${
-                  !season ? "border-accent bg-accent/15 text-accent" : "border-border bg-card/50 hover:border-accent/60"
+                  !season
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border bg-card/50 hover:border-accent/60"
                 }`}
               >
                 All seasons
@@ -294,7 +345,11 @@ Status · <span className="text-foreground">{status}</span>
                   }`}
                 >
                   {s.cover && (
-                    <img src={s.cover} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
+                    <img
+                      src={s.cover}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover opacity-40"
+                    />
                   )}
                   <span className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
                   <span className="absolute bottom-2 left-2 right-6 [font-family:var(--font-display)] text-sm leading-tight">
@@ -336,7 +391,9 @@ Status · <span className="text-foreground">{status}</span>
                             key={label + i}
                             onClick={() => selectSeason({ seriesId: openSeries, n: i + 1 })}
                             className={`rounded-full border px-3 py-1 text-xs transition ${
-                              on ? "border-accent bg-accent text-accent-foreground" : "border-border hover:border-accent"
+                              on
+                                ? "border-accent bg-accent text-accent-foreground"
+                                : "border-border hover:border-accent"
                             }`}
                           >
                             {label}
@@ -371,7 +428,9 @@ Status · <span className="text-foreground">{status}</span>
                     <motion.span
                       animate={{ scale: on ? 1.15 : 1 }}
                       className={`grid h-11 w-11 place-items-center rounded-full border ${
-                        on ? "border-accent bg-accent/20 text-accent" : "border-border bg-background text-muted-foreground"
+                        on
+                          ? "border-accent bg-accent/20 text-accent"
+                          : "border-border bg-background text-muted-foreground"
                       }`}
                       style={{ boxShadow: on ? `0 0 24px -4px ${coreColor}` : "none" }}
                     >
@@ -401,14 +460,21 @@ Status · <span className="text-foreground">{status}</span>
                   </p>
                   {menu === "story" && (
                     <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
-                      {sd.story || (season ? "No story written for this season yet." : e.description || "No story yet.")}
+                      {sd.story ||
+                        (season
+                          ? "No story written for this season yet."
+                          : e.description || "No story yet.")}
                     </p>
                   )}
                   {menu === "role" && (
                     <div data-spoiler="char" className="space-y-3 text-sm">
                       <p>
                         <span className="text-muted-foreground">Role: </span>
-                        {sd.role || membership?.role_in_series || membership?.arc_role || e.role || "—"}
+                        {sd.role ||
+                          membership?.role_in_series ||
+                          membership?.arc_role ||
+                          e.role ||
+                          "—"}
                       </p>
                       <p className="whitespace-pre-line leading-relaxed text-foreground/90">
                         <span className="block text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
@@ -416,8 +482,24 @@ Status · <span className="text-foreground">{status}</span>
                         </span>
                         {sd.impact || "No impact notes for this selection yet."}
                       </p>
-                      {sd.philosophy && <p className="whitespace-pre-line"><span className="block text-xs text-muted-foreground">Philosophy</span>{sd.philosophy}</p>}
-                      <JourneyLine lines={[{ name: e.name, rows: seasonJourneyRows((memberships ?? []).filter((r) => r.series), e.stats, Object.fromEntries((allSeries ?? []).map((x) => [x.id, x.title]))) }]} />
+                      {sd.philosophy && (
+                        <p className="whitespace-pre-line">
+                          <span className="block text-xs text-muted-foreground">Philosophy</span>
+                          {sd.philosophy}
+                        </p>
+                      )}
+                      <JourneyLine
+                        lines={[
+                          {
+                            name: e.name,
+                            rows: seasonJourneyRows(
+                              (memberships ?? []).filter((r) => r.series),
+                              e.stats,
+                              Object.fromEntries((allSeries ?? []).map((x) => [x.id, x.title])),
+                            ),
+                          },
+                        ]}
+                      />
                     </div>
                   )}
                   {menu === "details" && (
@@ -428,8 +510,13 @@ Status · <span className="text-foreground">{status}</span>
                         ["Category", e.category],
                         ["Tier", e.character_tier],
                       ].map(([k, v]) => (
-                        <div key={k} className="rounded-md border border-border bg-background/50 p-2">
-                          <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">{k}</dt>
+                        <div
+                          key={k}
+                          className="rounded-md border border-border bg-background/50 p-2"
+                        >
+                          <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                            {k}
+                          </dt>
                           <dd data-spoiler={k === "Real name" ? undefined : "char"}>{v || "—"}</dd>
                         </div>
                       ))}
@@ -442,7 +529,9 @@ Status · <span className="text-foreground">{status}</span>
             <aside className="space-y-4 border-t border-border pt-4 md:border-l md:border-t-0 md:pl-5 md:pt-0">
               <div>
                 <p className="font-display break-words text-2xl">{e.name}</p>
-                <p className="pt-1 text-[10px] uppercase tracking-widest text-muted-foreground">Title / Codename</p>
+                <p className="pt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Title / Codename
+                </p>
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={codename || "none"}
@@ -457,21 +546,32 @@ Status · <span className="text-foreground">{status}</span>
                 </AnimatePresence>
               </div>
               <div data-spoiler="char" className="space-y-1 text-xs">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Bloodline</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Bloodline
+                </p>
                 <p>{bloodline || "—"}</p>
-                <p className="pt-2 text-[10px] uppercase tracking-widest text-muted-foreground">Organizations</p>
+                <p className="pt-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Organizations
+                </p>
                 <div className="flex flex-wrap gap-1">
-                  {sd.organizations !== undefined ? sd.organizations.filter(Boolean).join(" · ") || "—" : orgs.length
-                    ? orgs.map((o) => (
-                        <span key={o.id} className="rounded-sm border border-border px-1.5 py-0.5">
-                          {o.name}
-                        </span>
-                      ))
-                    : "—"}
+                  {sd.organizations !== undefined
+                    ? sd.organizations.filter(Boolean).join(" · ") || "—"
+                    : orgs.length
+                      ? orgs.map((o) => (
+                          <span
+                            key={o.id}
+                            className="rounded-sm border border-border px-1.5 py-0.5"
+                          >
+                            {o.name}
+                          </span>
+                        ))
+                      : "—"}
                 </div>
               </div>
               <div data-spoiler="char">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Abilities</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Abilities
+                </p>
                 <ul className="mt-1 space-y-1 text-xs">
                   {abilities.slice(0, 6).map((a) => (
                     <li key={a.name} className="flex items-center gap-2">
@@ -504,9 +604,14 @@ Status · <span className="text-foreground">{status}</span>
               <p className="[font-family:var(--font-display)] text-lg" style={{ color: coreColor }}>
                 {core ? core.def.label : "No abilities"}
               </p>
-              {core?.def.description && <p className="text-muted-foreground">{core.def.description}</p>}
+              {core?.def.description && (
+                <p className="text-muted-foreground">{core.def.description}</p>
+              )}
               {abilities.map((a) => (
-                <div key={a.name} className="flex items-center justify-between border-b border-border/60 py-1">
+                <div
+                  key={a.name}
+                  className="flex items-center justify-between border-b border-border/60 py-1"
+                >
                   <span>{a.def.label}</span>
                   <span style={{ color: a.def.color }}>Lv.{a.level}</span>
                 </div>
@@ -536,7 +641,15 @@ Status · <span className="text-foreground">{status}</span>
   );
 }
 
-function AbilityGlyph({ def, masked, className = "" }: { def: ReturnType<typeof abilityDef>; masked: boolean; className?: string }) {
+function AbilityGlyph({
+  def,
+  masked,
+  className = "",
+}: {
+  def: ReturnType<typeof abilityDef>;
+  masked: boolean;
+  className?: string;
+}) {
   return <NexusAbilitySymbol name={def.key} masked={masked} className={className} />;
 }
 
@@ -557,7 +670,11 @@ function AbilityOrbit({
 }) {
   const [core, ...rest] = abilities;
   if (!core)
-    return <div className="grid h-72 place-items-center text-sm text-muted-foreground">No abilities recorded.</div>;
+    return (
+      <div className="grid h-72 place-items-center text-sm text-muted-foreground">
+        No abilities recorded.
+      </div>
+    );
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[420px]">
       {[0.95, 0.72, 0.5].map((s, i) => (
@@ -664,13 +781,16 @@ function SeasonEditor({
     });
   }
   if (!open && loadedFor) setLoadedFor(null);
-  const vals = ability ? form.abilityStats?.[ability] ?? {} : form.stats ?? {};
+  const vals = ability ? (form.abilityStats?.[ability] ?? {}) : (form.stats ?? {});
   const setValue = (k: string, value: number) =>
     setForm((f) =>
       ability
         ? {
             ...f,
-            abilityStats: { ...f.abilityStats, [ability]: { ...f.abilityStats?.[ability], [k]: value } },
+            abilityStats: {
+              ...f.abilityStats,
+              [ability]: { ...f.abilityStats?.[ability], [k]: value },
+            },
           }
         : { ...f, stats: { ...f.stats, [k]: value } },
     );
@@ -720,7 +840,9 @@ function SeasonEditor({
             <select
               aria-label="Edit series"
               value={seriesId}
-              onChange={(ev) => onSeasonChange(ev.target.value ? { seriesId: ev.target.value, n: 1 } : null)}
+              onChange={(ev) =>
+                onSeasonChange(ev.target.value ? { seriesId: ev.target.value, n: 1 } : null)
+              }
               className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-foreground"
             >
               <option value="">All seasons</option>
@@ -740,18 +862,23 @@ function SeasonEditor({
               onChange={(ev) => onSeasonChange({ seriesId, n: Number(ev.target.value) })}
               className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-foreground"
             >
-              {(seriesCards.find((s) => s.id === seriesId)?.seasons ?? ["All seasons"]).map((s, i) => (
-                <option key={i} value={i + 1}>
-                  {s}
-                </option>
-              ))}
+              {(seriesCards.find((s) => s.id === seriesId)?.seasons ?? ["All seasons"]).map(
+                (s, i) => (
+                  <option key={i} value={i + 1}>
+                    {s}
+                  </option>
+                ),
+              )}
             </select>
           </label>
         </div>
         <div className="space-y-3 text-sm">
           <label className="block">
             Title / Codename
-            <Input value={form.codename ?? ""} onChange={(ev) => setForm({ ...form, codename: ev.target.value })} />
+            <Input
+              value={form.codename ?? ""}
+              onChange={(ev) => setForm({ ...form, codename: ev.target.value })}
+            />
           </label>
           <label className="block">
             Story
@@ -763,7 +890,10 @@ function SeasonEditor({
           </label>
           <label className="block">
             Role
-            <Input value={form.role ?? ""} onChange={(ev) => setForm({ ...form, role: ev.target.value })} />
+            <Input
+              value={form.role ?? ""}
+              onChange={(ev) => setForm({ ...form, role: ev.target.value })}
+            />
           </label>
           <label className="block">
             Impact

@@ -292,7 +292,9 @@ function Admin() {
       </AdminAccordion>
 
       {isAdmin && (
-        <AdminAccordion title="Audit Log & Revisions"><AdminAuditLog /></AdminAccordion>
+        <AdminAccordion title="Audit Log & Revisions">
+          <AdminAuditLog />
+        </AdminAccordion>
       )}
       {isAdmin && (
         <AdminAccordion title="Series & Seasons">

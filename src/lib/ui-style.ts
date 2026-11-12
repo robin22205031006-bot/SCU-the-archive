@@ -2,8 +2,14 @@ import { useSyncExternalStore } from "react";
 
 /** Reader-chosen interface style. "classic" = original cards, "nexus" = constellation UI. */
 export type UiStyle = "classic" | "nexus" | "minimal";
-export const UI_STYLES = [{ value: "classic", label: "Descrete" }, { value: "nexus", label: "Nexus" }, { value: "minimal", label: "Minimal" }] as const;
-export function resolveUiStyle(value: string | null): UiStyle { return value === "nexus" || value === "minimal" ? value : "classic"; }
+export const UI_STYLES = [
+  { value: "classic", label: "Descrete" },
+  { value: "nexus", label: "Nexus" },
+  { value: "minimal", label: "Minimal" },
+] as const;
+export function resolveUiStyle(value: string | null): UiStyle {
+  return value === "nexus" || value === "minimal" ? value : "classic";
+}
 const KEY = "scu-ui-style";
 const listeners = new Set<() => void>();
 

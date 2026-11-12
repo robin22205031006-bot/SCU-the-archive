@@ -21,12 +21,12 @@ export const NEXUS_THEMES = [
 export type NexusBaseEffect = "fire" | "water" | "storm" | "frost" | "wind" | "nature" | "void";
 /** Lore themes reuse one of the background simulations but carry their own palette and ambient layer. */
 export function nexusThemeBase(theme: string): NexusBaseEffect {
-  return (NEXUS_THEMES.find(t => t.id === theme)?.base ?? "storm") as NexusBaseEffect;
+  return (NEXUS_THEMES.find((t) => t.id === theme)?.base ?? "storm") as NexusBaseEffect;
 }
-export type NexusTheme = typeof NEXUS_THEMES[number]["id"];
+export type NexusTheme = (typeof NEXUS_THEMES)[number]["id"];
 export type NexusEffect = NexusBaseEffect | "bloodline" | "organization" | "archive";
 export function resolveNexusTheme(value: string | null): NexusTheme {
-  return NEXUS_THEMES.find(t => t.id === value)?.id ?? "storm";
+  return NEXUS_THEMES.find((t) => t.id === value)?.id ?? "storm";
 }
 /** Classify visible labels only; never feed masked character abilities into effects. */
 export function nexusEffect(label: string): NexusEffect {

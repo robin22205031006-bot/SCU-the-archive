@@ -28,16 +28,69 @@ const G: Record<Glyph, string> = {
 };
 
 /** Hex emblem for an Arsenal card. Nexus adds a rotating rune ring and glow. */
-export function ArsenalEmblem({ glyph, hue, nexus = false, animate = false, className = "size-10" }: { glyph: Glyph; hue: number; nexus?: boolean; animate?: boolean; className?: string }) {
-  const c = `hsl(${hue} 85% 65%)`, dim = `hsl(${hue} 60% 20% / .85)`;
+export function ArsenalEmblem({
+  glyph,
+  hue,
+  nexus = false,
+  animate = false,
+  className = "size-10",
+}: {
+  glyph: Glyph;
+  hue: number;
+  nexus?: boolean;
+  animate?: boolean;
+  className?: string;
+}) {
+  const c = `hsl(${hue} 85% 65%)`,
+    dim = `hsl(${hue} 60% 20% / .85)`;
   return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden style={{ filter: nexus ? `drop-shadow(0 0 6px hsl(${hue} 90% 60% / .7))` : undefined }}>
-      <polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill={dim} stroke={c} strokeWidth="1.5" />
-      {nexus && <g className={animate ? "arsenal-emblem-spin" : undefined} style={{ transformOrigin: "32px 32px" }}>
-        <circle cx="32" cy="32" r="25" fill="none" stroke={c} strokeOpacity=".5" strokeWidth="1" strokeDasharray="2 5" />
-        {[0, 60, 120, 180, 240, 300].map(a => <circle key={a} cx={32 + 25 * Math.cos(a * Math.PI / 180)} cy={32 + 25 * Math.sin(a * Math.PI / 180)} r="1.4" fill={c} />)}
-      </g>}
-      <g transform="translate(8 8)" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={nexus && animate ? "arsenal-emblem-glow" : undefined}>
+    <svg
+      viewBox="0 0 64 64"
+      className={className}
+      aria-hidden
+      style={{ filter: nexus ? `drop-shadow(0 0 6px hsl(${hue} 90% 60% / .7))` : undefined }}
+    >
+      <polygon
+        points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5"
+        fill={dim}
+        stroke={c}
+        strokeWidth="1.5"
+      />
+      {nexus && (
+        <g
+          className={animate ? "arsenal-emblem-spin" : undefined}
+          style={{ transformOrigin: "32px 32px" }}
+        >
+          <circle
+            cx="32"
+            cy="32"
+            r="25"
+            fill="none"
+            stroke={c}
+            strokeOpacity=".5"
+            strokeWidth="1"
+            strokeDasharray="2 5"
+          />
+          {[0, 60, 120, 180, 240, 300].map((a) => (
+            <circle
+              key={a}
+              cx={32 + 25 * Math.cos((a * Math.PI) / 180)}
+              cy={32 + 25 * Math.sin((a * Math.PI) / 180)}
+              r="1.4"
+              fill={c}
+            />
+          ))}
+        </g>
+      )}
+      <g
+        transform="translate(8 8)"
+        fill="none"
+        stroke={c}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={nexus && animate ? "arsenal-emblem-glow" : undefined}
+      >
         <path d={G[glyph]} />
       </g>
     </svg>

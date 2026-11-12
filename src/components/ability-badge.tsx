@@ -28,11 +28,35 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
   const rarePlus = def.tier === "Rare" || def.tier === "Exceptional" || def.tier === "Unique";
   const ancient = def.tier === "Ancient";
   const title = `${def.label} — ${def.tier}${def.group === "beast" ? " · Beast trait" : ""}${def.description ? `\n${def.description}` : ""}`;
-  if (nexus && advanced) return <>
-    <button type="button" title={title} onClick={e => { e.stopPropagation(); setFxOpen(true); }} aria-label={`Play ${def.label} animation`} className={`inline-flex items-center gap-1 border border-border text-xs text-accent hover:border-accent ${className}`}><NexusAbilitySymbol name={def.key} className="h-6 w-6" />{def.label}</button>
-    <AbilityFxShowcase name={def.key} open={fxOpen} onOpenChange={setFxOpen} />
-  </>;
-  if (nexus) return <span title={title} className={`inline-flex items-center gap-1 border border-border text-xs text-accent ${className}`}><NexusAbilitySymbol name={def.key} className="h-6 w-6" />{def.label}</span>;
+  if (nexus && advanced)
+    return (
+      <>
+        <button
+          type="button"
+          title={title}
+          onClick={(e) => {
+            e.stopPropagation();
+            setFxOpen(true);
+          }}
+          aria-label={`Play ${def.label} animation`}
+          className={`inline-flex items-center gap-1 border border-border text-xs text-accent hover:border-accent ${className}`}
+        >
+          <NexusAbilitySymbol name={def.key} className="h-6 w-6" />
+          {def.label}
+        </button>
+        <AbilityFxShowcase name={def.key} open={fxOpen} onOpenChange={setFxOpen} />
+      </>
+    );
+  if (nexus)
+    return (
+      <span
+        title={title}
+        className={`inline-flex items-center gap-1 border border-border text-xs text-accent ${className}`}
+      >
+        <NexusAbilitySymbol name={def.key} className="h-6 w-6" />
+        {def.label}
+      </span>
+    );
   return (
     <span
       title={title}

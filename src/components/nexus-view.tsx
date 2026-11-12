@@ -8,7 +8,12 @@ import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { sfx } from "@/lib/scu-audio";
 import { seriesQuery, seriesCharactersQuery } from "@/lib/series";
 import { supabase } from "@/integrations/supabase/client";
-import { NEXUS_ROLES, normalizeNexusRole, nexusDotRole, projectSeasonRoster } from "@/lib/nexus-roster";
+import {
+  NEXUS_ROLES,
+  normalizeNexusRole,
+  nexusDotRole,
+  projectSeasonRoster,
+} from "@/lib/nexus-roster";
 import { readDossier } from "@/lib/nexus-season";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { Button } from "@/components/ui/button";
@@ -49,22 +54,56 @@ export function NexusView({
   const seasonNumber = search.season ?? null;
   const [rosterOpen, setRosterOpen] = useState(false);
   const { data: series = [] } = useQuery(seriesQuery);
-  const { data: groups = [] } = useQuery(entitiesQuery(["organization", "clan", "bloodline", "faction"]));
+  const { data: groups = [] } = useQuery(
+    entitiesQuery(["organization", "clan", "bloodline", "faction"]),
+  );
   const seasonGroups = seriesId ? projectSeasonRoster(groups, seriesId, seasonNumber, []) : [];
   const { data: memberships = [] } = useQuery(seriesCharactersQuery(seriesId));
-  const { data: abilityRows = [] } = useQuery({ queryKey: ["nexus-series-abilities", seriesId], enabled: !!seriesId, queryFn: async () => {
-    const { data, error } = await supabase.from("character_abilities").select("*").eq("series_id", seriesId);
-    if (error) throw error;
-    return data;
-  }});
-  const selectedSeries = series.find(s => s.id === seriesId);
-  const seasonNames = Array.from({ length: Math.max(selectedSeries?.season_count ?? 0, selectedSeries?.season_names.length ?? 0, 1) }, (_, i) => selectedSeries?.season_names[i] || `Season ${i+1}`);
-  const data = useMemo(() => projectSeasonRoster(originalData, seriesId, seasonNumber, memberships).map(e => {
-    if (!seriesId) return { ...e, category: normalizeNexusRole(e.category) };
-    const profile = readDossier(e.stats)[`${seriesId}:${seasonNumber ?? "all"}`];
-    const rows = abilityRows.filter(a => a.entity_id === e.id && (seasonNumber == null || a.season_number == null || a.season_number === seasonNumber) && (profile?.abilityKeys === undefined || profile.abilityKeys.includes(a.ability_key)));
-    return { ...e, abilities: [...new Set(rows.map(a => a.ability_key))], stats: { ...(e.stats as Record<string, unknown>), ...(profile?.bloodline !== undefined ? { bloodline: profile.bloodline } : {}) } as Entity["stats"] };
-  }), [originalData, seriesId, seasonNumber, memberships, abilityRows]);
+  const { data: abilityRows = [] } = useQuery({
+    queryKey: ["nexus-series-abilities", seriesId],
+    enabled: !!seriesId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("character_abilities")
+        .select("*")
+        .eq("series_id", seriesId);
+      if (error) throw error;
+      return data;
+    },
+  });
+  const selectedSeries = series.find((s) => s.id === seriesId);
+  const seasonNames = Array.from(
+    {
+      length: Math.max(
+        selectedSeries?.season_count ?? 0,
+        selectedSeries?.season_names.length ?? 0,
+        1,
+      ),
+    },
+    (_, i) => selectedSeries?.season_names[i] || `Season ${i + 1}`,
+  );
+  const data = useMemo(
+    () =>
+      projectSeasonRoster(originalData, seriesId, seasonNumber, memberships).map((e) => {
+        if (!seriesId) return { ...e, category: normalizeNexusRole(e.category) };
+        const profile = readDossier(e.stats)[`${seriesId}:${seasonNumber ?? "all"}`];
+        const rows = abilityRows.filter(
+          (a) =>
+            a.entity_id === e.id &&
+            (seasonNumber == null || a.season_number == null || a.season_number === seasonNumber) &&
+            (profile?.abilityKeys === undefined || profile.abilityKeys.includes(a.ability_key)),
+        );
+        return {
+          ...e,
+          abilities: [...new Set(rows.map((a) => a.ability_key))],
+          stats: {
+            ...(e.stats as Record<string, unknown>),
+            ...(profile?.bloodline !== undefined ? { bloodline: profile.bloodline } : {}),
+          } as Entity["stats"],
+        };
+      }),
+    [originalData, seriesId, seasonNumber, memberships, abilityRows],
+  );
   const [cluster, setCluster] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
@@ -73,7 +112,13 @@ export function NexusView({
   }, [masked]);
 
   const clusters = useMemo(() => {
-    const available = [...new Set([...NEXUS_ROLES, ...categories.map(normalizeNexusRole), ...data.map(e => e.category ?? "Unclassified")])];
+    const available = [
+      ...new Set([
+        ...NEXUS_ROLES,
+        ...categories.map(normalizeNexusRole),
+        ...data.map((e) => e.category ?? "Unclassified"),
+      ]),
+    ];
     const present = available.filter((c) => data.some((e) => e.category === c));
     return ["all", ...present];
   }, [categories, data]);
@@ -89,9 +134,66 @@ export function NexusView({
       />
       <LayoutGroup>
         <div className="relative mb-5 flex flex-wrap items-end gap-3">
-          <label className="grid min-w-0 flex-1 gap-1 text-xs">Series<select aria-label="Character series" value={seriesId} onChange={ev => { setCluster(null); void navigate({ search: prev => ({ ...prev, series: ev.target.value || undefined, season: undefined }) }); }} className="h-10 w-full rounded-md border border-border bg-background px-3"><option value="">All series</option>{series.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
-          <label className="grid min-w-0 flex-1 gap-1 text-xs">Season<select aria-label="Character season" disabled={!seriesId} value={seasonNumber ?? ""} onChange={ev => { setCluster(null); void navigate({ search: prev => ({ ...prev, season: ev.target.value ? Number(ev.target.value) : undefined }) }); }} className="h-10 w-full rounded-md border border-border bg-background px-3"><option value="">All seasons</option>{seriesId && seasonNames.map((s,i) => <option key={i} value={i+1}>{s}</option>)}</select></label>
-          {isAdmin && <Button variant="outline" disabled={!seriesId || !seasonNumber} onClick={() => setRosterOpen(true)}>Season roster</Button>}
+          <label className="grid min-w-0 flex-1 gap-1 text-xs">
+            Series
+            <select
+              aria-label="Character series"
+              value={seriesId}
+              onChange={(ev) => {
+                setCluster(null);
+                void navigate({
+                  search: (prev) => ({
+                    ...prev,
+                    series: ev.target.value || undefined,
+                    season: undefined,
+                  }),
+                });
+              }}
+              className="h-10 w-full rounded-md border border-border bg-background px-3"
+            >
+              <option value="">All series</option>
+              {series.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid min-w-0 flex-1 gap-1 text-xs">
+            Season
+            <select
+              aria-label="Character season"
+              disabled={!seriesId}
+              value={seasonNumber ?? ""}
+              onChange={(ev) => {
+                setCluster(null);
+                void navigate({
+                  search: (prev) => ({
+                    ...prev,
+                    season: ev.target.value ? Number(ev.target.value) : undefined,
+                  }),
+                });
+              }}
+              className="h-10 w-full rounded-md border border-border bg-background px-3"
+            >
+              <option value="">All seasons</option>
+              {seriesId &&
+                seasonNames.map((s, i) => (
+                  <option key={i} value={i + 1}>
+                    {s}
+                  </option>
+                ))}
+            </select>
+          </label>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              disabled={!seriesId || !seasonNumber}
+              onClick={() => setRosterOpen(true)}
+            >
+              Season roster
+            </Button>
+          )}
         </div>
         <AnimatePresence mode="popLayout" initial={false}>
           {cluster === null ? (
@@ -117,16 +219,24 @@ export function NexusView({
                       whileTap={{ scale: 0.97 }}
                       className="group relative overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-fg/[0.03] text-left"
                     >
-                      <Button variant="ghost" className="block h-auto min-h-40 w-full whitespace-normal p-3 text-left hover:bg-transparent" onClick={() => { sfx.tierReveal?.(null); setCluster(c); }} aria-label={`${label}, ${members.length}`}>
-                      <span className="text-[11px] font-medium">{label}</span>
-                      <MiniConstellation
-                        members={members}
-                        color={c === "all" ? null : colorOf(c)}
-                        colorOf={colorOf}
-                      />
-                      <span className="absolute bottom-2 right-3 font-display text-lg text-nexus-glow">
-                        {members.length}
-                      </span>
+                      <Button
+                        variant="ghost"
+                        className="block h-auto min-h-40 w-full whitespace-normal p-3 text-left hover:bg-transparent"
+                        onClick={() => {
+                          sfx.tierReveal?.(null);
+                          setCluster(c);
+                        }}
+                        aria-label={`${label}, ${members.length}`}
+                      >
+                        <span className="text-[11px] font-medium">{label}</span>
+                        <MiniConstellation
+                          members={members}
+                          color={c === "all" ? null : colorOf(c)}
+                          colorOf={colorOf}
+                        />
+                        <span className="absolute bottom-2 right-3 font-display text-lg text-nexus-glow">
+                          {members.length}
+                        </span>
                       </Button>
                     </motion.div>
                   );
@@ -174,9 +284,41 @@ export function NexusView({
           )}
         </AnimatePresence>
       </LayoutGroup>
-      {!data.length && <p className="relative py-8 text-center text-sm text-muted-foreground">No characters recorded for this selection.</p>}
-      {seasonGroups.length > 0 && <div data-spoiler="char" className="relative mt-5 border-t border-border pt-4"><h3 className="mb-3 text-sm">Impactful organizations, bloodlines & cults</h3><div className="grid gap-3 sm:grid-cols-3">{seasonGroups.map(g => <div key={g.id} className="rounded-lg border border-border p-3"><p className="text-sm">{g.name}</p><p className="text-xs text-muted-foreground">{g.role || g.category} · {g.status}</p>{readDossier(g.stats)[`${seriesId}:${seasonNumber ?? "all"}`]?.impact && <p className="mt-2 text-xs">{readDossier(g.stats)[`${seriesId}:${seasonNumber ?? "all"}`]?.impact}</p>}</div>)}</div></div>}
-      {isAdmin && seriesId && seasonNumber && <NexusRosterEditor open={rosterOpen} onClose={() => setRosterOpen(false)} entities={originalData} seriesId={seriesId} season={seasonNumber} label={`${selectedSeries?.title ?? ""} · ${seasonNames[seasonNumber-1] ?? ""}`} />}
+      {!data.length && (
+        <p className="relative py-8 text-center text-sm text-muted-foreground">
+          No characters recorded for this selection.
+        </p>
+      )}
+      {seasonGroups.length > 0 && (
+        <div data-spoiler="char" className="relative mt-5 border-t border-border pt-4">
+          <h3 className="mb-3 text-sm">Impactful organizations, bloodlines & cults</h3>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {seasonGroups.map((g) => (
+              <div key={g.id} className="rounded-lg border border-border p-3">
+                <p className="text-sm">{g.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {g.role || g.category} · {g.status}
+                </p>
+                {readDossier(g.stats)[`${seriesId}:${seasonNumber ?? "all"}`]?.impact && (
+                  <p className="mt-2 text-xs">
+                    {readDossier(g.stats)[`${seriesId}:${seasonNumber ?? "all"}`]?.impact}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {isAdmin && seriesId && seasonNumber && (
+        <NexusRosterEditor
+          open={rosterOpen}
+          onClose={() => setRosterOpen(false)}
+          entities={originalData}
+          seriesId={seriesId}
+          season={seasonNumber}
+          label={`${selectedSeries?.title ?? ""} · ${seasonNames[seasonNumber - 1] ?? ""}`}
+        />
+      )}
     </div>
   );
 }
@@ -193,7 +335,12 @@ function MiniConstellation({
   const pts = members.slice(0, 26).map((e) => {
     const a = hash(e.id) * Math.PI * 2;
     const r = Math.sqrt(hash(e.id + "r")) * 38;
-    return { x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, c: color ?? colorOf(e.category), role: nexusDotRole(e.category, colorOf(e.category) === "var(--nexus-dot-neutral)") };
+    return {
+      x: 50 + Math.cos(a) * r,
+      y: 50 + Math.sin(a) * r,
+      c: color ?? colorOf(e.category),
+      role: nexusDotRole(e.category, colorOf(e.category) === "var(--nexus-dot-neutral)"),
+    };
   });
   return (
     <svg
@@ -214,7 +361,15 @@ function MiniConstellation({
         />
       ))}
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="2.2" fill={p.c} data-dot-role={p.role} className="nexus-role-dot" />
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r="2.2"
+          fill={p.c}
+          data-dot-role={p.role}
+          className="nexus-role-dot"
+        />
       ))}
     </svg>
   );
@@ -429,7 +584,12 @@ function Sphere({
                         strokeWidth={0.6}
                       />
                     ) : (
-                      <circle r={r} fill={p.color} data-dot-role={nexusDotRole(p.e.category, masked)} className="nexus-role-dot" />
+                      <circle
+                        r={r}
+                        fill={p.color}
+                        data-dot-role={nexusDotRole(p.e.category, masked)}
+                        className="nexus-role-dot"
+                      />
                     )}
                     {isSel && (
                       <motion.circle

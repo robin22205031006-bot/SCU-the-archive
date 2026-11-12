@@ -131,7 +131,9 @@ function Vault() {
           onStage: () => {},
           refresh: async () => invalidateArchive(qc),
         });
-        toast.success(`Synced: ${r.created} added, ${r.updated} updated, ${r.events} events`, { id: t });
+        toast.success(`Synced: ${r.created} added, ${r.updated} updated, ${r.events} events`, {
+          id: t,
+        });
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Lore sync failed", { id: t });
       }
@@ -334,7 +336,59 @@ function Vault() {
         </section>
       )}
 
-      {nexus ? <NexusExplorer label="Documents" loading={isLoading} records={(data ?? []).map(d => ({ id: d.id, title: d.title, group: isAdmin ? (d.is_public ? "Published" : "Private") : "Documents", icon: <FileText className="h-5 w-5" />, document: d }))} renderDetail={({ document: d }) => <div className="grid gap-5"><FileText className="h-12 w-12 text-accent" /><h2 className="break-words text-2xl">{d.title}</h2>{isAdmin && <div className="grid gap-3"><Label className="flex items-center gap-3"><Switch checked={d.is_public} onCheckedChange={v => toggle(d.id, { is_public: v })} /> Visible to members</Label><Label className="flex items-center gap-3"><Switch checked={d.downloadable} onCheckedChange={v => toggle(d.id, { downloadable: v })} /> Downloadable</Label></div>}<div className="flex gap-2">{(isAdmin || d.downloadable) && <Button onClick={() => open(d.file_path)}><Download className="h-4 w-4" /> Download</Button>}{isAdmin && <Button variant="ghost" aria-label="Delete document" onClick={() => del(d.id, d.file_path)}><Trash2 className="h-4 w-4" /></Button>}</div></div>} /> : isLoading ? (
+      {nexus ? (
+        <NexusExplorer
+          label="Documents"
+          loading={isLoading}
+          records={(data ?? []).map((d) => ({
+            id: d.id,
+            title: d.title,
+            group: isAdmin ? (d.is_public ? "Published" : "Private") : "Documents",
+            icon: <FileText className="h-5 w-5" />,
+            document: d,
+          }))}
+          renderDetail={({ document: d }) => (
+            <div className="grid gap-5">
+              <FileText className="h-12 w-12 text-accent" />
+              <h2 className="break-words text-2xl">{d.title}</h2>
+              {isAdmin && (
+                <div className="grid gap-3">
+                  <Label className="flex items-center gap-3">
+                    <Switch
+                      checked={d.is_public}
+                      onCheckedChange={(v) => toggle(d.id, { is_public: v })}
+                    />{" "}
+                    Visible to members
+                  </Label>
+                  <Label className="flex items-center gap-3">
+                    <Switch
+                      checked={d.downloadable}
+                      onCheckedChange={(v) => toggle(d.id, { downloadable: v })}
+                    />{" "}
+                    Downloadable
+                  </Label>
+                </div>
+              )}
+              <div className="flex gap-2">
+                {(isAdmin || d.downloadable) && (
+                  <Button onClick={() => open(d.file_path)}>
+                    <Download className="h-4 w-4" /> Download
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    aria-label="Delete document"
+                    onClick={() => del(d.id, d.file_path)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        />
+      ) : isLoading ? (
         <ListSkeleton />
       ) : !data?.length ? (
         <p className="text-muted-foreground">No documents in the vault yet.</p>

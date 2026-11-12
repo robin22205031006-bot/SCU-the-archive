@@ -6,7 +6,14 @@ import type { Entity } from "@/lib/entities";
 export type Series = Tables<"series">;
 export type SeriesCharacter = Tables<"series_characters">;
 
-export const SERIES_STATUSES = ["Alive", "Dead", "Missing", "Presumed Dead", "Realive", "Unknown"] as const;
+export const SERIES_STATUSES = [
+  "Alive",
+  "Dead",
+  "Missing",
+  "Presumed Dead",
+  "Realive",
+  "Unknown",
+] as const;
 /** Per-season character status options (admins pick one per season). */
 export const SEASON_STATUSES = ["Alive", "Dead", "Missing", "Presumed Dead", "Realive", "Unknown"];
 export type SeriesStatus = (typeof SERIES_STATUSES)[number];

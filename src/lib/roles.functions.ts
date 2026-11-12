@@ -23,7 +23,11 @@ export const ensureSuperadminAccess = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({}).parse(d ?? {}))
   .handler(async ({ context }) => {
     const { data: identity, error: identityError } = await context.supabase.auth.getUser();
-    if (identityError || identity.user?.id !== context.userId || !isVerifiedSuperadmin(identity.user))
+    if (
+      identityError ||
+      identity.user?.id !== context.userId ||
+      !isVerifiedSuperadmin(identity.user)
+    )
       return { granted: false };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -106,7 +110,8 @@ export const setUserRole = createServerFn({ method: "POST" })
 
     if (!targetUserId) throw new Error("No member found.");
     // Profile emails are editable display data; protect the target using Auth's identity.
-    const { data: targetIdentity, error: targetError } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+    const { data: targetIdentity, error: targetError } =
+      await supabaseAdmin.auth.admin.getUserById(targetUserId);
     if (targetError || !targetIdentity.user) throw new Error("The member could not be verified.");
     targetEmail = targetIdentity.user.email ?? null;
     if (isSuperadminEmail(targetEmail))

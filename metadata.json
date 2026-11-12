@@ -1,0 +1,7 @@
+{
+  "name": "SCU - The Archive",
+  "description": "The interactive archive and lore explorer for the Sentinels Cinematic Universe (SCU).",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
