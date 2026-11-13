@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-admin";
 import { favorites, onFavoritesChange, removeFavorite, type FavoriteEntry } from "@/lib/favorites";
@@ -33,6 +34,7 @@ function ProfilePage() {
   const [favs, setFavs] = useState<FavoriteEntry[]>([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data: profile } = useQuery({
@@ -123,10 +125,17 @@ function ProfilePage() {
             </p>
           </div>
           <div className="grid gap-1.5">
-            <Label>New password</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="profile-new-password">New password</Label>
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Show pass: {showPassword ? "On" : "Off"}
+              </span>
+            </div>
             <div className="flex gap-2">
-              <Input
-                type="password"
+              <PasswordInput
+                id="profile-new-password"
+                showPassword={showPassword}
+                onShowPasswordChange={setShowPassword}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••"

@@ -1,9 +1,20 @@
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  Component,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { AdditiveBlending, Color, Group, Mesh, ShaderMaterial } from "three";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
-import { useNexusTheme } from "@/hooks/use-nexus-theme";
+import { useNexus3dFxEnabled, useNexusTheme } from "@/hooks/use-nexus-theme";
+import { useActiveNexusWallpaper } from "@/hooks/use-nexus-wallpaper";
+import { NexusWallpaperBackdrop } from "@/components/nexus-wallpaper-backdrop";
+import { isVideoMediaUrl } from "@/lib/nexus-wallpapers";
 import { type NexusEffect, nexusThemeBase } from "@/lib/nexus-fx";
 
 class FxBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -197,6 +208,8 @@ function Ready({ container }: { container: React.RefObject<HTMLDivElement | null
 export function NexusFxLayer({ children }: { children: ReactNode }) {
   const moving = useNexusMotion();
   const theme = useNexusTheme();
+  const fx3dEnabled = useNexus3dFxEnabled();
+  const { wallpaper, playback } = useActiveNexusWallpaper();
   const background = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
   const [supported, setSupported] = useState(false);
@@ -209,6 +222,13 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", update);
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
+
+  const cssImage = wallpaper
+    ? isVideoMediaUrl(wallpaper.mediaUrl)
+      ? wallpaper.posterUrl
+      : wallpaper.mediaUrl
+    : undefined;
+
   return (
     <>
       <div
@@ -216,29 +236,44 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
         aria-hidden
         className="nexus-fx-background pointer-events-none fixed inset-0"
         data-fx-theme={theme}
+        data-fx-wallpaper={wallpaper?.id ?? "none"}
+        data-has-wallpaper={wallpaper ? "true" : "false"}
+        data-fx-3d={fx3dEnabled ? "on" : "off"}
+        style={
+          cssImage
+            ? ({ "--nexus-wallpaper-image": `url("${cssImage}")` } as CSSProperties)
+            : undefined
+        }
       >
-        {supported && (
-          <FxBoundary>
-            <Canvas
-              dpr={[1, 1.25]}
-              frameloop={moving && visible ? "always" : "demand"}
-              camera={{ position: [0, 0, 7], fov: 45 }}
-              gl={{ alpha: true, antialias: false }}
-            >
-              <ambientLight intensity={0.65} />
-              <Environment resolution={64}>
-                <Lightformer intensity={2} position={[0, 4, 3]} scale={8} />
-                <Lightformer intensity={1} position={[-4, 0, 2]} scale={5} />
-              </Environment>
-              <Simulation
-                key={theme}
-                effect={nexusThemeBase(theme)}
-                moving={moving && visible}
-                background
-              />
-              <Ready container={background} />
-            </Canvas>
-          </FxBoundary>
+        <NexusWallpaperBackdrop
+          wallpaper={wallpaper}
+          moving={moving && visible}
+          playback={playback}
+        />
+        {supported && fx3dEnabled && (
+          <div className="nexus-fx-3d-canvas absolute inset-0">
+            <FxBoundary>
+              <Canvas
+                dpr={[1, 1.25]}
+                frameloop={moving && visible ? "always" : "demand"}
+                camera={{ position: [0, 0, 7], fov: 45 }}
+                gl={{ alpha: true, antialias: false }}
+              >
+                <ambientLight intensity={0.65} />
+                <Environment resolution={64}>
+                  <Lightformer intensity={2} position={[0, 4, 3]} scale={8} />
+                  <Lightformer intensity={1} position={[-4, 0, 2]} scale={5} />
+                </Environment>
+                <Simulation
+                  key={theme}
+                  effect={nexusThemeBase(theme)}
+                  moving={moving && visible}
+                  background
+                />
+                <Ready container={background} />
+              </Canvas>
+            </FxBoundary>
+          </div>
         )}
       </div>
       {children}

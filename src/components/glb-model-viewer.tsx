@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { Box, Loader2, RotateCcw } from "lucide-react";
+import {
+  createModelVfxSystem,
+  resolveModelVfxPreset,
+  type ModelVfxConfig,
+  type ModelVfxSystem,
+} from "@/lib/model-3d-vfx";
 
 function detectSoftwareWebGL(): { supported: boolean; isSoftwareGl: boolean } {
   if (typeof document === "undefined") return { supported: false, isSoftwareGl: true };
@@ -43,6 +49,9 @@ function disposeObjectTree(root: THREE.Object3D) {
 export interface GlbModelViewerProps {
   url: string;
   alt: string;
+  name?: string | null;
+  description?: string | null;
+  tags?: readonly (string | null | undefined)[] | string | null;
   fallbackImageUrl?: string | null;
   accentColor?: string;
   className?: string;
@@ -52,11 +61,15 @@ export interface GlbModelViewerProps {
 
 /**
  * Interactive Three.js .glb/.gltf model stage with OrbitControls, PMREM RoomEnvironment
- * reflections, 3-point warm/cool studio lighting, software-WebGL guard, and 2D fallback.
+ * reflections, 3-point warm/cool studio lighting, dynamic lore-driven VFX particles/auras,
+ * software-WebGL guard, and 2D fallback.
  */
 export function GlbModelViewer({
   url,
   alt,
+  name,
+  description,
+  tags,
   fallbackImageUrl,
   accentColor = "#38bdf8",
   className = "",
@@ -68,6 +81,20 @@ export function GlbModelViewer({
   const [autoRotate, setAutoRotate] = useState(true);
   const autoRotateRef = useRef(autoRotate);
   autoRotateRef.current = autoRotate;
+
+  const vfxConfig = useMemo<ModelVfxConfig>(
+    () =>
+      resolveModelVfxPreset({
+        name: name ?? alt,
+        description,
+        tags,
+      }),
+    [name, alt, description, tags],
+  );
+  const vfxConfigRef = useRef(vfxConfig);
+  vfxConfigRef.current = vfxConfig;
+
+  const vfxHooksRef = useRef<{ rebuildVfx: (cfg: ModelVfxConfig) => void } | null>(null);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -92,7 +119,8 @@ export function GlbModelViewer({
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    const pixelRatio = isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
     renderer.shadowMap.enabled = !isSoftwareGl;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -156,7 +184,7 @@ export function GlbModelViewer({
 
     const ringGeo = new THREE.RingGeometry(0.95, 1.0, 64);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(accentColor),
+      color: new THREE.Color(vfxConfigRef.current.primaryHex || accentColor),
       transparent: true,
       opacity: 0.45,
       side: THREE.DoubleSide,
@@ -166,24 +194,36 @@ export function GlbModelViewer({
     ringMesh.position.y = 0.004;
     scene.add(ringMesh);
 
+    let modelBounds = { centerY: 0.9, radius: 0.85, height: 1.85 };
+    let vfxSystem: ModelVfxSystem | null = createModelVfxSystem(vfxConfigRef.current, {
+      isSoftwareGl,
+      pixelRatio,
+      ...modelBounds,
+    });
+    scene.add(vfxSystem.group);
+
     let loadedModel: THREE.Object3D | null = null;
     let mixer: THREE.AnimationMixer | null = null;
     let disposed = false;
     let frameId = 0;
     let lastTime = performance.now();
+    let elapsed = 0;
 
     const renderFrame = () => {
       if (disposed) return;
+      frameId = 0;
       const now = performance.now();
       const dt = Math.min((now - lastTime) / 1000, 0.08);
       lastTime = now;
+      elapsed += dt;
 
       if (mixer) mixer.update(dt);
+      if (vfxSystem) vfxSystem.update(dt, elapsed, 1);
       controls.autoRotate = !isSoftwareGl && autoRotateRef.current;
       controls.update();
       renderer.render(scene, camera);
 
-      if (!isSoftwareGl && (autoRotateRef.current || mixer)) {
+      if (!isSoftwareGl) {
         frameId = requestAnimationFrame(renderFrame);
       }
     };
@@ -196,8 +236,26 @@ export function GlbModelViewer({
       });
     };
 
+    vfxHooksRef.current = {
+      rebuildVfx: (cfg: ModelVfxConfig) => {
+        if (disposed) return;
+        if (vfxSystem) {
+          scene.remove(vfxSystem.group);
+          vfxSystem.dispose();
+        }
+        vfxSystem = createModelVfxSystem(cfg, {
+          isSoftwareGl,
+          pixelRatio,
+          ...modelBounds,
+        });
+        scene.add(vfxSystem.group);
+        ringMat.color.set(cfg.primaryHex || accentColor);
+        scheduleRender();
+      },
+    };
+
     controls.addEventListener("change", () => {
-      if (!isSoftwareGl && autoRotateRef.current) return;
+      if (!isSoftwareGl) return;
       scheduleRender();
     });
 
@@ -236,6 +294,17 @@ export function GlbModelViewer({
 
         box.setFromObject(model);
         box.getCenter(center);
+        box.getSize(size);
+        const radius = Math.max(size.x, size.z) * 0.55;
+        modelBounds = {
+          centerY: Math.max(center.y, 0.5),
+          radius: Math.max(0.45, radius),
+          height: Math.max(0.9, size.y),
+        };
+        if (vfxSystem) {
+          vfxSystem.setBounds(modelBounds.centerY, modelBounds.radius, modelBounds.height);
+        }
+
         controls.target.set(0, Math.max(center.y, 0.5), 0);
         controls.update();
 
@@ -268,7 +337,7 @@ export function GlbModelViewer({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-      renderFrame();
+      scheduleRender();
     });
     ro.observe(container);
 
@@ -276,8 +345,14 @@ export function GlbModelViewer({
       disposed = true;
       cancelAnimationFrame(frameId);
       ro.disconnect();
+      vfxHooksRef.current = null;
       controls.dispose();
       if (mixer) mixer.stopAllAction();
+      if (vfxSystem) {
+        scene.remove(vfxSystem.group);
+        vfxSystem.dispose();
+        vfxSystem = null;
+      }
       if (loadedModel) {
         scene.remove(loadedModel);
         disposeObjectTree(loadedModel);
@@ -292,6 +367,11 @@ export function GlbModelViewer({
     };
   }, [url, accentColor]);
 
+  // Dynamically regenerate Three.js VFX if name, description, or tags change
+  useEffect(() => {
+    vfxHooksRef.current?.rebuildVfx(vfxConfig);
+  }, [vfxConfig]);
+
   const showFallback = status === "error" || status === "no-webgl";
 
   return (
@@ -299,6 +379,7 @@ export function GlbModelViewer({
       data-testid="glb-model-viewer"
       data-model-url={url}
       data-viewer-status={status}
+      data-vfx-preset={vfxConfig.preset}
       className={`relative h-full w-full overflow-hidden bg-[#060a14] ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
@@ -351,7 +432,7 @@ export function GlbModelViewer({
       {status === "ready" && !compact && (
         <div className="pointer-events-none absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] text-zinc-300">
           <span className="rounded bg-black/60 px-2 py-0.5 backdrop-blur-sm">
-            Drag to orbit · Scroll to zoom
+            {vfxConfig.label} · Drag to orbit
           </span>
           <button
             type="button"

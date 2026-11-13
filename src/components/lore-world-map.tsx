@@ -20,221 +20,171 @@ const ERA_TONE: Record<string, string> = {
   exile: "alive",
   pre: "alive",
   post: "ruin",
+  "pre-asetra": "alive",
+  "nila-present": "hidden",
+  timeless: "hidden",
+  "1417": "hidden",
+  "istanbul-present": "alive",
+  "rome-15th": "ruin",
+  "rome-present": "alive",
+  "romania-15th": "hidden",
 };
 
 const REGIONS = [
   {
+    id: "nilanjona",
+    name: "Nilanjona",
+    sector: "N-00 · Glacial North",
+    cx: 410,
+    cy: 75,
+    path: "M340,42 C380,26 445,28 475,55 C495,80 470,115 410,120 C350,118 320,80 340,42 Z",
+  },
+  {
     id: "yasnaya",
     name: "Yasnaya",
-    sector: "N-01 · Highlands",
-    cx: 250,
-    cy: 140,
-    path: "M150,110 C170,60 260,50 320,80 C370,105 360,175 310,200 C250,225 170,210 150,170 Z",
+    sector: "E-04 · Wind Coast",
+    cx: 650,
+    cy: 155,
+    path: "M580,120 C610,85 695,90 730,130 C755,165 725,210 660,218 C595,220 560,170 580,120 Z",
   },
   {
     id: "aethmos",
     name: "Aethmos",
     sector: "W-07 · Veiled Jungle",
-    cx: 200,
-    cy: 380,
-    path: "M90,340 C110,290 210,280 270,310 C320,340 300,430 240,450 C170,470 90,430 90,380 Z",
+    cx: 150,
+    cy: 210,
+    path: "M75,175 C100,135 190,135 225,175 C255,215 225,268 155,275 C90,275 60,225 75,175 Z",
+  },
+  {
+    id: "romania-15th",
+    name: "Romania (15th c.)",
+    sector: "NW-15 · Carpathians",
+    cx: 280,
+    cy: 195,
+    path: "M235,165 C265,140 325,148 345,182 C355,215 320,248 275,248 C235,245 220,200 235,165 Z",
+  },
+  {
+    id: "istanbul-1417",
+    name: "Istanbul",
+    sector: "C-14 · Bosphorus",
+    cx: 430,
+    cy: 255,
+    path: "M370,220 C405,195 470,200 495,235 C510,270 480,305 425,305 C375,302 355,260 370,220 Z",
+  },
+  {
+    id: "rome",
+    name: "Rome",
+    sector: "SW-15 · Tiber Vaults",
+    cx: 235,
+    cy: 365,
+    path: "M170,330 C205,302 275,308 302,345 C318,382 285,422 230,425 C175,422 150,375 170,330 Z",
   },
   {
     id: "ruincity",
     name: "RuinCity",
-    sector: "E-13 · Border Rift",
-    cx: 620,
-    cy: 300,
-    path: "M520,240 C560,200 690,210 730,260 C760,310 720,380 650,390 C580,400 510,350 510,300 Z",
+    sector: "SE-13 · Border Rift",
+    cx: 600,
+    cy: 365,
+    path: "M525,322 C565,295 655,302 685,345 C705,388 665,432 595,432 C530,428 505,375 525,322 Z",
+  },
+  {
+    id: "pocket-dimension",
+    name: "Pocket Dim.",
+    sector: "X-∞ · Rift Outside Time",
+    cx: 775,
+    cy: 80,
+    path: "M725,45 C758,28 815,35 835,68 C848,100 815,130 770,128 C730,125 708,82 725,45 Z",
   },
 ];
 
 /** Era-specific glyphs drawn inside each region. */
 function RegionDetail({ id, era }: { id: string; era: string }) {
   const c = TONE_COLOR[ERA_TONE[era] ?? "alive"] ?? "var(--accent)";
-  const trees = (pts: [number, number][], dead = false) =>
-    pts.map(([x, y], i) => (
-      <g key={i} opacity={dead ? 0.6 : 0.85}>
-        <line x1={x} y1={y} x2={x} y2={y + 10} stroke={c} strokeWidth={1.2} />
-        {dead ? (
-          <path d={`M${x - 5},${y + 2} L${x},${y - 4} L${x + 5},${y + 1}`} stroke={c} fill="none" />
-        ) : (
-          <circle cx={x} cy={y} r={6} fill={c} fillOpacity={0.35} stroke={c} strokeWidth={0.8} />
-        )}
-      </g>
-    ));
-
-  if (id === "yasnaya") {
-    if (era === "ancient")
-      return (
-        <g>
-          {trees([
-            [190, 110],
-            [215, 95],
-            [240, 120],
-            [270, 100],
-            [295, 130],
-            [220, 160],
-            [260, 165],
-            [190, 160],
-          ])}
-          <rect x={243} y={138} width={12} height={10} fill="none" stroke={c} />
-        </g>
-      );
-    if (era === "golden")
-      return (
-        <g>
-          {[30, 48, 66].map((r) => (
-            <ellipse
-              key={r}
-              cx={250}
-              cy={140}
-              rx={r}
-              ry={r * 0.45}
-              fill="none"
-              stroke={c}
-              strokeOpacity={0.5}
-              strokeDasharray="3 3"
-            />
-          ))}
-          <path
-            d="M235,150 L235,125 L250,110 L265,125 L265,150 Z"
-            fill={c}
-            fillOpacity={0.3}
-            stroke={c}
-          />
-          {trees([
-            [180, 170],
-            [320, 160],
-            [200, 105],
-            [300, 100],
-          ])}
-        </g>
-      );
+  if (id === "pocket-dimension") {
     return (
       <g>
-        {trees(
-          [
-            [190, 115],
-            [230, 100],
-            [280, 110],
-            [300, 160],
-            [200, 170],
-          ],
-          true,
-        )}
+        <ellipse cx={775} cy={80} rx={36} ry={20} fill="none" stroke={c} strokeDasharray="3 3" />
+        <polygon points="775,62 786,80 775,98 764,80" fill={c} fillOpacity={0.28} stroke={c} />
+      </g>
+    );
+  }
+  if (id === "rome") {
+    return (
+      <g>
+        <path d="M190,365 Q235,340 280,368" fill="none" stroke={c} strokeWidth={1.5} />
+        <circle cx={235} cy={365} r={14} fill="none" stroke={c} strokeDasharray="2 3" />
+        <rect x={227} y={358} width={16} height={12} fill={c} fillOpacity={0.25} stroke={c} />
+      </g>
+    );
+  }
+  if (id === "istanbul-1417") {
+    return (
+      <g>
+        <path d="M385,255 Q430,235 475,260" fill="none" stroke={c} strokeWidth={1.6} />
         <path
-          d="M215,150 L240,135 L232,128 L262,118 M255,160 L275,140"
+          d="M416,262 L416,246 L430,236 L444,246 L444,262 Z"
+          fill={c}
+          fillOpacity={0.28}
           stroke={c}
-          strokeWidth={1.5}
-          fill="none"
         />
-        <circle cx={250} cy={140} r={22} fill={c} fillOpacity={0.15} />
+      </g>
+    );
+  }
+  if (id === "romania-15th") {
+    return (
+      <g>
+        <polyline
+          points="250,210 268,176 284,205 300,174 316,210"
+          fill="none"
+          stroke={c}
+          strokeWidth={1.4}
+        />
+        <rect x={274} y={200} width={12} height={12} fill={c} fillOpacity={0.3} stroke={c} />
+      </g>
+    );
+  }
+  if (id === "nilanjona") {
+    return (
+      <g>
+        <polygon points="392,88 410,50 428,88" fill={c} fillOpacity={0.25} stroke={c} />
+        <ellipse cx={410} cy={92} rx={36} ry={10} fill="none" stroke={c} strokeDasharray="3 3" />
+      </g>
+    );
+  }
+  if (id === "yasnaya") {
+    return (
+      <g>
+        <circle cx={650} cy={155} r={24} fill="none" stroke={c} strokeDasharray="3 3" />
+        <path
+          d="M636,166 L636,142 L650,130 L664,142 L664,166 Z"
+          fill={c}
+          fillOpacity={0.28}
+          stroke={c}
+        />
       </g>
     );
   }
   if (id === "aethmos") {
-    const jungle = trees([
-      [130, 360],
-      [160, 330],
-      [200, 320],
-      [240, 340],
-      [140, 410],
-      [270, 390],
-      [220, 430],
-      [170, 440],
-    ]);
-    if (era === "enclave")
-      return (
-        <g>
-          {jungle}
-          <ellipse
-            cx={200}
-            cy={380}
-            rx={115}
-            ry={78}
-            fill="none"
-            stroke={c}
-            strokeDasharray="2 5"
-            strokeWidth={1.5}
-          />
-          <text x={200} y={384} textAnchor="middle" fontSize={8} fill={c} letterSpacing={2}>
-            NO SIGNAL
-          </text>
-        </g>
-      );
     return (
       <g>
-        {jungle}
-        <ellipse
-          cx={200}
-          cy={380}
-          rx={115}
-          ry={78}
-          fill="none"
-          stroke={c}
-          strokeOpacity={0.4}
-          strokeDasharray="6 4"
-        />
-        <ellipse cx={205} cy={385} rx={34} ry={22} fill={c} fillOpacity={0.2} stroke={c} />
-        <circle cx={205} cy={385} r={3} fill={c} />
-        <text x={205} y={420} textAnchor="middle" fontSize={7} fill={c} letterSpacing={2}>
-          SAFEHOUSE
-        </text>
+        <ellipse cx={150} cy={210} rx={52} ry={34} fill="none" stroke={c} strokeDasharray="3 4" />
+        <circle cx={150} cy={210} r={12} fill={c} fillOpacity={0.22} stroke={c} />
       </g>
     );
   }
-  // ruincity
-  const towers: [number, number, number][] = [
-    [560, 300, 40],
-    [585, 290, 60],
-    [610, 295, 50],
-    [635, 280, 75],
-    [660, 300, 45],
-    [685, 290, 55],
-  ];
-  if (era === "pre")
-    return (
-      <g>
-        {towers.map(([x, y, h], i) => (
-          <rect
-            key={i}
-            x={x}
-            y={y - h + 40}
-            width={16}
-            height={h}
-            fill={c}
-            fillOpacity={0.25}
-            stroke={c}
-          />
-        ))}
-        <path d="M530,345 Q620,315 720,345" stroke={c} fill="none" strokeWidth={1.5} />
-        <path d="M530,355 Q620,330 720,355" stroke={c} fill="none" strokeOpacity={0.5} />
-      </g>
-    );
   return (
     <g>
-      {towers.map(([x, y, h], i) => (
-        <path
-          key={i}
-          d={`M${x},${y + 40} L${x},${y - h * 0.5 + 40} L${x + 6},${y - h * 0.65 + 40} L${x + 10},${y - h * 0.4 + 40} L${x + 16},${y - h * 0.55 + 40} L${x + 16},${y + 40}`}
-          fill="none"
+      {[560, 585, 610, 635].map((x, i) => (
+        <rect
+          key={x}
+          x={x}
+          y={345 - i * 4}
+          width={14}
+          height={28 + i * 4}
+          fill={c}
+          fillOpacity={0.22}
           stroke={c}
-          strokeOpacity={0.8}
         />
-      ))}
-      <path
-        d="M530,345 Q570,330 595,338 M640,330 Q690,335 720,345"
-        stroke={c}
-        fill="none"
-        strokeDasharray="4 3"
-      />
-      {[
-        [575, 360],
-        [650, 365],
-        [700, 320],
-      ].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={7} fill={c} fillOpacity={0.15} />
       ))}
     </g>
   );
@@ -244,8 +194,8 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
   return (
     <div className="glass relative mb-4 overflow-hidden rounded-2xl border border-border">
       <svg
-        viewBox="0 0 800 500"
-        className="block h-auto w-full"
+        viewBox="0 0 900 480"
+        className="mx-auto block h-auto max-h-[60dvh] w-full"
         role="img"
         aria-label="Map of SCU lore locations"
       >
@@ -258,12 +208,12 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
             <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
           </radialGradient>
         </defs>
-        <rect width="800" height="500" fill="url(#lwm-grid)" />
+        <rect width="900" height="480" fill="url(#lwm-grid)" />
         {/* contour lines */}
         {[0, 1, 2, 3].map((i) => (
           <path
             key={i}
-            d={`M0,${230 + i * 22} C200,${190 + i * 30} 420,${300 + i * 15} 800,${240 + i * 25}`}
+            d={`M0,${220 + i * 22} C230,${180 + i * 28} 480,${290 + i * 15} 900,${230 + i * 25}`}
             fill="none"
             stroke="var(--muted-foreground)"
             strokeOpacity={0.12}
@@ -271,35 +221,49 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
         ))}
         {/* realm divide */}
         <path
-          d="M470,0 C450,120 500,220 470,320 C450,400 480,460 470,500"
+          d="M525,0 C505,120 555,220 525,320 C505,400 535,450 525,480"
           fill="none"
           stroke="var(--destructive)"
           strokeOpacity={0.4}
           strokeDasharray="8 6"
         />
-        <text x={480} y={24} fontSize={9} fill="var(--destructive)" opacity={0.7} letterSpacing={3}>
-          DEMON REALM ▸
+        <text x={538} y={24} fontSize={9} fill="var(--destructive)" opacity={0.7} letterSpacing={3}>
+          DEMON &amp; RIFT FRONTIER ▸
         </text>
         <text
-          x={460}
+          x={512}
           y={24}
           fontSize={9}
           fill="var(--muted-foreground)"
           textAnchor="end"
           letterSpacing={3}
         >
-          ◂ HUMAN REALM
+          ◂ HISTORICAL &amp; HUMAN REALMS
         </text>
-        {/* routes */}
+        {/* lore routes */}
         <path
-          d="M250,200 Q230,280 200,310"
-          stroke="var(--muted-foreground)"
-          strokeOpacity={0.3}
-          strokeDasharray="2 6"
+          d="M430,255 Q330,300 235,365"
+          stroke="var(--accent)"
+          strokeOpacity={0.35}
+          strokeDasharray="3 5"
           fill="none"
         />
         <path
-          d="M310,160 Q450,200 525,270"
+          d="M430,255 Q350,210 280,195"
+          stroke="var(--accent)"
+          strokeOpacity={0.35}
+          strokeDasharray="3 5"
+          fill="none"
+        />
+        <path
+          d="M650,155 Q710,120 775,80"
+          stroke="var(--primary)"
+          strokeOpacity={0.35}
+          strokeDasharray="2 5"
+          fill="none"
+        />
+        <path
+          d="M430,255 Q520,300 600,365"
           stroke="var(--muted-foreground)"
           strokeOpacity={0.3}
           strokeDasharray="2 6"
@@ -345,30 +309,30 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
                 <motion.circle
                   cx={r.cx}
                   cy={r.cy}
-                  r={20}
+                  r={18}
                   fill="url(#lwm-sweep)"
-                  animate={{ r: [20, 130], opacity: [0.8, 0] }}
+                  animate={{ r: [18, 95], opacity: [0.8, 0] }}
                   transition={{ duration: 2.4, repeat: Infinity }}
                 />
               )}
               <text
                 x={r.cx}
-                y={r.cy - 95 < 20 ? r.cy + 100 : r.cy - 85}
+                y={r.cy + 56 > 455 ? r.cy - 54 : r.cy + 62}
                 textAnchor="middle"
-                fontSize={14}
+                fontSize={12}
                 fill={active ? "var(--accent)" : "var(--foreground)"}
                 fontWeight={600}
-                letterSpacing={2}
+                letterSpacing={1.5}
               >
                 {r.name.toUpperCase()}
               </text>
               <text
                 x={r.cx}
-                y={(r.cy - 95 < 20 ? r.cy + 100 : r.cy - 85) + 14}
+                y={(r.cy + 56 > 455 ? r.cy - 54 : r.cy + 62) + 12}
                 textAnchor="middle"
-                fontSize={8}
+                fontSize={7.5}
                 fill="var(--muted-foreground)"
-                letterSpacing={2}
+                letterSpacing={1.5}
               >
                 {r.sector}
               </text>
@@ -376,7 +340,7 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
           );
         })}
         {/* compass */}
-        <g transform="translate(750,450)" opacity={0.6}>
+        <g transform="translate(855,435)" opacity={0.65}>
           <circle r={18} fill="none" stroke="var(--muted-foreground)" />
           <path d="M0,-16 L4,0 L0,16 L-4,0 Z" fill="var(--accent)" />
           <text y={-22} textAnchor="middle" fontSize={8} fill="var(--muted-foreground)">

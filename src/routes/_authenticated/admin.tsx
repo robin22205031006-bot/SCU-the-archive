@@ -17,6 +17,7 @@ import { AdminSeries } from "@/components/admin-series";
 import { AdminTypography } from "@/components/admin-typography";
 import { AdminNavVisibility } from "@/components/admin-nav-visibility";
 import { AdminAppearance } from "@/components/admin-appearance";
+import { AdminNexusWallpapers } from "@/components/admin-nexus-wallpapers";
 import { AdminAudio } from "@/components/admin-audio";
 import { AdminContradictions } from "@/components/admin-contradictions";
 import { AdminCharacterAbilities } from "@/components/admin-character-abilities";
@@ -311,6 +312,11 @@ function Admin() {
       {isAdmin && (
         <AdminAccordion title="Appearance Options">
           <AdminAppearance />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Nexus Wallpapers (Live & Static)">
+          <AdminNexusWallpapers />
         </AdminAccordion>
       )}
       {isAdmin && (

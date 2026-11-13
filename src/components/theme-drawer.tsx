@@ -8,7 +8,12 @@ import { UiStylePicker } from "@/components/ui-style-picker";
 import { Button } from "@/components/ui/button";
 import { useUiStyle } from "@/lib/ui-style";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
-import { useNexusTheme, setNexusTheme } from "@/hooks/use-nexus-theme";
+import {
+  useNexusTheme,
+  setNexusTheme,
+  useNexus3dFxEnabled,
+  setNexus3dFxEnabled,
+} from "@/hooks/use-nexus-theme";
 import { NexusPresentationEditor } from "@/components/nexus-presentation-editor";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,6 +25,11 @@ import {
 } from "@/components/ui/select";
 import { useNexusEmblemMotion, setNexusEmblemMotion } from "@/hooks/use-nexus-emblem-motion";
 import { useNexusAdvancedFx, setNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
+import {
+  setNexusWallpaperChoice,
+  setNexusWallpaperPlayback,
+  useActiveNexusWallpaper,
+} from "@/hooks/use-nexus-wallpaper";
 import { Switch } from "@/components/ui/switch";
 
 export function ThemeDrawer({
@@ -30,8 +40,10 @@ export function ThemeDrawer({
   const nexus = useUiStyle() === "nexus";
   const navigationMode = useNavMode();
   const nexusTheme = useNexusTheme();
+  const fx3dEnabled = useNexus3dFxEnabled();
   const emblemMotion = useNexusEmblemMotion();
   const advancedFx = useNexusAdvancedFx();
+  const { wallpapers, wallpaper: activeWallpaper, playback, choice } = useActiveNexusWallpaper();
   const [tab, setTab] = useState<"live" | "plain">("live");
   const liveThemes = THEMES.filter((t) => t.live);
   const plainThemes = THEMES.filter((t) => !t.live);
@@ -55,26 +67,68 @@ export function ThemeDrawer({
           <UiStylePicker />
         </div>
         {nexus ? (
-          <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
-            {NEXUS_THEMES.map((t) => (
+          <section aria-label="Nexus 3D element wallpapers" className="p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-medium">3D Element Wallpaper</h3>
+                <p className="text-xs text-muted-foreground">
+                  3D ambient simulation (Pyre, Tide, Voltage) — turn off to show only your Nexus
+                  wallpaper or clean dark backdrop.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label
+                  htmlFor="nexus-3d-wallpaper-toggle"
+                  className="text-xs text-muted-foreground"
+                >
+                  {fx3dEnabled ? "On" : "Off"}
+                </Label>
+                <Switch
+                  id="nexus-3d-wallpaper-toggle"
+                  aria-label="3D element wallpaper"
+                  checked={fx3dEnabled}
+                  onCheckedChange={setNexus3dFxEnabled}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Button
-                key={t.id}
                 variant="ghost"
-                aria-pressed={nexusTheme === t.id}
-                onClick={() => setNexusTheme(t.id)}
-                className={`nexus-theme-option flex h-auto min-h-32 flex-col gap-2 whitespace-normal rounded-lg border p-3 text-center ${nexusTheme === t.id ? "border-accent bg-accent/10" : "border-border"}`}
+                aria-pressed={!fx3dEnabled}
+                onClick={() => setNexus3dFxEnabled(false)}
+                className={`nexus-theme-option flex h-auto min-h-32 flex-col gap-2 whitespace-normal rounded-lg border p-3 text-center ${!fx3dEnabled ? "border-accent bg-accent/10" : "border-border"}`}
               >
                 <span
                   aria-hidden
-                  className="nexus-theme-swatch nexus-theme-swatch-anim h-14 w-14 rounded-full"
-                  style={{
-                    background: `radial-gradient(circle at 32% 28%, var(--fx-highlight), var(--fx-${t.id}) 52%, color-mix(in oklab, var(--fx-${t.id}) 30%, black) 100%)`,
-                  }}
-                />
-                <span>{t.label}</span>
+                  className="grid h-14 w-14 place-items-center rounded-full border border-dashed border-border/80 bg-background/60 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+                >
+                  Off
+                </span>
+                <span>3D Wallpaper Off</span>
               </Button>
-            ))}
-          </div>
+              {NEXUS_THEMES.map((t) => (
+                <Button
+                  key={t.id}
+                  variant="ghost"
+                  aria-pressed={fx3dEnabled && nexusTheme === t.id}
+                  onClick={() => {
+                    setNexus3dFxEnabled(true);
+                    setNexusTheme(t.id);
+                  }}
+                  className={`nexus-theme-option flex h-auto min-h-32 flex-col gap-2 whitespace-normal rounded-lg border p-3 text-center ${fx3dEnabled && nexusTheme === t.id ? "border-accent bg-accent/10" : "border-border"}`}
+                >
+                  <span
+                    aria-hidden
+                    className="nexus-theme-swatch nexus-theme-swatch-anim h-14 w-14 rounded-full"
+                    style={{
+                      background: `radial-gradient(circle at 32% 28%, var(--fx-highlight), var(--fx-${t.id}) 52%, color-mix(in oklab, var(--fx-${t.id}) 30%, black) 100%)`,
+                    }}
+                  />
+                  <span>{t.label}</span>
+                </Button>
+              ))}
+            </div>
+          </section>
         ) : (
           <>
             <div className="flex gap-1.5 px-4 pt-1">
@@ -111,6 +165,83 @@ export function ThemeDrawer({
               ))}
             </div>
           </>
+        )}
+        {nexus && (
+          <section aria-label="Nexus wallpaper themes" className="border-t border-border px-4 py-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-medium">Nexus Wallpaper Theme</h3>
+                <p className="text-xs text-muted-foreground">
+                  Applied only in Nexus UI mode ({wallpapers.length} themes available).
+                </p>
+              </div>
+              <div className="flex items-center gap-1 rounded-full border border-border p-0.5 text-xs">
+                {(["live", "static"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setNexusWallpaperPlayback(mode)}
+                    aria-pressed={playback === mode}
+                    className={`rounded-full px-2.5 py-1 capitalize transition ${
+                      playback === mode
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+              <button
+                type="button"
+                aria-pressed={activeWallpaper === null}
+                onClick={() => setNexusWallpaperChoice("none")}
+                className={`flex flex-col items-start justify-between rounded-xl border p-2.5 text-left text-xs transition ${
+                  activeWallpaper === null || choice === "none"
+                    ? "border-accent bg-accent/10 glow-ring"
+                    : "border-border hover:border-accent/50"
+                }`}
+              >
+                <div className="mb-2 grid h-16 w-full place-items-center rounded-lg border border-dashed border-border/70 bg-background/60 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  3D FX Only
+                </div>
+                <span className="font-medium">Default Canvas</span>
+                <span className="text-[10px] text-muted-foreground">No wallpaper</span>
+              </button>
+              {wallpapers.map((wp) => {
+                const selected = activeWallpaper?.id === wp.id;
+                const thumb = wp.posterUrl || wp.mediaUrl;
+                return (
+                  <button
+                    key={wp.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setNexusWallpaperChoice(wp.id)}
+                    className={`group flex flex-col items-start rounded-xl border p-2 text-left text-xs transition ${
+                      selected
+                        ? "border-accent bg-accent/10 glow-ring"
+                        : "border-border hover:border-accent/50"
+                    }`}
+                  >
+                    <div className="relative mb-2 h-16 w-full overflow-hidden rounded-lg bg-secondary/40">
+                      <img
+                        src={thumb}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <span className="absolute right-1.5 top-1.5 rounded bg-background/85 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-foreground">
+                        {wp.kind}
+                      </span>
+                    </div>
+                    <span className="line-clamp-1 font-medium">{wp.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         )}
         {nexus && (
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border px-4 py-4">

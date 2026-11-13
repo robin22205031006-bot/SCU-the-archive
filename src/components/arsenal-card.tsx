@@ -193,6 +193,16 @@ export function ArtifactCard({
             <GlbModelViewer
               url={modelUrl}
               alt={a.name}
+              name={a.name}
+              description={[a.how_it_works, a.lore, a.materials, a.colors, form.note]
+                .filter(Boolean)
+                .join(" ")}
+              tags={[
+                a.category,
+                a.weapon_type,
+                ...(a.wielders ?? []),
+                a.curse_level > 0 ? "cursed" : null,
+              ]}
               fallbackImageUrl={fallbackImg}
               accentColor={`hsl(${art.hue} 85% 60%)`}
               compact
@@ -332,6 +342,16 @@ export function NexusArtifactViewer({
             <GlbModelViewer
               url={modelUrl}
               alt={a.name}
+              name={a.name}
+              description={[a.how_it_works, a.lore, a.materials, a.colors, form.note]
+                .filter(Boolean)
+                .join(" ")}
+              tags={[
+                a.category,
+                a.weapon_type,
+                ...(a.wielders ?? []),
+                a.curse_level > 0 ? "cursed" : null,
+              ]}
               fallbackImageUrl={artUrl(form.art) ?? null}
               accentColor={`hsl(${art.hue} 85% 60%)`}
               onFallbackTo2d={() => setViewMode("2d")}

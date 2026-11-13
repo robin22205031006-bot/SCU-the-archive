@@ -66,6 +66,18 @@ export function Character3dFrame({
         <GlbModelViewer
           url={activeAvatar.url}
           alt={`${entity.name} — ${activeAvatar.label}`}
+          name={entity.name}
+          description={[entity.description, entity.alias, entity.role, entity.category]
+            .filter(Boolean)
+            .join(" ")}
+          tags={[
+            ...(entity.abilities ?? []),
+            ...(entity.beast_traits ?? []),
+            entity.category,
+            entity.role,
+            entity.character_tier,
+            activeAvatar.label,
+          ]}
           fallbackImageUrl={entity.image_url}
           accentColor={accentColor ?? entity.theme_color ?? "#38bdf8"}
           compact={compact}

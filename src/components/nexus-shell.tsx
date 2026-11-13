@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeDrawer } from "@/components/theme-drawer";
 import { NexusSectionRail } from "@/components/nexus-section-rail";
 import { NexusFxLayer } from "@/components/nexus-fx";
-import { useNexusTheme } from "@/hooks/use-nexus-theme";
+import { useNexusTheme, useNexus3dFxEnabled } from "@/hooks/use-nexus-theme";
 import { NexusNavGlyph } from "@/components/nexus-nav-glyph";
 import { useNavMode } from "@/lib/nav-mode";
 import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
@@ -24,6 +24,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
   const enabled = useAnimationsEnabled();
   const moving = useNexusMotion();
   const nexusTheme = useNexusTheme();
+  const fx3dEnabled = useNexus3dFxEnabled();
   const anime = useNexusSymbolSettings().anime ?? false;
   const [open, setOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
@@ -44,12 +45,14 @@ export function NexusShell({ children }: { children: ReactNode }) {
     document.documentElement.dataset["nexusMotion"] = moving ? "on" : "off";
     document.documentElement.dataset["nexusTheme"] = nexusTheme;
     document.documentElement.dataset["nexusAnime"] = anime ? "on" : "off";
+    document.documentElement.dataset["nexus3dFx"] = fx3dEnabled ? "on" : "off";
     return () => {
       delete document.documentElement.dataset["nexusMotion"];
       delete document.documentElement.dataset["nexusTheme"];
       delete document.documentElement.dataset["nexusAnime"];
+      delete document.documentElement.dataset["nexus3dFx"];
     };
-  }, [moving, nexusTheme, anime]);
+  }, [moving, nexusTheme, anime, fx3dEnabled]);
   useEffect(() => setOpen(false), [pathname]);
   const tabs = [
     ...TABS,
@@ -169,7 +172,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
             initial={{ opacity: moving ? 0.6 : 1, x: moving ? 12 : 0 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: moving ? 0.24 : 0, ease: [0.22, 1, 0.36, 1] }}
-            className="nexus-page relative"
+            className="nexus-page relative z-[1]"
           >
             {["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? (
               <NexusSectionRail>{children}</NexusSectionRail>

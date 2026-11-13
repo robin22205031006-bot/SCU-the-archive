@@ -1249,6 +1249,59 @@ html[data-nexus-theme="void"] {
 .nexus-fx-background {
   z-index: 0;
   opacity: 0.24;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  contain: layout style paint;
+}
+html[data-ui="nexus"] .nexus-fx-background[data-has-wallpaper="true"] {
+  opacity: 1;
+  background-image: var(--nexus-wallpaper-image, none);
+}
+html[data-ui="nexus"] .nexus-fx-background[data-has-wallpaper="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--background) 58%, transparent),
+    color-mix(in oklab, var(--background) 34%, transparent) 48%,
+    color-mix(in oklab, var(--background) 80%, transparent)
+  );
+}
+html[data-ui="nexus"] .nexus-fx-background[data-has-wallpaper="true"] .nexus-fx-3d-canvas {
+  position: relative;
+  z-index: 2;
+  opacity: 0.26;
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="ae6787-galaxy"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/af/aa/1c/afaa1c7d1ea2779c792b6fba2a6714dc.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="violet-butterfly"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/94/23/9b/94239b3ece981a6674f3588ac31e1776.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="twilight-clouds"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/44/e9/a0/44e9a070794efd6d5bccd8cbf447f3c9.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="plexus-walloop"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/db/36/4a/db364ab7e844e393e2edd9abfc975e65.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="ascension-sky"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/ba/fd/bf/bafdbfccbd88b6de699515efbf3d897b.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="coolacloy-nebula"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/51/7a/7a/517a7a76395fcaba6bc22dd493899862.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="fire-planet"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/d2/62/5d/d2625daa76243777cfadbce53b7b9ea0.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="deep-space"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/fb/43/29/fb4329c7afb3ca7436324301248c37f3.jpg");
+}
+html[data-ui="nexus"] .nexus-fx-background[data-fx-wallpaper="neon-void-galaxy"] {
+  --nexus-wallpaper-image: url("https://i.pinimg.com/originals/d9/18/56/d91856fe55e449e88080b9c376735c24.jpg");
 }
 .nexus-fx-background,
 .nexus-fx-background * {
@@ -1299,7 +1352,8 @@ html[data-ui="nexus"] body {
   font-family: "Space Grotesk", system-ui, sans-serif;
 }
 @media (max-width: 640px) {
-  .nexus-fx-background {
+  .nexus-fx-background[data-has-wallpaper="false"],
+  .nexus-fx-background:not([data-has-wallpaper="true"]) {
     opacity: 0.16;
   }
 }
@@ -2170,6 +2224,11 @@ html[data-nexus-motion="off"] .nexus-shell::before,
 html[data-nexus-motion="off"] .nexus-shell::after {
   animation: none !important;
 }
+html[data-ui="nexus"][data-nexus-3d-fx="off"] .nexus-shell::before,
+html[data-ui="nexus"][data-nexus-3d-fx="off"] .nexus-shell::after {
+  display: none !important;
+  animation: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   .nexus-shell::before,
   .nexus-shell::after {
@@ -2427,10 +2486,23 @@ html[data-nexus-motion="off"] :is(.nexus-spotlight-ring, .nexus-spotlight-halo) 
     transform: rotate(4deg);
   }
 }
+.atlas-route-line {
+  stroke-dasharray: 1.4 1.6;
+  animation: atlas-route-flow 16s linear infinite;
+}
+@keyframes atlas-route-flow {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+html[data-nexus-motion="off"] :is(.atlas-drift, .atlas-clouds, .atlas-compass, .atlas-route-line) {
+  animation: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .atlas-drift,
   .atlas-clouds,
-  .atlas-compass {
+  .atlas-compass,
+  .atlas-route-line {
     animation: none;
   }
 }

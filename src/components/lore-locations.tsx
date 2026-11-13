@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MapPin } from "lucide-react";
+import { Globe2, MapPin } from "lucide-react";
 import { LoreWorldMap } from "@/components/lore-world-map";
+import { AtlasOverlay } from "@/components/nexus-atlas";
+import { useUiStyle } from "@/lib/ui-style";
 
 type Era = {
   id: string;
@@ -15,6 +17,100 @@ type Era = {
 type Location = { id: string; name: string; epithet: string; eras: Era[] };
 
 const LOCATIONS: Location[] = [
+  {
+    id: "istanbul-1417",
+    name: "Istanbul",
+    epithet: "Ottoman 1417 crossroads to modern Bosphorus",
+    eras: [
+      {
+        id: "1417",
+        era: "1417 (Ottoman)",
+        state: "Architect Cube Hunt & Forgotten Ones",
+        tone: "hidden",
+        description:
+          "Francisco (Nasab ibn Khalil) and Ramiz searched the Bazaar Quarter for fragments of the Architect Cube, while outside the Land Walls Dirham and Abbas led the Forgotten Ones outcast camp that inspired Zaan's Hidden Ones.",
+        visual:
+          "Ottoman minarets, Golden Horn war galleys, fortified sea walls, and lantern-lit spice bazaars.",
+        status: "1417 · Ottoman capital & underground hunt",
+      },
+      {
+        id: "istanbul-present",
+        era: "Present",
+        state: "Transcontinental Crossroads",
+        tone: "alive",
+        description:
+          "Historic Ottoman domes and Byzantine seawalls stand below Levent's modern skyline and Bosphorus bridges, while Hidden Ones cistern relays and Sentinel informants watch modern shipping lanes.",
+        visual:
+          "Suspension bridge spanning golden twilight waters between historic minarets and modern glass towers.",
+        status: "Present · Active Sentinel & Hidden Ones hub",
+      },
+    ],
+  },
+  {
+    id: "rome",
+    name: "Rome",
+    epithet: "15th-century Nullborn catacombs to Eternal City",
+    eras: [
+      {
+        id: "rome-15th",
+        era: "15th Century",
+        state: "Papal Rome & Nullborn Catacombs",
+        tone: "ruin",
+        description:
+          "Following Ramij's death after the flight from Istanbul, Khalid and Ayesha entered Nullborn's underground compound beneath Rome alongside Issabela, Marco, Mehnaz, and Abdul—before Cesare Borgia's raid shattered the cell.",
+        visual:
+          "Dusk-lit Tiber bridges, Castel Sant'Angelo bastion, Colosseum ruins, and amber lantern tunnels beneath the city.",
+        status: "15th Century · Secret Nullborn cell",
+      },
+      {
+        id: "rome-present",
+        era: "Present",
+        state: "Eternal City & Sealed Vaults",
+        tone: "alive",
+        description:
+          "Sunlit boulevards, tram piazzas, St. Peter's dome, and the illuminated Colosseum rise above ancient Borgia-era catacomb chambers quietly monitored by present-day archivists.",
+        visual:
+          "Warm sunlit streets and bridges linking Vatican hill and historic ruins over sealed underground corridors.",
+        status: "Present · Monitored historic sector",
+      },
+    ],
+  },
+  {
+    id: "romania-15th",
+    name: "Romania",
+    epithet: "15th-century Carpathian frontier",
+    eras: [
+      {
+        id: "romania-15th",
+        era: "15th Century",
+        state: "Wallachian & Transylvanian Keeps",
+        tone: "hidden",
+        description:
+          "Guarded by jagged Carpathian passes, cliffside stone citadels, fortified river towns, and forest monasteries bridging medieval Europe to the 15th-century Ottoman frontier and ancient bloodline sanctuaries.",
+        visual:
+          "Crimson-amber twilight over mist-cloaked Carpathian ridges, cliff fortress beacons, and walled valley spires.",
+        status: "15th Century · Frontier stronghold",
+      },
+    ],
+  },
+  {
+    id: "pocket-dimension",
+    name: "Pocket Dimension",
+    epithet: "Timeless fracture outside space & time",
+    eras: [
+      {
+        id: "timeless",
+        era: "Timeless",
+        state: "Slow-Time Obsidian Fracture",
+        tone: "hidden",
+        description:
+          "A natural slow-time fracture where Aeric Valenheart fell in 1354 AD and forged Kara Yazgi, Marcello Corvani fought Alt David in 2005, and Zaan confronted Khalid before Corvani and Aeric escaped in 2025.",
+        visual:
+          "Suspended obsidian shards cracked with crimson and azure rifts beneath a swirling cosmic time vortex.",
+        status: "Timeless · Dilated continuum",
+      },
+    ],
+  },
   {
     id: "yasnaya",
     name: "Yasnaya",
@@ -74,7 +170,7 @@ const LOCATIONS: Location[] = [
         state: "Safehouse of the Fallen",
         tone: "alive",
         description:
-          "The classified refuge where Valeria secretly moved Xinea after staging her death, while Xinea wrestled with grief and the return of her powers. In mid-Season 1, Samuel operated in the outer jungle system without ever knowing she was hidden deeper inside.",
+          "The classified refuge where Valeria secretly moved Xinea after staging her death, while Xinea wrestled with grief and the return of her powers.",
         visual: "Deep-jungle safehouse; outer perimeter patrolled, inner sanctum sealed.",
         status: "Classified · Occupied in secret",
       },
@@ -91,8 +187,8 @@ const LOCATIONS: Location[] = [
         state: "Metropolitan Nexus",
         tone: "alive",
         description:
-          "A thriving, progressive high-tech city that bridged the Demon and Human realms.",
-        visual: "Neon skyline, active transit overpasses, cross-realm markets.",
+          "A thriving, progressive city bridging the Demon and Human realms before the great breach.",
+        visual: "Cathedral spires, grand markets, active coastal harbor.",
         status: "Operational · High population",
       },
       {
@@ -101,9 +197,36 @@ const LOCATIONS: Location[] = [
         state: "The Skeletal Grid",
         tone: "ruin",
         description:
-          "The second Diablo War gutted the city, leaving only the bones of what it was.",
-        visual: "Hollowed-out skyscraper carcasses, collapsed overpasses, ash-covered ruins.",
+          "The second Diablo War gutted the city, leaving overgrown ruins, stagnant plazas, and wildlife.",
+        visual: "Broken cathedral arches, flooded amphitheater, wrecked harbor.",
         status: "Abandoned · Hazard zone",
+      },
+    ],
+  },
+  {
+    id: "nilanjona",
+    name: "Nilanjona's Realm",
+    epithet: "The Water Kingdom",
+    eras: [
+      {
+        id: "pre-asetra",
+        era: "Before Asetra",
+        state: "Coastal Temples & Valleys",
+        tone: "alive",
+        description:
+          "Before the Asetra earthquake raised glacial peaks, ancient temples and aqueducts stood above ground.",
+        visual: "Hilltop stone palace, warm valley villages, and open plains.",
+        status: "Historical · Pre-earthquake",
+      },
+      {
+        id: "nila-present",
+        era: "Present",
+        state: "Ice Mountains & Warm Valleys",
+        tone: "hidden",
+        description:
+          "Three-fifths glacial peaks and crystal ice palace; two-fifths fertile warm valleys above the Sunken Temple.",
+        visual: "Crystal palace spire, frozen cascades, and submerged domes.",
+        status: "Present · Guardian domain",
       },
     ],
   },
@@ -116,8 +239,10 @@ const TONE: Record<Era["tone"], string> = {
 };
 
 export function LoreLocations() {
+  const nexus = useUiStyle() === "nexus";
   const [locId, setLocId] = useState(LOCATIONS[0]!.id);
   const [eraIdx, setEraIdx] = useState<Record<string, number>>({});
+  const [atlasStart, setAtlasStart] = useState<string | null>(null);
   const loc = LOCATIONS.find((l) => l.id === locId)!;
   const idx = Math.min(eraIdx[loc.id] ?? 0, loc.eras.length - 1);
   const era = loc.eras[idx]!;
@@ -133,19 +258,20 @@ export function LoreLocations() {
         className="mb-10 grid gap-4 lg:grid-cols-[240px_1fr]"
         aria-label="Key lore locations"
       >
-        <div className="flex gap-2 overflow-x-auto lg:flex-col">
+        <div className="flex gap-2 overflow-x-auto lg:max-h-[420px] lg:flex-col lg:overflow-y-auto">
           {LOCATIONS.map((l) => (
             <button
               key={l.id}
+              type="button"
               onClick={() => setLocId(l.id)}
-              className={`glass shrink-0 rounded-xl p-4 text-left transition-all ${l.id === locId ? "glow-ring border-accent/50" : "hover:glow-ring"}`}
+              className={`glass shrink-0 rounded-xl p-3.5 text-left transition-all ${l.id === locId ? "glow-ring border-accent/50" : "hover:glow-ring"}`}
             >
               <MapPin
                 className={`h-4 w-4 ${l.id === locId ? "text-accent" : "text-muted-foreground"}`}
               />
-              <div className="mt-2 font-medium">{l.name}</div>
+              <div className="mt-1.5 font-medium">{l.name}</div>
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                {l.epithet}
+                {l.eras.map((e) => e.era).join(" · ")}
               </div>
             </button>
           ))}
@@ -163,13 +289,28 @@ export function LoreLocations() {
             />
           </AnimatePresence>
           <div className="relative">
-            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">{loc.epithet}</p>
-            <h2 className="mt-1 text-3xl font-medium glow-text">{loc.name}</h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-accent">{loc.epithet}</p>
+                <h2 className="mt-1 text-3xl font-medium glow-text">{loc.name}</h2>
+              </div>
+              {nexus && (
+                <button
+                  type="button"
+                  onClick={() => setAtlasStart(loc.id)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/60 bg-background/70 px-3 py-1.5 text-xs text-primary backdrop-blur transition hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Globe2 className="h-3.5 w-3.5" />
+                  Open Interactive Map
+                </button>
+              )}
+            </div>
 
             <div className="relative mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Era">
               {loc.eras.map((e, i) => (
                 <button
                   key={e.id}
+                  type="button"
                   role="tab"
                   aria-selected={i === idx}
                   onClick={() => setEraIdx((s) => ({ ...s, [loc.id]: i }))}
@@ -219,6 +360,9 @@ export function LoreLocations() {
           </div>
         </div>
       </section>
+      <AnimatePresence>
+        {atlasStart && <AtlasOverlay start={atlasStart} onClose={() => setAtlasStart(null)} />}
+      </AnimatePresence>
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -22,6 +22,11 @@ import {
   type AlloyFinishId,
   type BuiltArtifactScene,
 } from "@/lib/arsenal-three-models";
+import {
+  createModelVfxSystem,
+  resolveModelVfxPreset,
+  type ModelVfxSystem,
+} from "@/lib/model-3d-vfx";
 import { Button } from "@/components/ui/button";
 
 type Artifact = Tables<"artifacts">;
@@ -86,6 +91,23 @@ export function ArsenalThreeStage({
   const [dockOpen, setDockOpen] = useState(true);
   const [webglReady, setWebglReady] = useState(true);
 
+  const vfxConfig = useMemo(
+    () =>
+      resolveModelVfxPreset({
+        name: artifact.name,
+        description: [artifact.how_it_works, artifact.lore, artifact.materials, artifact.colors]
+          .filter(Boolean)
+          .join(" "),
+        tags: [
+          artifact.category,
+          artifact.weapon_type,
+          ...(artifact.wielders ?? []),
+          artifact.curse_level > 0 ? "cursed" : null,
+        ],
+      }),
+    [artifact],
+  );
+
   const stateRef = useRef({
     artifact,
     finishId,
@@ -96,6 +118,7 @@ export function ArsenalThreeStage({
     cameraPreset,
     presetAnimating: false,
     currentExplode: 0,
+    vfxConfig,
   });
 
   stateRef.current.artifact = artifact;
@@ -104,6 +127,7 @@ export function ArsenalThreeStage({
   stateRef.current.explode = explode;
   stateRef.current.autoRotate = autoRotate;
   stateRef.current.boostSurge = boostSurge;
+  stateRef.current.vfxConfig = vfxConfig;
 
   const sceneHooksRef = useRef<{
     rebuildModel: () => void;
@@ -148,7 +172,8 @@ export function ArsenalThreeStage({
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    const pixelRatio = isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2);
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
     renderer.shadowMap.enabled = !isSoftwareGl;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -231,12 +256,30 @@ export function ArsenalThreeStage({
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
     const textures = createProceduralTextures(maxAnisotropy);
     let built: BuiltArtifactScene | null = null;
+    let vfxSystem: ModelVfxSystem | null = null;
     let loadTicket = 0;
+
+    const rebuildVfx = (centerY = 1.35, radius = 1.05, height = 2.4) => {
+      if (vfxSystem) {
+        scene.remove(vfxSystem.group);
+        vfxSystem.dispose();
+        vfxSystem = null;
+      }
+      vfxSystem = createModelVfxSystem(stateRef.current.vfxConfig, {
+        isSoftwareGl,
+        pixelRatio,
+        centerY,
+        radius,
+        height,
+      });
+      scene.add(vfxSystem.group);
+    };
 
     const mountProcedural = () => {
       const { artifact: a, finishId: fId, auraHue: hue } = stateRef.current;
       built = buildArtifactAssembly(a, ALLOY_FINISHES[fId], hue, textures, isSoftwareGl);
       scene.add(built.root);
+      rebuildVfx(1.35, 1.05, 2.45);
 
       const exp = stateRef.current.currentExplode;
       built.root.traverse((obj) => {
@@ -268,6 +311,7 @@ export function ArsenalThreeStage({
         mountProcedural();
         return;
       }
+      rebuildVfx(1.2, 1.0, 2.1);
 
       // Mount a subtle glowing pedestal + loader for custom .glb asset, falling back cleanly on error
       const root = new THREE.Group();
@@ -358,6 +402,7 @@ export function ArsenalThreeStage({
     let renderBusy = false;
     let renderDirty = false;
     let lastTime = performance.now();
+    let elapsed = 0;
 
     function afterDraw(cb: () => void) {
       const gl = renderer.getContext() as WebGL2RenderingContext;
@@ -382,8 +427,13 @@ export function ArsenalThreeStage({
     function stepAndDraw(now: number) {
       const dt = Math.min((now - lastTime) / 1000, 0.08);
       lastTime = now;
+      elapsed += dt;
 
       const s = stateRef.current;
+
+      if (vfxSystem) {
+        vfxSystem.update(dt, elapsed, s.boostSurge ? 1.85 : 1);
+      }
 
       // Smoothly damp exploded assembly separation
       s.currentExplode = THREE.MathUtils.damp(s.currentExplode, s.explode, 8, dt);
@@ -429,7 +479,7 @@ export function ArsenalThreeStage({
       renderer.render(scene, camera);
 
       const settling = s.presetAnimating || Math.abs(s.currentExplode - s.explode) > 0.004;
-      return settling || (!isSoftwareGl && s.autoRotate) || s.boostSurge;
+      return settling || !isSoftwareGl || s.boostSurge;
     }
 
     function requestRender() {
@@ -493,6 +543,11 @@ export function ArsenalThreeStage({
       window.clearTimeout(frameId);
       ro.disconnect();
       controls.dispose();
+      if (vfxSystem) {
+        scene.remove(vfxSystem.group);
+        vfxSystem.dispose();
+        vfxSystem = null;
+      }
       if (built) built.dispose();
       floorGeo.dispose();
       floorMat.dispose();
@@ -516,7 +571,10 @@ export function ArsenalThreeStage({
   const archetype = resolveArtifactArchetype(artifact);
 
   return (
-    <div className="relative h-[560px] w-full overflow-hidden rounded-3xl border border-white/10 bg-[#060911] select-none sm:h-[620px]">
+    <div
+      data-vfx-preset={vfxConfig.preset}
+      className="relative h-[560px] w-full overflow-hidden rounded-3xl border border-white/10 bg-[#060911] select-none sm:h-[620px]"
+    >
       {/* Dedicated Three.js WebGL Mount Container */}
       <div
         ref={mountRef}
@@ -538,7 +596,9 @@ export function ArsenalThreeStage({
         <h2 className="mt-0.5 text-lg font-bold tracking-tight text-white sm:text-xl">
           {artifact.name}
         </h2>
-        <p className="text-xs text-zinc-400">Aura: {auraLabel} · Drag to orbit, scroll to zoom</p>
+        <p className="text-xs text-zinc-400">
+          Aura: {auraLabel} ({vfxConfig.label}) · Drag to orbit, scroll to zoom
+        </p>
       </div>
 
       {/* Collapsible Bottom Control Dock (Zero Backdrop-Filter, Zero Side Clutter) */}

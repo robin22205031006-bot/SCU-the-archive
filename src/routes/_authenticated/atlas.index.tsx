@@ -8,12 +8,13 @@ export const Route = createFileRoute("/_authenticated/atlas/")({
       {
         name: "description",
         content:
-          "Explore every SCU realm on one page: Nilanjona's Realm, Aethmos, Yasnaya and Ruin City, with scenic, top-view and animated maps.",
+          "Explore every SCU realm on one page: Nilanjona's Realm, Aethmos, Yasnaya, Ruin City, Pocket Dimension, Istanbul, Rome, and 15th-century Romania.",
       },
       { property: "og:title", content: "World Atlas — SCU" },
       {
         property: "og:description",
-        content: "All four SCU realms with scenic, top-down and era-by-era animated maps.",
+        content:
+          "All eight SCU realms with fit-to-screen scenic, top-down and era-by-era animated maps.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

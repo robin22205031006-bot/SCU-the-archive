@@ -5,7 +5,8 @@ import { PlaceAtlasSections } from "@/components/atlas-pages";
 
 export const Route = createFileRoute("/_authenticated/atlas/$place")({
   loader: ({ params }) => {
-    const loc = ATLAS.find((l) => l.id === params.place);
+    const target = params.place === "istanbul" ? "istanbul-1417" : params.place;
+    const loc = ATLAS.find((l) => l.id === target);
     if (!loc) throw notFound();
     return { id: loc.id, name: loc.name, epithet: loc.epithet };
   },
