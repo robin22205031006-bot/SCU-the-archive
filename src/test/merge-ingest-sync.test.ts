@@ -94,13 +94,13 @@ describe("merge-aware canonicalization & ingest sync", () => {
     );
 
     expect(plan.entityInserts).toHaveLength(1);
-    expect(plan.entityInserts[0].name).toBe("Ethan");
-    expect(plan.entityInserts[0].alias).toContain("Bunny");
-    expect(plan.entityInserts[0].alias).toContain("Robin");
-    expect(plan.entityInserts[0].alias).toContain("Echan");
-    expect(plan.entityInserts[0].description).toContain("Uses Wind Surge.");
+    expect(plan.entityInserts[0]!.name).toBe("Ethan");
+    expect(plan.entityInserts[0]!.alias).toContain("Bunny");
+    expect(plan.entityInserts[0]!.alias).toContain("Robin");
+    expect(plan.entityInserts[0]!.alias).toContain("Echan");
+    expect(plan.entityInserts[0]!.description).toContain("Uses Wind Surge.");
     expect(plan.timelineInserts).toHaveLength(1);
-    expect(plan.timelineInserts[0].sort_order).toBe(11);
+    expect(plan.timelineInserts[0]!.sort_order).toBe(11);
     expect(plan.warnings.some((w) => w.includes("[Auto-Merged]"))).toBe(true);
   });
 

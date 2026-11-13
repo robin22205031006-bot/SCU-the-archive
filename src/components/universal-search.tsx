@@ -47,7 +47,7 @@ export function UniversalSearch() {
         kind: string;
       }>;
       return {
-        entities: mergeCharacterCards(rawEntities),
+        entities: mergeCharacterCards(rawEntities as never) as unknown as typeof rawEntities,
         events: t.data ?? [],
         docs: d.data ?? [],
         notes: n.data ?? [],

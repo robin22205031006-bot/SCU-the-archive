@@ -77,7 +77,7 @@ describe("canonical series and standalone epics", () => {
     const { CANON_SERIES_ROSTERS } = await import("./series");
     const standaloneRoster = CANON_SERIES_ROSTERS["Standalone Epics"];
     expect(standaloneRoster).toBeDefined();
-    const names = standaloneRoster.map((r) => r.characterName);
+    const names = (standaloneRoster ?? []).map((r) => r.characterName);
     expect(names).toEqual(expect.arrayContaining(["Zaan", "Khalid", "Alistair Quinn"]));
   });
 });

@@ -104,8 +104,10 @@ export function MergeEntityDialog({
       await supabase
         .from("entity_name_aliases")
         .insert({ alias_norm: normAlias, canonical_name: normCanon })
-        .then(() => {})
-        .catch(() => {});
+        .then(
+          () => {},
+          () => {},
+        );
 
       toast.success(
         `Merged "${entity.name}" into "${target.name}" — ${moved} lore note(s) transferred.`,
