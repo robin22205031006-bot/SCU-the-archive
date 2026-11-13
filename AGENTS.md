@@ -47,3 +47,4 @@
 - adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicates to the in-story card name (tested), so syncs never recreate merged cards.
 - Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
 - Atlas map rules: see src/lib/AGENTS.md.
+- Browser builds resolve the project-owned archive through archive-backend.ts, reject imported legacy connection defaults, and leave Cloud server runtime credentials untouched so preview and published records cannot diverge.

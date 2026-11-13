@@ -86,22 +86,15 @@ function hydrateCanonAbilities<T extends Entity>(entity: T): T {
 export const entitiesQuery = (kinds: string[]) =>
   queryOptions({
     queryKey: ["entities", kinds],
-    staleTime: 300_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entities")
         .select("*")
         .in("kind", kinds as Entity["kind"][])
         .order("name");
-      if (error) {
-        if (
-          (error as { code?: string }).code === "PGRST205" ||
-          /entities|schema cache|does not exist/i.test(error.message)
-        ) {
-          return [] as Entity[];
-        }
-        throw error;
-      }
+      if (error) throw error;
       const raw = (data ?? []) as Entity[];
       const merged = kinds.includes("character") ? mergeCharacterCards(raw) : raw;
       return merged.map((e) => hydrateCanonAbilities(e));

@@ -1,5 +1,9 @@
 # Nilanjona and Valeria combat
 
+# Published character persistence
+
+- [ ] Correct the imported archive connection used by publishing; verify saved character records, fresh loads and merge protection.
+
 - [x] Added separate reference-driven water, assassin movement and Kara Yazgi sequences with 24-fps frame study controls; these are demonstrations, not invented PDF events.
 - [x] Added tapered water ribbons, rising spiral, crashing wave, shadow pools, thrown weapons and sword arcs with two painted combat backgrounds.
 - [x] All 10 combat tests passed; signed-in playback, frame stepping and Android layout verified with no runtime errors or horizontal overflow.

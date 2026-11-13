@@ -87,7 +87,6 @@ export const CHARACTER_ALIAS_MAP: Record<string, string> = {
   "khalid ibn kharif": "khalid",
   "khalid ibn sharif": "khalid",
   "khalid el mansur": "khalid",
-  "alt ethan": "ethan",
   "ethan thorne": "ethan",
   robin: "ethan",
   "zaynab al-ahd": "issabela al-ahd",

@@ -1,37 +1,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import type { Plugin } from "vite";
+import { resolveArchiveBackend } from "./archive-backend";
 
-const REAL_SUPABASE_URL = "https://c--2c3743b4-a0ff-4079-b412-eba03e4ddcc7-prod.lovable.cloud";
-const REAL_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_FSGOMkkM8_gDbaY7lfAyEg_d7tLjyhW";
-const REAL_SUPABASE_PROJECT_ID = "raplydgyiqrxoyxzdpbr";
-
-function cleanUrl(val: string | undefined): string {
-  if (!val || val.includes("placeholder.supabase.co")) return REAL_SUPABASE_URL;
-  return val.replace(/\/+$/, "");
-}
-
-function cleanKey(val: string | undefined): string {
-  if (!val || val.includes("placeholder")) return REAL_SUPABASE_PUBLISHABLE_KEY;
-  return val;
-}
-
-function cleanPid(val: string | undefined): string {
-  if (!val || val.includes("placeholder")) return REAL_SUPABASE_PROJECT_ID;
-  return val;
-}
-
-const url = cleanUrl(process.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"]);
-const key = cleanKey(
-  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || process.env["SUPABASE_PUBLISHABLE_KEY"],
-);
-const pid = cleanPid(process.env["VITE_SUPABASE_PROJECT_ID"] || process.env["SUPABASE_PROJECT_ID"]);
-
-// Populate server process environment so SSR and server functions have access to real Supabase variables
-process.env["SUPABASE_URL"] = url;
-process.env["SUPABASE_PUBLISHABLE_KEY"] = key;
-process.env["VITE_SUPABASE_URL"] = url;
-process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] = key;
-process.env["VITE_SUPABASE_PROJECT_ID"] = pid;
+const { url, key, projectId: pid } = resolveArchiveBackend(process.env);
+// Runtime server credentials are managed by Cloud; do not overwrite them with
+// browser build-time values or a preview proxy URL.
 
 function supabaseProxyPlugin(targetOrigin: string): Plugin {
   return {

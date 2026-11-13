@@ -7,6 +7,14 @@ import {
 import type { Entity } from "@/lib/entities";
 
 describe("character card merging logic", () => {
+  it("preserves Ethan and Earth Prime Alt Ethan as separate cards after a fresh load", () => {
+    const cards: Array<Partial<Entity> & { id: string; name: string }> = [
+      { id: "original-ethan", name: "Ethan", kind: "character" },
+      { id: "earth-prime-ethan", name: "Alt Ethan", kind: "character" },
+      { id: "alternate-alias", name: "Alter Ethan", kind: "character" },
+    ];
+    expect(mergeCharacterCards(cards).map((card) => card.name)).toEqual(["Alt Ethan", "Ethan"]);
+  });
   it("merges duplicate character cards into the canonical card", () => {
     const rawCards = [
       {
