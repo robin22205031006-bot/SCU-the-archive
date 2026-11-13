@@ -21,6 +21,8 @@ import {
   TIER_ORDER,
   abilityDef,
   allAbilityDefs,
+  baseAbilityDef,
+  getCustomAbilities,
   normalizeAbilityKey,
   removeCustomAbility,
   saveCustomAbility,
@@ -31,6 +33,7 @@ import {
   type AbilityDef,
   type AbilityTier,
 } from "@/lib/abilities";
+import { hydrateAbilityRegistry, useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityBadge } from "@/components/ability-badge";
 import { EntityGridSkeleton } from "@/components/route-skeleton";
 import { sfx } from "@/lib/scu-audio";
@@ -118,38 +121,11 @@ function AbilitiesHub() {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingDef, setEditingDef] = useState<AbilityDef | null>(null);
-  const [customsVersion, setCustomsVersion] = useState(0);
+  const registryVersion = useAbilityRegistryVersion();
 
-  // Hydrate admin-defined abilities from app_settings into the local registry cache.
+  // Refresh admin-defined abilities and overrides from app_settings on visit.
   useEffect(() => {
-    let alive = true;
-    void (async () => {
-      const { data } = await supabase
-        .from("app_settings")
-        .select("key,value")
-        .in("key", [CUSTOM_SETTINGS_KEY, OVERRIDES_SETTINGS_KEY]);
-      if (!alive) return;
-      const registry = data?.find((row) => row.key === CUSTOM_SETTINGS_KEY)?.value;
-      const list = Array.isArray(registry) ? (registry as unknown as AbilityDef[]) : [];
-      try {
-        localStorage.setItem("scu_custom_abilities", JSON.stringify(list));
-      } catch {
-        /* storage optional */
-      }
-      // Fetch tiers/descriptions alongside the registry, not in a second round-trip.
-      const overrides = data?.find((row) => row.key === OVERRIDES_SETTINGS_KEY)?.value;
-      if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
-        try {
-          localStorage.setItem("scu_ability_overrides", JSON.stringify(overrides));
-        } catch {
-          /* storage optional */
-        }
-      }
-      setCustomsVersion((v) => v + 1);
-    })();
-    return () => {
-      alive = false;
-    };
+    void hydrateAbilityRegistry(true);
   }, []);
 
   // Reverse index: ability key -> entities that carry it in abilities/beast_traits.
@@ -168,9 +144,9 @@ function AbilitiesHub() {
       }
     }
     return map;
-    // customsVersion forces recompute after admin adds an ability
+    // registryVersion forces recompute after admin edits/adds an ability
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entities, customsVersion]);
+  }, [entities, registryVersion]);
 
   // Registry defs + any ad-hoc strings found on entities that aren't registered.
   const defs = useMemo(() => {
@@ -188,7 +164,13 @@ function AbilitiesHub() {
     }
     return [...base, ...extras];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entities, customsVersion]);
+  }, [entities, registryVersion]);
+
+  useEffect(() => {
+    if (tier !== "all" && !isLoading && !defs.some((d) => d.tier === tier)) {
+      setTier("all");
+    }
+  }, [tier, isLoading, defs]);
 
   const needle = q.trim().toLowerCase();
   const filtered = useMemo(
@@ -216,8 +198,7 @@ function AbilitiesHub() {
     }
     for (const arr of groups.values()) arr.sort((a, b) => a.label.localeCompare(b.label));
     return groups;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, customsVersion]);
+  }, [filtered]);
 
   const presentTiers = TIER_ORDER.filter((t) => byTier.has(t));
   const customKeys = useMemo(
@@ -228,8 +209,36 @@ function AbilitiesHub() {
           .map((d) => d.key),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [customsVersion],
+    [registryVersion],
   );
+
+  const deleteCustom = async (def: AbilityDef) => {
+    removeCustomAbility(def.key);
+    removeAbilityOverride(def.key);
+    if (openKey === def.key) setOpenKey(null);
+    if (editingDef?.key === def.key) setEditingDef(null);
+    try {
+      const list = getCustomAbilities();
+      const allOverrides = getAbilityOverrides();
+      const { error } = await supabase.from("app_settings").upsert([
+        {
+          key: CUSTOM_SETTINGS_KEY,
+          value: list as unknown as Json,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          key: OVERRIDES_SETTINGS_KEY,
+          value: allOverrides as unknown as Json,
+          updated_at: new Date().toISOString(),
+        },
+      ]);
+      if (error) throw error;
+      void qc.invalidateQueries({ queryKey: ["app-settings"] });
+      toast.success(`Removed "${def.label}" from the registry.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Removed locally; cloud sync failed.");
+    }
+  };
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-5">
@@ -255,20 +264,21 @@ function AbilitiesHub() {
 
       {isAdmin && showAdd && (
         <AddAbilityForm
-          onSaved={() => {
+          onSaved={(addedTier) => {
             setShowAdd(false);
-            setCustomsVersion((v) => v + 1);
+            if (addedTier && tier !== "all" && tier !== addedTier) setTier(addedTier);
             void qc.invalidateQueries({ queryKey: ["app-settings"] });
           }}
         />
       )}
       {isAdmin && editingDef && (
         <EditAbilityForm
+          key={editingDef.key}
           def={editingDef}
           onClose={() => setEditingDef(null)}
-          onSaved={() => {
+          onSaved={(nextTier) => {
             setEditingDef(null);
-            setCustomsVersion((v) => v + 1);
+            if (tier !== "all" && nextTier !== tier) setTier(nextTier);
             void qc.invalidateQueries({ queryKey: ["app-settings"] });
           }}
         />
@@ -298,11 +308,7 @@ function AbilitiesHub() {
                 isAdmin={isAdmin}
                 isCustom={customKeys.has(def.key)}
                 onEdit={() => setEditingDef(def)}
-                onDeleteCustom={() => {
-                  removeCustomAbility(def.key);
-                  setCustomsVersion((v) => v + 1);
-                  toast.success(`Removed "${def.label}" from the registry.`);
-                }}
+                onDeleteCustom={() => void deleteCustom(def)}
               />
             </div>
           )}
@@ -362,11 +368,7 @@ function AbilitiesHub() {
                       isAdmin={isAdmin}
                       isCustom={customKeys.has(d.key)}
                       onEdit={() => setEditingDef(d)}
-                      onDeleteCustom={() => {
-                        removeCustomAbility(d.key);
-                        setCustomsVersion((v) => v + 1);
-                        toast.success(`Removed "${d.label}" from the registry.`);
-                      }}
+                      onDeleteCustom={() => void deleteCustom(d)}
                     />
                   ))}
                 </div>
@@ -508,7 +510,7 @@ function AbilityCard({
   );
 }
 
-function AddAbilityForm({ onSaved }: { onSaved: () => void }) {
+function AddAbilityForm({ onSaved }: { onSaved: (addedTier?: AbilityTier) => void }) {
   const [label, setLabel] = useState("");
   const [tier, setTier] = useState<AbilityTier>("Rare");
   const [color, setColor] = useState("#a855f7");
@@ -549,7 +551,7 @@ function AddAbilityForm({ onSaved }: { onSaved: () => void }) {
       });
       if (error) throw error;
       toast.success(`"${clean}" added to the registry.`);
-      onSaved();
+      onSaved(tier);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save ability.");
     } finally {
@@ -612,7 +614,7 @@ function AddAbilityForm({ onSaved }: { onSaved: () => void }) {
         <Button size="sm" onClick={() => void submit()} disabled={busy || !label.trim()}>
           {busy ? "Saving…" : "Add to registry"}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onSaved}>
+        <Button size="sm" variant="ghost" onClick={() => onSaved()}>
           Cancel
         </Button>
       </div>
@@ -628,7 +630,7 @@ function EditAbilityForm({
 }: {
   def: AbilityDef;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (nextTier: AbilityTier) => void;
 }) {
   const [label, setLabel] = useState(def.label);
   const [tier, setTier] = useState<AbilityTier>(def.tier);
@@ -641,21 +643,19 @@ function EditAbilityForm({
     if (busy) return;
     setBusy(true);
     try {
+      const base = baseAbilityDef(def.key);
+      const trimmedLabel = label.trim();
+      const trimmedDesc = description.trim();
       const override: AbilityOverride = reset
         ? {}
         : {
-            ...(label.trim() && label.trim() !== def.label ? { label: label.trim() } : {}),
-            ...(tier !== def.tier ? { tier } : {}),
-            ...(color !== def.color ? { color } : {}),
-            ...(description.trim() ? { description: description.trim() } : {}),
+            ...(trimmedLabel && trimmedLabel !== base.label ? { label: trimmedLabel } : {}),
+            ...(tier !== base.tier ? { tier } : {}),
+            ...(color !== base.color ? { color } : {}),
+            ...(trimmedDesc !== (base.description ?? "") ? { description: trimmedDesc } : {}),
           };
-      if (reset) removeAbilityOverride(def.key);
+      if (reset || Object.keys(override).length === 0) removeAbilityOverride(def.key);
       else saveAbilityOverride(def.key, override);
-      const merged = {
-        ...(getAbilityOverrides()[normalizeAbilityKey(def.key)] ?? {}),
-        ...(reset ? {} : override),
-      };
-      void merged;
       // Mirror overrides map to app_settings so other devices see the same ranks.
       const all = getAbilityOverrides();
       const { error } = await supabase.from("app_settings").upsert({
@@ -668,7 +668,7 @@ function EditAbilityForm({
         reset ? `"${def.label}" reset to registry defaults.` : `"${label || def.label}" updated.`,
       );
       void qc.invalidateQueries({ queryKey: ["app-settings"] });
-      onSaved();
+      onSaved(reset ? base.tier : tier);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save ability.");
     } finally {

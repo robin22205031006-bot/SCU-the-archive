@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 
 /** Expanded Nexus ability showcase: cel FX, tier and upgrade lineage playback. */
 export function AbilityFxShowcase({
@@ -31,10 +32,11 @@ export function AbilityFxShowcase({
       setBoosted(false);
     }
   }, [open, name]);
+  const abilityVersion = useAbilityRegistryVersion();
   const lineages = useAbilityLineages();
   const lineage = useMemo(() => lineageFor(lineages, current), [lineages, current]);
   const def = abilityDef(current);
-  const recipe = useMemo(() => abilityFxRecipe(current), [current]);
+  const recipe = useMemo(() => abilityFxRecipe(current), [current, abilityVersion]);
   useEffect(() => {
     if (!ascending || !lineage) return;
     const i = lineage.steps.indexOf(def.key);

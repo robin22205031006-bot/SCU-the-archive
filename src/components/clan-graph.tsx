@@ -17,6 +17,7 @@ import {
   type RelType,
 } from "@/lib/entities";
 import { getCombatStats } from "@/lib/combat-stats";
+import { invalidateArchive } from "@/lib/archive-sync";
 
 const ALL_KINDS: Entity["kind"][] = ["character", "organization", "clan", "bloodline", "faction"];
 const GROUP_KINDS = new Set(["organization", "clan", "bloodline", "faction"]);
@@ -93,7 +94,7 @@ export function ClanGraph() {
   const isAdmin = useIsAdmin();
   const [view, setView] = useState<ViewMode>("hierarchy");
   const [groupId, setGroupId] = useState<string>("");
-  const [quick, setQuick] = useState<{ e: Entity; x: number; y: number } | null>(null);
+  const [quick, setQuick] = useState<{ id: string; x: number; y: number } | null>(null);
   const [editingLinks, setEditingLinks] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [linkForm, setLinkForm] = useState({
@@ -126,7 +127,7 @@ export function ClanGraph() {
     return (entities ?? []).filter((e) => GROUP_KINDS.has(e.kind) && memberGroups.has(e.id));
   }, [entities, memberships]);
 
-  const activeGroupId = groupId || groups[0]?.id || "";
+  const activeGroupId = (groups.some((g) => g.id === groupId) ? groupId : groups[0]?.id) ?? "";
   const activeGroup = byId.get(activeGroupId) ?? null;
 
   const membersOf = useMemo(() => {
@@ -243,16 +244,21 @@ export function ClanGraph() {
     toast.success("Link added");
     setLinkForm({ source: "", target: "", rel: "ally", label: "" });
     qc.invalidateQueries({ queryKey: ["entity-relations"] });
+    void invalidateArchive(qc);
   };
 
   const removeLink = async (id: string) => {
     const { error } = await supabase.from("entity_relations").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["entity-relations"] });
+    else {
+      qc.invalidateQueries({ queryKey: ["entity-relations"] });
+      void invalidateArchive(qc);
+    }
   };
 
-  const combat = quick ? getCombatStats(quick.e.stats) : null;
-  const weapon = quick ? signatureWeapon(quick.e) : null;
+  const quickEntity = quick ? (byId.get(quick.id) ?? null) : null;
+  const combat = quickEntity ? getCombatStats(quickEntity.stats) : null;
+  const weapon = quickEntity ? signatureWeapon(quickEntity) : null;
 
   return (
     <div className="grid gap-4">
@@ -433,7 +439,7 @@ export function ClanGraph() {
                   key={e.id}
                   transform={`translate(${p.x},${p.y})`}
                   className="cursor-pointer"
-                  onClick={() => setQuick({ e, x: p.x, y: p.y })}
+                  onClick={() => setQuick({ id: e.id, x: p.x, y: p.y })}
                 >
                   <circle r={r + 5} fill="transparent" />
                   <circle
@@ -523,7 +529,7 @@ export function ClanGraph() {
         </div>
 
         {/* quick view card */}
-        {quick && (
+        {quick && quickEntity && (
           <div
             className="glass absolute z-10 w-64 rounded-2xl p-4 shadow-2xl"
             style={{
@@ -539,9 +545,9 @@ export function ClanGraph() {
               <X className="h-3.5 w-3.5" />
             </button>
             <div className="flex items-center gap-3">
-              {quick.e.image_url ? (
+              {quickEntity.image_url ? (
                 <img
-                  src={quick.e.image_url}
+                  src={quickEntity.image_url}
                   alt=""
                   loading="lazy"
                   decoding="async"
@@ -550,24 +556,24 @@ export function ClanGraph() {
               ) : (
                 <div
                   className="grid h-12 w-12 place-items-center rounded-xl bg-secondary font-display text-xl"
-                  style={{ color: KIND_COLOR[quick.e.kind] }}
+                  style={{ color: KIND_COLOR[quickEntity.kind] }}
                 >
-                  {quick.e.name[0]}
+                  {quickEntity.name[0]}
                 </div>
               )}
               <div className="min-w-0">
-                <p className="truncate font-medium">{quick.e.name}</p>
+                <p className="truncate font-medium">{quickEntity.name}</p>
                 <p className="text-xs capitalize text-muted-foreground">
-                  {quick.e.kind} · {quick.e.role ?? quick.e.category ?? ""}
+                  {quickEntity.kind} · {quickEntity.role ?? quickEntity.category ?? ""}
                 </p>
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs">
               <span
                 className="rounded-full bg-secondary px-2 py-0.5"
-                style={{ color: KIND_COLOR[quick.e.kind] }}
+                style={{ color: KIND_COLOR[quickEntity.kind] }}
               >
-                {statusTag(quick.e).label}
+                {statusTag(quickEntity).label}
               </span>
               {combat && (
                 <span className="text-muted-foreground">
@@ -580,7 +586,7 @@ export function ClanGraph() {
               size="sm"
               variant="secondary"
               className="mt-3 w-full"
-              onClick={() => openDossier(quick.e)}
+              onClick={() => openDossier(quickEntity)}
             >
               <BookOpen className="h-3.5 w-3.5" /> Open dossier
             </Button>

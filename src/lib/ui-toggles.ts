@@ -6,6 +6,7 @@ export interface UiToggles {
   showArcRoles: boolean;
   showRosterRoles: boolean;
   showSeriesAppearances: boolean;
+  showNexus3dCharacters: boolean;
 }
 
 export const UI_TOGGLE_DEFAULTS: UiToggles = {
@@ -13,6 +14,7 @@ export const UI_TOGGLE_DEFAULTS: UiToggles = {
   showArcRoles: true,
   showRosterRoles: true,
   showSeriesAppearances: true,
+  showNexus3dCharacters: true,
 };
 
 const KEY = "ui_toggles";

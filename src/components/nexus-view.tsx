@@ -16,6 +16,8 @@ import {
 } from "@/lib/nexus-roster";
 import { readDossier } from "@/lib/nexus-season";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
+import { Character3dFrame } from "@/components/character-3d-frame";
+import { StatusTooltip } from "@/components/status-tooltip";
 import { Button } from "@/components/ui/button";
 const charactersRoute = getRouteApi("/_authenticated/characters");
 
@@ -105,6 +107,7 @@ export function NexusView({
     [originalData, seriesId, seasonNumber, memberships, abilityRows],
   );
   const [cluster, setCluster] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const colorOf = useMemo(() => {
@@ -122,6 +125,23 @@ export function NexusView({
     const present = available.filter((c) => data.some((e) => e.category === c));
     return ["all", ...present];
   }, [categories, data]);
+
+  useEffect(() => {
+    if (cluster === null || cluster === "all") return;
+    if (selectedId) {
+      const current = data.find((e) => e.id === selectedId);
+      if (current && (current.category ?? "Unclassified") !== cluster) {
+        setCluster(current.category ?? "Unclassified");
+        return;
+      }
+      if (!current) {
+        setSelectedId(null);
+      }
+    }
+    if (!clusters.includes(cluster)) {
+      setCluster(data.length ? "all" : null);
+    }
+  }, [data, clusters, cluster, selectedId]);
 
   return (
     <div className="relative -mx-4 overflow-hidden rounded-3xl border border-nexus-glow/15 bg-nexus-bg px-4 py-6 text-nexus-fg sm:-mx-5 sm:px-6">
@@ -141,6 +161,7 @@ export function NexusView({
               value={seriesId}
               onChange={(ev) => {
                 setCluster(null);
+                setSelectedId(null);
                 void navigate({
                   search: (prev) => ({
                     ...prev,
@@ -167,6 +188,7 @@ export function NexusView({
               value={seasonNumber ?? ""}
               onChange={(ev) => {
                 setCluster(null);
+                setSelectedId(null);
                 void navigate({
                   search: (prev) => ({
                     ...prev,
@@ -224,6 +246,7 @@ export function NexusView({
                         className="block h-auto min-h-40 w-full whitespace-normal p-3 text-left hover:bg-transparent"
                         onClick={() => {
                           sfx.tierReveal?.(null);
+                          setSelectedId(null);
                           setCluster(c);
                         }}
                         aria-label={`${label}, ${members.length}`}
@@ -253,7 +276,10 @@ export function NexusView({
             >
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => setCluster(null)}
+                  onClick={() => {
+                    setCluster(null);
+                    setSelectedId(null);
+                  }}
                   className="inline-flex items-center gap-1 rounded-full border border-nexus-glow/25 px-3 py-1 text-xs hover:bg-nexus-fg/5"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" /> Back
@@ -279,6 +305,8 @@ export function NexusView({
                 onEdit={onEdit}
                 seriesId={seriesId}
                 seasonNumber={seasonNumber}
+                selectedId={selectedId}
+                onSelectId={setSelectedId}
               />
             </motion.div>
           )}
@@ -386,6 +414,8 @@ function Sphere({
   onEdit,
   seriesId,
   seasonNumber,
+  selectedId,
+  onSelectId,
 }: {
   cluster: string;
   members: Entity[];
@@ -397,14 +427,22 @@ function Sphere({
   onEdit: (e: Entity) => void;
   seriesId: string;
   seasonNumber: number | null;
+  selectedId: string | null;
+  onSelectId: (id: string | null) => void;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState(560);
   const [t, setT] = useState(0);
-  const [selected, setSelected] = useState<Entity | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [camera, setCamera] = useState({ x: 0, y: 0 });
+  const selected = useMemo(
+    () =>
+      selectedId
+        ? (all.find((e) => e.id === selectedId) ?? members.find((e) => e.id === selectedId) ?? null)
+        : null,
+    [selectedId, all, members],
+  );
 
   useEffect(() => {
     const el = wrap.current;
@@ -469,13 +507,13 @@ function Sphere({
   const focus = (e: Entity) => {
     const p = proj.find((x) => x.e.id === e.id);
     sfx.tierReveal?.(e.character_tier);
-    setSelected(e);
+    onSelectId(e.id);
     const z = 2.1;
     setZoom(z);
     setCamera({ x: -(p?.px ?? 0) * z, y: -(p?.py ?? 0) * z });
   };
   const release = () => {
-    setSelected(null);
+    onSelectId(null);
     setZoom(1);
     setCamera({ x: 0, y: 0 });
   };
@@ -656,7 +694,7 @@ function Sphere({
             seriesId={seriesId}
             seasonNumber={seasonNumber}
             onClose={release}
-            onJump={(e) => (members.some((m) => m.id === e.id) ? focus(e) : setSelected(e))}
+            onJump={(e) => (members.some((m) => m.id === e.id) ? focus(e) : onSelectId(e.id))}
           />
         )}
       </AnimatePresence>
@@ -745,30 +783,41 @@ function DossierPanel({
             background: `radial-gradient(circle at 50% 50%, color-mix(in oklab, ${color} 30%, transparent), transparent 75%)`,
           }}
         >
-          {e.image_url ? (
-            <motion.img
-              src={e.image_url}
-              alt={e.name}
-              initial={{ scale: 1.15 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 1.2, ease: EASE }}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="font-display text-6xl" style={{ color }}>
-              {e.name[0]}
-            </span>
-          )}
-          {/* Holographic scanner sweep */}
-          <div
-            className="pointer-events-none absolute inset-x-0 h-8 bg-gradient-to-b from-transparent via-cyan-400/25 to-transparent"
-            style={{ animation: "nexus-scanline 3.2s ease-in-out infinite" }}
+          <Character3dFrame
+            entity={e}
+            accentColor={color}
+            compact
+            fallback={
+              <>
+                {e.image_url ? (
+                  <motion.img
+                    src={e.image_url}
+                    alt={e.name}
+                    initial={{ scale: 1.15 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 1.2, ease: EASE }}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center">
+                    <span className="font-display text-6xl" style={{ color }}>
+                      {e.name[0]}
+                    </span>
+                  </div>
+                )}
+                {/* Holographic scanner sweep */}
+                <div
+                  className="pointer-events-none absolute inset-x-0 h-8 bg-gradient-to-b from-transparent via-cyan-400/25 to-transparent"
+                  style={{ animation: "nexus-scanline 3.2s ease-in-out infinite" }}
+                />
+              </>
+            }
           />
           {/* HUD Tech Reticle Corners */}
-          <span className="absolute top-2 left-2 h-3 w-3 border-t-2 border-l-2 border-nexus-glow/70" />
-          <span className="absolute top-2 right-2 h-3 w-3 border-t-2 border-r-2 border-nexus-glow/70" />
-          <span className="absolute bottom-2 left-2 h-3 w-3 border-b-2 border-l-2 border-nexus-glow/70" />
-          <span className="absolute bottom-2 right-2 h-3 w-3 border-b-2 border-r-2 border-nexus-glow/70" />
+          <span className="pointer-events-none absolute top-2 left-2 z-10 h-3 w-3 border-t-2 border-l-2 border-nexus-glow/70" />
+          <span className="pointer-events-none absolute top-2 right-2 z-10 h-3 w-3 border-t-2 border-r-2 border-nexus-glow/70" />
+          <span className="pointer-events-none absolute bottom-2 left-2 z-10 h-3 w-3 border-b-2 border-l-2 border-nexus-glow/70" />
+          <span className="pointer-events-none absolute bottom-2 right-2 z-10 h-3 w-3 border-b-2 border-r-2 border-nexus-glow/70" />
         </motion.div>
 
         <motion.p
@@ -783,7 +832,9 @@ function DossierPanel({
             .map(([k, v, spoil]) => (
               <div key={k} data-spoiler={spoil ? "char" : undefined}>
                 <dt className="text-nexus-muted">{k}</dt>
-                <dd className="font-medium">{v}</dd>
+                <dd className="font-medium">
+                  {k === "Status" && v ? <StatusTooltip label={v}>{v}</StatusTooltip> : v}
+                </dd>
               </div>
             ))}
         </motion.dl>

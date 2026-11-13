@@ -19,6 +19,8 @@ import {
 } from "@/lib/nexus-season";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useIsStaff } from "@/hooks/use-admin";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
+import { invalidateArchive } from "@/lib/archive-sync";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +28,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
+import { Character3dFrame } from "@/components/character-3d-frame";
+import { StatusTooltip } from "@/components/status-tooltip";
+import { tierDef } from "@/lib/character-tier";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -47,6 +52,7 @@ export function NexusDossier({
 }) {
   const qc = useQueryClient();
   const isStaff = useIsStaff();
+  const abilityVersion = useAbilityRegistryVersion();
   const masked = useSpoilerMask("characters");
   const [openSeries, setOpenSeries] = useState<string | null>(null);
   const [season, setSeason] = useState<{ seriesId: string; n: number } | null>(initialSeason);
@@ -172,7 +178,7 @@ export function NexusDossier({
     return [...m.entries()]
       .map(([name, level]) => ({ name, level, def: abilityDef(name) }))
       .sort((a, b) => b.level - a.level);
-  }, [charAbilities, season, e.abilities, e.stats]);
+  }, [charAbilities, season, e.abilities, e.stats, abilityVersion]);
 
   const core = abilities[0];
   const coreColor = core?.def.color ?? "var(--accent)";
@@ -277,9 +283,25 @@ export function NexusDossier({
               )}
               <p
                 data-spoiler="char"
-                className="mt-3 text-xs uppercase tracking-widest text-muted-foreground"
+                className="mt-3 flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground"
               >
-                Status · <span className="text-foreground">{status}</span>
+                <span>Status ·</span>
+                <StatusTooltip label={status}>
+                  <span className="text-foreground">{status}</span>
+                </StatusTooltip>
+                {e.character_tier && tierDef(e.character_tier) && (
+                  <StatusTooltip label={tierDef(e.character_tier)!.label}>
+                    <span
+                      className="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                      style={{
+                        color: tierDef(e.character_tier)!.color,
+                        borderColor: `${tierDef(e.character_tier)!.color}66`,
+                      }}
+                    >
+                      {tierDef(e.character_tier)!.label}
+                    </span>
+                  </StatusTooltip>
+                )}
               </p>
             </motion.div>
 
@@ -290,13 +312,19 @@ export function NexusDossier({
               className="order-1 mx-auto aspect-[3/4] w-56 overflow-hidden rounded-[40%_40%_8px_8px] border border-border md:order-2 md:w-72"
               style={{ boxShadow: `0 0 80px -20px ${coreColor}` }}
             >
-              {e.image_url ? (
-                <img src={e.image_url} alt={e.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="grid h-full w-full place-items-center bg-card [font-family:var(--font-display)] text-6xl text-muted-foreground">
-                  {e.name[0]}
-                </div>
-              )}
+              <Character3dFrame
+                entity={e}
+                accentColor={coreColor}
+                fallback={
+                  e.image_url ? (
+                    <img src={e.image_url} alt={e.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center bg-card [font-family:var(--font-display)] text-6xl text-muted-foreground">
+                      {e.name[0]}
+                    </div>
+                  )
+                }
+              />
             </motion.div>
 
             <div className="order-3" data-spoiler="char">
@@ -632,7 +660,7 @@ export function NexusDossier({
             abilityNames={abilities.map((a) => a.name)}
             onSaved={() => {
               void qc.invalidateQueries({ queryKey: ["entity", e.id] });
-              void qc.invalidateQueries({ queryKey: ["entities"] });
+              void invalidateArchive(qc);
             }}
           />
         )}
@@ -764,6 +792,7 @@ function SeasonEditor({
   onSeasonChange: (s: { seriesId: string; n: number } | null) => void;
   abilityNames: string[];
 }) {
+  useAbilityRegistryVersion();
   const key = seasonKey ?? "all";
   const current = readDossier(entity.stats)[key] ?? {};
   const [form, setForm] = useState<SeasonDossier>({});

@@ -1,7 +1,7 @@
 import { invalidateArchive } from "@/lib/archive-sync";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,12 @@ import {
 } from "@/lib/entities";
 import { COMBAT_STATS, getCombatStats, splitStats, type CombatStats } from "@/lib/combat-stats";
 import { mergeLocks } from "@/lib/lore-merge";
+import {
+  labelFromModelFilename,
+  readCharacter3dAvatars,
+  uploadModel3d,
+  type Avatar3dEntry,
+} from "@/lib/models-3d";
 import { AbilityPicker } from "./ability-picker";
 import { CARD_THEMES } from "./ability-canvas";
 import { ANIMATION_LABELS, ANIMATION_STYLES, CHARACTER_TIERS } from "@/lib/character-tier";
@@ -36,8 +42,12 @@ const FIELDS = [
   "category",
   "description",
   "image_url",
+  "model_3d_url",
   "stats",
   "sketches",
+  "abilities",
+  "character_tier",
+  "parent_id",
 ] as const;
 
 function Chips({
@@ -71,12 +81,14 @@ export function EntityDialog({
   entity,
   defaultKind,
   allowedKinds,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   entity?: Entity | null;
   defaultKind: Kind;
   allowedKinds: Kind[];
+  onSaved?: (saved: { id?: string; category: string | null }) => void;
 }) {
   const qc = useQueryClient();
   const [kind, setKind] = useState<Kind>(entity?.kind ?? defaultKind);
@@ -92,11 +104,15 @@ export function EntityDialog({
     bloodline: String((entity?.stats as Record<string, unknown> | null)?.["bloodline"] ?? ""),
     stats: entity
       ? Object.entries((entity.stats as Record<string, string>) ?? {})
-          .filter(([k]) => k !== "real_name" && k !== "bloodline" && k !== "dossier")
+          .filter(
+            ([k]) =>
+              k !== "real_name" && k !== "bloodline" && k !== "dossier" && k !== "avatars_3d",
+          )
           .map(([k, v]) => `${k}: ${v}`)
           .join("\n")
       : "",
     sketches: entity?.sketches ?? [],
+    model_3d_url: entity?.model_3d_url ?? "",
     parent_id: entity?.parent_id ?? "",
     abilities: entity?.abilities ?? [],
     character_tier: entity?.character_tier ?? "",
@@ -106,6 +122,8 @@ export function EntityDialog({
     theme_song_url: entity?.theme_song_url ?? "",
     card_theme: entity?.card_theme ?? "",
   });
+  const [avatars3d, setAvatars3d] = useState<Avatar3dEntry[]>(() => readCharacter3dAvatars(entity));
+  const [uploading3d, setUploading3d] = useState(false);
   const [relTarget, setRelTarget] = useState("");
   const [relType, setRelType] = useState<string>(RELATIONSHIP_TYPES[0]);
   const [sketchUrl, setSketchUrl] = useState("");
@@ -192,6 +210,8 @@ export function EntityDialog({
         .map(([k, ...v]) => [(k ?? "").trim(), v.join(":").trim()]),
     );
     const { custom } = splitStats(parsed);
+    const normalizedAvatars = avatars3d.filter((a) => a.url.trim().length > 0);
+    const primaryModel3dUrl = form.model_3d_url.trim() || normalizedAvatars[0]?.url || null;
     // Canonical combat stats come from the sliders; the textarea keeps custom keys only.
     const stats = isChar
       ? {
@@ -200,6 +220,7 @@ export function EntityDialog({
           ...((entity?.stats as Record<string, unknown> | null)?.["dossier"]
             ? { dossier: (entity!.stats as Record<string, string>)["dossier"] as string }
             : {}),
+          ...(normalizedAvatars.length > 0 ? { avatars_3d: normalizedAvatars } : {}),
           ...(form.real_name.trim() ? { real_name: form.real_name.trim() } : {}),
           ...(form.bloodline.trim() ? { bloodline: form.bloodline.trim() } : {}),
           ...Object.fromEntries(
@@ -213,9 +234,10 @@ export function EntityDialog({
       alias: form.alias || null,
       role: form.role || null,
       status: form.status,
-      category: form.category || null,
+      category: form.category.trim() || null,
       description: form.description,
       image_url: form.image_url || null,
+      model_3d_url: isChar ? primaryModel3dUrl : null,
       stats,
       sketches: form.sketches,
       abilities: isChar ? form.abilities : (entity?.abilities ?? []),
@@ -259,6 +281,7 @@ export function EntityDialog({
     toast.success(entity ? "Saved" : "Created");
     void invalidateArchive(qc);
     qc.invalidateQueries({ queryKey: ["search-index"] });
+    onSaved?.({ ...(entity ? { id: entity.id } : {}), category: row.category });
     onOpenChange(false);
   };
 
@@ -535,6 +558,127 @@ export function EntityDialog({
               )}
             </div>
           </div>
+          {isChar && (
+            <div className="grid gap-2 rounded-xl border border-white/10 bg-secondary/30 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <Label>3D Character Avatars (.glb) — Nexus Only</Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Visible only in Nexus UI when enabled by admin. Upload multiple forms or
+                    outfits.
+                  </p>
+                </div>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/25">
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>{uploading3d ? "Uploading…" : "Upload 3D Model (.glb)"}</span>
+                  <input
+                    type="file"
+                    accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+                    className="sr-only"
+                    disabled={uploading3d}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      setUploading3d(true);
+                      try {
+                        const url = await uploadModel3d(
+                          file,
+                          "characters",
+                          form.name || entity?.id,
+                        );
+                        const entry: Avatar3dEntry = {
+                          id: `avatar-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                          label: labelFromModelFilename(file.name, avatars3d.length + 1),
+                          url,
+                        };
+                        setAvatars3d((prev) => [...prev, entry]);
+                        setForm((current) => ({
+                          ...current,
+                          model_3d_url: current.model_3d_url || url,
+                        }));
+                        toast.success(`Uploaded 3D avatar "${entry.label}".`);
+                      } catch (err) {
+                        toast.error(
+                          err instanceof Error ? err.message : "Could not upload 3D model.",
+                        );
+                      } finally {
+                        setUploading3d(false);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              {avatars3d.length > 0 && (
+                <ul className="grid gap-2">
+                  {avatars3d.map((av, idx) => {
+                    const isPrimary =
+                      form.model_3d_url === av.url || (!form.model_3d_url && idx === 0);
+                    return (
+                      <li
+                        key={av.id}
+                        className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-background/60 p-2"
+                      >
+                        <Input
+                          value={av.label}
+                          aria-label={`Avatar ${idx + 1} label`}
+                          onChange={(e) =>
+                            setAvatars3d((prev) =>
+                              prev.map((item) =>
+                                item.id === av.id ? { ...item, label: e.target.value } : item,
+                              ),
+                            )
+                          }
+                          className="h-8 w-36 text-xs"
+                          placeholder={`Avatar ${idx + 1}`}
+                        />
+                        <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-muted-foreground">
+                          {av.url}
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={isPrimary ? "secondary" : "ghost"}
+                          className="h-7 px-2 text-[10px]"
+                          onClick={() => setForm((c) => ({ ...c, model_3d_url: av.url }))}
+                        >
+                          {isPrimary ? "Primary" : "Set primary"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Remove 3D avatar ${av.label}`}
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => {
+                            const remaining = avatars3d.filter((item) => item.id !== av.id);
+                            setAvatars3d(remaining);
+                            if (form.model_3d_url === av.url) {
+                              setForm((c) => ({
+                                ...c,
+                                model_3d_url: remaining[0]?.url ?? "",
+                              }));
+                            }
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <Input
+                value={form.model_3d_url}
+                onChange={(e) => {
+                  const nextUrl = e.target.value;
+                  setForm((c) => ({ ...c, model_3d_url: nextUrl }));
+                }}
+                placeholder="Primary .glb URL (auto-filled after upload)"
+                className="h-8 text-xs"
+              />
+            </div>
+          )}
           {isChar && (
             <div className="grid gap-2">
               <Label>Sketch gallery (angles, turnarounds, armor variants)</Label>

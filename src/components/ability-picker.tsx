@@ -10,6 +10,7 @@ import {
   sortAbilities,
 } from "@/lib/abilities";
 import { AbilityBadge } from "./ability-badge";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 
 /**
  * Admin tag-style multi-select for entities.abilities — searchable registry
@@ -25,8 +26,9 @@ export function AbilityPicker({
 }) {
   const [q, setQ] = useState("");
   const [custom, setCustom] = useState("");
+  const registryVersion = useAbilityRegistryVersion();
 
-  const selected = useMemo(() => sortAbilities(value), [value]);
+  const selected = useMemo(() => sortAbilities(value), [value, registryVersion]);
   const needle = q.trim().toLowerCase();
 
   const suggestions = useMemo(() => {
@@ -39,7 +41,7 @@ export function AbilityPicker({
           a.tier.toLowerCase().includes(needle) ||
           a.group.toLowerCase().includes(needle)),
     );
-  }, [value, needle]);
+  }, [value, needle, registryVersion]);
 
   const add = (name: string) => {
     const clean = name.trim();

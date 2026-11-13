@@ -3,6 +3,7 @@ import { useUiStyle } from "@/lib/ui-style";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useState } from "react";
 import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
 
 const TIER_RANK: Record<AbilityTier, number> = {
@@ -21,6 +22,7 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
   const nexus = useUiStyle() === "nexus";
   const advanced = useNexusAdvancedFx();
   const [fxOpen, setFxOpen] = useState(false);
+  useAbilityRegistryVersion();
   const def = abilityDef(name);
   const Icon = def.icon;
   const mythic = def.tier === "Mythic";

@@ -1,18 +1,32 @@
-import { setUiStyle, useUiStyle, UI_STYLES } from "@/lib/ui-style";
 import { Button } from "@/components/ui/button";
+import { useOptionalUiMode, VISUAL_UI_MODES, type VisualUiMode } from "@/hooks/use-ui-mode";
+import { setUiStyle, useUiStyle } from "@/lib/ui-style";
+
 export function UiStylePicker() {
-  const style = useUiStyle();
+  const ctx = useOptionalUiMode();
+  const legacyStyle = useUiStyle();
+  const activeMode: VisualUiMode = ctx ? ctx.mode : legacyStyle;
+
+  const handleSelect = (modeId: VisualUiMode) => {
+    if (ctx) {
+      ctx.setMode(modeId);
+    } else {
+      setUiStyle(modeId === "nexus" || modeId === "minimal" ? modeId : "classic");
+    }
+  };
+
   return (
     <div role="group" aria-label="UI Style" className="flex flex-wrap gap-1">
-      {UI_STYLES.map((s) => (
+      {VISUAL_UI_MODES.map((m) => (
         <Button
-          key={s.value}
+          key={m.id}
           size="sm"
-          variant={style === s.value ? "secondary" : "ghost"}
-          aria-pressed={style === s.value}
-          onClick={() => setUiStyle(s.value)}
+          title={m.desc}
+          variant={activeMode === m.id ? "secondary" : "ghost"}
+          aria-pressed={activeMode === m.id}
+          onClick={() => handleSelect(m.id)}
         >
-          {s.label}
+          {m.label}
         </Button>
       ))}
     </div>

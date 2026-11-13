@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nexusDotRole, projectSeasonRoster } from "@/lib/nexus-roster";
+import { nexusDotRole, normalizeNexusRole, projectSeasonRoster } from "@/lib/nexus-roster";
 import type { Entity } from "@/lib/entities";
 const e = {
   id: "ethan",
@@ -41,4 +41,9 @@ describe("Season rosters", () => {
       expect(nexusDotRole(role ?? null)).toBe(token));
   it("never exposes roles through masked dots", () =>
     expect(nexusDotRole("Main Antagonist", true)).toBe("neutral"));
+  it("normalizes blank roles to Unclassified", () => {
+    expect(normalizeNexusRole("")).toBe("Unclassified");
+    expect(normalizeNexusRole("   ")).toBe("Unclassified");
+    expect(normalizeNexusRole(null)).toBe("Unclassified");
+  });
 });

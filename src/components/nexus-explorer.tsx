@@ -46,6 +46,24 @@ export function NexusExplorer<T extends NexusRecord>({
   const transition = moving
     ? { type: "spring" as const, stiffness: 240, damping: 30, mass: 0.9 }
     : { duration: 0 };
+
+  useEffect(() => {
+    if (group === null || group === "all") return;
+    if (selectedId) {
+      const current = records.find((r) => r.id === selectedId);
+      if (current && current.group !== group) {
+        setGroup(current.group);
+        return;
+      }
+      if (!current) {
+        setSelectedId(null);
+      }
+    }
+    if (!groups.includes(group)) {
+      setGroup(groups.length ? "all" : null);
+    }
+  }, [records, groups, group, selectedId]);
+
   const reset = () => {
     setSelectedId(null);
     setGroup(null);

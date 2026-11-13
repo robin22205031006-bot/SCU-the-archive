@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { CANON_SCOPES } from "@/lib/canon";
+import { invalidateArchive } from "@/lib/archive-sync";
 
 export interface ConflictRow {
   id: string;
@@ -48,7 +49,11 @@ export function AdminContradictions({ conflicts }: { conflicts: ConflictRow[] })
   const [customFor, setCustomFor] = useState<string | null>(null);
   const [customText, setCustomText] = useState("");
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["admin-conflicts"] });
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["admin-conflicts"] });
+    void qc.invalidateQueries({ queryKey: ["notes"] });
+    void invalidateArchive(qc);
+  };
 
   const clearConflict = async (c: ConflictRow) => {
     const { error } = await supabase.from("lore_notes").delete().eq("id", c.id);

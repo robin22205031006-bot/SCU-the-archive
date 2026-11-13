@@ -1022,6 +1022,26 @@ export const CANON_CHARACTER_ABILITIES: Record<string, string[]> = {
 };
 
 const CUSTOM_STORAGE_KEY = "scu_custom_abilities";
+const OVERRIDE_STORAGE_KEY = "scu_ability_overrides";
+
+let registryVersion = 0;
+const registryListeners = new Set<() => void>();
+
+export function notifyAbilityRegistryChange() {
+  registryVersion += 1;
+  for (const fn of registryListeners) fn();
+}
+
+export function subscribeAbilityRegistry(fn: () => void) {
+  registryListeners.add(fn);
+  return () => {
+    registryListeners.delete(fn);
+  };
+}
+
+export function getAbilityRegistryVersion() {
+  return registryVersion;
+}
 
 /** Admin-defined abilities persisted locally + mirrored to app_settings by the hub. */
 export type CustomAbilityDef = AbilityDef;
@@ -1030,10 +1050,23 @@ export function getCustomAbilities(): CustomAbilityDef[] {
   try {
     const raw = localStorage.getItem(CUSTOM_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((a) => a && typeof a.label === "string") : [];
+    return Array.isArray(parsed)
+      ? parsed
+          .filter((a) => a && typeof a.label === "string")
+          .map((a) => ({ ...a, icon: a.icon ?? Sparkles }))
+      : [];
   } catch {
     return [];
   }
+}
+
+export function setCustomAbilitiesCache(list: CustomAbilityDef[]) {
+  try {
+    localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(list));
+  } catch {
+    /* storage optional */
+  }
+  notifyAbilityRegistryChange();
 }
 
 export function saveCustomAbility(def: CustomAbilityDef) {
@@ -1041,26 +1074,17 @@ export function saveCustomAbility(def: CustomAbilityDef) {
     (a) => normalizeAbilityKey(a.key) !== normalizeAbilityKey(def.key),
   );
   list.push(def);
-  try {
-    localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    /* storage optional */
-  }
+  setCustomAbilitiesCache(list);
 }
 
 export function removeCustomAbility(key: string) {
   const list = getCustomAbilities().filter(
     (a) => normalizeAbilityKey(a.key) !== normalizeAbilityKey(key),
   );
-  try {
-    localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    /* storage optional */
-  }
+  setCustomAbilitiesCache(list);
 }
 
 // ---- Admin overrides: edit name/tier/color/description of ANY ability ----
-const OVERRIDE_STORAGE_KEY = "scu_ability_overrides";
 
 /** Partial def applied on top of the resolved registry/custom ability. */
 export type AbilityOverride = Partial<Omit<AbilityDef, "key">>;
@@ -1069,40 +1093,46 @@ export function getAbilityOverrides(): Record<string, AbilityOverride> {
   try {
     const raw = localStorage.getItem(OVERRIDE_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
   }
 }
 
-export function saveAbilityOverride(key: string, override: AbilityOverride) {
-  const map = getAbilityOverrides();
-  map[normalizeAbilityKey(key)] = override;
+export function setAbilityOverridesCache(map: Record<string, AbilityOverride>) {
   try {
     localStorage.setItem(OVERRIDE_STORAGE_KEY, JSON.stringify(map));
   } catch {
     /* storage optional */
   }
+  notifyAbilityRegistryChange();
+}
+
+export function saveAbilityOverride(key: string, override: AbilityOverride) {
+  const map = getAbilityOverrides();
+  map[normalizeAbilityKey(key)] = override;
+  setAbilityOverridesCache(map);
 }
 
 export function removeAbilityOverride(key: string) {
   const map = getAbilityOverrides();
   delete map[normalizeAbilityKey(key)];
-  try {
-    localStorage.setItem(OVERRIDE_STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    /* storage optional */
-  }
+  setAbilityOverridesCache(map);
 }
 
 function applyOverride(def: AbilityDef): AbilityDef {
   const o = getAbilityOverrides()[normalizeAbilityKey(def.key)];
-  return o ? { ...def, ...o } : def;
+  if (!o) return { ...def, icon: def.icon ?? Sparkles };
+  return {
+    ...def,
+    ...o,
+    icon: o.icon ?? def.icon ?? Sparkles,
+  };
 }
 
-/** Registry + admin-defined customs, for pickers and the Abilities Hub. */
+/** Registry + admin-defined customs with active overrides applied, for pickers and the Abilities Hub. */
 export function allAbilityDefs(): AbilityDef[] {
-  return [...ABILITY_REGISTRY, ...getCustomAbilities()];
+  return [...ABILITY_REGISTRY, ...getCustomAbilities()].map(applyOverride);
 }
 
 const BY_KEY = new Map(ABILITY_REGISTRY.map((a) => [a.key, a]));
@@ -1119,8 +1149,7 @@ function refreshCustomMaps() {
   }
 }
 
-/** Resolve a stored ability string to its registry definition (or a generic fallback). */
-export function lookupAbility(name: string): AbilityDef | null {
+function lookupBaseAbility(name: string): AbilityDef | null {
   const trimmed = name.trim();
   const lower = trimmed.toLowerCase();
   const key = normalizeAbilityKey(trimmed);
@@ -1128,7 +1157,17 @@ export function lookupAbility(name: string): AbilityDef | null {
   const direct =
     BY_LABEL.get(lower) ?? BY_KEY.get(key) ?? CUSTOM_LABEL.get(lower) ?? CUSTOM_KEY.get(key);
   const alias = ALIASES[key];
-  const base = direct ?? (alias ? (BY_KEY.get(alias) ?? null) : null);
+  return direct ?? (alias ? (BY_KEY.get(alias) ?? null) : null);
+}
+
+/** Raw definition without overrides, used when computing override diffs on edit. */
+export function baseAbilityDef(name: string): AbilityDef {
+  return lookupBaseAbility(name) ?? genericAbility(name);
+}
+
+/** Resolve a stored ability string to its registry definition (or null if generic). */
+export function lookupAbility(name: string): AbilityDef | null {
+  const base = lookupBaseAbility(name);
   return base ? applyOverride(base) : null;
 }
 
@@ -1145,7 +1184,7 @@ export function genericAbility(name: string): AbilityDef {
 }
 
 export function abilityDef(name: string): AbilityDef {
-  return lookupAbility(name) ?? genericAbility(name);
+  return lookupAbility(name) ?? applyOverride(genericAbility(name));
 }
 
 /** Sort abilities: highest tier first, then alpha. */

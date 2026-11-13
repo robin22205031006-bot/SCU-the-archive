@@ -19,6 +19,8 @@ import { PlexusWallpaper } from "@/components/plexus-wallpaper";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { AppearanceProvider } from "@/hooks/use-appearance";
 import { TypographyProvider } from "@/hooks/use-typography";
+import { UiModeProvider } from "@/hooks/use-ui-mode";
+import { UIStateProvider } from "@/context/UIStateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { syncSessionCache } from "@/lib/session-cache";
 import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
@@ -170,10 +172,6 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const [offline, setOffline] = useState(false);
-  useEffect(() => {
-    if (uiStyle === "minimal") document.documentElement.dataset["ui"] = "minimal";
-    else if (uiStyle === "classic") delete document.documentElement.dataset["ui"];
-  }, [uiStyle]);
   useScuAudioGlobal();
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
@@ -254,37 +252,41 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AppearanceProvider>
         <TypographyProvider>
-          <ErrorBoundary>
-            <MotionConfig
-              reducedMotion={uiStyle === "minimal" ? "always" : "user"}
-              {...(uiStyle === "minimal" ? { transition: { duration: 0 } } : {})}
-            >
-              <div
-                className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : uiStyle === "nexus" ? "" : "ambient-bg"}`}
-              >
-                {uiStyle === "classic" && <AmbientField />}
-                {uiStyle === "classic" && <PlexusWallpaper />}
-                <ScrollProgress />
-                {uiStyle !== "nexus" && <SiteNav />}
-                <FloatingNav />
-                {uiStyle === "classic" && <WelcomeVfx />}
-                {offline && (
-                  <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
-                    <WifiOff className="h-3.5 w-3.5" />
-                    Offline — showing cached archive data
+          <UiModeProvider>
+            <UIStateProvider applyAttributesToHtml={false}>
+              <ErrorBoundary>
+                <MotionConfig
+                  reducedMotion={uiStyle === "minimal" ? "always" : "user"}
+                  {...(uiStyle === "minimal" ? { transition: { duration: 0 } } : {})}
+                >
+                  <div
+                    className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : uiStyle === "nexus" ? "" : "ambient-bg"}`}
+                  >
+                    {uiStyle === "classic" && <AmbientField />}
+                    {uiStyle === "classic" && <PlexusWallpaper />}
+                    <ScrollProgress />
+                    {uiStyle !== "nexus" && <SiteNav />}
+                    <FloatingNav />
+                    {uiStyle === "classic" && <WelcomeVfx />}
+                    {offline && (
+                      <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
+                        <WifiOff className="h-3.5 w-3.5" />
+                        Offline — showing cached archive data
+                      </div>
+                    )}
+                    {uiStyle === "nexus" ? (
+                      <NexusShell>
+                        <Outlet />
+                      </NexusShell>
+                    ) : (
+                      <Outlet />
+                    )}
                   </div>
-                )}
-                {uiStyle === "nexus" ? (
-                  <NexusShell>
-                    <Outlet />
-                  </NexusShell>
-                ) : (
-                  <Outlet />
-                )}
-              </div>
-            </MotionConfig>
-          </ErrorBoundary>
-          <Toaster />
+                </MotionConfig>
+              </ErrorBoundary>
+              <Toaster />
+            </UIStateProvider>
+          </UiModeProvider>
         </TypographyProvider>
       </AppearanceProvider>
     </QueryClientProvider>

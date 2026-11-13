@@ -27,6 +27,11 @@ const LABELS: Array<{ key: keyof UiToggles; label: string; hint: string }> = [
     label: "Series appearances",
     hint: "Series chip block in dossier Bonds tab",
   },
+  {
+    key: "showNexus3dCharacters",
+    label: "Nexus 3D character models",
+    hint: "2D/3D character toggle & multiple 3D avatars in Nexus UI (turn off to disable)",
+  },
 ];
 
 /** Admin panel: global visibility toggles for reader-facing dossier sections. */

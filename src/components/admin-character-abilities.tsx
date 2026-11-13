@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery } from "@/lib/entities";
-import { ABILITY_REGISTRY, abilityDef } from "@/lib/abilities";
-import { CANON_SCOPES } from "@/lib/canon";
+import { allAbilityDefs, abilityDef } from "@/lib/abilities";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
+import { invalidateArchive } from "@/lib/archive-sync";
 import { seriesQuery } from "@/lib/series";
 import { sfx } from "@/lib/scu-audio";
 
 /** Admin panel: assign abilities to characters scoped by series/season with power level 1-5. */
 export function AdminCharacterAbilities() {
+  useAbilityRegistryVersion();
+  const defs = allAbilityDefs();
   const qc = useQueryClient();
   const [entityId, setEntityId] = useState("");
   const [abilityKey, setAbilityKey] = useState("");
@@ -59,7 +62,7 @@ export function AdminCharacterAbilities() {
       if (error) throw error;
       sfx.add();
       toast.success("Ability assigned");
-      qc.invalidateQueries({ queryKey: ["character-abilities"] });
+      void invalidateArchive(qc);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not assign ability.");
     } finally {
@@ -70,7 +73,7 @@ export function AdminCharacterAbilities() {
   const remove = async (id: string) => {
     const { error } = await supabase.from("character_abilities").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["character-abilities"] });
+    else void invalidateArchive(qc);
   };
 
   return (
@@ -98,7 +101,7 @@ export function AdminCharacterAbilities() {
           onChange={(e) => setAbilityKey(e.target.value)}
         >
           <option value="">Ability…</option>
-          {ABILITY_REGISTRY.map((a) => (
+          {defs.map((a) => (
             <option key={a.key} value={a.key}>
               {a.label} ({a.tier})
             </option>

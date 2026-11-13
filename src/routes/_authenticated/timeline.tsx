@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -86,15 +86,30 @@ export function Timeline() {
   const [clan, setClan] = useState("all");
   const [f, setF] = useState<EventForm>(EMPTY_FORM);
 
-  const allSeries = Array.from(
-    new Set((data ?? []).map((e) => e.series).filter((s): s is string => !!s)),
+  const allSeries = useMemo(
+    () => Array.from(new Set((data ?? []).map((e) => e.series).filter((s): s is string => !!s))),
+    [data],
   );
-  const allEras = Array.from(
-    new Set((data ?? []).map((e) => e.era).filter((s): s is string => !!s)),
+  const allEras = useMemo(
+    () => Array.from(new Set((data ?? []).map((e) => e.era).filter((s): s is string => !!s))),
+    [data],
   );
-  const clans = (groups ?? []).filter(
-    (g) => g.kind === "clan" || g.kind === "bloodline" || g.kind === "faction",
+  const clans = useMemo(
+    () =>
+      (groups ?? []).filter(
+        (g) => g.kind === "clan" || g.kind === "bloodline" || g.kind === "faction",
+      ),
+    [groups],
   );
+  useEffect(() => {
+    if (data && series !== "all" && !allSeries.includes(series)) setSeries("all");
+  }, [data, series, allSeries]);
+  useEffect(() => {
+    if (data && era !== "all" && !allEras.includes(era)) setEra("all");
+  }, [data, era, allEras]);
+  useEffect(() => {
+    if (groups && clan !== "all" && !clans.some((c) => c.id === clan)) setClan("all");
+  }, [groups, clan, clans]);
   const selectedClan = clans.find((c) => c.id === clan);
   const clanNeedles = selectedClan
     ? [selectedClan.name, selectedClan.alias ?? ""].map((s) => s.toLowerCase()).filter(Boolean)
@@ -129,12 +144,14 @@ export function Timeline() {
 
   const add = async () => {
     if (!f.title.trim()) return;
+    const nextEra = f.era.trim();
+    const nextSeries = f.series.trim();
     const { data: inserted, error } = await supabase
       .from("timeline_events")
       .insert({
         title: f.title,
-        era: f.era || null,
-        series: f.series || null,
+        era: nextEra || null,
+        series: nextSeries || null,
         impact: Math.min(10, Math.max(1, f.impact)),
         description: f.description,
         sort_order: 0,
@@ -153,6 +170,8 @@ export function Timeline() {
     await writeOrder(list);
     sfx.add();
     toast.success(`Added "${f.title}"`);
+    if (series !== "all" && nextSeries !== series) setSeries(nextSeries || "all");
+    if (era !== "all" && nextEra !== era) setEra(nextEra || "all");
     setF(EMPTY_FORM);
     setAdding(false);
     refresh();
@@ -196,12 +215,14 @@ export function Timeline() {
 
   const saveEdit = async () => {
     if (!editing || !f.title.trim()) return;
+    const nextEra = f.era.trim();
+    const nextSeries = f.series.trim();
     const { error } = await supabase
       .from("timeline_events")
       .update({
         title: f.title,
-        era: f.era || null,
-        series: f.series || null,
+        era: nextEra || null,
+        series: nextSeries || null,
         impact: Math.min(10, Math.max(1, f.impact)),
         description: f.description,
       })
@@ -212,6 +233,8 @@ export function Timeline() {
     }
     sfx.click();
     toast.success(`Updated "${f.title}"`);
+    if (series !== "all" && nextSeries !== series) setSeries(nextSeries || "all");
+    if (era !== "all" && nextEra !== era) setEra(nextEra || "all");
     setEditing(null);
     setF(EMPTY_FORM);
     refresh();

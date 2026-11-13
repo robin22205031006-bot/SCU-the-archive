@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Pencil, Trash2, X, Maximize2 } from "lucide-react";
+import { Box, Image as ImageIcon, Pencil, Trash2, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import type { UiStyle } from "@/lib/ui-style";
 import { artFor, artUrl, type ArsenalForm, type ArsenalArt } from "@/lib/arsenal-art";
 import { ArsenalFx } from "@/components/arsenal-fx";
 import { ArsenalEmblem } from "@/components/arsenal-emblem";
+import { GlbModelViewer } from "@/components/glb-model-viewer";
 
 type Artifact = Tables<"artifacts">;
 const CAT: Record<string, string> = {
@@ -172,22 +173,92 @@ export function ArtifactCard({
 }) {
   const art = artFor(a.name, a.weapon_type, a.category);
   const [i, setI] = useState(0);
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
   const form = art.forms[Math.min(i, art.forms.length - 1)] ?? art.forms[0]!;
   const nexus = style === "nexus";
+  const modelUrl = a.model_3d_url?.trim() || null;
+  const showing3d = viewMode === "3d" && !!modelUrl;
+  const fallbackImg = artUrl(form.art) ?? null;
+
   return (
     <article
       className={`grid content-start gap-2 border p-3 ${nexus ? "rounded-2xl border-accent/30 bg-card/60 backdrop-blur" : style === "minimal" ? "rounded-lg border-border bg-card" : "rounded-2xl border-border bg-card/70"}`}
       style={nexus ? { boxShadow: `0 0 24px hsl(${art.hue} 80% 50% / .18)` } : undefined}
     >
-      <button
-        type="button"
-        onClick={nexus ? onOpen : undefined}
-        className={`relative block text-left ${nexus ? "cursor-zoom-in" : "cursor-default"}`}
-        aria-label={nexus ? `Open ${a.name}` : undefined}
-      >
-        <ArtFrame art={art} form={form} style={style} motion={motion} />
-        {nexus && <Maximize2 className="absolute right-2 top-2 size-4 text-foreground/70" />}
-      </button>
+      <div className="relative">
+        {showing3d && modelUrl ? (
+          <div
+            className={`relative aspect-[4/5] overflow-hidden ${nexus ? "rounded-xl" : "rounded-lg"} bg-background`}
+          >
+            <GlbModelViewer
+              url={modelUrl}
+              alt={a.name}
+              fallbackImageUrl={fallbackImg}
+              accentColor={`hsl(${art.hue} 85% 60%)`}
+              compact
+              onFallbackTo2d={() => setViewMode("2d")}
+            />
+            {nexus && (
+              <button
+                type="button"
+                onClick={onOpen}
+                aria-label={`Open ${a.name}`}
+                className="absolute right-2 top-2 z-20 rounded-full bg-black/60 p-1 text-foreground/80 hover:text-white"
+              >
+                <Maximize2 className="size-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={nexus ? onOpen : undefined}
+            className={`relative block w-full text-left ${nexus ? "cursor-zoom-in" : "cursor-default"}`}
+            aria-label={nexus ? `Open ${a.name}` : undefined}
+          >
+            <ArtFrame art={art} form={form} style={style} motion={motion} />
+            {nexus && <Maximize2 className="absolute right-2 top-2 size-4 text-foreground/70" />}
+            {viewMode === "3d" && !modelUrl && (
+              <span className="pointer-events-none absolute inset-x-2 bottom-2 z-20 rounded-md border border-white/15 bg-black/75 px-2 py-1 text-center text-[10px] text-zinc-200 backdrop-blur-sm">
+                No 3D model uploaded — showing 2D
+              </span>
+            )}
+          </button>
+        )}
+
+        <div
+          role="group"
+          aria-label={`View mode for ${a.name}`}
+          className="absolute left-2 top-2 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-black/70 p-0.5 text-[10px] font-semibold backdrop-blur-md"
+        >
+          <button
+            type="button"
+            onClick={() => setViewMode("2d")}
+            aria-pressed={viewMode === "2d"}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition ${
+              viewMode === "2d"
+                ? "bg-accent text-accent-foreground"
+                : "text-zinc-300 hover:text-white"
+            }`}
+          >
+            <ImageIcon className="size-3" />
+            2D
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("3d")}
+            aria-pressed={viewMode === "3d"}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition ${
+              viewMode === "3d"
+                ? "bg-accent text-accent-foreground"
+                : "text-zinc-300 hover:text-white"
+            }`}
+          >
+            <Box className="size-3" />
+            3D
+          </button>
+        </div>
+      </div>
       <div className="flex items-start gap-2">
         <ArsenalEmblem
           glyph={art.glyph}
@@ -221,7 +292,7 @@ export function ArtifactCard({
   );
 }
 
-/** Full-screen Nexus inspector: big art, dense FX and animated form transformations. */
+/** Full-screen Nexus inspector: big art, 3D model toggle, dense FX and animated form transformations. */
 export function NexusArtifactViewer({
   a,
   motion,
@@ -233,7 +304,10 @@ export function NexusArtifactViewer({
 }) {
   const art = artFor(a.name, a.weapon_type, a.category);
   const [i, setI] = useState(0);
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
   const form = art.forms[i] ?? art.forms[0]!;
+  const modelUrl = a.model_3d_url?.trim() || null;
+  const showing3d = viewMode === "3d" && !!modelUrl;
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     const prev = document.body.style.overflow;
@@ -253,7 +327,51 @@ export function NexusArtifactViewer({
       onClick={onClose}
     >
       <div className="relative h-[55vh] p-3 md:h-screen" onClick={(e) => e.stopPropagation()}>
-        <ArtFrame art={art} form={form} style="nexus" motion={motion} big />
+        {showing3d && modelUrl ? (
+          <div className="h-full overflow-hidden rounded-xl border border-white/10">
+            <GlbModelViewer
+              url={modelUrl}
+              alt={a.name}
+              fallbackImageUrl={artUrl(form.art) ?? null}
+              accentColor={`hsl(${art.hue} 85% 60%)`}
+              onFallbackTo2d={() => setViewMode("2d")}
+            />
+          </div>
+        ) : (
+          <ArtFrame art={art} form={form} style="nexus" motion={motion} big />
+        )}
+        <div
+          role="group"
+          aria-label={`View mode for ${a.name}`}
+          className="absolute left-6 top-6 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-black/75 p-0.5 text-xs font-semibold backdrop-blur-md"
+        >
+          <button
+            type="button"
+            onClick={() => setViewMode("2d")}
+            aria-pressed={viewMode === "2d"}
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
+              viewMode === "2d"
+                ? "bg-accent text-accent-foreground"
+                : "text-zinc-300 hover:text-white"
+            }`}
+          >
+            <ImageIcon className="size-3.5" />
+            2D
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("3d")}
+            aria-pressed={viewMode === "3d"}
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
+              viewMode === "3d"
+                ? "bg-accent text-accent-foreground"
+                : "text-zinc-300 hover:text-white"
+            }`}
+          >
+            <Box className="size-3.5" />
+            3D
+          </button>
+        </div>
       </div>
       <div
         className="grid content-start gap-3 overflow-y-auto p-5 pb-16"

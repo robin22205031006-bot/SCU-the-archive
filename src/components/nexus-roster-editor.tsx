@@ -8,7 +8,8 @@ import { NEXUS_ROLES } from "@/lib/nexus-roster";
 import { SEASON_STATUSES } from "@/lib/series";
 import { useServerFn } from "@tanstack/react-start";
 import { draftSeasonStory } from "@/lib/season-story.functions";
-import { ABILITY_REGISTRY, abilityDef } from "@/lib/abilities";
+import { allAbilityDefs, abilityDef } from "@/lib/abilities";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,6 +86,7 @@ function RosterFields({
   groups: Entity[];
 }) {
   const qc = useQueryClient();
+  useAbilityRegistryVersion();
   const key = `${seriesId}:${season}`;
   const [form, setForm] = useState<SeasonDossier>(() => ({
     roster: true,
@@ -449,7 +451,7 @@ function RosterFields({
         </div>
       ))}
       <datalist id="nexus-ability-options">
-        {ABILITY_REGISTRY.map((a) => (
+        {allAbilityDefs().map((a) => (
           <option key={a.key} value={a.key}>
             {a.label}
           </option>

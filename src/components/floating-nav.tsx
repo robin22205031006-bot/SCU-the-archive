@@ -38,6 +38,7 @@ import { ThemeDrawer } from "./theme-drawer";
 import { useNavHidden } from "@/lib/nav-visibility";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { useUiStyle } from "@/lib/ui-style";
+import { useOptionalUIState } from "@/context/UIStateContext";
 import { NexusNavGlyph } from "./nexus-nav-glyph";
 export { navMode, setNavMode, hudNavEnabled, setHudNav, type NavMode } from "@/lib/nav-mode";
 
@@ -82,7 +83,16 @@ export function FloatingNav() {
   const animations = useAnimationsEnabled();
   const style = useUiStyle();
   const reduce = deviceReduced || !animations || style === "minimal";
-  const [open, setOpen] = useState(false);
+  const uiState = useOptionalUIState();
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = uiState ? uiState.navOpen : localOpen;
+  const setOpen = (next: boolean) => {
+    if (uiState) {
+      uiState.setNavOpen(next);
+    } else {
+      setLocalOpen(next);
+    }
+  };
   const [themeOpen, setThemeOpen] = useState(false);
   const [start, setStart] = useState(0);
   const touch = useRef<number | null>(null);
@@ -111,7 +121,12 @@ export function FloatingNav() {
   const first = Math.min(start, max);
   const slide = (delta: number) => setStart((v) => Math.max(0, Math.min(max, v + delta)));
   useEffect(() => {
-    setOpen(false);
+    if (uiState) {
+      uiState.setActiveNav(pathname);
+      uiState.setNavOpen(false);
+    } else {
+      setLocalOpen(false);
+    }
     const index = items.findIndex((t) => t.to === pathname);
     if (index >= 0) setStart(Math.max(0, Math.min(max, index - 2)));
   }, [pathname, max]);

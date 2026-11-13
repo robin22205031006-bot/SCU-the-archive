@@ -13,6 +13,7 @@ import { NexusSign } from "@/components/nexus-sign";
 import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
 import { resolveSymbolStyle, tintMatrix } from "@/lib/nexus-symbol-settings";
 import { abilityDef } from "@/lib/abilities";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 
 /** Nexus-only illustrated artwork; Descrete keeps the original registry icons. */
 export function NexusAbilitySymbol({
@@ -31,6 +32,7 @@ export function NexusAbilitySymbol({
   previewAnime?: boolean;
 }) {
   const id = useId();
+  useAbilityRegistryVersion();
   const settings = useNexusSymbolSettings();
   const appearance = resolveSymbolStyle(settings, name);
   if (masked) return <span aria-hidden className={`nexus-mark ${className}`} />;

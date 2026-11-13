@@ -209,7 +209,7 @@ export function applyTypography(s: TypographySettings): void {
   root.setAttribute("data-cardfx", s.cardEffect ?? "glass");
   root.setAttribute("data-motion", s.smoothMotion === false ? "off" : "on");
   root.setAttribute("data-focus", s.boldFocus === false ? "soft" : "bold");
-  root.setAttribute("data-ui-mode", s.uiMode ?? "gaming");
+  root.setAttribute("data-admin-ui-mode", s.uiMode ?? "gaming");
   const pct = (v: number | undefined, d = 100) => `${Math.min(200, Math.max(0, v ?? d))}%`;
   root.style.setProperty("--scu-brightness", pct(s.brightness));
   root.style.setProperty("--scu-contrast", pct(s.contrast));

@@ -8,8 +8,13 @@ import type { QueryClient } from "@tanstack/react-query";
 export const SHARED_ARCHIVE_KEYS = [
   ["entities"],
   ["entity"],
+  ["entity-categories"],
+  ["entity-children"],
+  ["all-characters-short"],
+  ["first-character"],
   ["search-index"],
   ["entity-links"],
+  ["entity-link-targets"],
   ["clan-graph-memberships"],
   ["graph-memberships"],
   ["character-series"],
@@ -20,7 +25,9 @@ export const SHARED_ARCHIVE_KEYS = [
   ["roster-abilities"],
   ["nexus-series-abilities"],
   ["char-relationships"],
+  ["rel-targets"],
   ["entity-relations"],
+  ["admin-conflicts"],
 ] as const;
 
 export function invalidateArchive(qc: QueryClient) {

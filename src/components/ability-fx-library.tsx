@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { abilityLineagesQuery, useAbilityLineages } from "@/hooks/use-ability-lineages";
 import { TIER_ORDER, abilityDef, allAbilityDefs, type AbilityTier } from "@/lib/abilities";
 import {
@@ -53,6 +54,7 @@ function FxCard({ k, onOpen }: { k: string; onOpen: (k: string) => void }) {
 }
 
 export function FxLibrary() {
+  useAbilityRegistryVersion();
   const [q, setQ] = useState("");
   const [tier, setTier] = useState<"all" | AbilityTier>("all");
   const [open, setOpen] = useState<string | null>(null);
@@ -108,6 +110,7 @@ export function FxLibrary() {
 }
 
 export function FxChains() {
+  useAbilityRegistryVersion();
   const lineages = useAbilityLineages();
   const admin = useIsAdmin();
   const qc = useQueryClient();
@@ -325,6 +328,7 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
 }
 
 export function FxSimulator() {
+  useAbilityRegistryVersion();
   const defs = allAbilityDefs().sort((a, b) => a.label.localeCompare(b.label));
   const [k, setK] = useState("red_lightning");
   const [tier, setTier] = useState<AbilityTier>(abilityDef("red_lightning").tier);

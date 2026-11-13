@@ -41,12 +41,10 @@ export function NexusShell({ children }: { children: ReactNode }) {
     },
   });
   useEffect(() => {
-    document.documentElement.dataset["ui"] = "nexus";
     document.documentElement.dataset["nexusMotion"] = moving ? "on" : "off";
     document.documentElement.dataset["nexusTheme"] = nexusTheme;
     document.documentElement.dataset["nexusAnime"] = anime ? "on" : "off";
     return () => {
-      delete document.documentElement.dataset["ui"];
       delete document.documentElement.dataset["nexusMotion"];
       delete document.documentElement.dataset["nexusTheme"];
       delete document.documentElement.dataset["nexusAnime"];

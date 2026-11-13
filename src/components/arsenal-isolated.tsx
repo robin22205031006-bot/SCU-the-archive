@@ -1,27 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Flame,
-  Zap,
-  Sparkles,
-  ShieldAlert,
-  Compass,
-  Cpu,
-  Layers,
-  Search,
-  Maximize2,
-  Volume2,
-  Sliders,
+  Box,
   ChevronLeft,
   ChevronRight,
+  Compass,
+  Cpu,
+  Flame,
   Gauge,
+  Image as ImageIcon,
+  Layers,
   RotateCcw,
+  Search,
+  ShieldAlert,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Tables } from "@/integrations/supabase/types";
 import { artFor, artUrl, type ArsenalArt, type ArsenalForm } from "@/lib/arsenal-art";
 import { ArsenalEmblem } from "@/components/arsenal-emblem";
+import { ArsenalThreeStage } from "@/components/arsenal-three-stage";
 import { sfx } from "@/lib/scu-audio";
 
 type Artifact = Tables<"artifacts">;
@@ -315,6 +315,7 @@ export function ArsenalIsolatedView({
 }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [formIdx, setFormIdx] = useState(0);
+  const [stageView, setStageView] = useState<"3d" | "2d">("3d");
   const [boosterType, setBoosterType] = useState<ElementBoosterType>("auto");
   const [boostSurge, setBoostSurge] = useState(false);
   const [boostLevel, setBoostLevel] = useState<1 | 1.5 | 2 | 2.5>(1.5);
@@ -425,8 +426,53 @@ export function ArsenalIsolatedView({
           </div>
         </div>
 
-        {/* Surge and Tuning Controls */}
+        {/* Surge, View Switcher, and Tuning Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-card/60 p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setStageView("3d");
+                sfx.click();
+              }}
+              className={`inline-flex items-center gap-1 rounded px-2 py-1 font-medium transition ${
+                stageView === "3d"
+                  ? "bg-nexus-glow/25 text-white border border-nexus-glow/60"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Box className="size-3.5" />
+              <span>3D Forge (Three.js)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStageView("2d");
+                sfx.click();
+              }}
+              className={`inline-flex items-center gap-1 rounded px-2 py-1 font-medium transition ${
+                stageView === "2d"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ImageIcon className="size-3.5" />
+              <span>2D Artwork</span>
+            </button>
+          </div>
+
+          {onSelectArtifact && current && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onSelectArtifact(current)}
+              className="h-8 text-xs"
+            >
+              Dossier
+            </Button>
+          )}
+
           <Button
             size="sm"
             onClick={triggerOverdrive}
@@ -436,230 +482,250 @@ export function ArsenalIsolatedView({
                 : "bg-red-600 text-white hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.5)]"
             }`}
           >
-            <Sparkles className="mr-1.5 size-4 animate-spin" />
+            <Sparkles className="mr-1.5 size-4" />
             {boostSurge ? "SURGE ACTIVE" : "IGNITE BOOSTER BURST"}
           </Button>
 
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card/60 p-1 text-xs">
-            <span className="px-1 text-muted-foreground">Power:</span>
-            {([1, 1.5, 2, 2.5] as const).map((lvl) => (
-              <button
-                key={lvl}
-                onClick={() => setBoostLevel(lvl)}
-                className={`rounded px-1.5 py-0.5 font-mono ${
-                  boostLevel === lvl
-                    ? "bg-accent text-accent-foreground font-bold"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {lvl}x
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card/60 p-1 text-xs">
-            <span className="px-1 text-muted-foreground">FPS:</span>
-            {([24, 30, 60] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFps(f)}
-                className={`rounded px-1.5 py-0.5 font-mono ${
-                  fps === f ? "bg-accent text-accent-foreground font-bold" : "text-muted-foreground"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Isolated Weapon Stage - Zero Background Box! */}
-      <div
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className="relative flex min-h-[520px] w-full flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-radial from-zinc-950 via-zinc-950/95 to-black p-6 select-none sm:p-10"
-      >
-        {/* Background Grid & Spatial Telemetry */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-15"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-
-        {/* Elemental Booster Canvas Field */}
-        <ElementalBoosterCanvas
-          element={activeElement}
-          intensity={boostLevel}
-          fps={fps}
-          boostActive={boostSurge}
-          {...(art?.hue !== undefined ? { hueOverride: art.hue } : {})}
-        />
-
-        {/* Overdrive Shockwave Ring on Burst */}
-        <AnimatePresence>
-          {boostSurge && (
-            <motion.div
-              initial={{ scale: 0.2, opacity: 1 }}
-              animate={{ scale: 2.8, opacity: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.4, ease: "easeOut" }}
-              className="pointer-events-none absolute rounded-full border-2 border-accent"
-              style={{
-                width: "340px",
-                height: "340px",
-                boxShadow: `0 0 50px ${cfg.glow}, inset 0 0 50px ${cfg.glow}`,
-              }}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Orbiting Rotating HUD Crests */}
-        <div
-          className={`pointer-events-none absolute size-80 rounded-full border border-dashed opacity-30 ${
-            rotationActive ? "nexus-orbit-cw" : ""
-          }`}
-          style={{
-            borderColor: `hsl(${art?.hue ?? cfg.hue} 80% 60%)`,
-            boxShadow: `0 0 40px hsla(${art?.hue ?? cfg.hue}, 80%, 50%, 0.2)`,
-          }}
-        />
-        <div
-          className={`pointer-events-none absolute size-[460px] rounded-full border border-dotted opacity-20 ${
-            rotationActive ? "nexus-orbit-ccw" : ""
-          }`}
-          style={{
-            borderColor: `hsl(${art?.hue ?? cfg.hue} 70% 50%)`,
-          }}
-        />
-
-        {/* Navigation Arrows for Quick Weapon Swapping */}
-        <button
-          onClick={prevItem}
-          className="group absolute left-4 z-20 flex size-11 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur transition hover:border-nexus-glow hover:bg-black/90 hover:scale-110 sm:left-8"
-          aria-label="Previous weapon"
-        >
-          <ChevronLeft className="size-6 transition group-hover:-translate-x-0.5" />
-        </button>
-
-        <button
-          onClick={nextItem}
-          className="group absolute right-4 z-20 flex size-11 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur transition hover:border-nexus-glow hover:bg-black/90 hover:scale-110 sm:right-8"
-          aria-label="Next weapon"
-        >
-          <ChevronRight className="size-6 transition group-hover:translate-x-0.5" />
-        </button>
-
-        {/* Pure Floating Weapon / Relic Object */}
-        {current && (
-          <div
-            className="relative z-10 flex flex-col items-center justify-center transition-transform duration-150 ease-out"
-            style={{
-              transform: `perspective(900px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
-            }}
-          >
-            <div
-              className={`relative flex items-center justify-center ${rotationActive ? "arsenal-isolated-obj" : ""}`}
-            >
-              {imgUrl ? (
-                <div className="relative max-h-[380px] max-w-[380px] sm:max-h-[440px] sm:max-w-[440px]">
-                  {/* High contrast screen-blended image: eliminates black bounding box! */}
-                  <img
-                    src={imgUrl}
-                    alt={current.name}
-                    className={`h-full w-full object-contain arsenal-isolated-weapon-img ${
-                      boostSurge ? "arsenal-booster-active" : ""
+          {stageView === "2d" && (
+            <>
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-card/60 p-1 text-xs">
+                <span className="px-1 text-muted-foreground">Power:</span>
+                {([1, 1.5, 2, 2.5] as const).map((lvl) => (
+                  <button
+                    key={lvl}
+                    onClick={() => setBoostLevel(lvl)}
+                    className={`rounded px-1.5 py-0.5 font-mono ${
+                      boostLevel === lvl
+                        ? "bg-accent text-accent-foreground font-bold"
+                        : "text-muted-foreground"
                     }`}
-                    style={{
-                      maxHeight: "420px",
-                      filter: `drop-shadow(0 0 ${boostSurge ? "35px" : "18px"} ${cfg.glow}) contrast(1.18) brightness(${
-                        boostSurge ? 1.3 : 1.05
-                      })`,
-                    }}
-                  />
-                </div>
-              ) : (
-                /* Emblem representation for weapons without photographic assets */
-                <div className="flex size-72 items-center justify-center">
-                  <ArsenalEmblem
-                    glyph={art?.glyph ?? "sword"}
-                    hue={art?.hue ?? cfg.hue}
-                    nexus
-                    animate={rotationActive}
-                    className={`size-56 ${boostSurge ? "scale-115" : ""}`}
-                  />
-                </div>
-              )}
-            </div>
+                  >
+                    {lvl}x
+                  </button>
+                ))}
+              </div>
 
-            {/* Weapon Identity Hologram */}
-            <div className="mt-4 flex flex-col items-center text-center">
-              <span className="text-xs uppercase tracking-widest text-accent font-mono">
-                {current.category.replace("_", " ")} · {current.weapon_type ?? "Artifact"}
-              </span>
-              <h2 className="text-2xl font-bold tracking-tight text-white drop-shadow-md sm:text-3xl">
-                {current.name}
-              </h2>
-
-              {current.wielders && current.wielders.length > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Wielded by:{" "}
-                  <span className="text-foreground font-medium">{current.wielders.join(", ")}</span>
-                </p>
-              )}
-
-              {/* Form tabs if artifact has multiple forms */}
-              {art && art.forms.length > 1 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {art.forms.map((f, n) => (
-                    <button
-                      key={f.label}
-                      onClick={() => {
-                        setFormIdx(n);
-                        sfx.click();
-                      }}
-                      className={`rounded-full border px-3 py-0.5 text-xs transition ${
-                        n === formIdx
-                          ? "border-accent bg-accent/25 text-white shadow-sm"
-                          : "border-border bg-black/40 text-muted-foreground hover:text-white"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Bottom Status Overlay */}
-        <div className="absolute bottom-4 left-6 right-6 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3 text-xs text-muted-foreground font-mono">
-          <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>BOOSTER: {cfg.label.toUpperCase()}</span>
-            <span className="text-zinc-500">|</span>
-            <span>HUE: {art?.hue ?? cfg.hue}°</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setRotationActive((r) => !r)}
-              className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white"
-            >
-              <RotateCcw className="size-3.5" />
-              <span>{rotationActive ? "Motion: ON" : "Motion: FROZEN"}</span>
-            </button>
-            <span className="text-zinc-500">|</span>
-            <span>
-              {selectedIdx + 1} / {filtered.length} ARTIFACTS
-            </span>
-          </div>
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-card/60 p-1 text-xs">
+                <span className="px-1 text-muted-foreground">FPS:</span>
+                {([24, 30, 60] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFps(f)}
+                    className={`rounded px-1.5 py-0.5 font-mono ${
+                      fps === f
+                        ? "bg-accent text-accent-foreground font-bold"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {stageView === "3d" && current ? (
+        <ArsenalThreeStage
+          artifact={current}
+          auraHue={art?.hue ?? cfg.hue}
+          auraLabel={cfg.label}
+          boostSurge={boostSurge}
+          onPrev={prevItem}
+          onNext={nextItem}
+          onIgniteBurst={triggerOverdrive}
+          totalCount={filtered.length}
+          currentIndex={selectedIdx}
+        />
+      ) : (
+        <div
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          className="relative flex min-h-[520px] w-full flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-radial from-zinc-950 via-zinc-950/95 to-black p-6 select-none sm:p-10"
+        >
+          {/* Background Grid & Spatial Telemetry */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-15"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+
+          {/* Elemental Booster Canvas Field */}
+          <ElementalBoosterCanvas
+            element={activeElement}
+            intensity={boostLevel}
+            fps={fps}
+            boostActive={boostSurge}
+            {...(art?.hue !== undefined ? { hueOverride: art.hue } : {})}
+          />
+
+          {/* Overdrive Shockwave Ring on Burst */}
+          <AnimatePresence>
+            {boostSurge && (
+              <motion.div
+                initial={{ scale: 0.2, opacity: 1 }}
+                animate={{ scale: 2.8, opacity: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.4, ease: "easeOut" }}
+                className="pointer-events-none absolute rounded-full border-2 border-accent"
+                style={{
+                  width: "340px",
+                  height: "340px",
+                  boxShadow: `0 0 50px ${cfg.glow}, inset 0 0 50px ${cfg.glow}`,
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Orbiting Rotating HUD Crests */}
+          <div
+            className={`pointer-events-none absolute size-80 rounded-full border border-dashed opacity-30 ${
+              rotationActive ? "nexus-orbit-cw" : ""
+            }`}
+            style={{
+              borderColor: `hsl(${art?.hue ?? cfg.hue} 80% 60%)`,
+              boxShadow: `0 0 40px hsla(${art?.hue ?? cfg.hue}, 80%, 50%, 0.2)`,
+            }}
+          />
+          <div
+            className={`pointer-events-none absolute size-[460px] rounded-full border border-dotted opacity-20 ${
+              rotationActive ? "nexus-orbit-ccw" : ""
+            }`}
+            style={{
+              borderColor: `hsl(${art?.hue ?? cfg.hue} 70% 50%)`,
+            }}
+          />
+
+          {/* Navigation Arrows for Quick Weapon Swapping */}
+          <button
+            onClick={prevItem}
+            className="group absolute left-4 z-20 flex size-11 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur transition hover:border-nexus-glow hover:bg-black/90 hover:scale-110 sm:left-8"
+            aria-label="Previous weapon"
+          >
+            <ChevronLeft className="size-6 transition group-hover:-translate-x-0.5" />
+          </button>
+
+          <button
+            onClick={nextItem}
+            className="group absolute right-4 z-20 flex size-11 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur transition hover:border-nexus-glow hover:bg-black/90 hover:scale-110 sm:right-8"
+            aria-label="Next weapon"
+          >
+            <ChevronRight className="size-6 transition group-hover:translate-x-0.5" />
+          </button>
+
+          {/* Pure Floating Weapon / Relic Object */}
+          {current && (
+            <div
+              className="relative z-10 flex flex-col items-center justify-center transition-transform duration-150 ease-out"
+              style={{
+                transform: `perspective(900px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
+              }}
+            >
+              <div
+                className={`relative flex items-center justify-center ${rotationActive ? "arsenal-isolated-obj" : ""}`}
+              >
+                {imgUrl ? (
+                  <div className="relative max-h-[380px] max-w-[380px] sm:max-h-[440px] sm:max-w-[440px]">
+                    {/* High contrast screen-blended image: eliminates black bounding box! */}
+                    <img
+                      src={imgUrl}
+                      alt={current.name}
+                      className={`h-full w-full object-contain arsenal-isolated-weapon-img ${
+                        boostSurge ? "arsenal-booster-active" : ""
+                      }`}
+                      style={{
+                        maxHeight: "420px",
+                        filter: `drop-shadow(0 0 ${boostSurge ? "35px" : "18px"} ${cfg.glow}) contrast(1.18) brightness(${
+                          boostSurge ? 1.3 : 1.05
+                        })`,
+                      }}
+                    />
+                  </div>
+                ) : (
+                  /* Emblem representation for weapons without photographic assets */
+                  <div className="flex size-72 items-center justify-center">
+                    <ArsenalEmblem
+                      glyph={art?.glyph ?? "sword"}
+                      hue={art?.hue ?? cfg.hue}
+                      nexus
+                      animate={rotationActive}
+                      className={`size-56 ${boostSurge ? "scale-115" : ""}`}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Weapon Identity Hologram */}
+              <div className="mt-4 flex flex-col items-center text-center">
+                <span className="text-xs uppercase tracking-widest text-accent font-mono">
+                  {current.category.replace("_", " ")} · {current.weapon_type ?? "Artifact"}
+                </span>
+                <h2 className="text-2xl font-bold tracking-tight text-white drop-shadow-md sm:text-3xl">
+                  {current.name}
+                </h2>
+
+                {current.wielders && current.wielders.length > 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Wielded by:{" "}
+                    <span className="text-foreground font-medium">
+                      {current.wielders.join(", ")}
+                    </span>
+                  </p>
+                )}
+
+                {/* Form tabs if artifact has multiple forms */}
+                {art && art.forms.length > 1 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {art.forms.map((f, n) => (
+                      <button
+                        key={f.label}
+                        onClick={() => {
+                          setFormIdx(n);
+                          sfx.click();
+                        }}
+                        className={`rounded-full border px-3 py-0.5 text-xs transition ${
+                          n === formIdx
+                            ? "border-accent bg-accent/25 text-white shadow-sm"
+                            : "border-border bg-black/40 text-muted-foreground hover:text-white"
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Status Overlay */}
+          <div className="absolute bottom-4 left-6 right-6 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3 text-xs text-muted-foreground font-mono">
+            <div className="flex items-center gap-2">
+              <span>BOOSTER: {cfg.label.toUpperCase()}</span>
+              <span className="text-zinc-500">|</span>
+              <span>HUE: {art?.hue ?? cfg.hue}°</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setRotationActive((r) => !r)}
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white"
+              >
+                <RotateCcw className="size-3.5" />
+                <span>{rotationActive ? "Motion: ON" : "Motion: FROZEN"}</span>
+              </button>
+              <span className="text-zinc-500">|</span>
+              <span>
+                {selectedIdx + 1} / {filtered.length} ARTIFACTS
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Isolated Weapons Carousel Grid */}
       <div className="grid gap-3">

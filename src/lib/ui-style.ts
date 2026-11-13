@@ -27,6 +27,9 @@ export function setUiStyle(s: UiStyle) {
   } catch {
     /* noop */
   }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("scu:ui-style-change", { detail: s }));
+  }
   listeners.forEach((l) => l());
 }
 

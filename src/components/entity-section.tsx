@@ -75,6 +75,8 @@ import {
   sortAbilities,
   type AbilityGroup,
 } from "@/lib/abilities";
+import { invalidateArchive } from "@/lib/archive-sync";
+import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { animationClass, tierDef } from "@/lib/character-tier";
 import { onSpoilerChange, spoilersHidden } from "@/lib/spoiler";
@@ -85,6 +87,8 @@ import { NexusExplorer } from "./nexus-explorer";
 import { NexusView } from "./nexus-view";
 import { useUiStyle } from "@/lib/ui-style";
 import { UiStylePicker } from "@/components/ui-style-picker";
+import { StatusTooltip } from "@/components/status-tooltip";
+import { Character3dFrame } from "@/components/character-3d-frame";
 
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
@@ -97,13 +101,15 @@ const statusClass: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <span
-      data-spoiler="char"
-      className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] ${statusClass[status] ?? "text-status-neutral"}`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {status}
-    </span>
+    <StatusTooltip label={status}>
+      <span
+        data-spoiler="char"
+        className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] ${statusClass[status] ?? "text-status-neutral"}`}
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        {status}
+      </span>
+    </StatusTooltip>
   );
 }
 
@@ -182,17 +188,19 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <StatusBadge status={e.status} />
         {tier && (
-          <span
-            className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-            style={{
-              color: tier.color,
-              borderColor: `${tier.color}66`,
-              background: `${tier.color}14`,
-              boxShadow: `0 0 8px ${tier.color}33`,
-            }}
-          >
-            {tier.label}
-          </span>
+          <StatusTooltip label={tier.label}>
+            <span
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+              style={{
+                color: tier.color,
+                borderColor: `${tier.color}66`,
+                background: `${tier.color}14`,
+                boxShadow: `0 0 8px ${tier.color}33`,
+              }}
+            >
+              {tier.label}
+            </span>
+          </StatusTooltip>
         )}
         {!hideSpoilers && (e.category || showKind) && (
           <span
@@ -277,6 +285,7 @@ function DetailOverlay({
   onOpen: (target: Entity) => void;
 }) {
   const qc = useQueryClient();
+  useAbilityRegistryVersion();
   const { data: notes } = useQuery(notesQuery(e.id));
   const rawStats = (e.stats as Record<string, string>) ?? {};
   const stats = Object.entries(rawStats).filter(([k]) => k !== "real_name" && k !== "bloodline");
@@ -659,17 +668,19 @@ function DetailOverlay({
                 className="relative font-display text-5xl font-bold uppercase tracking-wide text-white drop-shadow-[0_0_24px_rgba(168,85,247,0.45)] sm:text-6xl"
               />
               {tierDef(e.character_tier) && (
-                <span
-                  className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider"
-                  style={{
-                    color: tierDef(e.character_tier)!.color,
-                    borderColor: `${tierDef(e.character_tier)!.color}66`,
-                    background: `${tierDef(e.character_tier)!.color}14`,
-                    boxShadow: `0 0 10px ${tierDef(e.character_tier)!.color}44`,
-                  }}
-                >
-                  {tierDef(e.character_tier)!.label}
-                </span>
+                <StatusTooltip label={tierDef(e.character_tier)!.label}>
+                  <span
+                    className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider"
+                    style={{
+                      color: tierDef(e.character_tier)!.color,
+                      borderColor: `${tierDef(e.character_tier)!.color}66`,
+                      background: `${tierDef(e.character_tier)!.color}14`,
+                      boxShadow: `0 0 10px ${tierDef(e.character_tier)!.color}44`,
+                    }}
+                  >
+                    {tierDef(e.character_tier)!.label}
+                  </span>
+                </StatusTooltip>
               )}
             </h3>
             <div className="flex items-center gap-1">
@@ -815,9 +826,11 @@ function DetailOverlay({
                       </span>
                     )}
                     {r.status && (
-                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
-                        {r.status}
-                      </span>
+                      <StatusTooltip label={r.status}>
+                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
+                          {r.status}
+                        </span>
+                      </StatusTooltip>
                     )}
                   </div>
                   <p className="mb-2 text-xs text-muted-foreground">
@@ -853,6 +866,7 @@ function DetailOverlay({
                         else {
                           toast.success("Season note saved");
                           void qc.invalidateQueries({ queryKey: ["character-series", e.id] });
+                          void invalidateArchive(qc);
                         }
                       }}
                     />
@@ -1119,22 +1133,34 @@ function DetailOverlay({
         </section>
         {/* Column 3 — character render + far-right edge tab strip */}
         <div className="relative hidden h-full lg:block" aria-hidden={false}>
-          {/* Full-height character render */}
-          {e.image_url && (
-            <div className="absolute inset-0 flex items-end justify-center overflow-hidden">
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: `radial-gradient(ellipse at 50% 85%, ${seasonHue ? `hsl(${seasonHue} 85% 55% / .22)` : "var(--accent)"} 0%, transparent 65%)`,
-                }}
-              />
-              <img
-                src={e.image_url}
-                alt={e.name}
-                className="relative h-[92%] w-auto max-w-full object-contain object-bottom [mask-image:linear-gradient(to_top,black_55%,transparent_98%)]"
-              />
-            </div>
-          )}
+          {/* Full-height character render (2D, or Nexus 3D avatars when enabled) */}
+          <div className="absolute inset-0 pr-12">
+            <Character3dFrame
+              entity={e}
+              accentColor={seasonHue ? `hsl(${seasonHue} 85% 60%)` : (e.theme_color ?? undefined)}
+              fallback={
+                e.image_url ? (
+                  <div className="relative flex h-full w-full items-end justify-center overflow-hidden">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `radial-gradient(ellipse at 50% 85%, ${seasonHue ? `hsl(${seasonHue} 85% 55% / .22)` : "var(--accent)"} 0%, transparent 65%)`,
+                      }}
+                    />
+                    <img
+                      src={e.image_url}
+                      alt={e.name}
+                      className="relative h-[92%] w-auto max-w-full object-contain object-bottom [mask-image:linear-gradient(to_top,black_55%,transparent_98%)]"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-black/30 font-display text-7xl text-muted-foreground/40">
+                    {e.name[0]}
+                  </div>
+                )
+              }
+            />
+          </div>
           <nav
             className="absolute right-0 top-0 flex h-full w-12 flex-col items-stretch gap-1 border-l border-white/10 bg-black/50 py-4"
             aria-label="Dossier sections"
@@ -1202,6 +1228,7 @@ function AbilityInfoDialog({
   wielder: string;
   onClose: () => void;
 }) {
+  useAbilityRegistryVersion();
   const def = name ? abilityDef(name) : null;
   return (
     <Dialog open={!!name} onOpenChange={(o) => !o && onClose()}>
@@ -1298,15 +1325,17 @@ function ShowcaseView({
             <div className="relative flex h-full min-h-[22rem] flex-col justify-between p-5">
               <div className="flex justify-between">
                 {tierDef(e.character_tier) && (
-                  <span
-                    className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
-                    style={{
-                      borderColor: tierDef(e.character_tier)!.color,
-                      color: tierDef(e.character_tier)!.color,
-                    }}
-                  >
-                    {e.character_tier}
-                  </span>
+                  <StatusTooltip label={tierDef(e.character_tier)!.label}>
+                    <span
+                      className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
+                      style={{
+                        borderColor: tierDef(e.character_tier)!.color,
+                        color: tierDef(e.character_tier)!.color,
+                      }}
+                    >
+                      {e.character_tier}
+                    </span>
+                  </StatusTooltip>
                 )}
                 {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
               </div>
@@ -1463,6 +1492,12 @@ export function EntitySection({
     return [...categories, ...extra];
   }, [categories, data]);
 
+  useEffect(() => {
+    if (!isLoading && data && cat !== "all" && !allCategories.includes(cat)) {
+      setCat("all");
+    }
+  }, [isLoading, data, cat, allCategories]);
+
   // Character/organization count: total in the archive, plus how many are showing now.
   const total = data?.length ?? 0;
   const isFiltered = cat !== "all" || q.trim().length > 0;
@@ -1509,7 +1544,8 @@ export function EntitySection({
     else {
       sfx.remove();
       toast.success(`${deleting.name} deleted`);
-      qc.invalidateQueries({ queryKey: ["entities"] });
+      if (open?.id === deleting.id) setOpen(null);
+      void invalidateArchive(qc);
       qc.invalidateQueries({ queryKey: ["search-index"] });
       qc.removeQueries({ queryKey: ["notes", deleting.id] });
     }
@@ -1780,6 +1816,12 @@ export function EntitySection({
           entity={editing}
           defaultKind={kinds[0] ?? "character"}
           allowedKinds={kinds}
+          onSaved={(saved) => {
+            if (cat !== "all") {
+              const nextCat = saved.category?.trim() ? saved.category.trim() : "all";
+              if (nextCat !== cat) setCat(nextCat);
+            }
+          }}
         />
       )}
       {merging && (

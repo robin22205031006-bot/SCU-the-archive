@@ -81,7 +81,11 @@ export function AdminEpisodes() {
     return () => clearTimeout(t);
   }, [form]);
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["episodes"] });
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["episodes"] });
+    void qc.invalidateQueries({ queryKey: ["episodes-public"] });
+    void qc.invalidateQueries({ queryKey: ["episode"] });
+  };
 
   const clearLocalDraft = () => {
     try {

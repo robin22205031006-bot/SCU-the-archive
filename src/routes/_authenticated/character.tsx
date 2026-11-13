@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useUiStyle } from "@/lib/ui-style";
 import { NexusDossier } from "@/components/nexus-dossier";
+import { StatusTooltip } from "@/components/status-tooltip";
 
 export const Route = createFileRoute("/_authenticated/character")({
   validateSearch: (
@@ -649,9 +650,11 @@ function ClassicDossier() {
             {/* Badges — tier, role, alias (all viewports) */}
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
               {e.character_tier && (
-                <span className="rounded-full border border-accent/50 bg-accent/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-accent">
-                  {e.character_tier}
-                </span>
+                <StatusTooltip label={e.character_tier}>
+                  <span className="rounded-full border border-accent/50 bg-accent/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-accent">
+                    {e.character_tier}
+                  </span>
+                </StatusTooltip>
               )}
               {[
                 e.role,
@@ -721,9 +724,11 @@ function ClassicDossier() {
                     </span>
                   )}
                   {activeSeason.status && (
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
-                      {activeSeason.status}
-                    </span>
+                    <StatusTooltip label={activeSeason.status}>
+                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
+                        {activeSeason.status}
+                      </span>
+                    </StatusTooltip>
                   )}
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">

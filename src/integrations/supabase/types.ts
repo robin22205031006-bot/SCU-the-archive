@@ -105,6 +105,7 @@ export type Database = {
           id: string
           lore: string
           materials: string | null
+          model_3d_url?: string | null
           name: string
           source: string | null
           updated_at: string
@@ -120,6 +121,7 @@ export type Database = {
           id?: string
           lore?: string
           materials?: string | null
+          model_3d_url?: string | null
           name: string
           source?: string | null
           updated_at?: string
@@ -135,6 +137,7 @@ export type Database = {
           id?: string
           lore?: string
           materials?: string | null
+          model_3d_url?: string | null
           name?: string
           source?: string | null
           updated_at?: string
@@ -330,6 +333,7 @@ export type Database = {
           image_url: string | null
           kind: Database["public"]["Enums"]["entity_kind"]
           locked_fields: string[]
+          model_3d_url?: string | null
           name: string
           parent_id: string | null
           role: string | null
@@ -355,6 +359,7 @@ export type Database = {
           image_url?: string | null
           kind: Database["public"]["Enums"]["entity_kind"]
           locked_fields?: string[]
+          model_3d_url?: string | null
           name: string
           parent_id?: string | null
           role?: string | null
@@ -380,6 +385,7 @@ export type Database = {
           image_url?: string | null
           kind?: Database["public"]["Enums"]["entity_kind"]
           locked_fields?: string[]
+          model_3d_url?: string | null
           name?: string
           parent_id?: string | null
           role?: string | null

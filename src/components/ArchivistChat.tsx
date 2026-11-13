@@ -28,7 +28,9 @@ export function ArchivistChat() {
             m.role === "user" || m.role === "assistant",
         )
         .map((m) => ({ role: m.role, content: m.content }));
-      const response = await askLore({ data: { messages: apiMessages } });
+      const response = await askLore({
+        data: { messages: apiMessages, model: "gemini-4-hydrogen", role: "archivist" },
+      });
 
       setMessages((prev) => [
         ...prev,

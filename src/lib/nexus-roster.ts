@@ -28,7 +28,8 @@ export function normalizeNexusRole(role: string | null | undefined): string {
     impactfulcharacter: "Impactful Character",
     philosophy: "Philosophy",
   };
-  return aliases[key] ?? role?.trim() ?? "Unclassified";
+  const trimmed = role?.trim();
+  return aliases[key] ?? (trimmed || "Unclassified");
 }
 export function nexusDotRole(role: string | null, masked = false) {
   const normalized = normalizeNexusRole(role);
