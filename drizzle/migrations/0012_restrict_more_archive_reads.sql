@@ -1,0 +1,12 @@
+DROP POLICY IF EXISTS "public read lore_notes" ON public.lore_notes;
+CREATE POLICY "public read lore_notes" ON public.lore_notes FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL AND NOT public.is_banned(auth.uid()));
+DROP POLICY IF EXISTS "public read map_locations" ON public.map_locations;
+CREATE POLICY "public read map_locations" ON public.map_locations FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL AND NOT public.is_banned(auth.uid()));
+DROP POLICY IF EXISTS "public read comments" ON public.comments;
+CREATE POLICY "public read comments" ON public.comments FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL AND NOT public.is_banned(auth.uid()));
+DROP POLICY IF EXISTS "public read entities" ON public.entities;
+CREATE POLICY "public read entities" ON public.entities FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL AND NOT public.is_banned(auth.uid()));
+DROP POLICY IF EXISTS "public read entity_relations" ON public.entity_relations;
+CREATE POLICY "public read entity_relations" ON public.entity_relations FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL AND NOT public.is_banned(auth.uid()));
+DROP POLICY IF EXISTS "public read app_settings" ON public.app_settings;
+CREATE POLICY "public read app_settings" ON public.app_settings FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL AND NOT public.is_banned(auth.uid()));
