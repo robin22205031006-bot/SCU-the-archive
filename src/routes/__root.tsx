@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { syncSessionCache } from "@/lib/session-cache";
 import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
 import { usePreloadUIFeedback } from "@/hooks/use-ui-feedback";
+import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
 import { playWelcome } from "@/lib/scu-audio";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NexusShell } from "@/components/nexus-shell";
@@ -222,6 +223,7 @@ function RootComponent() {
   const [offline, setOffline] = useState(false);
   useScuAudioGlobal();
   usePreloadUIFeedback();
+  useAmbientAtmosphereSync();
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
     update();

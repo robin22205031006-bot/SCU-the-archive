@@ -79,7 +79,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
               {pathname !== "/character" && (
                 <Link
                   to="/"
-                  onClick={() => playClick()}
+                  onClick={(e) => playClick(e)}
                   className="mr-auto flex items-center gap-2 font-mono text-xs tracking-widest text-accent hover:text-nexus-glow transition-colors"
                 >
                   <Compass className="h-5 w-5 animate-[spin_25s_linear_infinite]" />
@@ -91,8 +91,8 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 size="icon"
                 aria-label="Nexus navigation"
                 aria-expanded={open}
-                onClick={() => {
-                  playSnap();
+                onClick={(e) => {
+                  playSnap(e);
                   setOpen((v) => !v);
                 }}
                 title="Navigation"
@@ -105,8 +105,8 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 size="icon"
                 aria-label="Theme"
                 title="Theme"
-                onClick={() => {
-                  playClick();
+                onClick={(e) => {
+                  playClick(e);
                   setThemeOpen(true);
                 }}
                 className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
@@ -119,8 +119,8 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 aria-label={enabled ? "Pause animations" : "Enable animations"}
                 aria-pressed={enabled}
                 title="Animations"
-                onClick={() => {
-                  playClick();
+                onClick={(e) => {
+                  playClick(e);
                   setAnimationsEnabled(!enabled);
                 }}
                 className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
@@ -137,7 +137,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
                   to="/profile"
                   aria-label="Profile"
                   title="Profile"
-                  onClick={() => playClick()}
+                  onClick={(e) => playClick(e)}
                 >
                   <User />
                 </Link>
@@ -168,7 +168,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
                       >
                         <Link
                           to={t.to}
-                          onClick={() => playSnap()}
+                          onClick={(e) => playSnap(e)}
                           aria-current={pathname === t.to ? "page" : undefined}
                         >
                           <NexusNavGlyph

@@ -10,6 +10,7 @@ import { useUiStyle } from "@/lib/ui-style";
 import { useActiveGenre, useVisualMode } from "@/hooks/use-ui-mode";
 import { MANGA_SUBTHEMES, useOptionalThemeContext } from "@/context/ThemeContext";
 import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
+import { HAPTIC_INTENSITY_OPTIONS, useUIFeedback } from "@/hooks/use-ui-feedback";
 import { GENRE_THEMES, setGenreTheme } from "@/lib/genre-themes";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
 import {
@@ -35,6 +36,12 @@ import {
   useActiveNexusWallpaper,
 } from "@/hooks/use-nexus-wallpaper";
 import { Switch } from "@/components/ui/switch";
+import {
+  LORE_ATMOSPHERE_PRESETS,
+  setCurrentLoreLocation,
+  useAmbientAtmosphere,
+  useLoreAtmosphere,
+} from "@/lib/ambient-atmosphere";
 
 export function ThemeDrawer({
   open,
@@ -46,12 +53,15 @@ export function ThemeDrawer({
   const activeGenre = useActiveGenre();
   const themeCtx = useOptionalThemeContext();
   const { playSwitch } = useSensoryFeedback();
+  const { hapticIntensity, setHapticIntensity, triggerFeedback } = useUIFeedback();
   const navigationMode = useNavMode();
   const nexusTheme = useNexusTheme();
   const fx3dEnabled = useNexus3dFxEnabled();
   const emblemMotion = useNexusEmblemMotion();
   const advancedFx = useNexusAdvancedFx();
   const { wallpapers, wallpaper: activeWallpaper, playback, choice } = useActiveNexusWallpaper();
+  const [ambientAtmosphere, setAmbientAtmosphere] = useAmbientAtmosphere();
+  const loreAtmosphere = useLoreAtmosphere();
   const [tab, setTab] = useState<"live" | "plain">("live");
   const liveThemes = THEMES.filter((t) => t.live);
   const plainThemes = THEMES.filter((t) => !t.live);
@@ -430,6 +440,74 @@ export function ThemeDrawer({
             </div>
           </div>
         }
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-border px-4 pb-6 pt-4 text-sm">
+          <span className="text-muted-foreground">Haptic intensity</span>
+          <div className="flex gap-1.5" role="group" aria-label="Haptic intensity">
+            {HAPTIC_INTENSITY_OPTIONS.map((opt) => (
+              <Button
+                variant="ghost"
+                size="sm"
+                key={opt.id}
+                aria-pressed={hapticIntensity === opt.id}
+                onClick={(e) => {
+                  setHapticIntensity(opt.id);
+                  triggerFeedback("click", { target: e, hapticIntensity: opt.id });
+                }}
+                className={`rounded-full px-3 py-1 text-xs ${hapticIntensity === opt.id ? "bg-accent text-accent-foreground" : "border text-muted-foreground"}`}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="border-t border-border px-4 pb-6 pt-4 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <Label htmlFor="ambient-atmosphere-toggle">Ambient Atmosphere</Label>
+              <p className="text-xs text-muted-foreground">
+                Subtle {loreAtmosphere.weatherLabel.toLowerCase()} glass overlay for{" "}
+                {loreAtmosphere.locationName}.
+              </p>
+            </div>
+            <Switch
+              id="ambient-atmosphere-toggle"
+              aria-label="Ambient Atmosphere"
+              checked={ambientAtmosphere}
+              onCheckedChange={(checked) => {
+                setAmbientAtmosphere(checked);
+                triggerFeedback("switch");
+              }}
+            />
+          </div>
+          {ambientAtmosphere && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+                Location:
+              </span>
+              {LORE_ATMOSPHERE_PRESETS.map((preset) => {
+                const selected = loreAtmosphere.locationId === preset.locationId;
+                return (
+                  <button
+                    key={preset.locationId}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={(e) => {
+                      setCurrentLoreLocation(preset.locationId, preset.defaultEraId);
+                      triggerFeedback("click", { target: e });
+                    }}
+                    className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${
+                      selected
+                        ? "border-accent bg-accent/15 text-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {preset.locationName}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   );

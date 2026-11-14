@@ -82,8 +82,8 @@ export function UniversalSearch() {
   return (
     <>
       <button
-        onClick={() => {
-          playSnap();
+        onClick={(e) => {
+          playSnap(e);
           setOpen(true);
         }}
         aria-label="Search the universe (Ctrl+K)"

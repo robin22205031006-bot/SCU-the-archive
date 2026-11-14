@@ -43,9 +43,10 @@ import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useUiStyle } from "@/lib/ui-style";
 import type { Json } from "@/integrations/supabase/types";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
-import { useIsManga } from "@/hooks/use-ui-mode";
+import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
+import { GenreCardFrame } from "@/components/genre-decorations";
 
 const ALL_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
 const CUSTOM_SETTINGS_KEY = "ability_registry";
@@ -513,6 +514,8 @@ function AbilityCard({
   onEdit: () => void;
 }) {
   const isManga = useIsManga();
+  const activeGenre = useActiveGenre();
+  const isFantasy = isManga && activeGenre === "fantasy";
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
   const Icon = def.icon;
@@ -520,9 +523,11 @@ function AbilityCard({
   return (
     <div
       className={
-        isManga
-          ? "manga-panel manga-panel-hover manga-card-scale relative border-2 border-border bg-card transition-transform hover:-translate-y-0.5"
-          : "glass rounded-2xl p-4 transition-shadow"
+        isFantasy
+          ? "manga-panel manga-panel-hover card-idle-breath group relative rounded-lg border-2 border-[#c5a869] bg-[#15221b] p-3.5 text-[#f5ebe6] transition-all hover:border-[#5ce1b8] hover:shadow-[0_14px_32px_rgba(92,225,184,0.28)]"
+          : isManga
+            ? "manga-panel manga-panel-hover manga-card-scale relative border-2 border-border bg-card transition-transform hover:-translate-y-0.5"
+            : "glass rounded-2xl p-4 transition-shadow"
       }
       style={
         isManga
@@ -530,15 +535,18 @@ function AbilityCard({
           : { boxShadow: `0 0 12px ${def.color}22, inset 0 0 0 1px ${def.color}33` }
       }
     >
-      <button onClick={onToggle} className="flex w-full items-start gap-3 text-left">
+      {isManga && <GenreCardFrame theme={activeGenre ?? "manga-ink"} compact />}
+      <button onClick={onToggle} className="relative flex w-full items-start gap-3 text-left">
         <span
           className={
-            isManga
-              ? "grid h-9 w-9 shrink-0 place-items-center border-2 border-border bg-foreground text-background"
-              : "grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+            isFantasy
+              ? "grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#c5a869] bg-[#2e5a52]/80 text-[#5ce1b8] shadow-[0_0_12px_rgba(92,225,184,0.45)]"
+              : isManga
+                ? "grid h-9 w-9 shrink-0 place-items-center border-2 border-border bg-foreground text-background"
+                : "grid h-10 w-10 shrink-0 place-items-center rounded-xl"
           }
           style={
-            isManga
+            isFantasy || isManga
               ? undefined
               : {
                   background: `${def.color}1f`,
@@ -557,21 +565,35 @@ function AbilityCard({
           <span className="flex items-center justify-between gap-2">
             <span
               className={
-                isManga
-                  ? "truncate font-display text-lg uppercase tracking-wide"
-                  : "truncate font-medium"
+                isFantasy
+                  ? "truncate font-display text-lg uppercase tracking-wide text-[#f5ebe6] group-hover:text-[#5ce1b8]"
+                  : isManga
+                    ? "truncate font-display text-lg uppercase tracking-wide"
+                    : "truncate font-medium"
               }
             >
               {def.label}
             </span>
             <ChevronDown
-              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+              className={`h-4 w-4 shrink-0 transition-transform ${
+                isFantasy ? "text-[#c5a869]" : "text-muted-foreground"
+              } ${open ? "rotate-180" : ""}`}
             />
           </span>
-          <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span
+            className={`mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider ${
+              isFantasy ? "text-[#e6dcc5]" : "text-muted-foreground"
+            }`}
+          >
             <span
               style={isManga ? undefined : { color: def.color }}
-              className={isManga ? "font-bold text-primary" : undefined}
+              className={
+                isFantasy
+                  ? "font-bold text-[#5ce1b8]"
+                  : isManga
+                    ? "font-bold text-primary"
+                    : undefined
+              }
             >
               {def.tier}
             </span>
@@ -584,7 +606,17 @@ function AbilityCard({
           </span>
         </span>
       </button>
-      {def.description && <p className="mt-2 text-xs text-muted-foreground">{def.description}</p>}
+      {def.description && (
+        <p
+          className={
+            isFantasy
+              ? "parchment-dot-grid relative mt-2.5 rounded border border-[#c5a869]/70 p-2.5 text-xs text-[#15221b]"
+              : "relative mt-2 text-xs text-muted-foreground"
+          }
+        >
+          {def.description}
+        </p>
+      )}
 
       {open && (
         <div className="mt-3 border-t border-border pt-3">

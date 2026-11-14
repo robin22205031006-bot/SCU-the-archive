@@ -54,8 +54,8 @@ export function NexusNavigation({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [navOpen, setNavOpen]);
 
-  const handleLinkSelect = (link: NexusNavLink) => {
-    playSnap();
+  const handleLinkSelect = (link: NexusNavLink, target?: unknown) => {
+    playSnap(target as Parameters<typeof playSnap>[0]);
     setActiveNav(link.to);
     onNavigate?.(link);
     setNavOpen(false);
@@ -117,8 +117,8 @@ export function NexusNavigation({
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  playClick();
+                onClick={(e) => {
+                  playClick(e);
                   setNavOpen(false);
                 }}
                 aria-label="Close Nexus HUD"
@@ -132,8 +132,8 @@ export function NexusNavigation({
               <div className="mb-1.5 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
                 <button
                   type="button"
-                  onClick={() => {
-                    playClick();
+                  onClick={(e) => {
+                    playClick(e);
                     setWindowStart((v) => Math.max(0, v - 1));
                   }}
                   disabled={clampedStart === 0}
@@ -150,8 +150,8 @@ export function NexusNavigation({
                 </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    playClick();
+                  onClick={(e) => {
+                    playClick(e);
                     setWindowStart((v) => Math.min(maxStart, v + 1));
                   }}
                   disabled={clampedStart >= maxStart}
@@ -178,7 +178,7 @@ export function NexusNavigation({
                   >
                     <button
                       type="button"
-                      onClick={() => handleLinkSelect(link)}
+                      onClick={(e) => handleLinkSelect(link, e)}
                       aria-current={isActive ? "page" : undefined}
                       className="group relative flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-sm transition-all"
                       style={{
@@ -241,9 +241,9 @@ export function NexusNavigation({
                       <button
                         key={opt.id}
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
                           setMode(opt.id as UIMode);
-                          triggerUIFeedback("navigation", opt.id);
+                          triggerUIFeedback("navigation", opt.id, { target: e });
                         }}
                         aria-pressed={selected}
                         className="rounded-lg border px-2 py-1 text-xs font-medium transition"
@@ -273,8 +273,8 @@ export function NexusNavigation({
       {/* Floating Nexus HUD Launcher Button */}
       <motion.button
         type="button"
-        onClick={() => {
-          playSnap();
+        onClick={(e) => {
+          playSnap(e);
           toggleNav();
         }}
         aria-expanded={navOpen}

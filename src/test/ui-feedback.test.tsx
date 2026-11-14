@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,14 +7,17 @@ import { AppearanceProvider } from "@/hooks/use-appearance";
 import { TypographyProvider } from "@/hooks/use-typography";
 import { UiModeProvider } from "@/hooks/use-ui-mode";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { UIStateProvider } from "@/context/UIStateContext";
+import { UIStateProvider, useUIState } from "@/context/UIStateContext";
+import { ThemeDrawer } from "@/components/theme-drawer";
 import {
   UI_FEEDBACK_VIBRATION_PATTERNS,
+  calculateElementAudioPan,
   getDecodedAudioBuffer,
   getUIFeedbackVibrationPattern,
   preloadUIFeedbackAudio,
   resetAudioBufferCache,
   resolveUIFeedbackStyle,
+  scaleVibrationPattern,
   triggerUIFeedback,
   useUIFeedback,
 } from "@/hooks/use-ui-feedback";
@@ -270,5 +274,278 @@ describe("useUIFeedback Web Audio, Navigator.vibrate & Preload Architecture", ()
         configurable: true,
       });
     }
+  });
+
+  it("calculates screen-center positional audio panning from elements, rects, and events", () => {
+    const viewport = { width: 1000, height: 800 };
+
+    expect(calculateElementAudioPan(null, viewport)).toBeNull();
+    expect(
+      calculateElementAudioPan({ left: 450, top: 380, width: 100, height: 40 }, viewport),
+    ).toEqual({
+      pan: 0,
+      x: 0,
+      y: 0,
+      distanceFromCenter: 0,
+    });
+
+    const farLeft = calculateElementAudioPan(
+      { left: 0, top: 380, width: 100, height: 40 },
+      viewport,
+    );
+    expect(farLeft?.pan).toBeCloseTo(-0.9, 5);
+    expect(farLeft?.y).toBeCloseTo(0, 5);
+    expect(farLeft?.distanceFromCenter).toBeCloseTo(0.9 / Math.SQRT2, 5);
+
+    const farRightBtn = document.createElement("button");
+    farRightBtn.getBoundingClientRect = () =>
+      ({ left: 900, top: 700, width: 100, height: 100 }) as DOMRect;
+    const rightCorner = calculateElementAudioPan(farRightBtn, viewport);
+    expect(rightCorner?.pan).toBeCloseTo(0.9, 5);
+    expect(rightCorner?.y).toBeCloseTo(0.875, 5);
+    expect(rightCorner?.distanceFromCenter ?? 0).toBeGreaterThan(0.85);
+
+    // Unlaid-out jsdom element defaults to centered pan=0
+    const unlaidOutBtn = document.createElement("button");
+    unlaidOutBtn.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 0, height: 0 }) as DOMRect;
+    expect(calculateElementAudioPan({ currentTarget: unlaidOutBtn }, viewport)).toEqual({
+      pan: 0,
+      x: 0,
+      y: 0,
+      distanceFromCenter: 0,
+    });
+  });
+
+  it("routes nexus and fantasy Web Audio through StereoPannerNode (and PannerNode fallback) based on element position", () => {
+    const createMockParam = (initial = 0) => {
+      const param = {
+        value: initial,
+        setValueAtTime: vi.fn((val: number) => {
+          param.value = val;
+        }),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      };
+      return param;
+    };
+
+    const stereoPanners: Array<{
+      pan: ReturnType<typeof createMockParam>;
+      connect: ReturnType<typeof vi.fn>;
+    }> = [];
+    const gainNodes: Array<{
+      gain: ReturnType<typeof createMockParam>;
+      connect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class MockStereoAudioContext {
+      state: AudioContextState = "running";
+      sampleRate = 48000;
+      currentTime = 1.5;
+      destination = { kind: "destination" } as unknown as AudioDestinationNode;
+      createStereoPanner = vi.fn(() => {
+        const panParam = createMockParam(0);
+        const panner = {
+          pan: panParam,
+          connect: vi.fn((dest: unknown) => dest),
+        };
+        stereoPanners.push(panner);
+        return panner as unknown as StereoPannerNode;
+      });
+      createOscillator = vi.fn(() => ({
+        type: "sine",
+        frequency: createMockParam(440),
+        connect: vi.fn((dest: unknown) => dest),
+        start: vi.fn(),
+        stop: vi.fn(),
+      }));
+      createGain = vi.fn(() => {
+        const gain = {
+          gain: createMockParam(1),
+          connect: vi.fn((dest: unknown) => dest),
+        };
+        gainNodes.push(gain);
+        return gain as unknown as GainNode;
+      });
+      createBuffer = vi.fn((_c: number, length: number, sampleRate: number) => ({
+        length,
+        sampleRate,
+        getChannelData: () => new Float32Array(length),
+      }));
+      createBufferSource = vi.fn(() => ({
+        buffer: null,
+        connect: vi.fn((dest: unknown) => dest),
+        start: vi.fn(),
+      }));
+      createBiquadFilter = vi.fn(() => ({
+        type: "bandpass",
+        frequency: createMockParam(1000),
+        Q: createMockParam(1),
+        connect: vi.fn((dest: unknown) => dest),
+      }));
+    }
+
+    const origAC = window.AudioContext;
+    const origWidth = window.innerWidth;
+    const origHeight = window.innerHeight;
+    Object.defineProperty(window, "AudioContext", {
+      value: MockStereoAudioContext,
+      configurable: true,
+    });
+    Object.defineProperty(window, "innerWidth", { value: 1000, configurable: true });
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+
+    try {
+      function SpatialProbe() {
+        const { triggerClick, triggerNavigation } = useUIFeedback({ mode: "nexus" });
+        return (
+          <div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.currentTarget.getBoundingClientRect = () =>
+                  ({ left: 0, top: 380, width: 100, height: 40 }) as DOMRect;
+                triggerClick(e);
+              }}
+            >
+              left-nexus-btn
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.currentTarget.getBoundingClientRect = () =>
+                  ({ left: 850, top: 100, width: 100, height: 40 }) as DOMRect;
+                triggerNavigation(e);
+              }}
+            >
+              right-nexus-btn
+            </button>
+          </div>
+        );
+      }
+
+      render(<SpatialProbe />);
+
+      fireEvent.click(screen.getByRole("button", { name: "left-nexus-btn" }));
+      expect(stereoPanners.length).toBeGreaterThanOrEqual(1);
+      expect(stereoPanners[0]?.pan.setValueAtTime).toHaveBeenCalledWith(-0.9, 1.5);
+      expect(stereoPanners[0]?.pan.value).toBeCloseTo(-0.9, 5);
+      expect(stereoPanners[0]?.connect).toHaveBeenCalled();
+      expect(gainNodes.some((g) => g.connect.mock.calls[0]?.[0] === stereoPanners[0])).toBe(true);
+
+      const countBeforeSecond = stereoPanners.length;
+      fireEvent.click(screen.getByRole("button", { name: "right-nexus-btn" }));
+      expect(stereoPanners.length).toBeGreaterThan(countBeforeSecond);
+      expect(stereoPanners[countBeforeSecond]?.pan.value).toBeCloseTo(0.8, 5);
+
+      // PannerNode fallback in fantasy mode when createStereoPanner is unavailable
+      resetAudioBufferCache();
+      const setPositionMock = vi.fn();
+      const pannerConnectMock = vi.fn((dest: unknown) => dest);
+      class Mock3DPannerAudioContext extends MockStereoAudioContext {
+        override createStereoPanner =
+          undefined as unknown as MockStereoAudioContext["createStereoPanner"];
+        createPanner = vi.fn(() => ({
+          panningModel: "HRTF",
+          setPosition: setPositionMock,
+          connect: pannerConnectMock,
+        }));
+      }
+      Object.defineProperty(window, "AudioContext", {
+        value: Mock3DPannerAudioContext,
+        configurable: true,
+      });
+
+      triggerUIFeedback("nav", "fantasy", {
+        target: { left: 700, top: 100, width: 100, height: 100 },
+      });
+      expect(setPositionMock).toHaveBeenCalled();
+      const [px, py, pz] = setPositionMock.mock.calls[0] as [number, number, number];
+      expect(px).toBeCloseTo(0.5, 5);
+      expect(py).toBeCloseTo(0.625, 5);
+      expect(pz).toBeLessThan(0);
+      expect(pannerConnectMock).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, "AudioContext", { value: origAC, configurable: true });
+      Object.defineProperty(window, "innerWidth", { value: origWidth, configurable: true });
+      Object.defineProperty(window, "innerHeight", { value: origHeight, configurable: true });
+    }
+  });
+
+  it("reads haptic intensity preference from UIStateContext and scales navigator.vibrate durations", () => {
+    vi.spyOn(sfx, "terminalClick").mockImplementation(() => {});
+    vi.spyOn(sfx, "parchmentSnap").mockImplementation(() => {});
+    vi.spyOn(sfx, "click").mockImplementation(() => {});
+    const vibrateMock = vi.fn();
+    Object.defineProperty(navigator, "vibrate", {
+      value: vibrateMock,
+      configurable: true,
+    });
+
+    expect(scaleVibrationPattern([12, 26, 10], "low")).toEqual([6, 13, 5]);
+    expect(scaleVibrationPattern([12, 26, 10], "medium")).toEqual([12, 26, 10]);
+    expect(scaleVibrationPattern([12, 26, 10], "high")).toEqual([18, 39, 15]);
+    expect(getUIFeedbackVibrationPattern("nexus", "click", null, "low")).toBe(3);
+    expect(getUIFeedbackVibrationPattern("nexus", "click", null, "high")).toBe(8);
+
+    function HapticProbe() {
+      const { hapticIntensity, setHapticIntensity } = useUIState();
+      const { triggerNavigation, triggerClick } = useUIFeedback({ mode: "fantasy" });
+      const [drawerOpen, setDrawerOpen] = useState(false);
+      return (
+        <div>
+          <span data-testid="ctx-haptic-intensity">{hapticIntensity}</span>
+          <button type="button" onClick={() => setHapticIntensity("low")}>
+            set-low
+          </button>
+          <button type="button" onClick={() => setHapticIntensity("high")}>
+            set-high
+          </button>
+          <button type="button" onClick={(e) => triggerNavigation(e)}>
+            fire-nav
+          </button>
+          <button type="button" onClick={(e) => triggerClick(e)}>
+            fire-click
+          </button>
+          <button type="button" onClick={() => setDrawerOpen((v) => !v)}>
+            toggle-drawer
+          </button>
+          <ThemeDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+        </div>
+      );
+    }
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <AppearanceProvider>
+          <UIStateProvider initialMode="nexus" initialHapticIntensity="low">
+            <HapticProbe />
+          </UIStateProvider>
+        </AppearanceProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("ctx-haptic-intensity").textContent).toBe("low");
+    fireEvent.click(screen.getByRole("button", { name: "fire-nav" }));
+    // fantasy nav [12, 26, 10] * 0.5 => [6, 13, 5]
+    expect(vibrateMock).toHaveBeenLastCalledWith([6, 13, 5]);
+
+    fireEvent.click(screen.getByRole("button", { name: "set-high" }));
+    expect(screen.getByTestId("ctx-haptic-intensity").textContent).toBe("high");
+    fireEvent.click(screen.getByRole("button", { name: "fire-nav" }));
+    // fantasy nav [12, 26, 10] * 1.5 => [18, 39, 15]
+    expect(vibrateMock).toHaveBeenLastCalledWith([18, 39, 15]);
+
+    // ThemeDrawer exposes Haptic intensity buttons and updates context cleanly
+    fireEvent.click(screen.getByRole("button", { name: "toggle-drawer" }));
+    const mediumBtn = screen.getByRole("button", { name: "Medium" });
+    fireEvent.click(mediumBtn);
+    expect(localStorage.getItem("scu-haptic-intensity")).toBe("medium");
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.getByTestId("ctx-haptic-intensity").textContent).toBe("medium");
+    fireEvent.click(screen.getByRole("button", { name: "fire-click" }));
+    expect(vibrateMock).toHaveBeenLastCalledWith([8, 18, 6]);
   });
 });

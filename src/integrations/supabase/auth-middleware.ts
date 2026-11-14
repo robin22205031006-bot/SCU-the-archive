@@ -3,6 +3,7 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
+import { resolveArchiveBackend } from "../../../archive-backend";
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
@@ -33,14 +34,14 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
-    const SUPABASE_URL =
-      process.env["SUPABASE_URL"] ||
-      process.env["VITE_SUPABASE_URL"] ||
-      "https://c--2c3743b4-a0ff-4079-b412-eba03e4ddcc7-prod.lovable.cloud";
-    const SUPABASE_PUBLISHABLE_KEY =
-      process.env["SUPABASE_PUBLISHABLE_KEY"] ||
-      process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-      "sb_publishable_FSGOMkkM8_gDbaY7lfAyEg_d7tLjyhW";
+    const resolved = resolveArchiveBackend({
+      VITE_SUPABASE_URL: process.env["SUPABASE_URL"] || process.env["VITE_SUPABASE_URL"],
+      VITE_SUPABASE_PUBLISHABLE_KEY:
+        process.env["SUPABASE_PUBLISHABLE_KEY"] || process.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
+      VITE_SUPABASE_PROJECT_ID: process.env["VITE_SUPABASE_PROJECT_ID"],
+    });
+    const SUPABASE_URL = resolved.url;
+    const SUPABASE_PUBLISHABLE_KEY = resolved.key;
 
     const request = getRequest();
 

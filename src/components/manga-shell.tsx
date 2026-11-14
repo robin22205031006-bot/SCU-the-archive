@@ -69,7 +69,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
   const activeMeta = getGenreThemeMeta(activeGenre);
   const { triggerInteractionSfx } = useMangaSfx();
   const { triggerNavigation: playSnap, triggerClick: playClick, triggerFeedback } = useUIFeedback();
-  const playSwitch = () => triggerFeedback("switch");
+  const playSwitch = (target?: Parameters<typeof playClick>[0]) =>
+    triggerFeedback("switch", target);
   const [tocOpen, setTocOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
 
@@ -189,7 +190,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
               isFantasy ? "border-b border-[#c5a869]/45" : "border-b border-border/50"
             }`}
           >
-            <Link to="/" onClick={() => playClick()} className="group flex items-center gap-2">
+            <Link to="/" onClick={(e) => playClick(e)} className="group flex items-center gap-2">
               <span
                 className={`border-2 px-1.5 py-0.5 font-display text-sm tracking-wider transition-transform group-hover:-rotate-1 ${
                   isFantasy
@@ -221,8 +222,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
                 type="button"
                 aria-label="Theme & Visual Style"
                 title="Appearance & Genre Themes"
-                onClick={() => {
-                  playClick();
+                onClick={(e) => {
+                  playClick(e);
                   setThemeOpen(true);
                 }}
                 className={`manga-ink-btn inline-flex items-center gap-1.5 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
@@ -241,7 +242,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
                 onClick={(ev) => {
                   const next = !enabled;
                   setAnimationsEnabled(next);
-                  playSwitch();
+                  playSwitch(ev);
                   if (next) triggerInteractionSfx("switch-mode", ev);
                 }}
                 className={`manga-ink-btn hidden items-center gap-1 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider sm:inline-flex ${
@@ -259,7 +260,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
               </button>
               <Link
                 to="/profile"
-                onClick={() => playClick()}
+                onClick={(e) => playClick(e)}
                 aria-label="Profile"
                 title="Reader Profile"
                 className={`manga-ink-btn inline-flex items-center gap-1 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
@@ -278,7 +279,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
                 aria-label={tocOpen ? "Close full chapter index" : "Open full chapter index"}
                 aria-expanded={tocOpen}
                 onClick={(ev) => {
-                  playSnap();
+                  playSnap(ev);
                   triggerInteractionSfx("click", ev);
                   setTocOpen((v) => !v);
                 }}
@@ -321,7 +322,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
                   aria-pressed={selected}
                   onClick={(ev) => {
                     setGenreTheme(g.id);
-                    playSwitch();
+                    playSwitch(ev);
                     triggerInteractionSfx("switch-mode", ev);
                   }}
                   className={`inline-flex shrink-0 items-center gap-1.5 border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
@@ -359,7 +360,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
                   to={t.to}
                   preload="intent"
                   aria-current={active ? "page" : undefined}
-                  onClick={() => playSnap()}
+                  onClick={(e) => playSnap(e)}
                   className={`manga-chapter-tab relative flex shrink-0 flex-col justify-center px-2.5 py-1.5 text-left transition-colors last:border-r-0 ${
                     isFantasy
                       ? active
@@ -435,8 +436,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
                       <Link
                         key={t.to}
                         to={t.to}
-                        onClick={() => {
-                          playSnap();
+                        onClick={(e) => {
+                          playSnap(e);
                           setTocOpen(false);
                         }}
                         className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
@@ -459,8 +460,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
                       <Link
                         key={t.to}
                         to={t.to}
-                        onClick={() => {
-                          playSnap();
+                        onClick={(e) => {
+                          playSnap(e);
                           setTocOpen(false);
                         }}
                         className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${

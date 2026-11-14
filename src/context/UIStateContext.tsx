@@ -38,7 +38,29 @@ export const UI_MODE_OPTIONS: readonly UIModeOption[] = [
   },
 ] as const;
 
+export type HapticIntensity = "low" | "medium" | "high";
+
+export interface HapticIntensityOption {
+  id: HapticIntensity;
+  label: string;
+  scale: number;
+}
+
+export const HAPTIC_INTENSITY_OPTIONS: readonly HapticIntensityOption[] = [
+  { id: "low", label: "Low", scale: 0.5 },
+  { id: "medium", label: "Medium", scale: 1 },
+  { id: "high", label: "High", scale: 1.5 },
+] as const;
+
 export const UI_STATE_STORAGE_KEY = "scu-ui-mode";
+export const HAPTIC_INTENSITY_STORAGE_KEY = "scu-haptic-intensity";
+
+export function resolveHapticIntensity(value: string | null | undefined): HapticIntensity {
+  if (value === "low" || value === "medium" || value === "high") {
+    return value;
+  }
+  return "medium";
+}
 
 export function resolveUIMode(value: string | null | undefined): UIMode {
   if (value === "nexus" || value === "minimal" || value === "manga" || value === "classic") {
@@ -71,6 +93,8 @@ export interface UIStateContextValue {
   setActiveNav: (path: string) => void;
   navMode: NavMode;
   setNavMode: (next: NavMode) => void;
+  hapticIntensity: HapticIntensity;
+  setHapticIntensity: (intensity: HapticIntensity) => void;
   isNexus: boolean;
   isMinimal: boolean;
   isManga: boolean;
@@ -99,14 +123,27 @@ function readInitialUIMode(initialMode?: UIMode, parentMode?: UIMode): UIMode {
   return "nexus";
 }
 
+function readInitialHapticIntensity(initialHapticIntensity?: HapticIntensity): HapticIntensity {
+  if (initialHapticIntensity) return resolveHapticIntensity(initialHapticIntensity);
+  try {
+    const saved = localStorage.getItem(HAPTIC_INTENSITY_STORAGE_KEY);
+    if (saved) return resolveHapticIntensity(saved);
+  } catch {
+    /* storage optional */
+  }
+  return "medium";
+}
+
 export function UIStateProvider({
   children,
   initialMode,
+  initialHapticIntensity,
   initialNav = "/",
   applyAttributesToHtml = true,
 }: {
   children: ReactNode;
   initialMode?: UIMode;
+  initialHapticIntensity?: HapticIntensity;
   initialNav?: string;
   applyAttributesToHtml?: boolean;
 }) {
@@ -115,9 +152,25 @@ export function UIStateProvider({
     readInitialUIMode(initialMode, parentUiMode?.mode),
   );
   const mode = parentUiMode ? parentUiMode.mode : localMode;
+  const [hapticIntensity, setHapticIntensityState] = useState<HapticIntensity>(() =>
+    readInitialHapticIntensity(initialHapticIntensity),
+  );
   const [navOpen, setNavOpen] = useState(false);
   const [activeNav, setActiveNav] = useState(initialNav);
   const currentNavMode = useNavMode();
+
+  const setHapticIntensity = useCallback((next: HapticIntensity) => {
+    const resolved = resolveHapticIntensity(next);
+    setHapticIntensityState(resolved);
+    try {
+      localStorage.setItem(HAPTIC_INTENSITY_STORAGE_KEY, resolved);
+    } catch {
+      /* storage optional */
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("scu:haptic-intensity-change", { detail: resolved }));
+    }
+  }, []);
 
   const setMode = useCallback(
     (next: UIMode) => {
@@ -154,6 +207,27 @@ export function UIStateProvider({
 
   const toggleNav = useCallback(() => {
     setNavOpen((prev) => !prev);
+  }, []);
+
+  // Sync haptic intensity across tabs / custom events
+  useEffect(() => {
+    const onHapticEvent = (e: Event) => {
+      const next = (e as CustomEvent<HapticIntensity>).detail;
+      if (next) {
+        setHapticIntensityState((prev) => (prev === next ? prev : resolveHapticIntensity(next)));
+      }
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === HAPTIC_INTENSITY_STORAGE_KEY && e.newValue) {
+        setHapticIntensityState(resolveHapticIntensity(e.newValue));
+      }
+    };
+    window.addEventListener("scu:haptic-intensity-change", onHapticEvent);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("scu:haptic-intensity-change", onHapticEvent);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   // Sync standalone provider with external setUiStyle / mode events / cross-tab storage changes
@@ -211,12 +285,24 @@ export function UIStateProvider({
       setActiveNav,
       navMode: currentNavMode,
       setNavMode,
+      hapticIntensity,
+      setHapticIntensity,
       isNexus: mode === "nexus",
       isMinimal: mode === "minimal",
       isManga: mode === "manga",
       modes: UI_MODE_OPTIONS,
     }),
-    [mode, setMode, cycleMode, navOpen, toggleNav, activeNav, currentNavMode],
+    [
+      mode,
+      setMode,
+      cycleMode,
+      navOpen,
+      toggleNav,
+      activeNav,
+      currentNavMode,
+      hapticIntensity,
+      setHapticIntensity,
+    ],
   );
 
   return <UIStateContext.Provider value={value}>{children}</UIStateContext.Provider>;

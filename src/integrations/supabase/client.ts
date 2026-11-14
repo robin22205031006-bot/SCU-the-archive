@@ -2,6 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { brokeredPreviewStorage } from "./previewAuthStorage";
+import { ARCHIVE_BACKEND } from "../../../archive-backend";
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
@@ -23,8 +24,8 @@ function serverSupabaseUrl(publicUrl: string, supabaseKey: string): string | und
   return serverUrl;
 }
 
-const DEFAULT_SUPABASE_URL = "https://c--2c3743b4-a0ff-4079-b412-eba03e4ddcc7-prod.lovable.cloud";
-const DEFAULT_SUPABASE_KEY = "sb_publishable_FSGOMkkM8_gDbaY7lfAyEg_d7tLjyhW";
+const DEFAULT_SUPABASE_URL = ARCHIVE_BACKEND.url;
+const DEFAULT_SUPABASE_KEY = ARCHIVE_BACKEND.key;
 
 let _prefersProxy = false;
 

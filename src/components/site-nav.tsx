@@ -247,7 +247,7 @@ export function SiteNav() {
                 key={t.to}
                 to={t.to}
                 preload="intent"
-                onClick={() => playSnap()}
+                onClick={(e) => playSnap(e)}
                 ref={(el) => {
                   refs.current[i] = el;
                 }}
@@ -302,7 +302,7 @@ export function SiteNav() {
           to="/install"
           aria-label="Install app"
           title="Install app"
-          onClick={() => playClick()}
+          onClick={(e) => playClick(e)}
           className="hidden h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground md:grid"
         >
           <Download className="h-3.5 w-3.5" />
@@ -311,8 +311,8 @@ export function SiteNav() {
         <ThemeDrawer />
         <button
           aria-label="Zoom out text"
-          onClick={() => {
-            playClick();
+          onClick={(e) => {
+            playClick(e);
             zoom(-1);
           }}
           className="hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
@@ -321,8 +321,8 @@ export function SiteNav() {
         </button>
         <button
           aria-label="Zoom in text"
-          onClick={() => {
-            playClick();
+          onClick={(e) => {
+            playClick(e);
             zoom(1);
           }}
           className="hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
@@ -333,9 +333,9 @@ export function SiteNav() {
         <button
           aria-label={muted ? "Unmute sounds" : "Mute sounds"}
           title={muted ? "Unmute" : "Mute"}
-          onClick={() => {
+          onClick={(e) => {
             toggleMute();
-            playClick();
+            playClick(e);
           }}
           className="hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
         >
@@ -344,8 +344,8 @@ export function SiteNav() {
         <button
           aria-label={animOn ? "Disable cinematic animations" : "Enable cinematic animations"}
           title={animOn ? "Animations on" : "Animations off"}
-          onClick={() => {
-            playClick();
+          onClick={(e) => {
+            playClick(e);
             setAnimationsEnabled(!animOn);
           }}
           className={`hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full ${animOn ? "text-accent" : "text-muted-foreground hover:text-foreground"}`}
@@ -355,8 +355,8 @@ export function SiteNav() {
         <button
           aria-label={ambient ? "Stop ambient music" : "Play ambient music"}
           title={ambient ? "Ambient off" : "Ambient on"}
-          onClick={() => {
-            playClick();
+          onClick={(e) => {
+            playClick(e);
             toggleAmbient();
           }}
           className={`hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full ${ambient ? "text-accent" : "text-muted-foreground hover:text-foreground"}`}
@@ -366,8 +366,8 @@ export function SiteNav() {
         <button
           aria-label={hideSpoilers ? "Show character roles" : "Hide character roles (spoiler-free)"}
           title={hideSpoilers ? "Show roles" : "Hide roles"}
-          onClick={() => {
-            playClick();
+          onClick={(e) => {
+            playClick(e);
             setSpoilersHidden(!hideSpoilers);
           }}
           className={`hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full ${hideSpoilers ? "text-accent" : "text-muted-foreground hover:text-foreground"}`}
@@ -380,15 +380,15 @@ export function SiteNav() {
               to="/profile"
               aria-label="Profile"
               title={profile?.display_name ?? "Profile"}
-              onClick={() => playClick()}
+              onClick={(e) => playClick(e)}
               className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
             >
               <User className="h-3.5 w-3.5" />
             </Link>
             <button
               aria-label="Sign out"
-              onClick={() => {
-                playClick();
+              onClick={(e) => {
+                playClick(e);
                 void signOut();
               }}
               className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
@@ -399,7 +399,7 @@ export function SiteNav() {
         ) : (
           <Link
             to="/auth"
-            onClick={() => playClick()}
+            onClick={(e) => playClick(e)}
             className="whitespace-nowrap rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
           >
             Sign in

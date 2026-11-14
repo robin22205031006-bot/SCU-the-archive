@@ -51,8 +51,8 @@ function AppContent() {
           <div className="flex space-x-2" role="tablist" aria-label="Archive views">
             <button
               type="button"
-              onClick={() => {
-                triggerFeedback("nav", mode);
+              onClick={(e) => {
+                triggerFeedback("nav", mode, e);
                 setActiveNav("/archive");
               }}
               aria-current={activeView === "explorer" ? "page" : undefined}
@@ -66,8 +66,8 @@ function AppContent() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                triggerFeedback("nav", mode);
+              onClick={(e) => {
+                triggerFeedback("nav", mode, e);
                 setActiveNav("/ai");
               }}
               aria-current={activeView === "chat" ? "page" : undefined}
@@ -88,9 +88,9 @@ function AppContent() {
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
                     const nextMode = opt.id as UIMode;
-                    triggerFeedback("click", nextMode);
+                    triggerFeedback("click", nextMode, e);
                     setMode(nextMode);
                   }}
                   aria-pressed={selected}

@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Globe2, MapPin } from "lucide-react";
+import { CloudRain, Flame, Globe2, MapPin, Snowflake, Sparkles, Wind } from "lucide-react";
 import { LoreWorldMap } from "@/components/lore-world-map";
 import { AtlasOverlay } from "@/components/nexus-atlas";
 import { useUiStyle } from "@/lib/ui-style";
-import { useIsManga } from "@/hooks/use-ui-mode";
+import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { MANGA_SCALE } from "@/lib/manga-scale";
+import {
+  readCurrentLoreLocation,
+  resolveLocationAtmosphere,
+  setCurrentLoreLocation,
+  useAmbientAtmosphere,
+  type AtmosphereWeather,
+} from "@/lib/ambient-atmosphere";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 type Era = {
   id: string;
@@ -240,16 +248,51 @@ const TONE: Record<Era["tone"], string> = {
   ruin: "from-destructive/30 via-destructive/5 to-transparent",
 };
 
+function WeatherIcon({ weather }: { weather: AtmosphereWeather }) {
+  switch (weather) {
+    case "rain":
+      return <CloudRain className="h-3.5 w-3.5" />;
+    case "snow":
+      return <Snowflake className="h-3.5 w-3.5" />;
+    case "embers":
+      return <Flame className="h-3.5 w-3.5" />;
+    case "fireflies":
+    case "rift":
+      return <Sparkles className="h-3.5 w-3.5" />;
+    default:
+      return <Wind className="h-3.5 w-3.5" />;
+  }
+}
+
 export function LoreLocations() {
   const isManga = useIsManga();
+  const activeGenre = useActiveGenre();
+  const isFantasy = isManga && activeGenre === "fantasy";
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
-  const [locId, setLocId] = useState(LOCATIONS[0]!.id);
-  const [eraIdx, setEraIdx] = useState<Record<string, number>>({});
+  const [ambientAtmosphere, setAmbientAtmosphere] = useAmbientAtmosphere();
+  const { triggerFeedback } = useUIFeedback();
+
+  const [locId, setLocId] = useState<string>(() => {
+    const saved = readCurrentLoreLocation().locationId;
+    return LOCATIONS.some((l) => l.id === saved) ? saved : LOCATIONS[0]!.id;
+  });
+  const [eraIdx, setEraIdx] = useState<Record<string, number>>(() => {
+    const saved = readCurrentLoreLocation();
+    const match = LOCATIONS.find((l) => l.id === saved.locationId);
+    if (!match) return {};
+    const foundIdx = match.eras.findIndex((e) => e.id === saved.eraId);
+    return foundIdx >= 0 ? { [match.id]: foundIdx } : {};
+  });
   const [atlasStart, setAtlasStart] = useState<string | null>(null);
-  const loc = LOCATIONS.find((l) => l.id === locId)!;
+  const loc = LOCATIONS.find((l) => l.id === locId) ?? LOCATIONS[0]!;
   const idx = Math.min(eraIdx[loc.id] ?? 0, loc.eras.length - 1);
   const era = loc.eras[idx]!;
+  const locAtmosphere = resolveLocationAtmosphere(loc.id, era.id);
+
+  useEffect(() => {
+    setCurrentLoreLocation(loc.id, era.id);
+  }, [loc.id, era.id]);
 
   const activeEras = Object.fromEntries(
     LOCATIONS.map((l) => [l.id, l.eras[Math.min(eraIdx[l.id] ?? 0, l.eras.length - 1)]!.id]),
@@ -267,26 +310,39 @@ export function LoreLocations() {
             <button
               key={l.id}
               type="button"
-              onClick={() => setLocId(l.id)}
+              onClick={() => {
+                setLocId(l.id);
+                triggerFeedback("click");
+              }}
               className={
-                isManga
-                  ? `shrink-0 border-2 border-foreground p-3 text-left transition ${
+                isFantasy
+                  ? `shrink-0 rounded-lg border-2 p-3 text-left transition ${
                       l.id === locId
-                        ? "bg-foreground text-background shadow-[3px_3px_0_var(--primary)]"
-                        : "bg-card text-foreground hover:bg-secondary"
+                        ? "border-[#5ce1b8] bg-[#15221b] text-[#f5ebe6] shadow-[0_0_16px_rgba(92,225,184,0.3)]"
+                        : "border-[#c5a869]/60 bg-[#1a241e]/95 text-[#e6dcc5] hover:border-[#5ce1b8]"
                     }`
-                  : `glass shrink-0 rounded-xl p-3.5 text-left transition-all ${l.id === locId ? "glow-ring border-accent/50" : "hover:glow-ring"}`
+                  : isManga
+                    ? `shrink-0 border-2 border-foreground p-3 text-left transition ${
+                        l.id === locId
+                          ? "bg-foreground text-background shadow-[3px_3px_0_var(--primary)]"
+                          : "bg-card text-foreground hover:bg-secondary"
+                      }`
+                    : `glass shrink-0 rounded-xl p-3.5 text-left transition-all ${l.id === locId ? "glow-ring border-accent/50" : "hover:glow-ring"}`
               }
             >
               <MapPin
                 className={`h-4 w-4 ${
-                  isManga
+                  isFantasy
                     ? l.id === locId
-                      ? "text-primary"
-                      : "text-foreground"
-                    : l.id === locId
-                      ? "text-accent"
-                      : "text-muted-foreground"
+                      ? "text-[#5ce1b8]"
+                      : "text-[#c5a869]"
+                    : isManga
+                      ? l.id === locId
+                        ? "text-primary"
+                        : "text-foreground"
+                      : l.id === locId
+                        ? "text-accent"
+                        : "text-muted-foreground"
                 }`}
               />
               <div
@@ -303,9 +359,11 @@ export function LoreLocations() {
 
         <div
           className={
-            isManga
-              ? `manga-panel manga-halftone ${MANGA_SCALE.banner} relative overflow-hidden border-2 border-border bg-card`
-              : "glass relative overflow-hidden rounded-2xl border border-border p-5"
+            isFantasy
+              ? `relative overflow-hidden rounded-xl border-2 border-[#c5a869] bg-[#15221b] p-5 text-[#f5ebe6] shadow-[inset_0_0_24px_rgba(92,225,184,0.16)]`
+              : isManga
+                ? `manga-panel manga-halftone ${MANGA_SCALE.banner} relative overflow-hidden border-2 border-border bg-card`
+                : "glass relative overflow-hidden rounded-2xl border border-border p-5"
           }
         >
           {!isManga && (
@@ -325,31 +383,73 @@ export function LoreLocations() {
               <div>
                 <p
                   className={`text-[11px] font-bold uppercase tracking-[0.25em] ${
-                    isManga ? "font-mono text-primary" : "text-accent"
+                    isFantasy
+                      ? "font-mono text-[#c5a869]"
+                      : isManga
+                        ? "font-mono text-primary"
+                        : "text-accent"
                   }`}
                 >
                   {loc.epithet}
                 </p>
                 <h2
                   className={
-                    isManga
-                      ? `manga-display-title ${MANGA_SCALE.heroTitle} mt-1 uppercase`
-                      : "mt-1 text-3xl font-medium glow-text"
+                    isFantasy
+                      ? "mt-1 font-display text-3xl uppercase tracking-wider text-[#f5ebe6]"
+                      : isManga
+                        ? `manga-display-title ${MANGA_SCALE.heroTitle} mt-1 uppercase`
+                        : "mt-1 text-3xl font-medium glow-text"
                   }
                 >
                   {loc.name}
                 </h2>
               </div>
-              {nexus && (
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setAtlasStart(loc.id)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/60 bg-background/70 px-3 py-1.5 text-xs text-primary backdrop-blur transition hover:bg-primary hover:text-primary-foreground"
+                  aria-pressed={ambientAtmosphere}
+                  onClick={(e) => {
+                    setAmbientAtmosphere(!ambientAtmosphere);
+                    triggerFeedback("switch", { target: e });
+                  }}
+                  title={`Toggle Ambient Atmosphere (${locAtmosphere.weatherLabel})`}
+                  className={
+                    isFantasy
+                      ? `inline-flex items-center gap-1.5 rounded border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                          ambientAtmosphere
+                            ? "border-[#5ce1b8] bg-[#2e5a52] text-[#f5ebe6] shadow-[0_0_12px_rgba(92,225,184,0.3)]"
+                            : "border-[#c5a869]/55 bg-[#1a241e] text-[#e6dcc5] hover:border-[#5ce1b8]"
+                        }`
+                      : `inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition ${
+                          ambientAtmosphere
+                            ? "border-accent bg-accent/15 text-accent"
+                            : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                        }`
+                  }
                 >
-                  <Globe2 className="h-3.5 w-3.5" />
-                  Open Interactive Map
+                  <WeatherIcon weather={locAtmosphere.weather} />
+                  <span>
+                    {locAtmosphere.weatherLabel}: {ambientAtmosphere ? "ON" : "OFF"}
+                  </span>
                 </button>
-              )}
+                {(nexus || isFantasy) && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      triggerFeedback("cta", { target: e });
+                      setAtlasStart(loc.id);
+                    }}
+                    className={
+                      isFantasy
+                        ? "fantasy-discover-btn inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 font-display text-xs font-bold uppercase tracking-[0.2em]"
+                        : "inline-flex items-center gap-1.5 rounded-full border border-primary/60 bg-background/70 px-3 py-1.5 text-xs text-primary backdrop-blur transition hover:bg-primary hover:text-primary-foreground"
+                    }
+                  >
+                    <Globe2 className="h-3.5 w-3.5" />
+                    {isFantasy ? "DISCOVER ATLAS" : "Open Interactive Map"}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="relative mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Era">
@@ -359,15 +459,24 @@ export function LoreLocations() {
                   type="button"
                   role="tab"
                   aria-selected={i === idx}
-                  onClick={() => setEraIdx((s) => ({ ...s, [loc.id]: i }))}
+                  onClick={() => {
+                    setEraIdx((s) => ({ ...s, [loc.id]: i }));
+                    triggerFeedback("switch");
+                  }}
                   className={
-                    isManga
-                      ? `border-2 border-border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                    isFantasy
+                      ? `rounded border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           i === idx
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background text-foreground hover:bg-secondary"
+                            ? "border-[#5ce1b8] bg-[#2e5a52] text-[#f5ebe6] shadow-[0_0_10px_rgba(92,225,184,0.28)]"
+                            : "border-[#c5a869]/50 bg-[#1a241e] text-[#e6dcc5] hover:border-[#5ce1b8]"
                         }`
-                      : `relative rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${i === idx ? "border-accent/60 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`
+                      : isManga
+                        ? `border-2 border-border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                            i === idx
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-foreground hover:bg-secondary"
+                          }`
+                        : `relative rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${i === idx ? "border-accent/60 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`
                   }
                 >
                   {!isManga && i === idx && (
@@ -390,41 +499,77 @@ export function LoreLocations() {
                 transition={{ duration: 0.35 }}
                 className="mt-6 grid gap-4 md:grid-cols-3"
               >
-                <div className="md:col-span-3">
-                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <div
+                  className={
+                    isFantasy
+                      ? "parchment-dot-grid rounded-lg border border-[#c5a869]/75 p-4 text-[#15221b] md:col-span-3"
+                      : "md:col-span-3"
+                  }
+                >
+                  <div
+                    className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+                      isFantasy ? "text-[#2e5a52]" : "text-muted-foreground"
+                    }`}
+                  >
                     State
                   </div>
                   <div
-                    className={isManga ? "font-display text-2xl uppercase" : "text-2xl font-medium"}
+                    className={
+                      isFantasy
+                        ? "font-display text-2xl uppercase text-[#15221b]"
+                        : isManga
+                          ? "font-display text-2xl uppercase"
+                          : "text-2xl font-medium"
+                    }
                   >
                     {era.state}
                   </div>
-                  <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{era.description}</p>
+                  <p
+                    className={`mt-2 max-w-2xl text-sm ${
+                      isFantasy ? "text-[#1a241e]/90" : "text-muted-foreground"
+                    }`}
+                  >
+                    {era.description}
+                  </p>
                 </div>
                 <div
                   className={
-                    isManga
-                      ? "border-2 border-border bg-background p-4 md:col-span-2"
-                      : "rounded-xl border border-border bg-background/40 p-4 md:col-span-2"
+                    isFantasy
+                      ? "rounded-lg border border-[#c5a869]/60 bg-[#1a241e]/95 p-4 text-[#f5ebe6] md:col-span-2"
+                      : isManga
+                        ? "border-2 border-border bg-background p-4 md:col-span-2"
+                        : "rounded-xl border border-border bg-background/40 p-4 md:col-span-2"
                   }
                 >
-                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <div
+                    className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+                      isFantasy ? "text-[#c5a869]" : "text-muted-foreground"
+                    }`}
+                  >
                     Visual state
                   </div>
                   <p className="mt-1 text-sm">{era.visual}</p>
                 </div>
                 <div
                   className={
-                    isManga
-                      ? "border-2 border-border bg-foreground p-4 text-background"
-                      : "rounded-xl border border-border bg-background/40 p-4"
+                    isFantasy
+                      ? "rounded-lg border border-[#c5a869]/60 bg-[#1a241e]/95 p-4 text-[#f5ebe6]"
+                      : isManga
+                        ? "border-2 border-border bg-foreground p-4 text-background"
+                        : "rounded-xl border border-border bg-background/40 p-4"
                   }
                 >
-                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest opacity-70">
+                  <div
+                    className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+                      isFantasy ? "text-[#c5a869]" : "opacity-70"
+                    }`}
+                  >
                     Environment status
                   </div>
                   <p
-                    className={`mt-1 text-sm font-bold ${isManga ? "text-primary" : "text-accent"}`}
+                    className={`mt-1 text-sm font-bold ${
+                      isFantasy ? "text-[#5ce1b8]" : isManga ? "text-primary" : "text-accent"
+                    }`}
                   >
                     {era.status}
                   </p>

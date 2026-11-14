@@ -30,10 +30,115 @@ export function onMuteChange(handler: () => void): () => void {
   return () => window.removeEventListener(MUTE_EVENT, handler);
 }
 
+export interface AudioSpatialPan {
+  /** Stereo pan in [-1, 1] (-1 left, 0 center, +1 right). */
+  pan: number;
+  /** Signed horizontal offset from center in [-1, 1]. */
+  x?: number;
+  /** Signed vertical offset from center in [-1, 1]. */
+  y?: number;
+  /** Normalized radial distance from center in [0, 1]. */
+  distanceFromCenter?: number;
+}
+
+interface ActiveAudioPanScope {
+  spatial: AudioSpatialPan;
+  node: AudioNode | null;
+  ctx: AudioContext | null;
+}
+
 let ctx: AudioContext | null = null;
 const noiseBufferCache = new Map<number, AudioBuffer>();
 const decodedAudioCache = new Map<string, AudioBuffer>();
 const decodingPromises = new Map<string, Promise<AudioBuffer | null>>();
+let activePanScope: ActiveAudioPanScope | null = null;
+
+function clampPan(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-1, Math.min(1, value));
+}
+
+export function withAudioPan<T>(pan: AudioSpatialPan | number | null, fn: () => T): T {
+  const prev = activePanScope;
+  if (pan === null) {
+    activePanScope = null;
+  } else {
+    const normalized: AudioSpatialPan =
+      typeof pan === "number"
+        ? {
+            pan: clampPan(pan),
+            x: clampPan(pan),
+            y: 0,
+            distanceFromCenter: Math.abs(clampPan(pan)),
+          }
+        : {
+            pan: clampPan(pan.pan),
+            ...(pan.x !== undefined ? { x: clampPan(pan.x) } : {}),
+            ...(pan.y !== undefined ? { y: clampPan(pan.y) } : {}),
+            ...(pan.distanceFromCenter !== undefined
+              ? { distanceFromCenter: Math.max(0, Math.min(1, pan.distanceFromCenter)) }
+              : {}),
+          };
+    activePanScope = { spatial: normalized, node: null, ctx: null };
+  }
+  try {
+    return fn();
+  } finally {
+    activePanScope = prev;
+  }
+}
+
+function resolveOutputNode(c: AudioContext): AudioNode {
+  if (!activePanScope) return c.destination;
+  if (activePanScope.node && activePanScope.ctx === c) return activePanScope.node;
+
+  const { spatial } = activePanScope;
+  const panValue = clampPan(spatial.pan);
+
+  try {
+    if (typeof c.createStereoPanner === "function") {
+      const pannerNode = c.createStereoPanner();
+      if (pannerNode?.pan) {
+        if (typeof pannerNode.pan.setValueAtTime === "function") {
+          pannerNode.pan.setValueAtTime(panValue, c.currentTime);
+        }
+        pannerNode.pan.value = panValue;
+      }
+      pannerNode.connect(c.destination);
+      activePanScope.node = pannerNode;
+      activePanScope.ctx = c;
+      return pannerNode;
+    }
+
+    if (typeof c.createPanner === "function") {
+      const pannerNode = c.createPanner();
+      const x = spatial.x ?? panValue;
+      const y = spatial.y ?? 0;
+      const dist = spatial.distanceFromCenter ?? Math.abs(panValue);
+      const z = -Math.max(0.35, 1 - dist * 0.5);
+      try {
+        pannerNode.panningModel = "equalpower";
+      } catch {
+        /* ignore read-only panningModel on mocks */
+      }
+      if (pannerNode.positionX && typeof pannerNode.positionX.setValueAtTime === "function") {
+        pannerNode.positionX.setValueAtTime(x, c.currentTime);
+        pannerNode.positionY?.setValueAtTime(-y, c.currentTime);
+        pannerNode.positionZ?.setValueAtTime(z, c.currentTime);
+      } else if (typeof pannerNode.setPosition === "function") {
+        pannerNode.setPosition(x, -y, z);
+      }
+      pannerNode.connect(c.destination);
+      activePanScope.node = pannerNode;
+      activePanScope.ctx = c;
+      return pannerNode;
+    }
+  } catch {
+    /* fall back to direct destination when panner creation fails */
+  }
+
+  return c.destination;
+}
 
 function ac(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -92,7 +197,7 @@ function tone({
   gain.gain.setValueAtTime(0, t0);
   gain.gain.linearRampToValueAtTime(vol, t0 + attack);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(gain).connect(c.destination);
+  osc.connect(gain).connect(resolveOutputNode(c));
   osc.start(t0);
   osc.stop(t0 + dur + 0.02);
 }
@@ -126,7 +231,7 @@ function noise({
   const gain = c.createGain();
   gain.gain.setValueAtTime(vol, t0);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  src.connect(filter).connect(gain).connect(c.destination);
+  src.connect(filter).connect(gain).connect(resolveOutputNode(c));
   src.start(t0);
 }
 
@@ -252,6 +357,8 @@ export function resetAudioBufferCache(): void {
   noiseBufferCache.clear();
   decodedAudioCache.clear();
   decodingPromises.clear();
+  ctx = null;
+  activePanScope = null;
 }
 
 export function setAudioFiles(map: Record<string, string> | null | undefined) {
@@ -278,7 +385,7 @@ export function playAudioFile(key: string, loop = false): boolean {
         src.buffer = cached;
         const gain = c.createGain();
         gain.gain.value = 0.8;
-        src.connect(gain).connect(c.destination);
+        src.connect(gain).connect(resolveOutputNode(c));
         src.start(0);
         return true;
       } catch {

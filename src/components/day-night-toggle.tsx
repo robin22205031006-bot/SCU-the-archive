@@ -11,8 +11,8 @@ export function DayNightToggle() {
       role="switch"
       aria-checked={dark}
       aria-label={dark ? "Switch to day" : "Switch to night"}
-      onClick={() => {
-        playClick();
+      onClick={(e) => {
+        playClick(e);
         setDark(!dark);
       }}
       className="relative h-7 w-14 shrink-0 overflow-hidden rounded-full border"

@@ -244,8 +244,8 @@ export function FloatingNav() {
                                 className={`hud-tab ${active ? "hud-tab-active" : ""}`}
                                 {...(item.to === "#theme"
                                   ? {
-                                      onClick: () => {
-                                        playClick();
+                                      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+                                        playClick(e);
                                         setOpen(false);
                                         setThemeOpen(true);
                                       },
@@ -268,8 +268,8 @@ export function FloatingNav() {
                                   <Link
                                     to={item.to}
                                     preload="intent"
-                                    onClick={() => {
-                                      playSnap();
+                                    onClick={(e) => {
+                                      playSnap(e);
                                       setOpen(false);
                                     }}
                                     aria-current={active ? "page" : undefined}

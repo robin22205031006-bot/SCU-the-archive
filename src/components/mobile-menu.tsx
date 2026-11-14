@@ -29,8 +29,8 @@ export function MobileMenu({
       <Link
         key={t.to}
         to={t.to as never}
-        onClick={() => {
-          playSnap();
+        onClick={(e) => {
+          playSnap(e);
           setOpen(false);
         }}
         activeOptions={{ exact: t.to === "/" }}
@@ -79,8 +79,8 @@ export function MobileMenu({
             return (
               <button
                 key={t.label}
-                onClick={() => {
-                  playClick();
+                onClick={(e) => {
+                  playClick(e);
                   t.onClick();
                 }}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:text-foreground ${t.on ? "text-accent" : "text-muted-foreground"}`}

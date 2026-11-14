@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-admin";
 import { favorites, onFavoritesChange, removeFavorite, type FavoriteEntry } from "@/lib/favorites";
+import { useAmbientAtmosphere, useLoreAtmosphere } from "@/lib/ambient-atmosphere";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -36,6 +39,9 @@ function ProfilePage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [ambientAtmosphere, setAmbientAtmosphere] = useAmbientAtmosphere();
+  const loreAtmosphere = useLoreAtmosphere();
+  const { triggerFeedback } = useUIFeedback();
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -150,6 +156,34 @@ function ProfilePage() {
               </Button>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section
+        className="glass mt-6 rounded-2xl p-5"
+        aria-label="Atmosphere and immersion settings"
+      >
+        <h2 className="text-lg">Settings &amp; Immersion</h2>
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <Label htmlFor="profile-ambient-atmosphere">Ambient Atmosphere</Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Inject subtle {loreAtmosphere.weatherLabel.toLowerCase()} animations into glass panels
+              based on {loreAtmosphere.locationName}.{" "}
+              <Link to="/map" className="text-accent underline underline-offset-2">
+                Change location on Map
+              </Link>
+            </p>
+          </div>
+          <Switch
+            id="profile-ambient-atmosphere"
+            aria-label="Ambient Atmosphere"
+            checked={ambientAtmosphere}
+            onCheckedChange={(checked) => {
+              setAmbientAtmosphere(checked);
+              triggerFeedback("switch");
+            }}
+          />
         </div>
       </section>
 

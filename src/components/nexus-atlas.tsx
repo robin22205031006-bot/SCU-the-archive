@@ -41,6 +41,7 @@ import {
   type AtlasLocation,
 } from "@/lib/nexus-atlas";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
+import { setCurrentLoreLocation } from "@/lib/ambient-atmosphere";
 
 const FX_COLORS: Record<AtlasFx, string> = {
   snow: "235,245,255",
@@ -590,6 +591,9 @@ function LocationView({
   }, [eraId, mode]);
 
   const era = loc.eras.find((e) => e.id === eraId) ?? loc.eras[loc.eras.length - 1]!;
+  useEffect(() => {
+    setCurrentLoreLocation(loc.id, era.id);
+  }, [loc.id, era.id]);
   const activeImage = mode === "top" ? loc.top.image : era.image;
   const mediaWidth = mode === "top" ? loc.top.width : era.width;
   const mediaHeight = mode === "top" ? loc.top.height : era.height;
