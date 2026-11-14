@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type Context,
   type ReactNode,
 } from "react";
 import { setNavMode, useNavMode, type NavMode } from "@/lib/nav-mode";
@@ -76,7 +77,13 @@ export interface UIStateContextValue {
   modes: readonly UIModeOption[];
 }
 
-export const UIStateContext = createContext<UIStateContextValue | null>(null);
+const UI_STATE_CONTEXT_KEY = Symbol.for("scu.UIStateContext");
+const g = globalThis as Record<symbol, unknown>;
+export const UIStateContext: Context<UIStateContextValue | null> =
+  (g[UI_STATE_CONTEXT_KEY] as Context<UIStateContextValue | null> | undefined) ??
+  ((g[UI_STATE_CONTEXT_KEY] = createContext<UIStateContextValue | null>(
+    null,
+  )) as Context<UIStateContextValue | null>);
 
 function readInitialUIMode(initialMode?: UIMode, parentMode?: UIMode): UIMode {
   if (initialMode) return resolveUIMode(initialMode);

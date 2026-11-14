@@ -50,6 +50,7 @@ import { ThemeDrawer } from "./theme-drawer";
 import { UniversalSearch } from "./universal-search";
 import { MobileMenu } from "./mobile-menu";
 import { Download } from "lucide-react";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 const ICONS = {
   home: Home,
@@ -103,6 +104,7 @@ export function SiteNav() {
     },
   });
   const { muted, toggleMute } = useScuMute();
+  const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback();
   const animOn = useAnimationsEnabled();
   const [ambient, setAmbient] = useState(false);
   const [hideSpoilers, setHideSpoilers] = useState(spoilersHidden);
@@ -172,7 +174,10 @@ export function SiteNav() {
         dy = t.clientY - sy;
       if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
       const next = tabs[active + (dx < 0 ? 1 : -1)];
-      if (active >= 0 && next) nav({ to: next.to });
+      if (active >= 0 && next) {
+        playSnap();
+        nav({ to: next.to });
+      }
     };
     window.addEventListener("touchstart", start, { passive: true });
     window.addEventListener("touchend", end, { passive: true });
@@ -180,7 +185,7 @@ export function SiteNav() {
       window.removeEventListener("touchstart", start);
       window.removeEventListener("touchend", end);
     };
-  }, [active, tabs, nav]);
+  }, [active, tabs, nav, playSnap]);
 
   const signOut = async () => {
     await qc.cancelQueries();
@@ -242,6 +247,7 @@ export function SiteNav() {
                 key={t.to}
                 to={t.to}
                 preload="intent"
+                onClick={() => playSnap()}
                 ref={(el) => {
                   refs.current[i] = el;
                 }}
@@ -296,6 +302,7 @@ export function SiteNav() {
           to="/install"
           aria-label="Install app"
           title="Install app"
+          onClick={() => playClick()}
           className="hidden h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground md:grid"
         >
           <Download className="h-3.5 w-3.5" />
@@ -304,14 +311,20 @@ export function SiteNav() {
         <ThemeDrawer />
         <button
           aria-label="Zoom out text"
-          onClick={() => zoom(-1)}
+          onClick={() => {
+            playClick();
+            zoom(-1);
+          }}
           className="hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
         >
           <ZoomOut className="h-3.5 w-3.5" />
         </button>
         <button
           aria-label="Zoom in text"
-          onClick={() => zoom(1)}
+          onClick={() => {
+            playClick();
+            zoom(1);
+          }}
           className="hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
         >
           <ZoomIn className="h-3.5 w-3.5" />
@@ -320,7 +333,10 @@ export function SiteNav() {
         <button
           aria-label={muted ? "Unmute sounds" : "Mute sounds"}
           title={muted ? "Unmute" : "Mute"}
-          onClick={toggleMute}
+          onClick={() => {
+            toggleMute();
+            playClick();
+          }}
           className="hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
         >
           {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
@@ -328,7 +344,10 @@ export function SiteNav() {
         <button
           aria-label={animOn ? "Disable cinematic animations" : "Enable cinematic animations"}
           title={animOn ? "Animations on" : "Animations off"}
-          onClick={() => setAnimationsEnabled(!animOn)}
+          onClick={() => {
+            playClick();
+            setAnimationsEnabled(!animOn);
+          }}
           className={`hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full ${animOn ? "text-accent" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -336,7 +355,10 @@ export function SiteNav() {
         <button
           aria-label={ambient ? "Stop ambient music" : "Play ambient music"}
           title={ambient ? "Ambient off" : "Ambient on"}
-          onClick={toggleAmbient}
+          onClick={() => {
+            playClick();
+            toggleAmbient();
+          }}
           className={`hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full ${ambient ? "text-accent" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Music className="h-3.5 w-3.5" />
@@ -344,7 +366,10 @@ export function SiteNav() {
         <button
           aria-label={hideSpoilers ? "Show character roles" : "Hide character roles (spoiler-free)"}
           title={hideSpoilers ? "Show roles" : "Hide roles"}
-          onClick={() => setSpoilersHidden(!hideSpoilers)}
+          onClick={() => {
+            playClick();
+            setSpoilersHidden(!hideSpoilers);
+          }}
           className={`hidden md:grid h-7 w-7 shrink-0 place-items-center rounded-full ${hideSpoilers ? "text-accent" : "text-muted-foreground hover:text-foreground"}`}
         >
           <EyeOff className="h-3.5 w-3.5" />
@@ -355,13 +380,17 @@ export function SiteNav() {
               to="/profile"
               aria-label="Profile"
               title={profile?.display_name ?? "Profile"}
+              onClick={() => playClick()}
               className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
             >
               <User className="h-3.5 w-3.5" />
             </Link>
             <button
               aria-label="Sign out"
-              onClick={signOut}
+              onClick={() => {
+                playClick();
+                void signOut();
+              }}
               className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -370,6 +399,7 @@ export function SiteNav() {
         ) : (
           <Link
             to="/auth"
+            onClick={() => playClick()}
             className="whitespace-nowrap rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
           >
             Sign in

@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type Context,
+  type ReactNode,
+} from "react";
 import { DEFAULT_THEME, FONT_SCALES, THEMES, themeVars } from "@/lib/themes";
 
 interface Appearance {
@@ -11,7 +18,13 @@ interface Appearance {
   zoom: (dir: 1 | -1) => void;
 }
 
-const Ctx = createContext<Appearance | null>(null);
+const APPEARANCE_CONTEXT_KEY = Symbol.for("scu.AppearanceContext");
+const g = globalThis as Record<symbol, unknown>;
+const Ctx: Context<Appearance | null> =
+  (g[APPEARANCE_CONTEXT_KEY] as Context<Appearance | null> | undefined) ??
+  ((g[APPEARANCE_CONTEXT_KEY] = createContext<Appearance | null>(
+    null,
+  )) as Context<Appearance | null>);
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState(DEFAULT_THEME);

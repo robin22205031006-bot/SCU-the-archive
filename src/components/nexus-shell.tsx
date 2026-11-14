@@ -16,6 +16,7 @@ import { useNexusTheme, useNexus3dFxEnabled } from "@/hooks/use-nexus-theme";
 import { NexusNavGlyph } from "@/components/nexus-nav-glyph";
 import { useNavMode } from "@/lib/nav-mode";
 import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 export function NexusShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -26,6 +27,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
   const nexusTheme = useNexusTheme();
   const fx3dEnabled = useNexus3dFxEnabled();
   const anime = useNexusSymbolSettings().anime ?? false;
+  const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback({ mode: "nexus" });
   const [open, setOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const { data: visibility } = useQuery({
@@ -77,6 +79,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
               {pathname !== "/character" && (
                 <Link
                   to="/"
+                  onClick={() => playClick()}
                   className="mr-auto flex items-center gap-2 font-mono text-xs tracking-widest text-accent hover:text-nexus-glow transition-colors"
                 >
                   <Compass className="h-5 w-5 animate-[spin_25s_linear_infinite]" />
@@ -88,7 +91,10 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 size="icon"
                 aria-label="Nexus navigation"
                 aria-expanded={open}
-                onClick={() => setOpen((v) => !v)}
+                onClick={() => {
+                  playSnap();
+                  setOpen((v) => !v);
+                }}
                 title="Navigation"
                 className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
               >
@@ -99,7 +105,10 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 size="icon"
                 aria-label="Theme"
                 title="Theme"
-                onClick={() => setThemeOpen(true)}
+                onClick={() => {
+                  playClick();
+                  setThemeOpen(true);
+                }}
                 className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
               >
                 <Palette />
@@ -110,7 +119,10 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 aria-label={enabled ? "Pause animations" : "Enable animations"}
                 aria-pressed={enabled}
                 title="Animations"
-                onClick={() => setAnimationsEnabled(!enabled)}
+                onClick={() => {
+                  playClick();
+                  setAnimationsEnabled(!enabled);
+                }}
                 className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
               >
                 <Sparkles className={enabled ? "text-nexus-glow" : ""} />
@@ -121,7 +133,12 @@ export function NexusShell({ children }: { children: ReactNode }) {
                 size="icon"
                 className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
               >
-                <Link to="/profile" aria-label="Profile" title="Profile">
+                <Link
+                  to="/profile"
+                  aria-label="Profile"
+                  title="Profile"
+                  onClick={() => playClick()}
+                >
                   <User />
                 </Link>
               </Button>
@@ -149,7 +166,11 @@ export function NexusShell({ children }: { children: ReactNode }) {
                         variant="ghost"
                         className="nexus-nav-link group h-20 w-full justify-start whitespace-normal rounded-xl border border-border/60 bg-card/40 p-3 text-left transition-all hover:border-nexus-glow/70 hover:bg-card/80 hover:shadow-md"
                       >
-                        <Link to={t.to} aria-current={pathname === t.to ? "page" : undefined}>
+                        <Link
+                          to={t.to}
+                          onClick={() => playSnap()}
+                          aria-current={pathname === t.to ? "page" : undefined}
+                        >
                           <NexusNavGlyph
                             to={t.to}
                             className="h-9 w-9 transition-transform group-hover:scale-110"

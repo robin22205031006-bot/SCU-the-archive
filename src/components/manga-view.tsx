@@ -43,15 +43,21 @@ import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
 import { isFavorite, toggleFavorite, onFavoritesChange } from "@/lib/favorites";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 import { HankoStamp, MangaCategorySeal } from "@/components/manga-emblem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { useActiveGenre } from "@/hooks/use-ui-mode";
+import { useOptionalThemeContext } from "@/context/ThemeContext";
+import { getThemeMotionSpec } from "@/lib/motionVariants";
+import { useAnimationsEnabled } from "@/lib/animations";
+import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
 import { type GenreThemeId } from "@/lib/genre-themes";
 import {
   GenreAbilityEmblem,
   GenreCardFrame,
+  GenreDiamondMediaFrame,
   GenreDossierProfilePanels,
   GenrePortraitFrame,
 } from "@/components/genre-decorations";
@@ -350,7 +356,16 @@ export function MangaEntitySpread({
 }) {
   const [groupFilter, setGroupFilter] = useState<string>("ALL");
   const activeGenre = useActiveGenre() ?? "manga-ink";
+  const themeCtx = useOptionalThemeContext();
+  const animEnabled = useAnimationsEnabled();
+  const motionSpec = getThemeMotionSpec(
+    themeCtx?.primarySystem ?? "manga",
+    themeCtx?.mangaSubTheme ?? (activeGenre === "fantasy" ? "fantasy" : undefined),
+  );
+  const motionActive = animEnabled && !themeCtx?.isMinimal;
+  const isFantasy = activeGenre === "fantasy";
   const { triggerSfx, triggerInteractionSfx, bindInteractionSfx } = useMangaSfx();
+  const { playTap, playSwitch } = useSensoryFeedback();
   const isChar = kind === "character";
   const spoilerMasked = useSpoilerMask(spoilerScope);
 
@@ -477,9 +492,13 @@ export function MangaEntitySpread({
             const compared = compareIds?.includes(e.id) ?? false;
 
             return (
-              <article
+              <motion.article
                 key={e.id}
+                variants={motionSpec.cardVariants}
+                initial={false}
+                {...(motionActive ? { whileHover: "hover", whileTap: "tap" } : {})}
                 onClick={(ev) => {
+                  playTap();
                   triggerInteractionSfx("click", ev);
                   onSelect(e);
                 }}
@@ -488,27 +507,52 @@ export function MangaEntitySpread({
                 onKeyDown={(ev) => {
                   if (ev.key === "Enter" || ev.key === " ") {
                     ev.preventDefault();
+                    playTap();
                     onSelect(e);
                   }
                 }}
-                className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex cursor-pointer flex-col justify-between border-2 border-border bg-card transition-transform hover:-translate-y-0.5`}
+                className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex cursor-pointer flex-col justify-between transition-shadow ${
+                  isFantasy
+                    ? `rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] hover:shadow-[0_14px_32px_rgba(92,225,184,0.28)] ${
+                        motionActive ? "card-idle-breath" : ""
+                      }`
+                    : "border-2 border-border bg-card"
+                }`}
               >
                 <GenreCardFrame theme={activeGenre} compact />
 
                 {/* Top Frame: Index + Status + Actions */}
-                <div className="relative mb-2 flex flex-wrap items-center justify-between gap-1.5 border-b border-border/35 pb-1.5">
+                <div
+                  className={`relative mb-2 flex flex-wrap items-center justify-between gap-1.5 pb-1.5 ${
+                    isFantasy ? "border-b border-[#c5a869]/35" : "border-b border-border/35"
+                  }`}
+                >
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="bg-foreground px-1.5 py-0.5 font-mono text-[9px] font-bold text-background">
+                    <span
+                      className={`px-1.5 py-0.5 font-mono text-[9px] font-bold ${
+                        isFantasy
+                          ? "border border-[#c5a869] bg-[#2e5a52] text-[#f5ebe6]"
+                          : "bg-foreground text-background"
+                      }`}
+                    >
                       #{String(idx + 1).padStart(2, "0")}
                     </span>
                     <span
                       data-spoiler="char"
-                      className="border border-border/60 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider"
+                      className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                        isFantasy ? "border-[#c5a869]/55 text-[#e6dcc5]" : "border-border/60"
+                      }`}
                     >
                       {e.status}
                     </span>
                     {tier && (
-                      <span className="border border-primary/60 bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-primary">
+                      <span
+                        className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
+                          isFantasy
+                            ? "border-[#5ce1b8]/60 bg-[#5ce1b8]/15 text-[#5ce1b8]"
+                            : "border-primary/60 bg-primary/10 text-primary"
+                        }`}
+                      >
                         {tier.label}
                       </span>
                     )}
@@ -519,6 +563,7 @@ export function MangaEntitySpread({
                       <button
                         type="button"
                         onClick={(ev) => {
+                          playSwitch();
                           triggerSfx("CRACK", ev);
                           onToggleCompare(e.id);
                         }}
@@ -538,7 +583,7 @@ export function MangaEntitySpread({
                         type="button"
                         aria-label={`Edit ${e.name}`}
                         onClick={() => onEdit(e)}
-                        className="border border-border bg-background p-1 hover:bg-foreground hover:text-background"
+                        className="border border-border bg-background p-1 text-foreground hover:bg-foreground hover:text-background"
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
@@ -548,7 +593,7 @@ export function MangaEntitySpread({
                         type="button"
                         aria-label={`Merge ${e.name}`}
                         onClick={() => onMerge(e)}
-                        className="border border-border bg-background p-1 hover:bg-foreground hover:text-background"
+                        className="border border-border bg-background p-1 text-foreground hover:bg-foreground hover:text-background"
                       >
                         <GitMerge className="h-3 w-3" />
                       </button>
@@ -558,7 +603,7 @@ export function MangaEntitySpread({
                         type="button"
                         aria-label={`Delete ${e.name}`}
                         onClick={() => onDelete(e)}
-                        className="border border-border bg-background p-1 hover:bg-primary hover:text-primary-foreground"
+                        className="border border-border bg-background p-1 text-foreground hover:bg-primary hover:text-primary-foreground"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -566,8 +611,14 @@ export function MangaEntitySpread({
                   </div>
                 </div>
 
-                {/* Middle Split: Theme-Framed Portrait + Compact Profile */}
-                <div className="relative flex items-start gap-3">
+                {/* Inner Parchment Surface (for Fantasy) + Framed Portrait */}
+                <div
+                  className={`relative flex items-start gap-3 ${
+                    isFantasy
+                      ? "parchment-dot-grid rounded border border-[#c5a869]/75 p-2.5 shadow-inner"
+                      : ""
+                  }`}
+                >
                   <GenrePortraitFrame
                     theme={activeGenre}
                     src={e.image_url}
@@ -581,51 +632,81 @@ export function MangaEntitySpread({
                       <MangaCategorySeal label={e.category} size="xs" />
                     )}
                     <h2
-                      className={`mt-1 truncate font-display ${MANGA_SCALE.cardTitle} uppercase group-hover:text-primary`}
+                      className={`mt-1 truncate font-display ${MANGA_SCALE.cardTitle} uppercase ${
+                        isFantasy
+                          ? "text-[#15221b] group-hover:text-[#2e5a52]"
+                          : "group-hover:text-primary"
+                      }`}
                     >
                       {e.name}
                     </h2>
                     {e.alias && (
                       <p
-                        className={`truncate font-mono ${MANGA_SCALE.meta} uppercase tracking-wider text-muted-foreground`}
+                        className={`truncate font-mono ${MANGA_SCALE.meta} uppercase tracking-wider ${
+                          isFantasy ? "text-[#2e5a52]" : "text-muted-foreground"
+                        }`}
                       >
                         {e.alias}
                       </p>
                     )}
                     {e.description && (
-                      <p className={`mt-1 line-clamp-2 ${MANGA_SCALE.body} text-muted-foreground`}>
+                      <p
+                        className={`mt-1 line-clamp-2 ${MANGA_SCALE.body} ${
+                          isFantasy ? "text-[#1a241e]/90" : "text-muted-foreground"
+                        }`}
+                      >
                         {stripMerged(e.description)}
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* Bottom Strip: Ability Badges + Action */}
-                <div className="relative mt-2.5 flex flex-col gap-1.5 border-t border-border/25 pt-2">
+                {/* Bottom Strip: Ability Badges / Alchemical Seals + Action */}
+                <div
+                  className={`relative mt-2.5 flex flex-col gap-1.5 pt-2 ${
+                    isFantasy ? "border-t border-[#c5a869]/35" : "border-t border-border/25"
+                  }`}
+                >
                   {(e.abilities ?? []).length > 0 && (
                     <div className="flex flex-wrap gap-1" onClick={(ev) => ev.stopPropagation()}>
                       {e.abilities.slice(0, 3).map((ab) => (
                         <AbilityBadge key={ab} name={ab} />
                       ))}
                       {e.abilities.length > 3 && (
-                        <span className="border border-border px-1.5 py-0.5 font-mono text-[9px] font-bold">
+                        <span
+                          className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold ${
+                            isFantasy
+                              ? "border-[#c5a869]/60 bg-[#1a241e] text-[#c5a869]"
+                              : "border-border"
+                          }`}
+                        >
                           +{e.abilities.length - 3}
                         </span>
                       )}
                     </div>
                   )}
-                  <div className="flex items-center justify-between font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <div
+                    className={`flex items-center justify-between font-mono text-[9px] font-bold uppercase tracking-widest ${
+                      isFantasy ? "text-[#e6dcc5]" : "text-muted-foreground"
+                    }`}
+                  >
                     <span className="truncate">
                       {(e.stats as Record<string, string> | null)?.["affiliation"] ||
                         e.role ||
                         e.kind}
                     </span>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-foreground transition-transform group-hover:translate-x-0.5">
-                      DOSSIER <ArrowRight className="h-3 w-3" />
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1 transition-transform group-hover:translate-x-0.5 ${
+                        isFantasy
+                          ? "fantasy-discover-btn rounded px-2 py-0.5 text-[9px]"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {isFantasy ? "DISCOVER" : "DOSSIER"} <ArrowRight className="h-3 w-3" />
                     </span>
                   </div>
                 </div>
-              </article>
+              </motion.article>
             );
           })}
         </div>
@@ -787,36 +868,51 @@ export function MangaCharacterSpread({
   const renderPortraitVisual = (compactControls = false) => (
     <>
       {view3d && activeAvatar ? (
-        <div className="h-64 border border-border bg-background">
-          <GlbModelViewer
-            url={activeAvatar.url}
-            alt={`${e.name} — ${activeAvatar.label}`}
-            name={e.name}
-            description={[e.description, e.alias, e.role, e.category].filter(Boolean).join(" ")}
-            tags={[
-              ...(e.abilities ?? []),
-              ...(e.beast_traits ?? []),
-              e.category,
-              e.role,
-              e.character_tier,
-              activeAvatar.label,
-            ]}
-            fallbackImageUrl={e.image_url}
-            accentColor="var(--primary)"
-            compact
-            onFallbackTo2d={() => setView3d(false)}
-          />
-        </div>
+        <GenreDiamondMediaFrame
+          theme={activeGenre}
+          variant="arch"
+          leftEmblemLabel="3D"
+          rightEmblemLabel="✦"
+        >
+          <div className="h-64 border border-border bg-background">
+            <GlbModelViewer
+              url={activeAvatar.url}
+              alt={`${e.name} — ${activeAvatar.label}`}
+              name={e.name}
+              description={[e.description, e.alias, e.role, e.category].filter(Boolean).join(" ")}
+              tags={[
+                ...(e.abilities ?? []),
+                ...(e.beast_traits ?? []),
+                e.category,
+                e.role,
+                e.character_tier,
+                activeAvatar.label,
+              ]}
+              fallbackImageUrl={e.image_url}
+              accentColor="var(--primary)"
+              compact
+              onFallbackTo2d={() => setView3d(false)}
+            />
+          </div>
+        </GenreDiamondMediaFrame>
       ) : (
-        <div className="py-2">
-          <GenrePortraitFrame
-            theme={activeGenre}
-            src={e.image_url}
-            alt={e.name}
-            fallback={e.name[0] ?? "?"}
-            size="dossier"
-          />
-        </div>
+        <GenreDiamondMediaFrame
+          theme={activeGenre}
+          variant="diamond"
+          leftEmblemLabel="✦"
+          rightEmblemLabel={tier?.label?.slice(0, 2) ?? "SCU"}
+          className="py-2"
+        >
+          <div className="flex justify-center py-2">
+            <GenrePortraitFrame
+              theme={activeGenre}
+              src={e.image_url}
+              alt={e.name}
+              fallback={e.name[0] ?? "?"}
+              size="dossier"
+            />
+          </div>
+        </GenreDiamondMediaFrame>
       )}
 
       <div

@@ -1,14 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { useOptionalUiMode, VISUAL_UI_MODES, type VisualUiMode } from "@/hooks/use-ui-mode";
+import { useOptionalThemeContext, type PrimarySystem } from "@/context/ThemeContext";
+import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
 import { setUiStyle, useUiStyle } from "@/lib/ui-style";
 
 export function UiStylePicker() {
   const ctx = useOptionalUiMode();
+  const themeCtx = useOptionalThemeContext();
   const legacyStyle = useUiStyle();
-  const activeMode: VisualUiMode = ctx ? ctx.mode : legacyStyle;
+  const { playSwitch } = useSensoryFeedback();
+  const activeMode: VisualUiMode = themeCtx?.primarySystem ?? (ctx ? ctx.mode : legacyStyle);
 
   const handleSelect = (modeId: VisualUiMode) => {
-    if (ctx) {
+    playSwitch();
+    if (themeCtx) {
+      themeCtx.setPrimarySystem(modeId as PrimarySystem);
+    } else if (ctx) {
       ctx.setMode(modeId);
     } else {
       setUiStyle(modeId === "nexus" || modeId === "minimal" ? modeId : "classic");

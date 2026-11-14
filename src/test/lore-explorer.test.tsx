@@ -132,9 +132,10 @@ describe("LoreExplorer bookmarking and personalized collection", () => {
     const bookmarkEthan = screen.getByRole("button", { name: "Bookmark Ethan Reed" });
     fireEvent.click(bookmarkEthan);
 
-    expect(
-      screen.getByRole("button", { name: "Remove bookmark for Ethan Reed" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Remove bookmark for Ethan Reed" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(
       screen.getByRole("button", { name: /view bookmarked collection \(1\)/i }),
     ).toBeInTheDocument();
@@ -149,7 +150,9 @@ describe("LoreExplorer bookmarking and personalized collection", () => {
     fireEvent.click(persistedToggle);
     expect(persistedToggle).toHaveAttribute("aria-pressed", "true");
 
-    expect(screen.getByRole("region", { name: "Personalized bookmark collection" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Personalized bookmark collection" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Ethan Reed")).toBeInTheDocument();
     expect(screen.queryByText("Elizah Vale")).not.toBeInTheDocument();
 
@@ -157,7 +160,9 @@ describe("LoreExplorer bookmarking and personalized collection", () => {
     fireEvent.change(screen.getByLabelText("Tier for Ethan Reed"), {
       target: { value: "Ancient" },
     });
-    expect(within(screen.getByRole("region", { name: "Ancient section" })).getByText("Ethan Reed")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "Ancient section" })).getByText("Ethan Reed"),
+    ).toBeInTheDocument();
 
     // Removing the bookmark removes it from the collection view
     fireEvent.click(screen.getByRole("button", { name: "Remove bookmark for Ethan Reed" }));

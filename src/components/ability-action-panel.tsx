@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { Box, Layers, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { allAbilityDefs, abilityDef } from "@/lib/abilities";
 import { abilityFxRecipe } from "@/lib/ability-fx";
@@ -14,6 +14,7 @@ import {
   type Gender,
 } from "@/lib/ability-action";
 import { AbilityActionCanvas } from "@/components/ability-action-canvas";
+import { CelCombatStage } from "@/components/lazy-three";
 import {
   CHARACTER_COMBAT,
   characterCombat,
@@ -36,6 +37,7 @@ export function AbilityActionPanel() {
   const [sceneId, setSceneId] = useState<CombatSceneId | undefined>();
   const [backdrop, setBackdrop] = useState<CombatBackdrop>("rooftop");
   const [frame, setFrame] = useState<number | undefined>();
+  const [stageMode, setStageMode] = useState<"2d" | "3d">("2d");
   const scene = characterCombat(sceneId);
   const fight = STORY_FIGHTS.find((f) => f.id === fightId) ?? null,
     cur = fight?.beats[beat];
@@ -183,23 +185,52 @@ export function AbilityActionPanel() {
           {playing ? <Pause className="mr-1 h-4 w-4" /> : <Play className="mr-1 h-4 w-4" />}
           {playing ? "Pause" : "Play"}
         </Button>
+        <Button
+          size="sm"
+          variant={stageMode === "3d" ? "default" : "outline"}
+          onClick={() => setStageMode((m) => (m === "2d" ? "3d" : "2d"))}
+          aria-pressed={stageMode === "3d"}
+        >
+          {stageMode === "3d" ? (
+            <Box className="mr-1 h-4 w-4" />
+          ) : (
+            <Layers className="mr-1 h-4 w-4" />
+          )}
+          {stageMode === "3d" ? "3D Cel Arena" : "2D Canvas"}
+        </Button>
       </div>
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border">
-        <AbilityActionCanvas
-          key={sceneId ?? (fight ? `${fight.id}-${beat}` : "free")}
-          caption={scene?.label ?? (cur ? `${cur.who} · ${d.label}` : undefined)}
-          sceneId={sceneId}
-          backdrop={backdrop}
-          frame={frame}
-          name={ability}
-          gender={fg}
-          style={fs}
-          speed={speed}
-          playing={playing}
-          onPhase={(label, i, n) => setPhase({ label, i, n })}
-        />
+        {stageMode === "3d" ? (
+          <CelCombatStage
+            key={`cel-${sceneId ?? (fight ? `${fight.id}-${beat}` : "free")}`}
+            caption={scene?.label ?? (cur ? `${cur.who} · ${d.label}` : undefined)}
+            sceneId={sceneId}
+            backdrop={backdrop}
+            frame={frame}
+            name={ability}
+            gender={fg}
+            style={fs}
+            speed={speed}
+            playing={playing}
+            onPhase={(label, i, n) => setPhase({ label, i, n })}
+          />
+        ) : (
+          <AbilityActionCanvas
+            key={sceneId ?? (fight ? `${fight.id}-${beat}` : "free")}
+            caption={scene?.label ?? (cur ? `${cur.who} · ${d.label}` : undefined)}
+            sceneId={sceneId}
+            backdrop={backdrop}
+            frame={frame}
+            name={ability}
+            gender={fg}
+            style={fs}
+            speed={speed}
+            playing={playing}
+            onPhase={(label, i, n) => setPhase({ label, i, n })}
+          />
+        )}
         <span
-          className="absolute left-3 top-3 rounded-full border border-border bg-background/70 px-2.5 py-0.5 text-xs uppercase tracking-widest"
+          className="absolute left-3 top-3 z-10 rounded-full border border-border bg-background/70 px-2.5 py-0.5 text-xs uppercase tracking-widest"
           style={{ color: r.palette[0] }}
         >
           {phase.i + 1}/{phase.n} · {phase.label}

@@ -1,19 +1,23 @@
 import { useState } from "react";
 import { Check, ChevronDown, ChevronUp, Palette, Sparkles } from "lucide-react";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
+import { MANGA_SUBTHEMES, useOptionalThemeContext } from "@/context/ThemeContext";
 import { GENRE_THEMES, getGenreThemeMeta, setGenreTheme } from "@/lib/genre-themes";
 import { useMangaSfx } from "@/hooks/use-manga-sfx";
+import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
 
 /**
  * Floating UI overlay exclusive to Manga UI mode that lets readers dynamically
- * toggle `data-genre-theme` on `<html>` (even in HUD mode) with smooth palette
- * & backdrop blending and Manga SFX feedback.
+ * toggle `data-genre-theme` & `data-manga-subtheme` on `<html>` (even in HUD mode)
+ * with smooth palette & backdrop blending, sensory SFX/haptics, and Manga SFX popups.
  */
 export function GenreThemeOverlay() {
   const isManga = useIsManga();
   const activeGenre = useActiveGenre() ?? "manga-ink";
+  const themeCtx = useOptionalThemeContext();
   const activeMeta = getGenreThemeMeta(activeGenre);
   const { triggerInteractionSfx } = useMangaSfx();
+  const { playSwitch, playTap } = useSensoryFeedback();
   const [open, setOpen] = useState(false);
 
   if (!isManga) return null;
@@ -27,7 +31,7 @@ export function GenreThemeOverlay() {
         <section
           role="region"
           aria-label="Genre theme switcher overlay"
-          className="manga-panel w-[min(320px,calc(100vw-2rem))] rounded-lg border-2 border-border bg-card/95 p-2.5 text-card-foreground shadow-xl backdrop-blur-md"
+          className="manga-panel w-[min(340px,calc(100vw-2rem))] rounded-lg border-2 border-border bg-card/95 p-2.5 text-card-foreground shadow-xl backdrop-blur-md"
         >
           <div className="mb-2 flex items-center justify-between border-b border-border/40 pb-1.5">
             <div className="flex items-center gap-1.5">
@@ -37,7 +41,7 @@ export function GenreThemeOverlay() {
               </span>
             </div>
             <span className="font-mono text-[9px] uppercase text-muted-foreground">
-              {activeMeta.shortLabel}
+              {themeCtx?.activeMangaSubTheme ?? activeMeta.shortLabel}
             </span>
           </div>
 
@@ -52,6 +56,7 @@ export function GenreThemeOverlay() {
                   aria-pressed={selected}
                   onClick={(ev) => {
                     setGenreTheme(g.id);
+                    playSwitch();
                     triggerInteractionSfx("switch-mode", ev);
                   }}
                   className={`flex items-center justify-between gap-1.5 rounded border px-2 py-1.5 text-left transition ${
@@ -82,6 +87,39 @@ export function GenreThemeOverlay() {
               );
             })}
           </div>
+
+          {themeCtx && (
+            <div className="mt-2 border-t border-border/40 pt-2">
+              <p className="mb-1 font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                SUB-ENGINE MODE
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {MANGA_SUBTHEMES.map((sub) => {
+                  const isActive = themeCtx.mangaSubTheme === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      data-subtheme-option={sub.id}
+                      aria-pressed={isActive}
+                      onClick={(ev) => {
+                        themeCtx.setMangaSubTheme(sub.id);
+                        playSwitch();
+                        triggerInteractionSfx("switch-mode", ev);
+                      }}
+                      className={`rounded border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase transition ${
+                        isActive
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border/50 bg-background/70 text-foreground hover:border-primary"
+                      }`}
+                    >
+                      {sub.shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -90,6 +128,7 @@ export function GenreThemeOverlay() {
         aria-label="Toggle genre theme overlay"
         aria-expanded={open}
         onClick={(ev) => {
+          playTap();
           triggerInteractionSfx("click", ev);
           setOpen((v) => !v);
         }}

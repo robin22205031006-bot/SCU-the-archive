@@ -21,9 +21,12 @@ import { AppearanceProvider } from "@/hooks/use-appearance";
 import { TypographyProvider } from "@/hooks/use-typography";
 import { UiModeProvider, useUiMode } from "@/hooks/use-ui-mode";
 import { UIStateProvider } from "@/context/UIStateContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { AppVersionChecker } from "@/components/AppVersionChecker";
 import { supabase } from "@/integrations/supabase/client";
 import { syncSessionCache } from "@/lib/session-cache";
 import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
+import { usePreloadUIFeedback } from "@/hooks/use-ui-feedback";
 import { playWelcome } from "@/lib/scu-audio";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NexusShell } from "@/components/nexus-shell";
@@ -218,6 +221,7 @@ function RootComponent() {
   const router = useRouter();
   const [offline, setOffline] = useState(false);
   useScuAudioGlobal();
+  usePreloadUIFeedback();
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
     update();
@@ -293,20 +297,25 @@ function RootComponent() {
   }, [router, queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <AppearanceProvider>
-        <TypographyProvider>
-          <UiModeProvider>
-            <UIStateProvider applyAttributesToHtml={false}>
-              <ErrorBoundary>
-                <RootContent offline={offline} />
-              </ErrorBoundary>
-              <Toaster />
-            </UIStateProvider>
-          </UiModeProvider>
-        </TypographyProvider>
-      </AppearanceProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <AppearanceProvider>
+          <TypographyProvider>
+            <UiModeProvider>
+              <ThemeProvider>
+                <UIStateProvider applyAttributesToHtml={false}>
+                  <ErrorBoundary>
+                    <RootContent offline={offline} />
+                    <AppVersionChecker />
+                  </ErrorBoundary>
+                  <Toaster />
+                </UIStateProvider>
+              </ThemeProvider>
+            </UiModeProvider>
+          </TypographyProvider>
+        </AppearanceProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

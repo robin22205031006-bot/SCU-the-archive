@@ -39,6 +39,7 @@ import { useNavHidden } from "@/lib/nav-visibility";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { useVisualMode } from "@/hooks/use-ui-mode";
 import { useOptionalUIState } from "@/context/UIStateContext";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 import { NexusNavGlyph } from "./nexus-nav-glyph";
 export { navMode, setNavMode, hudNavEnabled, setHudNav, type NavMode } from "@/lib/nav-mode";
 
@@ -84,6 +85,7 @@ export function FloatingNav() {
   const style = useVisualMode();
   const reduce = deviceReduced || !animations || style === "minimal";
   const uiState = useOptionalUIState();
+  const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback();
   const [localOpen, setLocalOpen] = useState(false);
   const open = uiState ? uiState.navOpen : localOpen;
   const setOpen = (next: boolean) => {
@@ -119,7 +121,13 @@ export function FloatingNav() {
   ].filter((t) => visibility?.[t.to] ?? true);
   const max = Math.max(0, items.length - 5);
   const first = Math.min(start, max);
-  const slide = (delta: number) => setStart((v) => Math.max(0, Math.min(max, v + delta)));
+  const slide = (delta: number) => {
+    setStart((v) => {
+      const next = Math.max(0, Math.min(max, v + delta));
+      if (next !== v) playClick();
+      return next;
+    });
+  };
   useEffect(() => {
     if (uiState) {
       uiState.setActiveNav(pathname);
@@ -137,7 +145,13 @@ export function FloatingNav() {
   const expanded = open && !hidden;
   return (
     <>
-      <Dialog open={expanded} onOpenChange={setOpen}>
+      <Dialog
+        open={expanded}
+        onOpenChange={(next) => {
+          playSnap();
+          setOpen(next);
+        }}
+      >
         <DialogTrigger asChild>
           <Button
             variant="outline"
@@ -231,6 +245,7 @@ export function FloatingNav() {
                                 {...(item.to === "#theme"
                                   ? {
                                       onClick: () => {
+                                        playClick();
                                         setOpen(false);
                                         setThemeOpen(true);
                                       },
@@ -253,7 +268,10 @@ export function FloatingNav() {
                                   <Link
                                     to={item.to}
                                     preload="intent"
-                                    onClick={() => setOpen(false)}
+                                    onClick={() => {
+                                      playSnap();
+                                      setOpen(false);
+                                    }}
                                     aria-current={active ? "page" : undefined}
                                   >
                                     <span className="hud-node">

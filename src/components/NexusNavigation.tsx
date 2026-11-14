@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ChevronUp, Compass, Layers, Sparkles, X } from "lucide-react";
 import { NexusNavGlyph } from "@/components/nexus-nav-glyph";
 import { UI_MODE_OPTIONS, useUIState, type UIMode } from "@/context/UIStateContext";
+import { triggerUIFeedback, useUIFeedback } from "@/hooks/use-ui-feedback";
 import { TABS } from "@/lib/nav";
 
 export interface NexusNavLink {
@@ -32,6 +33,7 @@ export function NexusNavigation({
 }: NexusNavigationProps) {
   const { mode, setMode, navOpen, setNavOpen, toggleNav, activeNav, setActiveNav, isMinimal } =
     useUIState();
+  const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback({ mode });
   const deviceReduced = useReducedMotion();
   const reduceMotion = Boolean(deviceReduced) || isMinimal;
   const [windowStart, setWindowStart] = useState(0);
@@ -53,6 +55,7 @@ export function NexusNavigation({
   }, [navOpen, setNavOpen]);
 
   const handleLinkSelect = (link: NexusNavLink) => {
+    playSnap();
     setActiveNav(link.to);
     onNavigate?.(link);
     setNavOpen(false);
@@ -114,7 +117,10 @@ export function NexusNavigation({
               </div>
               <button
                 type="button"
-                onClick={() => setNavOpen(false)}
+                onClick={() => {
+                  playClick();
+                  setNavOpen(false);
+                }}
                 aria-label="Close Nexus HUD"
                 className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition hover:border-border hover:text-foreground"
               >
@@ -126,7 +132,10 @@ export function NexusNavigation({
               <div className="mb-1.5 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
                 <button
                   type="button"
-                  onClick={() => setWindowStart((v) => Math.max(0, v - 1))}
+                  onClick={() => {
+                    playClick();
+                    setWindowStart((v) => Math.max(0, v - 1));
+                  }}
                   disabled={clampedStart === 0}
                   aria-label="Scroll HUD links up"
                   className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:text-foreground disabled:opacity-35"
@@ -141,7 +150,10 @@ export function NexusNavigation({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setWindowStart((v) => Math.min(maxStart, v + 1))}
+                  onClick={() => {
+                    playClick();
+                    setWindowStart((v) => Math.min(maxStart, v + 1));
+                  }}
                   disabled={clampedStart >= maxStart}
                   aria-label="Scroll HUD links down"
                   className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:text-foreground disabled:opacity-35"
@@ -229,7 +241,10 @@ export function NexusNavigation({
                       <button
                         key={opt.id}
                         type="button"
-                        onClick={() => setMode(opt.id as UIMode)}
+                        onClick={() => {
+                          setMode(opt.id as UIMode);
+                          triggerUIFeedback("navigation", opt.id);
+                        }}
                         aria-pressed={selected}
                         className="rounded-lg border px-2 py-1 text-xs font-medium transition"
                         style={{
@@ -258,7 +273,10 @@ export function NexusNavigation({
       {/* Floating Nexus HUD Launcher Button */}
       <motion.button
         type="button"
-        onClick={toggleNav}
+        onClick={() => {
+          playSnap();
+          toggleNav();
+        }}
         aria-expanded={navOpen}
         aria-label={navOpen ? "Close Nexus HUD" : "Open Nexus HUD"}
         {...(reduceMotion

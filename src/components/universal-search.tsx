@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-admin";
 import { mergeCharacterCards } from "@/lib/entities";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 const PAGES = [
   { to: "/", label: "Home", icon: Home },
@@ -28,6 +29,7 @@ export function UniversalSearch() {
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
   const { data: user } = useSession();
+  const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback();
   const { data } = useQuery({
     queryKey: ["search-index", user?.id],
     staleTime: 60_000,
@@ -59,15 +61,17 @@ export function UniversalSearch() {
     const k = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
+        playSnap();
         setOpen((o) => !o);
       }
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, []);
+  }, [playSnap]);
 
   const entityName = new Map((data?.entities ?? []).map((e) => [e.id, e.name]));
   const goEntity = (e: { id: string; name: string; kind: string }) => {
+    playClick();
     setOpen(false);
     nav({
       to: e.kind === "character" ? "/characters" : "/orgs",
@@ -78,7 +82,10 @@ export function UniversalSearch() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          playSnap();
+          setOpen(true);
+        }}
         aria-label="Search the universe (Ctrl+K)"
         title="Search (Ctrl+K)"
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground"
@@ -104,6 +111,7 @@ export function UniversalSearch() {
                     key={p.to}
                     value={`page ${p.label}`}
                     onSelect={() => {
+                      playClick();
                       setOpen(false);
                       nav({ to: p.to });
                     }}
@@ -158,6 +166,7 @@ export function UniversalSearch() {
                     key={e.id}
                     value={`${e.title} ${e.era ?? ""}`}
                     onSelect={() => {
+                      playClick();
                       setOpen(false);
                       nav({ to: "/timeline" });
                     }}
@@ -172,6 +181,7 @@ export function UniversalSearch() {
                     key={d.id}
                     value={d.title}
                     onSelect={() => {
+                      playClick();
                       setOpen(false);
                       nav({ to: "/vault" });
                     }}

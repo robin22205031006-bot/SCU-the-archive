@@ -345,21 +345,77 @@ export function GenreCardFrame({
         data-genre-decoration="fantasy"
         className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] ${className}`}
       >
-        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-amber-200/18 to-transparent" />
-        <div className="absolute inset-[4px] rounded-[inherit] border border-[var(--genre-gold,#d4af37)]/55" />
-        <div className="absolute inset-[7px] rounded-[inherit] border border-[var(--genre-gold,#d4af37)]/25" />
-        {(["tl", "tr", "bl", "br"] as const).map((corner) => (
+        <div className="absolute inset-x-0 top-0 h-[40%] bg-gradient-to-b from-[#5ce1b8]/10 via-[#c5a869]/10 to-transparent" />
+        {/* Double-lined antique brass borders */}
+        <div className="absolute inset-[3px] rounded-[inherit] border border-[#c5a869]/75" />
+        <div className="absolute inset-[7px] rounded-[inherit] border border-[#c5a869]/30" />
+        {/* Animated swaying ivy vines & pressed leaves (top-left & bottom-right) */}
+        <svg
+          viewBox="0 0 64 64"
+          className="ivy-sway absolute -left-0.5 -top-0.5 h-12 w-12 origin-top-left text-[#2e5a52] drop-shadow-[0_0_6px_rgba(92,225,184,0.35)]"
+          fill="none"
+        >
+          <path
+            d="M4 54 C6 34, 16 18, 46 6 C26 14, 14 26, 8 44"
+            stroke="#c5a869"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M14 24 C10 16, 14 10, 22 12 C20 18, 17 22, 14 24 Z"
+            fill="#5ce1b8"
+            fillOpacity="0.45"
+            stroke="#c5a869"
+            strokeWidth="0.9"
+          />
+          <path
+            d="M27 14 C25 8, 31 4, 37 7 C34 12, 30 14, 27 14 Z"
+            fill="#2e5a52"
+            fillOpacity="0.85"
+            stroke="#5ce1b8"
+            strokeWidth="0.8"
+          />
+          <path
+            d="M8 38 C3 34, 4 27, 11 28 C11 33, 10 36, 8 38 Z"
+            fill="#2e5a52"
+            fillOpacity="0.8"
+            stroke="#c5a869"
+            strokeWidth="0.8"
+          />
+          <circle cx="19" cy="18" r="1.4" fill="#5ce1b8" />
+        </svg>
+        <svg
+          viewBox="0 0 64 64"
+          className="ivy-sway-alt absolute -bottom-0.5 -right-0.5 h-12 w-12 origin-bottom-right rotate-180 text-[#2e5a52] drop-shadow-[0_0_6px_rgba(92,225,184,0.35)]"
+          fill="none"
+        >
+          <path
+            d="M4 54 C6 34, 16 18, 46 6"
+            stroke="#c5a869"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M14 24 C10 16, 14 10, 22 12 C20 18, 17 22, 14 24 Z"
+            fill="#5ce1b8"
+            fillOpacity="0.42"
+            stroke="#c5a869"
+            strokeWidth="0.9"
+          />
+          <path
+            d="M28 13 C26 7, 32 4, 38 7 C35 11, 31 13, 28 13 Z"
+            fill="#2e5a52"
+            fillOpacity="0.85"
+            stroke="#5ce1b8"
+            strokeWidth="0.8"
+          />
+        </svg>
+        {(["tr", "bl"] as const).map((corner) => (
           <svg
             key={corner}
             viewBox="0 0 32 32"
-            className={`absolute ${size} text-[var(--genre-gold,#d4af37)] drop-shadow-[0_0_6px_rgba(212,175,55,0.45)] ${
-              corner === "tl"
-                ? "left-1 top-1"
-                : corner === "tr"
-                  ? "right-1 top-1 -scale-x-100"
-                  : corner === "bl"
-                    ? "bottom-1 left-1 -scale-y-100"
-                    : "bottom-1 right-1 scale-x-[-1] scale-y-[-1]"
+            className={`absolute ${size} text-[#c5a869] drop-shadow-[0_0_6px_rgba(197,168,105,0.45)] ${
+              corner === "tr" ? "right-1 top-1 -scale-x-100" : "bottom-1 left-1 -scale-y-100"
             }`}
             fill="none"
             stroke="currentColor"
@@ -367,16 +423,16 @@ export function GenreCardFrame({
           >
             <path d="M3 17C3 8 8 3 17 3" />
             <path d="M6 13C7 8 9 6 13 6" />
-            <polygon points="7,4 9,7 7,10 5,7" fill="currentColor" stroke="none" />
+            <polygon points="7,4 9,7 7,10 5,7" fill="#5ce1b8" stroke="none" />
           </svg>
         ))}
         {!compact && (
           <svg
-            viewBox="0 0 32 14"
-            className="absolute left-1/2 top-0.5 h-3.5 w-8 -translate-x-1/2 text-[var(--genre-gold,#d4af37)] drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]"
+            viewBox="0 0 40 16"
+            className="absolute left-1/2 top-0.5 h-4 w-10 -translate-x-1/2 text-[#c5a869] drop-shadow-[0_0_8px_rgba(92,225,184,0.5)]"
           >
-            <path d="M6 11 L10 4 L16 8 L22 4 L26 11 Z" fill="currentColor" fillOpacity="0.85" />
-            <polygon points="16,1 19,5 16,9 13,5" fill="currentColor" />
+            <path d="M8 12 L13 4 L20 9 L27 4 L32 12 Z" fill="currentColor" fillOpacity="0.85" />
+            <polygon points="20,1 23,5 20,10 17,5" fill="#5ce1b8" />
           </svg>
         )}
         <GenreFrameVfx theme={theme} compact={compact} />
@@ -924,6 +980,101 @@ export function GenrePortraitFrame({
   );
 }
 
+/**
+ * Sharp Diamond or Gothic Stone-Arch media frame wrapped in silver-teal & brass filigree,
+ * flanked by vertical glowing status emblems (signature Fantasy viewer).
+ */
+export function GenreDiamondMediaFrame({
+  theme,
+  variant = "diamond",
+  leftEmblemLabel = "✦",
+  rightEmblemLabel = "✦",
+  children,
+  className = "",
+}: {
+  theme: GenreThemeId | null;
+  variant?: "diamond" | "arch";
+  leftEmblemLabel?: string;
+  rightEmblemLabel?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  if (theme !== "fantasy") {
+    return <div className={`relative ${className}`}>{children}</div>;
+  }
+
+  return (
+    <div
+      data-media-frame={`fantasy-${variant}`}
+      className={`relative flex items-center justify-center gap-2.5 sm:gap-4 ${className}`}
+    >
+      {/* Left Vertical Glowing Status Emblem */}
+      <div aria-hidden="true" className="hidden shrink-0 flex-col items-center gap-1.5 sm:flex">
+        <span className="h-8 w-[1.5px] bg-gradient-to-b from-transparent via-[#c5a869] to-[#5ce1b8]" />
+        <div className="grid h-8 w-8 rotate-45 place-items-center border border-[#c5a869] bg-[#15221b] shadow-[0_0_14px_rgba(92,225,184,0.45)]">
+          <span className="-rotate-45 font-mono text-[10px] font-bold text-[#5ce1b8]">
+            {leftEmblemLabel}
+          </span>
+        </div>
+        <span className="h-8 w-[1.5px] bg-gradient-to-t from-transparent via-[#2e5a52] to-[#5ce1b8]" />
+      </div>
+
+      {/* Central Silver-Teal & Brass Filigree Viewport */}
+      <div
+        className={`relative w-full overflow-hidden border-2 border-[#c5a869]/80 bg-[#111915] shadow-[0_14px_34px_rgba(0,0,0,0.45),0_0_24px_rgba(92,225,184,0.18)] ${
+          variant === "arch" ? "fantasy-arch-viewport p-1.5" : "fantasy-diamond-viewport p-2"
+        }`}
+      >
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+        >
+          {variant === "diamond" ? (
+            <>
+              <polygon
+                points="50,2 98,50 50,98 2,50"
+                fill="none"
+                stroke="#5ce1b8"
+                strokeOpacity="0.65"
+                strokeWidth="0.9"
+              />
+              <polygon
+                points="50,6 94,50 50,94 6,50"
+                fill="none"
+                stroke="#c5a869"
+                strokeOpacity="0.85"
+                strokeWidth="0.65"
+              />
+            </>
+          ) : (
+            <path
+              d="M6,96 L6,42 C6,18 28,6 50,4 C72,6 94,18 94,42 L94,96 Z"
+              fill="none"
+              stroke="#5ce1b8"
+              strokeOpacity="0.7"
+              strokeWidth="0.9"
+            />
+          )}
+        </svg>
+        <div className="relative z-0 h-full w-full overflow-hidden">{children}</div>
+      </div>
+
+      {/* Right Vertical Glowing Status Emblem */}
+      <div aria-hidden="true" className="hidden shrink-0 flex-col items-center gap-1.5 sm:flex">
+        <span className="h-8 w-[1.5px] bg-gradient-to-b from-transparent via-[#c5a869] to-[#5ce1b8]" />
+        <div className="grid h-8 w-8 rotate-45 place-items-center border border-[#c5a869] bg-[#15221b] shadow-[0_0_14px_rgba(92,225,184,0.45)]">
+          <span className="-rotate-45 font-mono text-[10px] font-bold text-[#5ce1b8]">
+            {rightEmblemLabel}
+          </span>
+        </div>
+        <span className="h-8 w-[1.5px] bg-gradient-to-t from-transparent via-[#2e5a52] to-[#5ce1b8]" />
+      </div>
+    </div>
+  );
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
    4. Theme-Specific Dossier Stat & Info Arrangement (Inspired by Images 5, 7, 8, 9, 14, 16)
    ─────────────────────────────────────────────────────────────────────────── */
@@ -1323,7 +1474,7 @@ export function GenreAbilityEmblem({
       );
     }
 
-    // Fantasy (Pic 8): Crowned heraldic shield & ivory baroque scalloped seal plaque
+    // Fantasy: Arcane Botanical Alchemical Seal & Crowned Heraldic Shield
     if (active === "fantasy") {
       return (
         <div
@@ -1331,38 +1482,39 @@ export function GenreAbilityEmblem({
           data-ability-emblem="fantasy"
           data-emblem-style="crowned-heraldic-shield"
           data-ability-tier={tier}
-          className={`flex items-center gap-2 rounded border border-[var(--genre-gold,#d4af37)]/65 bg-background/85 px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,248,220,0.45)] ${className}`}
+          className={`flex items-center gap-2 rounded border border-[#c5a869]/80 bg-[#15221b] px-2.5 py-1.5 text-[#f5ebe6] shadow-[0_0_14px_rgba(92,225,184,0.22),inset_0_0_10px_rgba(92,225,184,0.12)] ${className}`}
         >
           <span className="relative grid h-8 w-8 shrink-0 place-items-center">
             <svg
               aria-hidden="true"
               viewBox="0 0 36 36"
-              className="pointer-events-none absolute inset-0 h-full w-full text-[var(--genre-gold,#d4af37)]"
+              className="pointer-events-none absolute inset-0 h-full w-full text-[#c5a869]"
               fill="none"
             >
-              {/* Tiny top 3-point crown */}
-              <path d="M11 7 L14 3 L18 6 L22 3 L25 7 Z" fill="currentColor" fillOpacity="0.85" />
-              {/* Beveled heraldic shield */}
+              <circle
+                cx="18"
+                cy="18"
+                r="15.5"
+                stroke="#5ce1b8"
+                strokeOpacity="0.4"
+                strokeWidth="0.9"
+                strokeDasharray="3 2"
+              />
+              <path d="M11 7 L14 3 L18 6 L22 3 L25 7 Z" fill="currentColor" fillOpacity="0.9" />
               <path
                 d="M7 9 H29 V21 C29 27 18 33 18 33 C18 33 7 27 7 21 Z"
-                fill="var(--card)"
+                fill="#111915"
                 stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M10 12 H26 V20.5 C26 25 18 29.5 18 29.5 C18 29.5 10 25 10 20.5 Z"
-                stroke="currentColor"
-                strokeWidth="0.7"
-                strokeOpacity="0.55"
+                strokeWidth="1.4"
               />
             </svg>
-            <Icon className="relative mt-1 h-3.5 w-3.5 text-[var(--genre-gold,#d4af37)]" />
+            <Icon className="relative mt-1 h-3.5 w-3.5 text-[#5ce1b8] drop-shadow-[0_0_6px_rgba(92,225,184,0.7)]" />
           </span>
           <div className="min-w-0">
-            <span className="block truncate font-display text-[11px] font-bold uppercase tracking-wider text-foreground">
+            <span className="block truncate font-display text-[11px] font-bold uppercase tracking-wider text-[#f5ebe6]">
               {label}
             </span>
-            <span className="block font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
+            <span className="block font-mono text-[8px] uppercase tracking-widest text-[#5ce1b8]">
               {tier}
             </span>
           </div>
@@ -1531,18 +1683,18 @@ export function GenreAbilityEmblem({
         data-ability-tier={tier}
         className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wider ${
           isMythic
-            ? "border-[var(--genre-gold,#d4af37)] bg-primary text-primary-foreground shadow-[0_0_10px_color-mix(in_oklab,var(--genre-gold,#d4af37)_45%,transparent)]"
+            ? "border-[#5ce1b8] bg-[#2e5a52] text-[#f5ebe6] shadow-[0_0_12px_rgba(92,225,184,0.45)]"
             : isLegendary
-              ? "border-[var(--genre-gold,#d4af37)] bg-card text-foreground shadow-[inset_0_1px_0_rgba(255,248,220,0.45)]"
-              : "border-[var(--genre-gold,#d4af37)]/60 bg-background/85 text-foreground"
+              ? "border-[#c5a869] bg-[#15221b] text-[#f5ebe6] shadow-[inset_0_0_8px_rgba(92,225,184,0.22)]"
+              : "border-[#c5a869]/70 bg-[#15221b]/90 text-[#e6dcc5]"
         } ${className}`}
       >
         <span className="relative grid h-3.5 w-3.5 shrink-0 place-items-center">
           <span
             aria-hidden="true"
-            className="absolute inset-0 rotate-45 border border-current opacity-60"
+            className="absolute inset-0 rotate-45 border border-[#c5a869] bg-[#5ce1b8]/20"
           />
-          <Icon className="relative h-2.5 w-2.5 shrink-0" />
+          <Icon className="relative h-2.5 w-2.5 shrink-0 text-[#5ce1b8]" />
         </span>
         <span>{label}</span>
       </span>

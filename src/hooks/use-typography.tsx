@@ -2,7 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
+  type Context,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -24,7 +24,13 @@ interface TypographyCtx {
   reload: () => void;
 }
 
-const Ctx = createContext<TypographyCtx | null>(null);
+const TYPOGRAPHY_CONTEXT_KEY = Symbol.for("scu.TypographyContext");
+const g = globalThis as Record<symbol, unknown>;
+const Ctx: Context<TypographyCtx | null> =
+  (g[TYPOGRAPHY_CONTEXT_KEY] as Context<TypographyCtx | null> | undefined) ??
+  ((g[TYPOGRAPHY_CONTEXT_KEY] = createContext<TypographyCtx | null>(
+    null,
+  )) as Context<TypographyCtx | null>);
 
 function normalize(raw: unknown): TypographySettings {
   const r = (raw ?? {}) as Partial<TypographySettings>;

@@ -3532,41 +3532,60 @@ html[data-genre-theme="shonen"] .manga-panel-hover:hover {
     0 0 24px color-mix(in oklab, var(--accent) 32%, transparent);
 }
 
-/* 3. Fantasy: Luminous pearlescent sunlit vellum-glass (glossy gilded highlight, NOT matte) */
-html[data-genre-theme="fantasy"] {
-  --genre-ease: cubic-bezier(0.33, 1, 0.68, 1);
-  --genre-duration: 280ms;
+/* 3. Fantasy: Arcane Botanical Grimoire (deep forest-charcoal exterior + aged cream parchment inner panels + antique brass & mint-emerald glow) */
+html[data-genre-theme="fantasy"],
+html[data-manga-subtheme="fantasy"] {
+  --genre-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --genre-duration: 400ms;
+  --fantasy-canvas-dark: #111915;
+  --fantasy-canvas-mid: #1a241e;
+  --fantasy-card-ext: #15221b;
+  --fantasy-parchment: #f5ebe6;
+  --fantasy-parchment-deep: #e6dcc5;
+  --fantasy-brass: #c5a869;
+  --fantasy-jade: #2e5a52;
+  --fantasy-mint: #5ce1b8;
+}
+html[data-genre-theme="fantasy"] body,
+html[data-manga-subtheme="fantasy"] body {
+  background: radial-gradient(ellipse at 50% 0%, #1a241e 0%, #111915 62%, #0b110e 100%);
+  color: #f5ebe6;
 }
 html[data-genre-theme="fantasy"] .glass,
-html[data-genre-theme="fantasy"] .manga-panel {
+html[data-genre-theme="fantasy"] .manga-panel,
+html[data-manga-subtheme="fantasy"] .glass,
+html[data-manga-subtheme="fantasy"] .manga-panel {
   background:
-    radial-gradient(
-      circle at 12% 0%,
-      color-mix(in oklab, var(--genre-gold, #d4af37) 20%, rgba(255, 252, 240, 0.34)) 0%,
-      transparent 55%
-    ),
+    radial-gradient(circle at 12% 0%, rgba(92, 225, 184, 0.1) 0%, transparent 52%),
     linear-gradient(
-      160deg,
-      color-mix(in oklab, var(--card) 82%, #fff8e7) 0%,
-      color-mix(in oklab, var(--card) 86%, transparent) 55%,
-      color-mix(in oklab, var(--genre-gold, #d4af37) 10%, var(--card)) 100%
+      165deg,
+      rgba(21, 34, 27, 0.96) 0%,
+      rgba(26, 36, 30, 0.96) 60%,
+      rgba(17, 25, 21, 0.98) 100%
     );
-  backdrop-filter: blur(11px) saturate(145%);
-  -webkit-backdrop-filter: blur(11px) saturate(145%);
-  border-color: color-mix(in oklab, var(--genre-gold, #d4af37) 85%, white);
+  color: #f5ebe6;
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  border: 1.5px solid #c5a869;
   box-shadow:
-    inset 0 1px 0 rgba(255, 248, 220, 0.48),
-    inset 0 0 18px color-mix(in oklab, var(--genre-gold, #d4af37) 14%, transparent),
-    0 12px 28px -12px rgba(120, 82, 16, 0.45),
-    0 0 16px color-mix(in oklab, var(--genre-gold, #d4af37) 20%, transparent);
+    inset 0 0 0 1px rgba(197, 168, 105, 0.36),
+    inset 0 0 22px rgba(46, 90, 82, 0.25),
+    0 14px 32px -12px rgba(0, 0, 0, 0.72);
 }
-html[data-genre-theme="fantasy"] .manga-panel-hover:hover {
-  transform: translateY(-3px);
+html[data-genre-theme="fantasy"] .manga-panel-hover,
+html[data-manga-subtheme="fantasy"] .manga-panel-hover {
+  animation: cardIdleBreath 6s ease-in-out infinite alternate;
+  will-change: transform;
+}
+html[data-genre-theme="fantasy"] .manga-panel-hover:hover,
+html[data-manga-subtheme="fantasy"] .manga-panel-hover:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: #5ce1b8;
   box-shadow:
-    inset 0 1px 0 rgba(255, 250, 230, 0.65),
-    inset 0 0 22px color-mix(in oklab, var(--genre-gold, #d4af37) 22%, transparent),
-    0 16px 32px -12px rgba(120, 82, 16, 0.55),
-    0 0 24px color-mix(in oklab, var(--genre-gold, #d4af37) 38%, transparent);
+    inset 0 0 0 1px rgba(92, 225, 184, 0.55),
+    inset 0 0 26px rgba(92, 225, 184, 0.18),
+    0 18px 36px -12px rgba(0, 0, 0, 0.8),
+    0 0 24px rgba(92, 225, 184, 0.35);
 }
 
 /* 4. Isekai: Glossy translucent RPG System HUD crystal window (NOT matte) */
@@ -4747,12 +4766,142 @@ html[data-motion="off"] [data-genre-viz] {
   animation: frame-cel-meteor-scan 3.2s steps(7, end) infinite;
 }
 
-html[data-motion="off"] [data-frame-vfx] * {
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARCANE BOTANICAL FANTASY & HIERARCHICAL SUB-THEME ENGINE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes ivySway {
+  0% {
+    transform: rotate(-1.6deg) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: rotate(1.4deg) translate3d(1.5px, -1.5px, 0);
+  }
+  100% {
+    transform: rotate(-0.8deg) translate3d(-1px, 1px, 0);
+  }
+}
+
+@keyframes cardIdleBreath {
+  0% {
+    transform: translate3d(0, 0px, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(0, -4px, 0) rotate(0.2deg);
+  }
+}
+
+.ivy-sway {
+  transform-origin: top left;
+  animation: ivySway 8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.ivy-sway-alt {
+  transform-origin: bottom right;
+  animation: ivySway 8s ease-in-out infinite alternate-reverse;
+  will-change: transform;
+}
+
+.parchment-dot-grid {
+  background-color: #f5ebe6;
+  color: #16221b;
+  background-image:
+    radial-gradient(rgba(46, 90, 82, 0.16) 1px, transparent 1px),
+    linear-gradient(165deg, #f5ebe6 0%, #e6dcc5 100%);
+  background-size:
+    12px 12px,
+    100% 100%;
+}
+
+.fantasy-scroll-banner {
+  background: linear-gradient(
+    90deg,
+    #2e5a52 0%,
+    #1a241e 8%,
+    #f5ebe6 16%,
+    #e6dcc5 50%,
+    #f5ebe6 84%,
+    #1a241e 92%,
+    #2e5a52 100%
+  );
+  border: 1.5px solid #c5a869;
+  color: #15221b;
+  box-shadow:
+    inset 0 0 0 1px rgba(197, 168, 105, 0.45),
+    0 10px 28px -10px rgba(0, 0, 0, 0.72),
+    0 0 18px rgba(92, 225, 184, 0.18);
+}
+
+.fantasy-discover-btn {
+  background: linear-gradient(135deg, #16332d 0%, #2e5a52 50%, #16332d 100%);
+  border: 1.5px solid #c5a869;
+  color: #f5ebe6;
+  box-shadow:
+    inset 0 0 14px rgba(92, 225, 184, 0.4),
+    0 4px 14px -4px rgba(0, 0, 0, 0.65);
+  transition:
+    transform 220ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 220ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 220ms ease;
+}
+.fantasy-discover-btn:hover {
+  border-color: #5ce1b8;
+  box-shadow:
+    inset 0 0 20px rgba(92, 225, 184, 0.65),
+    0 0 20px rgba(92, 225, 184, 0.35);
+  transform: translateY(-1px);
+}
+.fantasy-discover-btn:active {
+  transform: scale(0.98);
+}
+
+.fantasy-diamond-viewport {
+  clip-path: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%);
+}
+
+.fantasy-arch-viewport {
+  clip-path: polygon(50% 0%, 84% 12%, 98% 36%, 98% 98%, 2% 98%, 2% 36%, 16% 12%);
+}
+
+/* Hierarchical Manga Sub-Theme attribute bindings */
+html[data-manga-subtheme="manhwa"] .manga-panel {
+  border-radius: 10px;
+  border-width: 1.5px;
+  border-color: color-mix(in oklab, var(--primary) 60%, var(--border));
+  box-shadow:
+    0 12px 26px -14px rgba(15, 23, 42, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+html[data-manga-subtheme="manhwa"] .grid {
+  row-gap: 1.35rem;
+}
+
+html[data-manga-subtheme="anime"] .manga-panel {
+  border-color: color-mix(in oklab, var(--accent) 65%, var(--genre-gold, #d6b26a));
+}
+
+/* Combat Impact Frame high-contrast inversion */
+.cel-impact-flash {
+  filter: invert(1) contrast(2.2) saturate(0.2);
+}
+
+html[data-motion="off"] [data-frame-vfx] *,
+html[data-motion="off"] .ivy-sway,
+html[data-motion="off"] .ivy-sway-alt,
+html[data-motion="off"] .manga-panel-hover,
+html[data-primary-system="minimal"] .ivy-sway,
+html[data-primary-system="minimal"] .ivy-sway-alt,
+html[data-primary-system="minimal"] .manga-panel-hover {
   animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-frame-vfx] * {
+  [data-frame-vfx] *,
+  .ivy-sway,
+  .ivy-sway-alt,
+  .manga-panel-hover {
     animation: none !important;
   }
 }

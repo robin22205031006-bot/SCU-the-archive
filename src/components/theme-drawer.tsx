@@ -8,6 +8,8 @@ import { UiStylePicker } from "@/components/ui-style-picker";
 import { Button } from "@/components/ui/button";
 import { useUiStyle } from "@/lib/ui-style";
 import { useActiveGenre, useVisualMode } from "@/hooks/use-ui-mode";
+import { MANGA_SUBTHEMES, useOptionalThemeContext } from "@/context/ThemeContext";
+import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
 import { GENRE_THEMES, setGenreTheme } from "@/lib/genre-themes";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
 import {
@@ -42,6 +44,8 @@ export function ThemeDrawer({
   const nexus = useUiStyle() === "nexus";
   const visualMode = useVisualMode();
   const activeGenre = useActiveGenre();
+  const themeCtx = useOptionalThemeContext();
+  const { playSwitch } = useSensoryFeedback();
   const navigationMode = useNavMode();
   const nexusTheme = useNexusTheme();
   const fx3dEnabled = useNexus3dFxEnabled();
@@ -108,7 +112,10 @@ export function ThemeDrawer({
                     key={g.id}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => setGenreTheme(g.id)}
+                    onClick={() => {
+                      setGenreTheme(g.id);
+                      playSwitch();
+                    }}
                     className={`flex flex-col justify-between rounded-xl border p-3 text-left text-xs transition ${
                       selected
                         ? "border-accent bg-accent/10 glow-ring"
@@ -140,6 +147,34 @@ export function ThemeDrawer({
                 );
               })}
             </div>
+            {themeCtx && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-3">
+                <span className="mr-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Sub-Engine:
+                </span>
+                {MANGA_SUBTHEMES.map((sub) => {
+                  const selected = themeCtx.mangaSubTheme === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        themeCtx.setMangaSubTheme(sub.id);
+                        playSwitch();
+                      }}
+                      className={`rounded-md border px-2 py-1 font-mono text-[10px] font-bold uppercase transition ${
+                        selected
+                          ? "border-accent bg-accent/15 text-foreground"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </section>
         )}
         {nexus ? (

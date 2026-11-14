@@ -10,6 +10,14 @@ import {
   type ModelVfxSystem,
 } from "@/lib/model-3d-vfx";
 import {
+  applyCelShading,
+  createSteppedMixerController,
+  hasBlockingModalOpen,
+  observeBlockingModal,
+  removeCelShading,
+  resolveCelThemeConfig,
+} from "@/lib/three-cel-shading";
+import {
   createAfterDrawScheduler,
   createConfiguredGltfLoader,
   createSafeWebGLRenderer,
@@ -198,8 +206,11 @@ export function GlbModelViewer({
 
     let loadedModel: THREE.Object3D | null = null;
     let mixer: THREE.AnimationMixer | null = null;
+    let celConfig = resolveCelThemeConfig();
+    const steppedMixer = createSteppedMixerController(celConfig.steppedFps || 12);
     let disposed = false;
     let contextLost = false;
+    let modalBlocked = hasBlockingModalOpen();
     let frameId = 0;
     let timeoutId = 0;
     let lastTime = performance.now();
@@ -207,32 +218,37 @@ export function GlbModelViewer({
 
     const afterDraw = createAfterDrawScheduler(
       renderer,
-      () => disposed || contextLost,
+      () => disposed || contextLost || modalBlocked,
       (id) => {
         timeoutId = id;
       },
     );
 
     const renderFrame = () => {
-      if (disposed || contextLost) return;
+      if (disposed || contextLost || modalBlocked) {
+        frameId = 0;
+        return;
+      }
       frameId = 0;
       const now = performance.now();
       const dt = Math.min((now - lastTime) / 1000, 0.08);
       lastTime = now;
       elapsed += dt;
 
-      if (mixer) mixer.update(dt);
+      if (mixer) {
+        steppedMixer.advance(mixer, dt, celConfig.steppedFps > 0);
+      }
       if (vfxSystem) vfxSystem.update(dt, elapsed, 1);
       controls.autoRotate = !isSoftwareGl && autoRotateRef.current;
       controls.update();
       renderer.render(scene, camera);
 
-      const keepRunning = !isSoftwareGl && !document.hidden;
+      const keepRunning = !isSoftwareGl && !document.hidden && !modalBlocked;
       if (keepRunning) {
         frameId = requestAnimationFrame(renderFrame);
-      } else if (isSoftwareGl && autoRotateRef.current) {
+      } else if (isSoftwareGl && autoRotateRef.current && !modalBlocked) {
         afterDraw(() => {
-          if (!disposed && !contextLost && autoRotateRef.current) {
+          if (!disposed && !contextLost && !modalBlocked && autoRotateRef.current) {
             scheduleRender();
           }
         });
@@ -295,15 +311,39 @@ export function GlbModelViewer({
     };
 
     const handleVisibilityChange = () => {
-      if (!document.hidden && !disposed && !contextLost) {
+      if (!document.hidden && !modalBlocked && !disposed && !contextLost) {
         lastTime = performance.now();
         scheduleRender();
       }
     };
 
+    const handleThemeChange = () => {
+      if (disposed) return;
+      celConfig = resolveCelThemeConfig();
+      if (loadedModel) {
+        applyCelShading(loadedModel, celConfig);
+      }
+      scheduleRender();
+    };
+
+    const stopModalObserver = observeBlockingModal((blocked) => {
+      modalBlocked = blocked;
+      if (blocked) {
+        cancelAnimationFrame(frameId);
+        frameId = 0;
+        window.clearTimeout(timeoutId);
+      } else if (!disposed && !contextLost) {
+        lastTime = performance.now();
+        scheduleRender();
+      }
+    });
+
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("scu:ui-mode-change", handleThemeChange);
+    window.addEventListener("scu:genre-theme-change", handleThemeChange);
+    window.addEventListener("scu:manga-subtheme-change", handleThemeChange);
 
     const loader = createConfiguredGltfLoader();
     loader.load(
@@ -375,6 +415,8 @@ export function GlbModelViewer({
 
         scene.add(model);
         loadedModel = model;
+        celConfig = resolveCelThemeConfig();
+        applyCelShading(model, celConfig);
 
         if (gltf.animations && gltf.animations.length > 0 && !isSoftwareGl) {
           mixer = new THREE.AnimationMixer(model);
@@ -411,8 +453,12 @@ export function GlbModelViewer({
       disposed = true;
       cancelAnimationFrame(frameId);
       window.clearTimeout(timeoutId);
+      stopModalObserver();
       ro.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("scu:ui-mode-change", handleThemeChange);
+      window.removeEventListener("scu:genre-theme-change", handleThemeChange);
+      window.removeEventListener("scu:manga-subtheme-change", handleThemeChange);
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
       viewerHooksRef.current = null;
@@ -424,6 +470,7 @@ export function GlbModelViewer({
         vfxSystem = null;
       }
       if (loadedModel) {
+        removeCelShading(loadedModel);
         scene.remove(loadedModel);
         disposeObjectTree(loadedModel);
       }

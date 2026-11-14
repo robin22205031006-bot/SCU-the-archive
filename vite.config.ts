@@ -86,6 +86,9 @@ export default defineConfig({
       "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(pid),
     },
   },
+  nitro: {
+    preset: "node-server",
+  },
   tanstackStart: {
     server: { entry: "server" },
   },

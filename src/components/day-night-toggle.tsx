@@ -1,15 +1,20 @@
 import { useAppearance } from "@/hooks/use-appearance";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 /** Illustrated landscape switch: sunset clouds by day, desert moon and stars by night. */
 export function DayNightToggle() {
   const { dark, setDark } = useAppearance();
+  const { triggerClick: playClick } = useUIFeedback();
   return (
     <button
       type="button"
       role="switch"
       aria-checked={dark}
       aria-label={dark ? "Switch to day" : "Switch to night"}
-      onClick={() => setDark(!dark)}
+      onClick={() => {
+        playClick();
+        setDark(!dark);
+      }}
       className="relative h-7 w-14 shrink-0 overflow-hidden rounded-full border"
     >
       <svg viewBox="0 0 56 28" className="absolute inset-0 h-full w-full" aria-hidden>

@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { useActiveGenre } from "@/hooks/use-ui-mode";
 import { useAnimationsEnabled } from "@/lib/animations";
+import { LivingThemeBackdrop } from "@/components/lazy-three";
 
 interface SparkleSpec {
   left: string;
@@ -147,6 +148,7 @@ export function GenreBackdrop() {
       data-viz-animated={animOn ? "true" : "false"}
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden select-none"
     >
+      {animOn && <LivingThemeBackdrop genre={genre} />}
       {genre === "manga-ink" && (
         <>
           <div

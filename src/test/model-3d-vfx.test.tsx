@@ -169,7 +169,7 @@ describe("Model3DViewer & GlbModelViewer dynamic VFX integration", () => {
     expect(screen.getByTestId("glb-model-viewer")).toHaveAttribute("data-vfx-preset", "scifi");
   });
 
-  it("passes artifact lore metadata from ArtifactCard to GlbModelViewer", () => {
+  it("passes artifact lore metadata from ArtifactCard to GlbModelViewer", async () => {
     const fireArtifact: Tables<"artifacts"> = {
       id: "art-fire",
       name: "Ember Halberd",
@@ -200,6 +200,9 @@ describe("Model3DViewer & GlbModelViewer dynamic VFX integration", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /^3D$/i }));
-    expect(screen.getByTestId("glb-model-viewer")).toHaveAttribute("data-vfx-preset", "fire");
+    expect(await screen.findByTestId("glb-model-viewer")).toHaveAttribute(
+      "data-vfx-preset",
+      "fire",
+    );
   });
 });

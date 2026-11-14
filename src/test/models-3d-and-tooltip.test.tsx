@@ -232,7 +232,7 @@ describe("3D model storage helper & multi-avatar normalization", () => {
 });
 
 describe("Arsenal 2D/3D card toggle", () => {
-  it("switches between 2D artwork and Three.js viewer when model_3d_url exists", () => {
+  it("switches between 2D artwork and Three.js viewer when model_3d_url exists", async () => {
     render(
       <ArtifactCard
         a={sampleArtifact}
@@ -248,7 +248,7 @@ describe("Arsenal 2D/3D card toggle", () => {
     expect(screen.queryByTestId("glb-model-viewer")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /^3D$/i }));
 
-    const viewer = screen.getByTestId("glb-model-viewer");
+    const viewer = await screen.findByTestId("glb-model-viewer");
     expect(viewer.getAttribute("data-model-url")).toBe(sampleArtifact.model_3d_url);
 
     fireEvent.click(screen.getByRole("button", { name: /^2D$/i }));
@@ -313,7 +313,7 @@ describe("Character 3D avatars Nexus-only & admin-toggle gating", () => {
     expect(screen.queryByTestId("character-3d-frame")).toBeNull();
   });
 
-  it("shows 2D/3D toggle and multiple avatars in Nexus mode and switches models", () => {
+  it("shows 2D/3D toggle and multiple avatars in Nexus mode and switches models", async () => {
     setUiStyle("nexus");
     render(
       withQueryClient(
@@ -329,13 +329,16 @@ describe("Character 3D avatars Nexus-only & admin-toggle gating", () => {
     expect(screen.getByRole("button", { name: "Awakened Form" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^3D$/i }));
-    expect(screen.getByTestId("glb-model-viewer").getAttribute("data-model-url")).toBe(
+    const initialViewer = await screen.findByTestId("glb-model-viewer");
+    expect(initialViewer.getAttribute("data-model-url")).toBe(
       "https://cdn.example.com/models-3d/characters/ayaan-base.glb",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Awakened Form" }));
-    expect(screen.getByTestId("glb-model-viewer").getAttribute("data-model-url")).toBe(
-      "https://cdn.example.com/models-3d/characters/ayaan-awakened.glb",
+    await waitFor(() =>
+      expect(screen.getByTestId("glb-model-viewer").getAttribute("data-model-url")).toBe(
+        "https://cdn.example.com/models-3d/characters/ayaan-awakened.glb",
+      ),
     );
   });
 
@@ -445,7 +448,7 @@ describe("3D viewer robustness & Three.js utility fixes", () => {
     expect(createSafeWebGLRenderer({ canvas: document.createElement("canvas") })).toBeNull();
   });
 
-  it("does not apply backdrop-blur overlays over the active WebGL frame in Character3dFrame", () => {
+  it("does not apply backdrop-blur overlays over the active WebGL frame in Character3dFrame", async () => {
     setUiStyle("nexus");
     const { container } = render(
       withQueryClient(
@@ -458,6 +461,8 @@ describe("3D viewer robustness & Three.js utility fixes", () => {
     fireEvent.click(screen.getByRole("button", { name: /^3D$/i }));
     const frame = screen.getByTestId("character-3d-frame");
     expect(frame.innerHTML).not.toMatch(/backdrop-blur/);
-    expect(container.querySelector('[data-testid="glb-model-viewer"]')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="glb-model-viewer"]')).toBeInTheDocument(),
+    );
   });
 });

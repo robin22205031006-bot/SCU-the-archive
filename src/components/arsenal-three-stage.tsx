@@ -27,6 +27,13 @@ import {
   type ModelVfxSystem,
 } from "@/lib/model-3d-vfx";
 import {
+  applyCelShading,
+  hasBlockingModalOpen,
+  observeBlockingModal,
+  removeCelShading,
+  resolveCelThemeConfig,
+} from "@/lib/three-cel-shading";
+import {
   createAfterDrawScheduler,
   createConfiguredGltfLoader,
   createSafeWebGLRenderer,
@@ -284,6 +291,7 @@ export function ArsenalThreeStage({
       const { artifact: a, finishId: fId, auraHue: hue } = stateRef.current;
       built = buildArtifactAssembly(a, ALLOY_FINISHES[fId], hue, textures, isSoftwareGl);
       scene.add(built.root);
+      applyCelShading(built.root, resolveCelThemeConfig());
       rebuildVfx(1.35, 1.05, 2.45);
 
       const exp = stateRef.current.currentExplode;
@@ -305,6 +313,7 @@ export function ArsenalThreeStage({
       loadTicket += 1;
       const ticket = loadTicket;
       if (built) {
+        removeCelShading(built.root);
         scene.remove(built.root);
         built.dispose();
         built = null;
@@ -378,6 +387,7 @@ export function ArsenalThreeStage({
           }
           gltfScene = model;
           root.add(model);
+          applyCelShading(model, resolveCelThemeConfig());
           if (!isSoftwareGl && !contextLost) renderer.compile(scene, camera);
           requestRender();
         },
@@ -385,6 +395,7 @@ export function ArsenalThreeStage({
         () => {
           if (disposed || ticket !== loadTicket) return;
           if (built) {
+            removeCelShading(built.root);
             scene.remove(built.root);
             built.dispose();
             built = null;
@@ -397,6 +408,7 @@ export function ArsenalThreeStage({
 
     let disposed = false;
     let contextLost = false;
+    let modalBlocked = hasBlockingModalOpen();
     let frameId = 0;
     let timeoutId = 0;
     let renderBusy = false;
@@ -408,7 +420,7 @@ export function ArsenalThreeStage({
 
     const afterDraw = createAfterDrawScheduler(
       renderer,
-      () => disposed || contextLost,
+      () => disposed || contextLost || modalBlocked,
       (id) => {
         timeoutId = id;
       },
@@ -469,18 +481,18 @@ export function ArsenalThreeStage({
       renderer.render(scene, camera);
 
       const settling = s.presetAnimating || Math.abs(s.currentExplode - s.explode) > 0.004;
-      return settling || ((!isSoftwareGl || s.boostSurge) && !document.hidden);
+      return settling || ((!isSoftwareGl || s.boostSurge) && !document.hidden && !modalBlocked);
     }
 
     function requestRender() {
-      if (disposed || contextLost) return;
+      if (disposed || contextLost || modalBlocked) return;
       if (renderBusy) {
         renderDirty = true;
         return;
       }
       renderBusy = true;
       frameId = requestAnimationFrame((now) => {
-        if (disposed || contextLost) {
+        if (disposed || contextLost || modalBlocked) {
           renderBusy = false;
           return;
         }
@@ -488,7 +500,7 @@ export function ArsenalThreeStage({
         const keepGoing = stepAndDraw(now);
         const done = () => {
           renderBusy = false;
-          if (!disposed && !contextLost && (renderDirty || keepGoing)) {
+          if (!disposed && !contextLost && !modalBlocked && (renderDirty || keepGoing)) {
             requestRender();
           }
         };
@@ -521,15 +533,38 @@ export function ArsenalThreeStage({
     };
 
     const handleVisibilityChange = () => {
-      if (!document.hidden && !disposed && !contextLost) {
+      if (!document.hidden && !modalBlocked && !disposed && !contextLost) {
         lastTime = performance.now();
         requestRender();
       }
     };
 
+    const handleThemeChange = () => {
+      if (disposed) return;
+      if (built) {
+        applyCelShading(built.root, resolveCelThemeConfig());
+      }
+      requestRender();
+    };
+
+    const stopModalObserver = observeBlockingModal((blocked) => {
+      modalBlocked = blocked;
+      if (blocked) {
+        cancelAnimationFrame(frameId);
+        renderBusy = false;
+        window.clearTimeout(timeoutId);
+      } else if (!disposed && !contextLost) {
+        lastTime = performance.now();
+        requestRender();
+      }
+    });
+
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("scu:ui-mode-change", handleThemeChange);
+    window.addEventListener("scu:genre-theme-change", handleThemeChange);
+    window.addEventListener("scu:manga-subtheme-change", handleThemeChange);
 
     const ro = new ResizeObserver(() => {
       if (disposed || contextLost) return;
@@ -562,8 +597,12 @@ export function ArsenalThreeStage({
       disposed = true;
       cancelAnimationFrame(frameId);
       window.clearTimeout(timeoutId);
+      stopModalObserver();
       ro.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("scu:ui-mode-change", handleThemeChange);
+      window.removeEventListener("scu:genre-theme-change", handleThemeChange);
+      window.removeEventListener("scu:manga-subtheme-change", handleThemeChange);
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
       controls.dispose();
@@ -572,7 +611,10 @@ export function ArsenalThreeStage({
         vfxSystem.dispose();
         vfxSystem = null;
       }
-      if (built) built.dispose();
+      if (built) {
+        removeCelShading(built.root);
+        built.dispose();
+      }
       floorGeo.dispose();
       floorMat.dispose();
       textures.dispose();

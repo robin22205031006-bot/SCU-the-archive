@@ -141,7 +141,7 @@ export function DossierComponent({
     </div>
   );
 
-  // 1. FANTASY — 'scroll-parchment' (Crowned Roman III Royal Scroll Showcase)
+  // 1. FANTASY — 'scroll-parchment' (Arcane Botanical Fantasy Grimoire Showcase)
   if (template === "scroll-parchment") {
     return (
       <div
@@ -151,25 +151,23 @@ export function DossierComponent({
       >
         <div className="flex flex-col items-center text-center">
           <div className="relative mb-1.5 grid h-9 w-9 place-items-center">
-            <span className="absolute inset-0 rotate-45 border border-[var(--genre-gold,#d4af37)] bg-card shadow-[0_0_12px_rgba(212,175,55,0.3)]" />
-            <span className="relative font-display text-xs font-bold text-[var(--genre-gold,#d4af37)]">
-              III
-            </span>
+            <span className="absolute inset-0 rotate-45 border border-[#c5a869] bg-[#15221b] shadow-[0_0_14px_rgba(92,225,184,0.38)]" />
+            <span className="relative font-display text-xs font-bold text-[#5ce1b8]">✦</span>
           </div>
-          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.34em] text-muted-foreground">
-            ◄ SCROLL PARCHMENT · {seriesTitle} ►
+          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.34em] text-[#c5a869]">
+            ◄ BOTANICAL GRIMOIRE · {seriesTitle} ►
           </p>
         </div>
 
         <section
-          className={`manga-panel ${MANGA_SCALE.banner} relative overflow-hidden rounded-lg border-2 border-border bg-card`}
+          className={`manga-panel ${MANGA_SCALE.banner} relative overflow-hidden rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6]`}
         >
           <GenreCardFrame theme={activeGenre} />
           <div className="relative grid items-center gap-5 lg:grid-cols-[210px_minmax(0,1fr)_270px]">
             <div
               role="tablist"
               aria-label="Dossier tabs"
-              className="flex flex-col gap-2 border-border/30 lg:border-r lg:pr-4"
+              className="flex flex-col gap-2 border-[#c5a869]/35 lg:border-r lg:pr-4"
             >
               {tabs.map((t, idx) => {
                 const active = activeTab === t.id;
@@ -182,15 +180,15 @@ export function DossierComponent({
                     onClick={(ev) => onSelectTab?.(t.id, ev)}
                     className={`group flex items-center gap-3 rounded border px-2.5 py-2 text-left transition ${
                       active
-                        ? "border-[var(--genre-gold,#d4af37)] bg-primary/15 text-foreground shadow-[0_0_16px_color-mix(in_oklab,var(--genre-gold,#d4af37)_32%,transparent)]"
-                        : "border-transparent bg-background/45 text-muted-foreground hover:border-border/50 hover:text-foreground"
+                        ? "fantasy-discover-btn border-[#5ce1b8] text-[#f5ebe6]"
+                        : "border-[#c5a869]/35 bg-[#111915]/80 text-[#e6dcc5]/80 hover:border-[#c5a869] hover:text-[#f5ebe6]"
                     }`}
                   >
                     <span
                       className={`grid h-7 w-7 shrink-0 rotate-45 place-items-center border text-[10px] font-bold transition ${
                         active
-                          ? "border-[var(--genre-gold,#d4af37)] bg-[var(--genre-gold,#d4af37)] text-primary-foreground"
-                          : "border-border/60 bg-card text-muted-foreground"
+                          ? "border-[#5ce1b8] bg-[#15221b] text-[#5ce1b8]"
+                          : "border-[#c5a869]/60 bg-[#1a241e] text-[#c5a869]"
                       }`}
                     >
                       <span className="-rotate-45 font-mono">0{idx + 1}</span>
@@ -199,7 +197,7 @@ export function DossierComponent({
                       <span className="block font-display text-xs font-bold uppercase tracking-wider">
                         {t.short}
                       </span>
-                      <span className="block font-mono text-[9px] opacity-75">{t.jp}</span>
+                      <span className="block font-mono text-[9px] opacity-80">{t.jp}</span>
                     </span>
                   </button>
                 );
@@ -210,26 +208,28 @@ export function DossierComponent({
             <div className="relative flex flex-col items-center justify-center py-2 text-center">
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-4 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--genre-gold,#d4af37)_26%,transparent)_0%,transparent_68%)]"
+                className="pointer-events-none absolute inset-4 rounded-full bg-[radial-gradient(circle,rgba(92,225,184,0.2)_0%,transparent_68%)]"
               />
               {badgesSlot && (
                 <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5">
                   {badgesSlot}
                 </div>
               )}
-              <div className="relative w-full max-w-[260px]">{fallbackPortrait}</div>
+              <div className="relative w-full max-w-[280px]">{fallbackPortrait}</div>
             </div>
 
-            <div className="flex flex-col gap-3 border-border/30 lg:border-l lg:pl-4">
+            <div className="parchment-dot-grid flex flex-col gap-3 rounded border border-[#c5a869]/80 p-3 text-[#15221b] shadow-inner">
               <div className="text-center lg:text-left">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-[var(--genre-gold,#d4af37)]">
+                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-[#2e5a52]">
                   {resolvedKicker}
                 </p>
-                <h1 className={`manga-display-title ${MANGA_SCALE.heroTitle} mt-0.5 uppercase`}>
+                <h1
+                  className={`manga-display-title ${MANGA_SCALE.heroTitle} mt-0.5 uppercase text-[#15221b]`}
+                >
                   {name}
                 </h1>
                 <div className="mt-1.5 flex items-center justify-center gap-1.5 lg:justify-start">
-                  <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                  <span className="font-mono text-[9px] font-bold uppercase text-[#2e5a52]">
                     RANK:
                   </span>
                   {[1, 2, 3, 4].map((pip) => (
@@ -237,8 +237,8 @@ export function DossierComponent({
                       key={pip}
                       className={`h-2 w-2 rotate-45 border ${
                         pip <= tierPipCount
-                          ? "border-[var(--genre-gold,#d4af37)] bg-[var(--genre-gold,#d4af37)]"
-                          : "border-border/50 bg-transparent"
+                          ? "border-[#2e5a52] bg-[#5ce1b8] shadow-[0_0_6px_rgba(92,225,184,0.65)]"
+                          : "border-[#2e5a52]/40 bg-transparent"
                       }`}
                     />
                   ))}
@@ -249,7 +249,9 @@ export function DossierComponent({
             </div>
           </div>
           <GenreDivider theme={activeGenre} label={meta.jpLabel} />
-          {profileSlot}
+          <div className="parchment-dot-grid rounded border border-[#c5a869]/70 p-2 text-[#15221b]">
+            {profileSlot}
+          </div>
         </section>
 
         {(tabContentSlot || combatMatrixSlot) && (

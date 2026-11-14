@@ -395,9 +395,7 @@ export function LoreExplorer({
         >
           <div className="flex items-center gap-2">
             <Bookmark className="h-4 w-4 fill-amber-400 text-amber-300" aria-hidden="true" />
-            <span className="font-semibold text-amber-200">
-              Personalized Lore Collection
-            </span>
+            <span className="font-semibold text-amber-200">Personalized Lore Collection</span>
             <span className="text-xs text-amber-300/80">
               ({bookmarks.length} {bookmarks.length === 1 ? "saved entry" : "saved entries"})
             </span>

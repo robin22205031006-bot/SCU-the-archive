@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type Context,
   type ReactNode,
 } from "react";
 import { useAppearance } from "@/hooks/use-appearance";
@@ -301,10 +302,36 @@ export function applyUiModeCss(
 
   // 5. Sync root data attributes used by CSS selectors across the app.
   root.dataset["uiMode"] = mode;
+  root.dataset["primarySystem"] = mode;
   if (mode === "classic") {
     delete root.dataset["ui"];
   } else {
     root.dataset["ui"] = mode;
+  }
+
+  if (mode === "manga") {
+    let sub: string | null = null;
+    try {
+      sub = localStorage.getItem("scu-manga-subtheme");
+    } catch {
+      sub = null;
+    }
+    if (!sub && activeGenre) {
+      const genreMap: Record<string, string> = {
+        fantasy: "fantasy",
+        "dark-fantasy": "darkFantasy",
+        xianxia: "anime",
+        "cyber-anime": "scifiAnime",
+        isekai: "isekai",
+        ghibli: "ghibli",
+        shonen: "shounen",
+        "manga-ink": "manga-ink",
+      };
+      sub = genreMap[activeGenre] ?? "manga-ink";
+    }
+    root.dataset["mangaSubtheme"] = sub || "manga-ink";
+  } else {
+    delete root.dataset["mangaSubtheme"];
   }
 }
 
@@ -315,7 +342,13 @@ interface UiModeContextValue {
   modes: readonly VisualUiModeInfo[];
 }
 
-const UiModeContext = createContext<UiModeContextValue | null>(null);
+const UI_MODE_CONTEXT_KEY = Symbol.for("scu.UiModeContext");
+const g = globalThis as Record<symbol, unknown>;
+const UiModeContext: Context<UiModeContextValue | null> =
+  (g[UI_MODE_CONTEXT_KEY] as Context<UiModeContextValue | null> | undefined) ??
+  ((g[UI_MODE_CONTEXT_KEY] = createContext<UiModeContextValue | null>(
+    null,
+  )) as Context<UiModeContextValue | null>);
 
 export function UiModeProvider({
   children,
@@ -491,6 +524,9 @@ export function useUiMode(): UiModeContextValue {
   }
   return ctx;
 }
+
+export const UIModeProvider = UiModeProvider;
+export const useUIMode = useUiMode;
 
 export function useOptionalUiMode(): UiModeContextValue | null {
   return useContext(UiModeContext);

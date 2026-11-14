@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "releasedAt": "2026-11-14",
+  "apkUrl": "/downloads/scu-archive-latest.apk",
+  "notes": [
+    "Arcane Botanical Fantasy Grimoire sub-UI with living ivy cards & diamond viewports",
+    "Stylized 60 FPS Three.js cel-shading, inverted ink outlines & combat impact frames",
+    "Adaptive parchment snap & terminal click audio/haptic sensory engine"
+  ]
+}

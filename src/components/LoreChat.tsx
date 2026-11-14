@@ -404,9 +404,7 @@ export function LoreChat() {
             setText(e.target.value);
           }}
           placeholder={
-            isListening
-              ? "Listening for speech..."
-              : "Ask Gemini about the SCU archive…"
+            isListening ? "Listening for speech..." : "Ask Gemini about the SCU archive…"
           }
           className="border-0 bg-transparent"
           maxLength={2000}

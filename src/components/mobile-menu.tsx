@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 type Tool = {
   label: string;
@@ -21,13 +22,17 @@ export function MobileMenu({
   tools?: Tool[];
 }) {
   const [open, setOpen] = useState(false);
+  const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback();
   const row = (t: Item) => {
     const Icon = t.icon;
     return (
       <Link
         key={t.to}
         to={t.to as never}
-        onClick={() => setOpen(false)}
+        onClick={() => {
+          playSnap();
+          setOpen(false);
+        }}
         activeOptions={{ exact: t.to === "/" }}
         activeProps={{ className: "bg-secondary text-foreground" }}
         inactiveProps={{ className: "text-muted-foreground" }}
@@ -39,7 +44,13 @@ export function MobileMenu({
     );
   };
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        playSnap();
+        setOpen(next);
+      }}
+    >
       <SheetTrigger asChild>
         <button
           aria-label="Open menu"
@@ -68,7 +79,10 @@ export function MobileMenu({
             return (
               <button
                 key={t.label}
-                onClick={t.onClick}
+                onClick={() => {
+                  playClick();
+                  t.onClick();
+                }}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:text-foreground ${t.on ? "text-accent" : "text-muted-foreground"}`}
               >
                 <I className="h-4 w-4 text-accent" />

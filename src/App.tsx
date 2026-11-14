@@ -9,6 +9,7 @@ import {
   type UIMode,
 } from "@/context/UIStateContext";
 import { applyUiModeCss } from "@/hooks/use-ui-mode";
+import { usePreloadUIFeedback, useUIFeedback } from "@/hooks/use-ui-feedback";
 import { MangaSfxLayer } from "@/components/manga-sfx";
 
 const APP_NAV_LINKS: readonly NexusNavLink[] = [
@@ -18,6 +19,8 @@ const APP_NAV_LINKS: readonly NexusNavLink[] = [
 
 function AppContent() {
   const { mode, setMode, activeNav, setActiveNav, modes } = useUIState();
+  const { triggerFeedback } = useUIFeedback({ mode });
+  usePreloadUIFeedback();
   const activeView = activeNav === "/ai" ? "chat" : "explorer";
 
   useEffect(() => {
@@ -48,7 +51,10 @@ function AppContent() {
           <div className="flex space-x-2" role="tablist" aria-label="Archive views">
             <button
               type="button"
-              onClick={() => setActiveNav("/archive")}
+              onClick={() => {
+                triggerFeedback("nav", mode);
+                setActiveNav("/archive");
+              }}
               aria-current={activeView === "explorer" ? "page" : undefined}
               className={`px-4 py-2 rounded text-sm font-semibold transition-colors ${
                 activeView === "explorer"
@@ -60,7 +66,10 @@ function AppContent() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveNav("/ai")}
+              onClick={() => {
+                triggerFeedback("nav", mode);
+                setActiveNav("/ai");
+              }}
               aria-current={activeView === "chat" ? "page" : undefined}
               className={`px-4 py-2 rounded text-sm font-semibold transition-colors ${
                 activeView === "chat"
@@ -79,7 +88,11 @@ function AppContent() {
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setMode(opt.id as UIMode)}
+                  onClick={() => {
+                    const nextMode = opt.id as UIMode;
+                    triggerFeedback("click", nextMode);
+                    setMode(nextMode);
+                  }}
                   aria-pressed={selected}
                   className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
                     selected

@@ -6,8 +6,9 @@ import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { Map, Radio, Globe2 } from "lucide-react";
 import { NexusAtlas } from "@/components/nexus-atlas";
-import { useIsManga } from "@/hooks/use-ui-mode";
+import { useIsManga, useActiveGenre } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
+import { GenreDiamondMediaFrame } from "@/components/genre-decorations";
 
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/map")({
 
 function MapPage() {
   const isManga = useIsManga();
+  const activeGenre = useActiveGenre();
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
   const sectionStyle = useSectionStyle("timeline");
@@ -83,9 +85,16 @@ function MapPage() {
         />
       ) : isManga ? (
         <div className="grid gap-8">
-          <MangaPanel caption="THEATER ATLAS & ERAS // 勢力圏" badge="LOCATIONS">
-            <LoreLocations />
-          </MangaPanel>
+          <GenreDiamondMediaFrame
+            theme={activeGenre}
+            variant="diamond"
+            leftEmblemLabel="ATLAS"
+            rightEmblemLabel="ERA"
+          >
+            <MangaPanel caption="THEATER ATLAS & ERAS // 勢力圏" badge="LOCATIONS">
+              <LoreLocations />
+            </MangaPanel>
+          </GenreDiamondMediaFrame>
           <MangaPanel caption="DEPLOYMENT BOARD // 配備一覧" badge="FIELD LOGS">
             <TacticalMap />
           </MangaPanel>
