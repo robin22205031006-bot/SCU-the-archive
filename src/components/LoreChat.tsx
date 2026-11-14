@@ -4,6 +4,8 @@ import { Bot, FileText, RotateCcw, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { askLore } from "@/lib/ai-box.functions";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { HankoStamp } from "@/components/manga-emblem";
 
 type Msg = {
   role: "user" | "assistant";
@@ -30,6 +32,7 @@ const STARTER_PROMPTS = [
 ];
 
 export function LoreChat() {
+  const isManga = useIsManga();
   const ask = useServerFn(askLore);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
@@ -81,22 +84,52 @@ export function LoreChat() {
   };
 
   return (
-    <main className="mx-auto flex h-dvh max-w-3xl flex-col px-4 pb-6 pt-28 sm:px-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <main
+      className={`mx-auto flex h-dvh max-w-3xl flex-col px-4 pb-6 sm:px-5 ${
+        isManga ? "pt-6" : "pt-28"
+      }`}
+    >
+      <div
+        className={`flex flex-wrap items-end justify-between gap-3 ${
+          isManga ? "manga-panel border-[3px] border-foreground bg-card p-4" : ""
+        }`}
+      >
         <div>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Gemini Archivist</p>
-          <h1 className="mt-2 text-4xl font-medium glow-text sm:text-5xl">SCU AI Box</h1>
+          <p
+            className={`text-[11px] uppercase tracking-[0.25em] ${
+              isManga ? "font-mono font-bold text-[#b91c1c]" : "text-accent"
+            }`}
+          >
+            Gemini Archivist
+          </p>
+          <h1
+            className={`mt-2 sm:text-5xl ${
+              isManga ? "manga-display-title text-4xl uppercase" : "text-4xl font-medium glow-text"
+            }`}
+          >
+            SCU AI Box
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Multi-turn Gemini assistant grounded in the official SCU archive and PDF vault.
           </p>
         </div>
-        <span className="mb-1 hidden items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[10px] uppercase tracking-widest text-accent sm:inline-flex">
-          <FileText className="h-3 w-3" /> Powered by Gemini &amp; SCU Archives
-        </span>
+        {isManga ? (
+          <HankoStamp kanji="電脳" label="ORACLE" tilt={-3} />
+        ) : (
+          <span className="mb-1 hidden items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[10px] uppercase tracking-widest text-accent sm:inline-flex">
+            <FileText className="h-3 w-3" /> Powered by Gemini &amp; SCU Archives
+          </span>
+        )}
       </div>
 
       {/* Role & Model Controls */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-card/40 p-2.5 text-xs">
+      <div
+        className={
+          isManga
+            ? "mt-4 flex flex-wrap items-center justify-between gap-2 border-[2.5px] border-foreground bg-card p-2.5 text-xs"
+            : "mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-card/40 p-2.5 text-xs"
+        }
+      >
         <div
           className="flex flex-wrap items-center gap-1.5"
           role="group"
@@ -108,11 +141,19 @@ export function LoreChat() {
               type="button"
               onClick={() => setRole(opt.id)}
               aria-pressed={role === opt.id}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                role === opt.id
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-              }`}
+              className={
+                isManga
+                  ? `border-2 border-foreground px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                      role === opt.id
+                        ? "bg-foreground text-background"
+                        : "bg-background text-foreground hover:bg-secondary"
+                    }`
+                  : `rounded-full px-3 py-1 text-xs font-medium transition ${
+                      role === opt.id
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    }`
+              }
             >
               {opt.label}
             </button>
@@ -124,7 +165,11 @@ export function LoreChat() {
             aria-label="Gemini model"
             value={model}
             onChange={(e) => setModel(e.target.value as ModelOption)}
-            className="h-8 rounded-full border border-border bg-background px-3 text-xs text-foreground"
+            className={
+              isManga
+                ? "h-8 border-2 border-foreground bg-background px-2 font-mono text-[11px] font-bold uppercase text-foreground"
+                : "h-8 rounded-full border border-border bg-background px-3 text-xs text-foreground"
+            }
           >
             <option value="gemini-4-hydrogen">Gemini 4 Hydrogen (Default)</option>
             <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Fast)</option>
@@ -140,7 +185,11 @@ export function LoreChat() {
               }}
               aria-label="New chat"
               title="Reset conversation"
-              className="h-8 rounded-full px-2.5 text-xs"
+              className={
+                isManga
+                  ? "h-8 rounded-none border-2 border-foreground px-2.5 font-mono text-[10px] font-bold uppercase"
+                  : "h-8 rounded-full px-2.5 text-xs"
+              }
             >
               <RotateCcw className="mr-1 h-3.5 w-3.5" /> New chat
             </Button>
@@ -151,7 +200,11 @@ export function LoreChat() {
       {errorMsg && (
         <div
           role="alert"
-          className="mt-3 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          className={`mt-3 border px-3 py-2 text-xs text-destructive ${
+            isManga
+              ? "border-2 border-[#b91c1c] bg-[#b91c1c]/10 font-mono"
+              : "rounded-xl border-destructive/40 bg-destructive/10"
+          }`}
         >
           {errorMsg}
         </div>
@@ -160,8 +213,14 @@ export function LoreChat() {
       {/* Scrollable Multi-Turn Conversation Thread */}
       <div className="mt-4 flex-1 overflow-y-auto pr-1 space-y-3">
         {msgs.length === 0 && (
-          <div className="glass grid place-items-center gap-4 rounded-2xl p-8 text-center text-sm text-muted-foreground">
-            <Bot className="h-8 w-8 text-accent" />
+          <div
+            className={
+              isManga
+                ? "manga-panel manga-halftone grid place-items-center gap-4 border-[3px] border-foreground bg-card p-8 text-center text-sm text-foreground"
+                : "glass grid place-items-center gap-4 rounded-2xl p-8 text-center text-sm text-muted-foreground"
+            }
+          >
+            <Bot className={`h-8 w-8 ${isManga ? "text-[#b91c1c]" : "text-accent"}`} />
             <p>Ask Gemini about any SCU character, ability, faction, relic, or timeline arc.</p>
             <div className="flex flex-wrap justify-center gap-2">
               {STARTER_PROMPTS.map((prompt) => (
@@ -169,9 +228,13 @@ export function LoreChat() {
                   key={prompt}
                   type="button"
                   onClick={() => void send(prompt)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs text-foreground transition hover:border-accent hover:text-accent"
+                  className={
+                    isManga
+                      ? "inline-flex items-center gap-1.5 border-2 border-foreground bg-background px-3 py-1.5 font-mono text-[11px] font-bold text-foreground transition hover:bg-foreground hover:text-background"
+                      : "inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs text-foreground transition hover:border-accent hover:text-accent"
+                  }
                 >
-                  <Sparkles className="h-3 w-3 text-accent" />
+                  <Sparkles className={`h-3 w-3 ${isManga ? "text-[#b91c1c]" : "text-accent"}`} />
                   {prompt}
                 </button>
               ))}
@@ -182,11 +245,17 @@ export function LoreChat() {
         {msgs.map((m, i) => (
           <div key={i} className="grid gap-1.5">
             <div
-              className={`max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm ${
-                m.role === "user"
-                  ? "justify-self-end bg-primary text-primary-foreground"
-                  : "glass justify-self-start"
-              }`}
+              className={
+                isManga
+                  ? m.role === "user"
+                    ? "max-w-[85%] justify-self-end whitespace-pre-line border-2 border-foreground bg-foreground px-4 py-2.5 text-sm text-background shadow-[3px_3px_0_#b91c1c]"
+                    : "manga-speech-bubble manga-tail-left max-w-[85%] justify-self-start whitespace-pre-line border-[2.5px] border-foreground bg-card px-4 py-2.5 text-sm text-card-foreground"
+                  : `max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm ${
+                      m.role === "user"
+                        ? "justify-self-end bg-primary text-primary-foreground"
+                        : "glass justify-self-start"
+                    }`
+              }
             >
               {m.content}
             </div>
@@ -202,7 +271,13 @@ export function LoreChat() {
         ))}
 
         {busy && (
-          <div className="glass justify-self-start rounded-2xl px-4 py-2.5 text-sm text-muted-foreground">
+          <div
+            className={
+              isManga
+                ? "manga-thought-box justify-self-start border-2 border-dashed border-foreground bg-card px-4 py-2.5 font-mono text-xs uppercase text-foreground"
+                : "glass justify-self-start rounded-2xl px-4 py-2.5 text-sm text-muted-foreground"
+            }
+          >
             Gemini is analyzing the SCU archive…
           </div>
         )}
@@ -210,7 +285,11 @@ export function LoreChat() {
       </div>
 
       <form
-        className="glass sticky bottom-2 mt-4 flex gap-2 rounded-full p-1.5"
+        className={
+          isManga
+            ? "sticky bottom-2 mt-4 flex gap-2 border-[3px] border-foreground bg-card p-1.5 shadow-[4px_4px_0_var(--foreground)]"
+            : "glass sticky bottom-2 mt-4 flex gap-2 rounded-full p-1.5"
+        }
         onSubmit={(e) => {
           e.preventDefault();
           void send();
@@ -226,7 +305,11 @@ export function LoreChat() {
         <Button
           type="submit"
           size="icon"
-          className="rounded-full"
+          className={
+            isManga
+              ? "rounded-none border-2 border-foreground bg-[#b91c1c] text-white"
+              : "rounded-full"
+          }
           disabled={busy || !text.trim()}
           aria-label="Send"
         >

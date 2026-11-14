@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { sfx } from "@/lib/scu-audio";
 import {
   CHARACTER_STATUSES,
@@ -212,8 +213,7 @@ export function EntityDialog({
     const { custom } = splitStats(parsed);
     const normalizedAvatars = avatars3d.filter((a) => a.url.trim().length > 0);
     const primaryModel3dUrl = form.model_3d_url.trim() || normalizedAvatars[0]?.url || null;
-    // Canonical combat stats come from the sliders; the textarea keeps custom keys only.
-    const stats = isChar
+    const stats: Json = (isChar
       ? {
           ...custom,
           // Keep per-season Nexus dossier data, which is edited from the dossier page.
@@ -227,7 +227,7 @@ export function EntityDialog({
             COMBAT_STATS.filter(({ key }) => combat[key] > 0).map(({ key }) => [key, combat[key]]),
           ),
         }
-      : parsed;
+      : parsed) as unknown as Json;
     const row = {
       kind,
       name: form.name.trim(),

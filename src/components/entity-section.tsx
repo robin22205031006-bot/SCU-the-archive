@@ -9,7 +9,7 @@ import {
   type CSSProperties,
   type TouchEvent as ReactTouchEvent,
 } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, type MotionStyle } from "framer-motion";
 import {
@@ -89,6 +89,8 @@ import { useUiStyle } from "@/lib/ui-style";
 import { UiStylePicker } from "@/components/ui-style-picker";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { Character3dFrame } from "@/components/character-3d-frame";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaEntitySpread, MangaPanel } from "./manga-view";
 
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
@@ -1433,16 +1435,20 @@ export function EntitySection({
   view?: "characters" | "organizations";
 }) {
   const isAdmin = useIsAdmin();
+  const nav = useNavigate();
   useSpoilerMask("characters");
   const sectionStyle = useSectionStyle(view);
+  const isManga = useIsManga();
   const uiStyle = useUiStyle();
-  const nexus = uiStyle === "nexus";
+  const nexus = !isManga && uiStyle === "nexus";
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(entitiesQuery(kinds));
   const [open, setOpen] = useState<{ id: string; rect: DOMRect | null } | null>(null);
   const [editing, setEditing] = useState<Entity | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Entity | null>(null);
   const [merging, setMerging] = useState<Entity | null>(null);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [cat, setCat] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list" | "showcase">(() => {
     try {
@@ -1552,247 +1558,325 @@ export function EntitySection({
     setDeleting(null);
   };
 
-  return (
-    <main
-      className={`mx-auto ${nexus ? "max-w-7xl" : "max-w-5xl"} px-4 pb-24 pt-28 sm:px-5`}
-      style={sectionStyle}
-    >
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
-          <h1 className="mt-2 text-5xl font-medium glow-text">{title}</h1>
-          <p className="mt-2 max-w-md text-sm text-muted-foreground">{subtitle}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
-              <Users className="h-3.5 w-3.5" />
-              <span className="font-display text-sm tracking-normal">{total}</span>
-              {countWord}
-            </span>
-            <SpoilerToggle scope="characters" />
-            {view === "characters" && (
-              <div
-                role="group"
-                aria-label="Interface style"
-                className="inline-flex rounded-full border border-border p-0.5 text-[11px]"
-              >
-                <UiStylePicker />
-              </div>
-            )}
-            {isFiltered && total > 0 && (
-              <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                {list.length} showing
-              </span>
-            )}
-          </div>
-        </div>
-        {isAdmin && (
-          <Button onClick={() => setEditing(null)} size="sm">
-            <Plus className="h-4 w-4" />
-            New
-          </Button>
-        )}
-      </header>
+  const compareEntity = useMemo(
+    () => (data ?? []).find((e) => e.id === compareIds[0]) ?? null,
+    [data, compareIds],
+  );
 
-      {nexus ? (
-        isLoading ? (
-          <EntityGridSkeleton />
-        ) : view === "characters" ? (
-          <NexusView
-            data={data ?? []}
-            categories={allCategories}
+  const toggleCompare = (id: string) => {
+    setCompareIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev.slice(-1), id],
+    );
+  };
+
+  return (
+    <>
+      {isManga ? (
+        <div style={sectionStyle}>
+          <MangaEntitySpread
+            entities={list}
+            kind={kinds[0] ?? "character"}
+            chapter={view === "characters" ? "CH. 02 // DOSSIERS" : "CH. 12 // FACTIONS"}
+            title={title}
+            subtitle={subtitle}
+            loading={isLoading}
             isAdmin={isAdmin}
+            onSelect={(e) => {
+              if (e.kind === "character") {
+                void nav({ to: "/character", search: { e: e.id } });
+              } else {
+                setOpen({ id: e.id, rect: null });
+              }
+            }}
+            onAdd={() => setEditing(null)}
             onEdit={(e) => setEditing(e)}
-          />
-        ) : (
-          <div data-spoiler="archive">
-            <NexusExplorer
-              label={title}
-              initialQuery={initialQuery}
-              records={(data ?? []).map((e) => ({
-                id: e.id,
-                title: e.name,
-                group: e.category || e.kind,
-                image: e.image_url,
-                subtitle: e.alias || e.kind,
-                entity: e,
-              }))}
-              renderDetail={({ entity: e }) => (
-                <div className="grid gap-4">
-                  <h2 className="break-words text-2xl">{e.name}</h2>
-                  {e.image_url && (
-                    <img
-                      src={e.image_url}
-                      alt={e.name}
-                      className="h-52 w-full rounded-lg object-contain"
-                    />
-                  )}
-                  <p className="whitespace-pre-line text-sm leading-relaxed">
-                    {e.description || "No description recorded."}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={() => setOpen({ id: e.id, rect: null })}>
-                      <BookOpen className="h-4 w-4" /> Full dossier
-                    </Button>
-                    {isAdmin && (
-                      <Button variant="outline" onClick={() => setEditing(e)}>
-                        <Pencil className="h-4 w-4" /> Edit
-                      </Button>
-                    )}
+            onDelete={(e) => setDeleting(e)}
+            onMerge={(e) => setMerging(e)}
+            compareIds={view === "characters" ? compareIds : undefined}
+            onToggleCompare={view === "characters" ? toggleCompare : undefined}
+            onOpenCompare={() => setCompareOpen(true)}
+            search={q}
+            onSearchChange={setQ}
+            spoilerScope={view === "characters" ? "characters" : "archive"}
+            spotlightBanner={
+              view === "characters" ? (
+                <MangaPanel
+                  caption="ARCHIVE EDITION & EDITION STYLE // 書式設定"
+                  badge={`${total} ${countWord.toUpperCase()}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {["all", ...allCategories].map((k) => (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => setCat(k)}
+                          className={`border-2 border-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                            cat === k
+                              ? "bg-foreground text-background"
+                              : "bg-background text-foreground hover:bg-secondary"
+                          }`}
+                        >
+                          {k === "all" ? "ALL ROLES" : k}
+                        </button>
+                      ))}
+                    </div>
+                    <div role="group" aria-label="Interface style">
+                      <UiStylePicker />
+                    </div>
                   </div>
+                </MangaPanel>
+              ) : undefined
+            }
+          />
+        </div>
+      ) : (
+        <main
+          className={`mx-auto ${nexus ? "max-w-7xl" : "max-w-5xl"} px-4 pb-24 pt-28 sm:px-5`}
+          style={sectionStyle}
+        >
+          <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
+              <h1 className="mt-2 text-5xl font-medium glow-text">{title}</h1>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">{subtitle}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="font-display text-sm tracking-normal">{total}</span>
+                  {countWord}
+                </span>
+                <SpoilerToggle scope="characters" />
+                {view === "characters" && (
+                  <div
+                    role="group"
+                    aria-label="Interface style"
+                    className="inline-flex rounded-full border border-border p-0.5 text-[11px]"
+                  >
+                    <UiStylePicker />
+                  </div>
+                )}
+                {isFiltered && total > 0 && (
+                  <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    {list.length} showing
+                  </span>
+                )}
+              </div>
+            </div>
+            {isAdmin && (
+              <Button onClick={() => setEditing(null)} size="sm">
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
+            )}
+          </header>
+
+          {nexus ? (
+            isLoading ? (
+              <EntityGridSkeleton />
+            ) : view === "characters" ? (
+              <NexusView
+                data={data ?? []}
+                categories={allCategories}
+                isAdmin={isAdmin}
+                onEdit={(e) => setEditing(e)}
+              />
+            ) : (
+              <div data-spoiler="archive">
+                <NexusExplorer
+                  label={title}
+                  initialQuery={initialQuery}
+                  records={(data ?? []).map((e) => ({
+                    id: e.id,
+                    title: e.name,
+                    group: e.category || e.kind,
+                    image: e.image_url,
+                    subtitle: e.alias || e.kind,
+                    entity: e,
+                  }))}
+                  renderDetail={({ entity: e }) => (
+                    <div className="grid gap-4">
+                      <h2 className="break-words text-2xl">{e.name}</h2>
+                      {e.image_url && (
+                        <img
+                          src={e.image_url}
+                          alt={e.name}
+                          className="h-52 w-full rounded-lg object-contain"
+                        />
+                      )}
+                      <p className="whitespace-pre-line text-sm leading-relaxed">
+                        {e.description || "No description recorded."}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => setOpen({ id: e.id, rect: null })}>
+                          <BookOpen className="h-4 w-4" /> Full dossier
+                        </Button>
+                        {isAdmin && (
+                          <Button variant="outline" onClick={() => setEditing(e)}>
+                            <Pencil className="h-4 w-4" /> Edit
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                />
+              </div>
+            )
+          ) : (
+            <>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={`Search ${title.toLowerCase()}…`}
+                  className="glass h-11 rounded-full pl-10"
+                />
+              </div>
+              <div data-no-swipe className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
+                {["all", ...allCategories].map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setCat(k)}
+                    className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${cat === k ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {k === "all" ? "All" : k}
+                  </button>
+                ))}
+                <span className="mx-1 w-px self-stretch bg-border" />
+                {(
+                  [
+                    ["grid", "Grid"],
+                    ["list", "List"],
+                    ["showcase", "Showcase"],
+                  ] as const
+                ).map(([v, label]) => (
+                  <button
+                    key={v}
+                    onClick={() => {
+                      setViewMode(v);
+                      try {
+                        localStorage.setItem("scu-card-view", v);
+                      } catch {
+                        /* noop */
+                      }
+                    }}
+                    className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${viewMode === v ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {isLoading ? (
+                <EntityGridSkeleton />
+              ) : list.length === 0 ? (
+                <p className="py-16 text-center text-sm text-muted-foreground">
+                  {data?.length ? "No matches." : "Nothing in the archive yet."}
+                </p>
+              ) : viewMode === "showcase" ? (
+                <ShowcaseView
+                  list={list}
+                  onOpen={(e) => {
+                    sfx.tierReveal(e.character_tier);
+                  }}
+                />
+              ) : (
+                <div
+                  className={
+                    viewMode === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3"
+                  }
+                >
+                  <AnimatePresence initial={false}>
+                    {list.map((e, i) => {
+                      if (open?.id === e.id) return null; // unmount → shared-element morph into dossier
+                      return (
+                        <motion.article
+                          key={e.id}
+                          layout
+                          layoutId={`card-${e.id}`}
+                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                          animate={{
+                            opacity: 1,
+                            scale: 1,
+                            y: 0,
+                            transition: {
+                              delay: Math.min(i * 0.03, 0.45),
+                              duration: 0.3,
+                              ease: [0.2, 0.8, 0.2, 1],
+                            },
+                          }}
+                          exit={{
+                            opacity: 0,
+                            scale: 0.95,
+                            transition: { duration: 0.18, ease: "easeIn" },
+                          }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`}
+                          style={
+                            {
+                              "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
+                            } as unknown as MotionStyle
+                          }
+                        >
+                          <AbilityCardCanvas
+                            abilities={e.abilities}
+                            theme={e.card_theme}
+                            className="pointer-events-none absolute inset-0 h-full w-full opacity-30 transition-opacity group-hover:opacity-60"
+                          />
+                          <Link
+                            to="/character"
+                            search={{ e: e.id }}
+                            className="flex min-w-0 flex-1 gap-4"
+                          >
+                            <Avatar e={e} size="h-16 w-16" />
+                            <CardBody e={e} showKind={kinds.length > 1} />
+                          </Link>
+                          {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
+                          {isAdmin && (
+                            <div className="flex shrink-0 flex-col gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 active:scale-90"
+                                aria-label="Edit"
+                                onClick={() => setEditing(e)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 active:scale-90"
+                                aria-label="Merge into another entry"
+                                onClick={() => setMerging(e)}
+                              >
+                                <GitMerge className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-destructive active:scale-90"
+                                aria-label="Delete"
+                                onClick={() => setDeleting(e)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </motion.article>
+                      );
+                    })}
+                  </AnimatePresence>
                 </div>
               )}
-            />
-          </div>
-        )
-      ) : (
-        <>
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={`Search ${title.toLowerCase()}…`}
-              className="glass h-11 rounded-full pl-10"
-            />
-          </div>
-          <div data-no-swipe className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
-            {["all", ...allCategories].map((k) => (
-              <button
-                key={k}
-                onClick={() => setCat(k)}
-                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${cat === k ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {k === "all" ? "All" : k}
-              </button>
-            ))}
-            <span className="mx-1 w-px self-stretch bg-border" />
-            {(
-              [
-                ["grid", "Grid"],
-                ["list", "List"],
-                ["showcase", "Showcase"],
-              ] as const
-            ).map(([v, label]) => (
-              <button
-                key={v}
-                onClick={() => {
-                  setViewMode(v);
-                  try {
-                    localStorage.setItem("scu-card-view", v);
-                  } catch {
-                    /* noop */
-                  }
-                }}
-                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${viewMode === v ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {isLoading ? (
-            <EntityGridSkeleton />
-          ) : list.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              {data?.length ? "No matches." : "Nothing in the archive yet."}
-            </p>
-          ) : viewMode === "showcase" ? (
-            <ShowcaseView
-              list={list}
-              onOpen={(e) => {
-                sfx.tierReveal(e.character_tier);
-              }}
-            />
-          ) : (
-            <div
-              className={
-                viewMode === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3"
-              }
-            >
-              <AnimatePresence initial={false}>
-                {list.map((e, i) => {
-                  if (open?.id === e.id) return null; // unmount → shared-element morph into dossier
-                  return (
-                    <motion.article
-                      key={e.id}
-                      layout
-                      layoutId={`card-${e.id}`}
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                        y: 0,
-                        transition: {
-                          delay: Math.min(i * 0.03, 0.45),
-                          duration: 0.3,
-                          ease: [0.2, 0.8, 0.2, 1],
-                        },
-                      }}
-                      exit={{
-                        opacity: 0,
-                        scale: 0.95,
-                        transition: { duration: 0.18, ease: "easeIn" },
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`}
-                      style={
-                        {
-                          "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
-                        } as unknown as MotionStyle
-                      }
-                    >
-                      <AbilityCardCanvas
-                        abilities={e.abilities}
-                        theme={e.card_theme}
-                        className="pointer-events-none absolute inset-0 h-full w-full opacity-30 transition-opacity group-hover:opacity-60"
-                      />
-                      <Link
-                        to="/character"
-                        search={{ e: e.id }}
-                        className="flex min-w-0 flex-1 gap-4"
-                      >
-                        <Avatar e={e} size="h-16 w-16" />
-                        <CardBody e={e} showKind={kinds.length > 1} />
-                      </Link>
-                      {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
-                      {isAdmin && (
-                        <div className="flex shrink-0 flex-col gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 active:scale-90"
-                            aria-label="Edit"
-                            onClick={() => setEditing(e)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 active:scale-90"
-                            aria-label="Merge into another entry"
-                            onClick={() => setMerging(e)}
-                          >
-                            <GitMerge className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-destructive active:scale-90"
-                            aria-label="Delete"
-                            onClick={() => setDeleting(e)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      )}
-                    </motion.article>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
+            </>
           )}
-        </>
+        </main>
+      )}
+
+      {compareEntity && (
+        <CompareSentinel open={compareOpen} onOpenChange={setCompareOpen} entity={compareEntity} />
       )}
 
       <AnimatePresence>
@@ -1846,6 +1930,6 @@ export function EntitySection({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </main>
+    </>
   );
 }

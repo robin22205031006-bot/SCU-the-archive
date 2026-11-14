@@ -159,7 +159,9 @@ describe("UIStateContext, NexusNavigation & App theme synchronization", () => {
     expect(archivistHudLink).not.toBeNull();
 
     const aiButtons = screen.getAllByRole("button", { name: /Archivist AI/i });
-    fireEvent.click(aiButtons[aiButtons.length - 1]);
+    const aiButton = aiButtons[aiButtons.length - 1];
+    expect(aiButton).toBeDefined();
+    fireEvent.click(aiButton!);
     expect(screen.getByText(/Archivist online/i)).toBeInTheDocument();
 
     // Switch to Manga via App header

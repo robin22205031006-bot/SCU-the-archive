@@ -8,6 +8,8 @@ import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { CrimsonBloodlineTheme } from "@/components/ability-canvas";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 
 const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
 const Clans = lazy(() => import("./clans").then((m) => ({ default: m.Clans })));
@@ -73,26 +75,41 @@ const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
 ];
 
 function Archive() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const [module, setModule] = useState<Module>("orgs");
   const active = MODULES.find((m) => m.id === module) ?? { t: "Archive" };
   useSpoilerMask("archive");
 
   return (
     <main className="relative mx-auto max-w-6xl px-4 pb-24 sm:px-5">
-      {!nexus && (
+      {!nexus && !isManga && (
         <CrimsonBloodlineTheme className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-25" />
       )}
-      <header className="mb-6 pt-28">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Lore Vault</p>
-        <h1 className="mt-2 text-5xl font-medium glow-text">Archive</h1>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          The deep vault of the universe — structures, bloodlines, connections and history.
-        </p>
-        <div className="mt-3">
-          <SpoilerToggle scope="archive" />
+      {isManga ? (
+        <div className="pt-6">
+          <MangaChapterBanner
+            chapter="CH. 05 // VAULT ARCHIVE"
+            jp="機密保管庫"
+            title="Archive"
+            subtitle="The deep vault of the universe — structures, bloodlines, connections and canon history."
+            stamp="機密"
+            actions={<SpoilerToggle scope="archive" />}
+          />
         </div>
-      </header>
+      ) : (
+        <header className="mb-6 pt-28">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Lore Vault</p>
+          <h1 className="mt-2 text-5xl font-medium glow-text">Archive</h1>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            The deep vault of the universe — structures, bloodlines, connections and history.
+          </p>
+          <div className="mt-3">
+            <SpoilerToggle scope="archive" />
+          </div>
+        </header>
+      )}
 
       {nexus ? (
         <div data-spoiler="archive">
@@ -121,6 +138,60 @@ function Archive() {
             }))}
           />
         </div>
+      ) : isManga ? (
+        <>
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {MODULES.map((m, idx) => {
+              const selected = module === m.id;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setModule(m.id)}
+                  className={`manga-panel-hover flex flex-col justify-between border-[3px] border-foreground p-4 text-left transition ${
+                    selected
+                      ? "bg-foreground text-background shadow-[4px_4px_0_#b91c1c]"
+                      : "bg-card text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
+                        selected
+                          ? "border-background bg-[#b91c1c] text-white"
+                          : "border-foreground bg-foreground text-background"
+                      }`}
+                    >
+                      FILE {String.fromCharCode(65 + idx)}
+                    </span>
+                    <m.icon className="h-5 w-5" />
+                  </div>
+                  <div className="mt-3">
+                    <h2 className="font-display text-lg uppercase tracking-wide">{m.t}</h2>
+                    <p
+                      className={`mt-1 text-xs ${selected ? "text-background/80" : "text-muted-foreground"}`}
+                    >
+                      {m.d}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <section aria-label={active.t} data-spoiler="archive">
+            <MangaPanel caption={`FOLIO // ${active.t.toUpperCase()}`} badge="CANON RECORD">
+              <SectionBoundary key={module} label={active.t}>
+                <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+                  {module === "series" && <ArchiveSeasons />}
+                  {module === "orgs" && <Orgs />}
+                  {module === "clans" && <Clans />}
+                  {module === "graph" && <RelationshipGraph />}
+                  {module === "timeline" && <Timeline />}
+                </Suspense>
+              </SectionBoundary>
+            </MangaPanel>
+          </section>
+        </>
       ) : (
         <>
           <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

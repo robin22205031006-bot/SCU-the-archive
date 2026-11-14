@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { mapLocationsQuery, parseSentinels, type MapLocation } from "@/lib/map";
 import { sfx } from "@/lib/scu-audio";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 const EMPTY_PIN = {
   name: "",
@@ -36,6 +37,7 @@ function blob(seed: number, cx: number, cy: number, r: number) {
 }
 
 export function TacticalMap() {
+  const isManga = useIsManga();
   const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const { data: pins = [], isLoading } = useQuery(mapLocationsQuery);
@@ -127,7 +129,13 @@ export function TacticalMap() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       {/* ---- Theater map ---- */}
-      <div className="glass relative overflow-hidden rounded-2xl">
+      <div
+        className={
+          isManga
+            ? "relative overflow-hidden border-[3px] border-foreground bg-card shadow-[5px_5px_0_currentColor]"
+            : "glass relative overflow-hidden rounded-2xl"
+        }
+      >
         <svg
           viewBox="0 0 100 62.5"
           className="block h-auto w-full"
@@ -139,14 +147,18 @@ export function TacticalMap() {
               <path
                 d="M 5 0 L 0 0 0 5"
                 fill="none"
-                stroke="var(--border)"
-                strokeOpacity="0.25"
+                stroke={isManga ? "var(--foreground)" : "var(--border)"}
+                strokeOpacity={isManga ? 0.14 : 0.25}
                 strokeWidth="0.15"
               />
             </pattern>
             <radialGradient id="vign" cx="50%" cy="50%" r="75%">
               <stop offset="60%" stopColor="transparent" />
-              <stop offset="100%" stopColor="var(--background)" stopOpacity="0.55" />
+              <stop
+                offset="100%"
+                stopColor="var(--background)"
+                stopOpacity={isManga ? 0.25 : 0.55}
+              />
             </radialGradient>
           </defs>
 
@@ -157,16 +169,16 @@ export function TacticalMap() {
             <polygon
               key={t.seed}
               points={blob(t.seed, t.cx, t.cy, t.r)}
-              fill={t.fill}
-              opacity={t.op}
+              fill={isManga ? "var(--foreground)" : t.fill}
+              opacity={isManga ? 0.08 : t.op}
             />
           ))}
 
           {/* stylized coastline hint */}
           <path
             d="M0,58 C15,54 22,60 34,57 C46,54 52,60 66,56 C78,53 88,58 100,55 L100,62.5 L0,62.5 Z"
-            fill="var(--accent)"
-            opacity="0.08"
+            fill={isManga ? "var(--foreground)" : "var(--accent)"}
+            opacity={isManga ? 0.14 : 0.08}
           />
 
           {/* graticule labels */}
@@ -176,8 +188,9 @@ export function TacticalMap() {
               x={x}
               y="61.8"
               fontSize="1.6"
+              fontWeight={isManga ? 700 : 400}
               fill="var(--muted-foreground)"
-              opacity="0.6"
+              opacity="0.7"
               textAnchor="middle"
             >
               {String(x).padStart(2, "0")}E
@@ -189,8 +202,9 @@ export function TacticalMap() {
               x="1"
               y={y}
               fontSize="1.6"
+              fontWeight={isManga ? 700 : 400}
               fill="var(--muted-foreground)"
-              opacity="0.6"
+              opacity="0.7"
             >
               {String(y).padStart(2, "0")}N
             </text>
@@ -212,31 +226,65 @@ export function TacticalMap() {
                   setEditing(null);
                 }}
               >
-                <motion.circle
-                  r={active ? 3.2 : 2.2}
-                  fill="var(--accent)"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                />
-                <circle
-                  r={active ? 5.5 : 4}
-                  fill="none"
-                  stroke="var(--accent)"
-                  strokeOpacity={active ? 0.9 : 0.45}
-                  strokeWidth="0.35"
-                >
-                  {!active && (
-                    <animate attributeName="r" values="4;7;4" dur="2.4s" repeatCount="indefinite" />
-                  )}
-                </circle>
+                {isManga ? (
+                  <>
+                    <rect
+                      x={active ? -2.6 : -1.8}
+                      y={active ? -2.6 : -1.8}
+                      width={active ? 5.2 : 3.6}
+                      height={active ? 5.2 : 3.6}
+                      transform="rotate(45)"
+                      fill={active ? "#b91c1c" : "var(--foreground)"}
+                      stroke="var(--card)"
+                      strokeWidth="0.4"
+                    />
+                    {active && (
+                      <rect
+                        x={-3.8}
+                        y={-3.8}
+                        width={7.6}
+                        height={7.6}
+                        fill="none"
+                        stroke="#b91c1c"
+                        strokeWidth="0.45"
+                      />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <motion.circle
+                      r={active ? 3.2 : 2.2}
+                      fill="var(--accent)"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: Math.min(i * 0.03, 0.4) }}
+                    />
+                    <circle
+                      r={active ? 5.5 : 4}
+                      fill="none"
+                      stroke="var(--accent)"
+                      strokeOpacity={active ? 0.9 : 0.45}
+                      strokeWidth="0.35"
+                    >
+                      {!active && (
+                        <animate
+                          attributeName="r"
+                          values="4;7;4"
+                          dur="2.4s"
+                          repeatCount="indefinite"
+                        />
+                      )}
+                    </circle>
+                  </>
+                )}
                 {(active || i % 3 === 0) && (
                   <text
-                    y="-3.4"
+                    y="-3.8"
                     fontSize="1.9"
+                    fontWeight={isManga ? 700 : 400}
                     fill="var(--foreground)"
                     textAnchor="middle"
-                    style={{ paintOrder: "stroke", stroke: "var(--card)", strokeWidth: 0.5 }}
+                    style={{ paintOrder: "stroke", stroke: "var(--card)", strokeWidth: 0.6 }}
                   >
                     {pin.name.length > 18 ? `${pin.name.slice(0, 17)}…` : pin.name}
                   </text>
@@ -245,10 +293,10 @@ export function TacticalMap() {
             );
           })}
 
-          <rect width="100" height="62.5" fill="url(#vign)" pointerEvents="none" />
+          {!isManga && <rect width="100" height="62.5" fill="url(#vign)" pointerEvents="none" />}
         </svg>
 
-        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 text-accent" /> Tactical survey // SCU theater
         </div>
         {isAdmin && (
@@ -271,7 +319,15 @@ export function TacticalMap() {
               <button
                 key={era}
                 onClick={() => setEraFilter(era)}
-                className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider backdrop-blur transition-colors ${eraFilter === era ? "bg-accent text-accent-foreground" : "bg-background/70 text-muted-foreground hover:text-foreground"}`}
+                className={
+                  isManga
+                    ? `border-2 border-foreground px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                        eraFilter === era
+                          ? "bg-foreground text-background"
+                          : "bg-card text-foreground hover:bg-secondary"
+                      }`
+                    : `rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider backdrop-blur transition-colors ${eraFilter === era ? "bg-accent text-accent-foreground" : "bg-background/70 text-muted-foreground hover:text-foreground"}`
+                }
               >
                 {era === "all" ? "All eras" : era}
               </button>
@@ -281,7 +337,13 @@ export function TacticalMap() {
       </div>
 
       {/* ---- Detail / editor panel ---- */}
-      <div className="glass h-fit rounded-2xl p-5">
+      <div
+        className={
+          isManga
+            ? "h-fit border-[3px] border-foreground bg-card p-5 shadow-[5px_5px_0_currentColor]"
+            : "glass h-fit rounded-2xl p-5"
+        }
+      >
         {editing ? (
           <div className="grid gap-3">
             <div className="flex items-center justify-between">

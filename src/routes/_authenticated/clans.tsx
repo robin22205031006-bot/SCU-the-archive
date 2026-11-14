@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClanGraph } from "@/components/clan-graph";
-import { RelationshipGraph } from "@/components/relationship-graph";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { NexusConstellation } from "@/components/nexus-constellation";
@@ -8,6 +7,8 @@ import { NexusLineage } from "@/components/nexus-lineage";
 import { Network, Castle, GitBranch } from "lucide-react";
 import { FamilyTree } from "@/components/family-tree";
 import { NexusFamilyTree } from "@/components/nexus-family-tree";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 
 export const Route = createFileRoute("/_authenticated/clans")({
   head: () => ({
@@ -31,17 +32,29 @@ export const Route = createFileRoute("/_authenticated/clans")({
 });
 
 export function Clans() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
-      <header className="mb-8">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
-        <h1 className="mt-2 text-5xl font-medium glow-text">Clan &amp; Lineage Graph</h1>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Hierarchies, squad command structures and the rivalries that bind the clans, bloodlines
-          and organizations of the archive.
-        </p>
-      </header>
+    <main className={`mx-auto max-w-6xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}>
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 15 // BLOODLINES"
+          jp="一族・血統図"
+          title="Clan & Lineage Graph"
+          subtitle="Command hierarchies, squad lineages, and ancestral bloodline trees across every clan and order."
+          stamp="血統"
+        />
+      ) : (
+        <header className="mb-8">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
+          <h1 className="mt-2 text-5xl font-medium glow-text">Clan &amp; Lineage Graph</h1>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            Hierarchies, squad command structures and the rivalries that bind the clans, bloodlines
+            and organizations of the archive.
+          </p>
+        </header>
+      )}
       {nexus ? (
         <NexusWorkspace
           views={[
@@ -71,6 +84,15 @@ export function Clans() {
             },
           ]}
         />
+      ) : isManga ? (
+        <div className="grid gap-8">
+          <MangaPanel caption="CLAN & SQUAD HIERARCHY // 組織図" badge="COMMAND">
+            <ClanGraph />
+          </MangaPanel>
+          <MangaPanel caption="ANCESTRAL FAMILY TREE // 家系図" badge="LINEAGE">
+            <FamilyTree />
+          </MangaPanel>
+        </div>
       ) : (
         <div className="grid gap-10">
           <ClanGraph />

@@ -4,6 +4,7 @@ import { Globe2, MapPin } from "lucide-react";
 import { LoreWorldMap } from "@/components/lore-world-map";
 import { AtlasOverlay } from "@/components/nexus-atlas";
 import { useUiStyle } from "@/lib/ui-style";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 type Era = {
   id: string;
@@ -239,7 +240,9 @@ const TONE: Record<Era["tone"], string> = {
 };
 
 export function LoreLocations() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const [locId, setLocId] = useState(LOCATIONS[0]!.id);
   const [eraIdx, setEraIdx] = useState<Record<string, number>>({});
   const [atlasStart, setAtlasStart] = useState<string | null>(null);
@@ -264,35 +267,77 @@ export function LoreLocations() {
               key={l.id}
               type="button"
               onClick={() => setLocId(l.id)}
-              className={`glass shrink-0 rounded-xl p-3.5 text-left transition-all ${l.id === locId ? "glow-ring border-accent/50" : "hover:glow-ring"}`}
+              className={
+                isManga
+                  ? `shrink-0 border-2 border-foreground p-3.5 text-left transition ${
+                      l.id === locId
+                        ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
+                        : "bg-card text-foreground hover:bg-secondary"
+                    }`
+                  : `glass shrink-0 rounded-xl p-3.5 text-left transition-all ${l.id === locId ? "glow-ring border-accent/50" : "hover:glow-ring"}`
+              }
             >
               <MapPin
-                className={`h-4 w-4 ${l.id === locId ? "text-accent" : "text-muted-foreground"}`}
+                className={`h-4 w-4 ${
+                  isManga
+                    ? l.id === locId
+                      ? "text-[#fca5a5]"
+                      : "text-foreground"
+                    : l.id === locId
+                      ? "text-accent"
+                      : "text-muted-foreground"
+                }`}
               />
-              <div className="mt-1.5 font-medium">{l.name}</div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              <div
+                className={`mt-1.5 ${isManga ? "font-display text-lg uppercase" : "font-medium"}`}
+              >
+                {l.name}
+              </div>
+              <div className="font-mono text-[10px] uppercase tracking-widest opacity-75">
                 {l.eras.map((e) => e.era).join(" · ")}
               </div>
             </button>
           ))}
         </div>
 
-        <div className="glass relative overflow-hidden rounded-2xl border border-border p-5">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`bg-${loc.id}-${era.id}`}
-              className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${TONE[era.tone]}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
-            />
-          </AnimatePresence>
+        <div
+          className={
+            isManga
+              ? "manga-halftone relative overflow-hidden border-[3px] border-foreground bg-card p-5 shadow-[5px_5px_0_currentColor]"
+              : "glass relative overflow-hidden rounded-2xl border border-border p-5"
+          }
+        >
+          {!isManga && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`bg-${loc.id}-${era.id}`}
+                className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${TONE[era.tone]}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+              />
+            </AnimatePresence>
+          )}
           <div className="relative">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.25em] text-accent">{loc.epithet}</p>
-                <h2 className="mt-1 text-3xl font-medium glow-text">{loc.name}</h2>
+                <p
+                  className={`text-[11px] font-bold uppercase tracking-[0.25em] ${
+                    isManga ? "font-mono text-[#b91c1c] dark:text-[#fca5a5]" : "text-accent"
+                  }`}
+                >
+                  {loc.epithet}
+                </p>
+                <h2
+                  className={
+                    isManga
+                      ? "manga-display-title mt-1 text-4xl uppercase"
+                      : "mt-1 text-3xl font-medium glow-text"
+                  }
+                >
+                  {loc.name}
+                </h2>
               </div>
               {nexus && (
                 <button
@@ -314,9 +359,17 @@ export function LoreLocations() {
                   role="tab"
                   aria-selected={i === idx}
                   onClick={() => setEraIdx((s) => ({ ...s, [loc.id]: i }))}
-                  className={`relative rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${i === idx ? "border-accent/60 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+                  className={
+                    isManga
+                      ? `border-2 border-foreground px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                          i === idx
+                            ? "bg-[#b91c1c] text-white border-[#b91c1c]"
+                            : "bg-background text-foreground hover:bg-secondary"
+                        }`
+                      : `relative rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${i === idx ? "border-accent/60 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`
+                  }
                 >
-                  {i === idx && (
+                  {!isManga && i === idx && (
                     <motion.span
                       layoutId="era-pill"
                       className="absolute inset-0 -z-10 rounded-full bg-accent/15"
@@ -337,23 +390,43 @@ export function LoreLocations() {
                 className="mt-6 grid gap-4 md:grid-cols-3"
               >
                 <div className="md:col-span-3">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     State
                   </div>
-                  <div className="text-2xl font-medium">{era.state}</div>
+                  <div
+                    className={isManga ? "font-display text-3xl uppercase" : "text-2xl font-medium"}
+                  >
+                    {era.state}
+                  </div>
                   <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{era.description}</p>
                 </div>
-                <div className="rounded-xl border border-border bg-background/40 p-4 md:col-span-2">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                <div
+                  className={
+                    isManga
+                      ? "border-2 border-foreground bg-background p-4 md:col-span-2"
+                      : "rounded-xl border border-border bg-background/40 p-4 md:col-span-2"
+                  }
+                >
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Visual state
                   </div>
                   <p className="mt-1 text-sm">{era.visual}</p>
                 </div>
-                <div className="rounded-xl border border-border bg-background/40 p-4">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                <div
+                  className={
+                    isManga
+                      ? "border-2 border-foreground bg-foreground p-4 text-background"
+                      : "rounded-xl border border-border bg-background/40 p-4"
+                  }
+                >
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-widest opacity-70">
                     Environment status
                   </div>
-                  <p className="mt-1 text-sm font-medium text-accent">{era.status}</p>
+                  <p
+                    className={`mt-1 text-sm font-bold ${isManga ? "text-[#fca5a5]" : "text-accent"}`}
+                  >
+                    {era.status}
+                  </p>
                 </div>
               </motion.div>
             </AnimatePresence>

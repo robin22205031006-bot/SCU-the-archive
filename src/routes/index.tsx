@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SeriesPage } from "./_authenticated/series";
 import { UiStylePicker } from "@/components/ui-style-picker";
 import { useUiStyle } from "@/lib/ui-style";
+import { useIsManga } from "@/hooks/use-ui-mode";
 import { NexusExplorer } from "@/components/nexus-explorer";
+import { MangaChapterBanner, MangaPanel, MangaSpeechBubble } from "@/components/manga-view";
+import { HankoStamp } from "@/components/manga-emblem";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -52,7 +55,106 @@ const sections = [
 ] as const;
 
 function Index() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
+  if (isManga)
+    return (
+      <main className="mx-auto max-w-6xl px-3 pb-24 pt-6 sm:px-6">
+        <MangaChapterBanner
+          chapter="ISSUE #01 // MASTER ARCHIVE"
+          jp="超人宇宙総覧"
+          title="Sentinels Cinematic Universe"
+          subtitle="Serialized Tankobon Index — characters, bloodlines, cursed weapons, and five eras of canon chronology."
+          stamp="第一巻"
+        />
+
+        <MangaPanel caption="EDITION STYLE // 表示切替" badge="INTERFACE" className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              Select reading layout:
+            </span>
+            <UiStylePicker />
+          </div>
+        </MangaPanel>
+
+        <section
+          aria-label="Serialized chapter directory"
+          className="grid grid-cols-1 gap-4 md:grid-cols-12"
+        >
+          {sections.map((s, idx) => {
+            const span = idx === 0 || idx === 3 ? "md:col-span-7" : "md:col-span-5";
+            return (
+              <Link
+                key={s.to}
+                to={s.to}
+                className={`manga-panel manga-panel-hover group relative flex flex-col justify-between overflow-hidden border-[3px] border-foreground bg-card p-5 transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 ${span} ${
+                  idx % 2 === 1 ? "manga-halftone" : ""
+                }`}
+              >
+                <span className="absolute -right-7 top-3 rotate-45 border-y-2 border-foreground bg-[#b91c1c] px-8 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-white">
+                  CH.{s.n}
+                </span>
+                <div>
+                  <span className="inline-block border border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-background">
+                    PLATE #{s.n}
+                  </span>
+                  <h2 className="mt-3 font-display text-3xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]">
+                    {s.t}
+                  </h2>
+                  <p className="mt-1.5 border-l-2 border-foreground/40 pl-2.5 text-sm text-muted-foreground">
+                    {s.d}
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center justify-between border-t border-foreground/20 pt-2.5 font-mono text-[10px] font-bold uppercase tracking-widest">
+                  <span>ENTER SECTOR</span>
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            );
+          })}
+        </section>
+
+        <div className="mt-10">
+          <SeriesPage />
+        </div>
+
+        <footer className="mt-12 grid gap-4 md:grid-cols-2">
+          <MangaPanel caption="COLOPHON & CREDITS // 奥付" badge="STAFF">
+            <ul className="space-y-1.5 font-mono text-xs text-muted-foreground">
+              <li>
+                <span className="font-bold text-foreground">DEVELOPER</span> — Robin (SCU Archives
+                engineering)
+              </li>
+              <li>
+                <span className="font-bold text-foreground">ADMIN</span> — zananrobin@gmail.com
+              </li>
+              <li>
+                <span className="font-bold text-foreground">EDITORS</span> — Lore ingestion &amp;
+                canon review team
+              </li>
+              <li>
+                <span className="font-bold text-foreground">CONTRIBUTORS</span> — The SCU fandom
+                archivists
+              </li>
+            </ul>
+          </MangaPanel>
+          <div className="flex flex-col justify-between gap-3">
+            <MangaSpeechBubble speaker="ARCHIVE SEAL // 記録">
+              <p className="font-serif text-base italic">
+                “In the silence between heartbeats, the Sentinel remembers.”
+              </p>
+            </MangaSpeechBubble>
+            <div className="flex items-center justify-between border-2 border-foreground bg-card px-4 py-2.5">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Season 5: The Last Archive awakens when all five seals align.
+              </span>
+              <HankoStamp kanji="五印" label="CANON" tilt={-4} />
+            </div>
+          </div>
+        </footer>
+      </main>
+    );
   if (nexus)
     return (
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">

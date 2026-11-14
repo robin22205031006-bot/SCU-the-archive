@@ -16,19 +16,31 @@ export function UiStylePicker() {
   };
 
   return (
-    <div role="group" aria-label="UI Style" className="flex flex-wrap gap-1">
-      {VISUAL_UI_MODES.map((m) => (
-        <Button
-          key={m.id}
-          size="sm"
-          title={m.desc}
-          variant={activeMode === m.id ? "secondary" : "ghost"}
-          aria-pressed={activeMode === m.id}
-          onClick={() => handleSelect(m.id)}
-        >
-          {m.label}
-        </Button>
-      ))}
+    <div role="group" aria-label="UI Style" className="flex flex-wrap gap-1.5">
+      {VISUAL_UI_MODES.map((m) => {
+        const selected = activeMode === m.id;
+        return (
+          <Button
+            key={m.id}
+            size="sm"
+            title={m.desc}
+            variant={selected ? "secondary" : "ghost"}
+            aria-pressed={selected}
+            onClick={() => handleSelect(m.id)}
+            className={
+              activeMode === "manga"
+                ? `rounded-none border-2 border-foreground font-mono text-xs uppercase tracking-wider ${
+                    selected
+                      ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
+                      : "bg-card text-foreground hover:bg-secondary"
+                  }`
+                : undefined
+            }
+          >
+            {m.label}
+          </Button>
+        );
+      })}
     </div>
   );
 }

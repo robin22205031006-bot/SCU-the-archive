@@ -7,6 +7,7 @@ import { THEMES } from "@/lib/themes";
 import { UiStylePicker } from "@/components/ui-style-picker";
 import { Button } from "@/components/ui/button";
 import { useUiStyle } from "@/lib/ui-style";
+import { useVisualMode } from "@/hooks/use-ui-mode";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
 import {
   useNexusTheme,
@@ -36,8 +37,9 @@ export function ThemeDrawer({
   open,
   onOpenChange,
 }: { open?: boolean; onOpenChange?: (o: boolean) => void } = {}) {
-  const { theme, setTheme, zoom, scaleIndex } = useAppearance();
+  const { theme, setTheme, zoom, scaleIndex, dark, setDark } = useAppearance();
   const nexus = useUiStyle() === "nexus";
+  const visualMode = useVisualMode();
   const navigationMode = useNavMode();
   const nexusTheme = useNexusTheme();
   const fx3dEnabled = useNexus3dFxEnabled();
@@ -62,10 +64,36 @@ export function ThemeDrawer({
         <SheetHeader>
           <SheetTitle className="font-display text-2xl">Appearance</SheetTitle>
         </SheetHeader>
-        <div className="flex items-center gap-3 border-b border-border px-4 py-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-4">
           <span className="mr-auto text-sm text-muted-foreground">UI Style</span>
           <UiStylePicker />
         </div>
+        {visualMode === "manga" && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <div>
+              <h3 className="text-sm font-medium">Manga Paper Finish</h3>
+              <p className="text-xs text-muted-foreground">
+                Switch between Washi Cream Daylight and Midnight Sumi-Ink Plates.
+              </p>
+            </div>
+            <div className="flex gap-1.5">
+              <Button
+                size="sm"
+                variant={!dark ? "secondary" : "ghost"}
+                onClick={() => setDark(false)}
+              >
+                Washi Parchment
+              </Button>
+              <Button
+                size="sm"
+                variant={dark ? "secondary" : "ghost"}
+                onClick={() => setDark(true)}
+              >
+                Sumi Dark Ink
+              </Button>
+            </div>
+          </div>
+        )}
         {nexus ? (
           <section aria-label="Nexus 3D element wallpapers" className="p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

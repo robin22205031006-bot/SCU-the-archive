@@ -23,6 +23,9 @@ import { useSectionStyle } from "@/hooks/use-typography";
 import { entitiesQuery, GROUP_LINK_KINDS, timelineQuery, type TimelineEvent } from "@/lib/entities";
 import { NexusExplorer } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
+import { HankoStamp } from "@/components/manga-emblem";
 import { sfx } from "@/lib/scu-audio";
 
 export const Route = createFileRoute("/_authenticated/timeline")({
@@ -73,7 +76,9 @@ const STARTERS = [
 type EventForm = typeof EMPTY_FORM;
 
 export function Timeline() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const isAdmin = useIsAdmin();
   const sectionStyle = useSectionStyle("timeline");
   const qc = useQueryClient();
@@ -252,8 +257,16 @@ export function Timeline() {
   };
 
   const form = (
-    <div className="glass mb-10 grid gap-3 rounded-2xl p-5">
-      <p className="text-[11px] uppercase tracking-[0.25em] text-accent">
+    <div
+      className={
+        isManga
+          ? "manga-panel mb-10 grid gap-3 border-[3px] border-foreground bg-card p-5"
+          : "glass mb-10 grid gap-3 rounded-2xl p-5"
+      }
+    >
+      <p
+        className={`text-[11px] uppercase tracking-[0.25em] ${isManga ? "font-mono font-bold text-[#b91c1c]" : "text-accent"}`}
+      >
         {editing ? "Edit event" : "New event"}
       </p>
       {!editing && (
@@ -349,38 +362,83 @@ export function Timeline() {
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-24 pt-28 sm:px-5" style={sectionStyle}>
-      <header className="mb-8 flex items-end justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
-          <h1 className="mt-2 text-5xl font-medium glow-text">Timeline</h1>
-        </div>
-        {isAdmin && (
-          <Button
-            size="sm"
-            onClick={() => {
-              setAdding(!adding);
-              setEditing(null);
-              setF(EMPTY_FORM);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Event
-          </Button>
-        )}
-      </header>
+    <main
+      className={`mx-auto px-4 pb-24 sm:px-5 ${isManga ? "max-w-4xl pt-6" : "max-w-3xl pt-28"}`}
+      style={sectionStyle}
+    >
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 13 // CHRONICLE"
+          jp="公式年表・記録"
+          title="Timeline"
+          subtitle="Every war, fracture, and crisis charted as a stepped ink storyboard across the five canon eras."
+          stamp="年表"
+          actions={
+            isAdmin && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setAdding(!adding);
+                  setEditing(null);
+                  setF(EMPTY_FORM);
+                }}
+                className="manga-ink-btn border-2 border-foreground bg-foreground text-background"
+              >
+                <Plus className="h-4 w-4" />
+                EVENT
+              </Button>
+            )
+          }
+        />
+      ) : (
+        <header className="mb-8 flex items-end justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
+            <h1 className="mt-2 text-5xl font-medium glow-text">Timeline</h1>
+          </div>
+          {isAdmin && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setAdding(!adding);
+                setEditing(null);
+                setF(EMPTY_FORM);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Event
+            </Button>
+          )}
+        </header>
+      )}
 
       {chart.length > 1 && (
-        <div data-no-swipe className="glass mb-6 h-56 rounded-2xl p-3">
+        <div
+          data-no-swipe
+          className={
+            isManga
+              ? "manga-panel mb-6 h-60 border-[3px] border-foreground bg-card p-3"
+              : "glass mb-6 h-56 rounded-2xl p-3"
+          }
+        >
           <div className="flex items-center justify-between px-2">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Impact</p>
+            <p
+              className={`text-[11px] uppercase tracking-widest ${
+                isManga ? "font-mono font-bold text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {isManga ? "CRISIS INTENSITY // 衝撃度" : "Impact"}
+            </p>
             <div className="flex gap-3">
               {IMPACT_TIERS.map((t) => (
                 <span
                   key={t.label}
                   className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: t.color }} />
+                  <span
+                    className={`h-1.5 w-1.5 ${isManga ? "" : "rounded-full"}`}
+                    style={{ background: t.color }}
+                  />
                   {t.label}
                 </span>
               ))}
@@ -390,11 +448,24 @@ export function Timeline() {
             <AreaChart data={chart} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
               <defs>
                 <linearGradient id="imp" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="var(--accent)" stopOpacity={0.6} />
-                  <stop offset="1" stopColor="var(--accent)" stopOpacity={0} />
+                  <stop
+                    offset="0"
+                    stopColor={isManga ? "#b91c1c" : "var(--accent)"}
+                    stopOpacity={isManga ? 0.28 : 0.6}
+                  />
+                  <stop
+                    offset="1"
+                    stopColor={isManga ? "#b91c1c" : "var(--accent)"}
+                    stopOpacity={isManga ? 0.04 : 0}
+                  />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="var(--border)" strokeOpacity={0.35} vertical={false} />
+              <CartesianGrid
+                stroke={isManga ? "var(--foreground)" : "var(--border)"}
+                strokeOpacity={isManga ? 0.16 : 0.35}
+                strokeDasharray={isManga ? "3 3" : undefined}
+                vertical={false}
+              />
               <XAxis
                 dataKey="xlabel"
                 tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
@@ -411,13 +482,24 @@ export function Timeline() {
                 width={30}
               />
               <Tooltip
-                contentStyle={{
-                  background: "var(--popover)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 12,
-                  color: "var(--foreground)",
-                  fontSize: 12,
-                }}
+                contentStyle={
+                  isManga
+                    ? {
+                        background: "var(--card)",
+                        border: "2px solid var(--foreground)",
+                        borderRadius: 0,
+                        color: "var(--foreground)",
+                        fontFamily: "monospace",
+                        fontSize: 11,
+                      }
+                    : {
+                        background: "var(--popover)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 12,
+                        color: "var(--foreground)",
+                        fontSize: 12,
+                      }
+                }
                 formatter={(v) => [`${v} · ${impactTier(Number(v)).label}`, "Impact"]}
                 labelFormatter={(_, p) => {
                   const d = p?.[0]?.payload;
@@ -425,10 +507,10 @@ export function Timeline() {
                 }}
               />
               <Area
-                type="monotone"
+                type={isManga ? "stepAfter" : "monotone"}
                 dataKey="impact"
-                stroke="var(--accent)"
-                strokeWidth={2}
+                stroke={isManga ? "#b91c1c" : "var(--accent)"}
+                strokeWidth={isManga ? 2.5 : 2}
                 fill="url(#imp)"
                 isAnimationActive={false}
                 dot={(p: {
@@ -436,25 +518,41 @@ export function Timeline() {
                   cy: number;
                   index?: number;
                   payload?: { impact: number; color: string };
-                }) => (
-                  <Dot
-                    key={`d${p.index ?? `${p.cx}-${p.cy}`}`}
-                    cx={p.cx}
-                    cy={p.cy}
-                    r={
-                      p.payload && p.payload.impact >= 8
-                        ? 4
-                        : p.payload && p.payload.impact >= 5
-                          ? 3
-                          : 2
-                    }
-                    fill={p.payload?.color ?? "var(--accent)"}
-                    stroke="none"
-                  />
-                )}
+                }) => {
+                  const r =
+                    p.payload && p.payload.impact >= 8
+                      ? 4
+                      : p.payload && p.payload.impact >= 5
+                        ? 3
+                        : 2;
+                  if (isManga) {
+                    return (
+                      <rect
+                        key={`d${p.index ?? `${p.cx}-${p.cy}`}`}
+                        x={p.cx - r}
+                        y={p.cy - r}
+                        width={r * 2}
+                        height={r * 2}
+                        fill={p.payload && p.payload.impact >= 8 ? "#b91c1c" : "var(--foreground)"}
+                        stroke="var(--card)"
+                        strokeWidth={1}
+                      />
+                    );
+                  }
+                  return (
+                    <Dot
+                      key={`d${p.index ?? `${p.cx}-${p.cy}`}`}
+                      cx={p.cx}
+                      cy={p.cy}
+                      r={r}
+                      fill={p.payload?.color ?? "var(--accent)"}
+                      stroke="none"
+                    />
+                  );
+                }}
                 activeDot={{
                   r: 4,
-                  fill: "var(--accent)",
+                  fill: isManga ? "#b91c1c" : "var(--accent)",
                   stroke: "var(--background)",
                   strokeWidth: 1,
                 }}
@@ -465,14 +563,26 @@ export function Timeline() {
       )}
 
       {(allSeries.length > 0 || allEras.length > 0 || clans.length > 0) && (
-        <div className="mb-8 space-y-2">
+        <div
+          className={`mb-8 space-y-2 ${
+            isManga ? "manga-panel border-[3px] border-foreground bg-card p-3" : ""
+          }`}
+        >
           {(allSeries.length > 0 || allEras.length > 0) && (
-            <div data-no-swipe className="flex gap-1.5 overflow-x-auto">
+            <div data-no-swipe className="flex gap-1.5 overflow-x-auto pb-1">
               {["all", ...allSeries].map((s) => (
                 <button
                   key={s}
                   onClick={() => setSeries(s)}
-                  className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${series === s ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
+                  className={
+                    isManga
+                      ? `whitespace-nowrap border-2 border-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                          series === s
+                            ? "bg-foreground text-background"
+                            : "bg-background text-foreground hover:bg-secondary"
+                        }`
+                      : `whitespace-nowrap rounded-full px-3 py-1 text-xs ${series === s ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`
+                  }
                 >
                   {s === "all" ? "All series" : s}
                 </button>
@@ -482,7 +592,15 @@ export function Timeline() {
                 <button
                   key={e2}
                   onClick={() => setEra(e2)}
-                  className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${era === e2 ? "bg-accent/25 text-accent" : "text-muted-foreground"}`}
+                  className={
+                    isManga
+                      ? `whitespace-nowrap border-2 border-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                          era === e2
+                            ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                            : "bg-background text-foreground hover:bg-secondary"
+                        }`
+                      : `whitespace-nowrap rounded-full px-3 py-1 text-xs ${era === e2 ? "bg-accent/25 text-accent" : "text-muted-foreground"}`
+                  }
                 >
                   {e2 === "all" ? "All eras" : e2}
                 </button>
@@ -495,7 +613,11 @@ export function Timeline() {
                 aria-label="Filter by clan or faction"
                 value={clan}
                 onChange={(e) => setClan(e.target.value)}
-                className="h-7 shrink-0 rounded-full border border-border bg-secondary px-3 text-xs text-foreground"
+                className={
+                  isManga
+                    ? "h-8 shrink-0 border-2 border-foreground bg-background px-2 font-mono text-[11px] font-bold uppercase"
+                    : "h-7 shrink-0 rounded-full border border-border bg-secondary px-3 text-xs text-foreground"
+                }
               >
                 <option value="all">All clans &amp; factions</option>
                 {clans.map((c) => (
@@ -511,7 +633,11 @@ export function Timeline() {
                     setEra("all");
                     setClan("all");
                   }}
-                  className="shrink-0 rounded-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  className={
+                    isManga
+                      ? "shrink-0 border-2 border-foreground bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-foreground hover:text-background"
+                      : "shrink-0 rounded-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  }
                 >
                   Clear filters
                 </button>
@@ -574,7 +700,83 @@ export function Timeline() {
       ) : isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : !events.length ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">No events yet.</p>
+        isManga ? (
+          <MangaThoughtBox label="EMPTY CHRONICLE">
+            No timeline events recorded yet.
+          </MangaThoughtBox>
+        ) : (
+          <p className="py-16 text-center text-sm text-muted-foreground">No events yet.</p>
+        )
+      ) : isManga ? (
+        <ol className="grid gap-4">
+          {events.map((ev, i) => {
+            const tier = impactTier(ev.impact);
+            return (
+              <li key={ev.id} className="manga-panel border-[3px] border-foreground bg-card p-4">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b-2 border-foreground pb-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold text-background">
+                      PANEL {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      {[ev.era, ev.series].filter(Boolean).join(" // ") || "CANON"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <HankoStamp
+                      kanji={tier.label.slice(0, 4).toUpperCase()}
+                      label={`${ev.impact}/10`}
+                      tilt={-2}
+                    />
+                    {isAdmin && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          aria-label="Move earlier"
+                          onClick={() => move(ev.id, -1)}
+                          className="border border-foreground p-1 hover:bg-foreground hover:text-background"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </button>
+                        <button
+                          aria-label="Move later"
+                          onClick={() => move(ev.id, 1)}
+                          className="border border-foreground p-1 hover:bg-foreground hover:text-background"
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </button>
+                        <button
+                          aria-label="Edit event"
+                          onClick={() => startEdit(ev)}
+                          className="border border-foreground p-1 hover:bg-foreground hover:text-background"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          aria-label="Delete event"
+                          onClick={() => del(ev.id)}
+                          className="border border-foreground p-1 hover:bg-[#b91c1c] hover:text-white"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <h2 className="font-display text-2xl uppercase tracking-wide">{ev.title}</h2>
+                {ev.description && (
+                  <p className="mt-1.5 border-l-2 border-[#b91c1c] pl-3 text-sm leading-relaxed text-foreground/85">
+                    {ev.description}
+                  </p>
+                )}
+                {ev.source && (
+                  <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    SOURCE // {ev.source}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ol>
       ) : (
         <ol className="relative border-l pl-8">
           {events.map((ev, i) => (

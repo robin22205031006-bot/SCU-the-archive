@@ -5,9 +5,7 @@
   "auth": {
     "type": "oauth",
     "issuer": "https://csdmkmtfhgxkjmucepjo.supabase.co/auth/v1",
-    "accepted_audiences": [
-      "authenticated"
-    ]
+    "accepted_audiences": ["authenticated"]
   },
   "mcp": {
     "server": {
@@ -30,13 +28,7 @@
           "properties": {
             "kind": {
               "type": "string",
-              "enum": [
-                "character",
-                "organization",
-                "clan",
-                "bloodline",
-                "faction"
-              ],
+              "enum": ["character", "organization", "clan", "bloodline", "faction"],
               "description": "Only this type of entry."
             },
             "search": {
@@ -68,9 +60,7 @@
               "description": "Entry id from list_entities."
             }
           },
-          "required": [
-            "id"
-          ],
+          "required": ["id"],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
@@ -117,10 +107,7 @@
               "description": "The lore to append."
             }
           },
-          "required": [
-            "id",
-            "text"
-          ],
+          "required": ["id", "text"],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },

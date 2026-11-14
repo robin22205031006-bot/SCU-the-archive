@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
 
 export const Route = createFileRoute("/_authenticated/fandom")({
   head: () => ({
@@ -31,7 +33,9 @@ export const Route = createFileRoute("/_authenticated/fandom")({
 const displayName = (email?: string | null) => (email ? email.split("@")[0] : "Sentinel");
 
 function Fandom() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const qc = useQueryClient();
   const { data: user } = useSession();
   const isStaff = useIsStaff();
@@ -109,29 +113,55 @@ function Fandom() {
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-24 pt-28 sm:px-5">
-      <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Community</p>
-      <h1 className="mt-2 text-5xl font-medium glow-text">Fandom</h1>
+    <main className={`mx-auto max-w-3xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}>
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 08 // FANDOM"
+          jp="読者投稿欄・考察"
+          title="Fandom"
+          subtitle="Reader mailbag, canon theories, and serialized debate boards."
+          stamp="投書"
+        />
+      ) : (
+        <>
+          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Community</p>
+          <h1 className="mt-2 text-5xl font-medium glow-text">Fandom</h1>
+        </>
+      )}
 
-      <div className="glass mt-8 grid gap-3 rounded-2xl p-4">
+      <div
+        className={
+          isManga
+            ? "manga-panel mt-6 grid gap-3 border-[3px] border-foreground bg-card p-4"
+            : "glass mt-8 grid gap-3 rounded-2xl p-4"
+        }
+      >
         <Input
           placeholder="Topic title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={140}
+          className={
+            isManga ? "rounded-none border-2 border-foreground font-mono text-xs" : undefined
+          }
         />
         <Textarea
           placeholder="Share a theory, question or moment…"
           value={body}
           onChange={(e) => setBody(e.target.value)}
           maxLength={4000}
+          className={isManga ? "rounded-none border-2 border-foreground text-sm" : undefined}
         />
         <Button
           onClick={create}
           disabled={!title.trim() || !body.trim()}
-          className="justify-self-end"
+          className={`justify-self-end ${
+            isManga
+              ? "manga-ink-btn rounded-none border-2 border-foreground bg-foreground text-background"
+              : ""
+          }`}
         >
-          Post
+          {isManga ? "PUBLISH DISPATCH" : "Post"}
         </Button>
       </div>
 
@@ -189,25 +219,53 @@ function Fandom() {
           />
         </div>
       ) : (
-        <div className="mt-8 grid gap-3">
-          {sorted.map((p) => (
-            <article key={p.id} className="glass rounded-2xl p-4">
+        <div className="mt-8 grid gap-4">
+          {sorted.map((p, idx) => (
+            <article
+              key={p.id}
+              className={
+                isManga
+                  ? "manga-panel border-[3px] border-foreground bg-card p-4"
+                  : "glass rounded-2xl p-4"
+              }
+            >
               <div className="flex gap-3">
                 <button
                   onClick={() => vote(p.id, p.mine)}
                   aria-label="Upvote"
-                  className={`flex flex-col items-center text-xs ${p.mine ? "text-accent" : "text-muted-foreground"}`}
+                  className={
+                    isManga
+                      ? `flex h-fit flex-col items-center border-2 border-foreground px-2 py-1 font-mono text-xs font-bold ${
+                          p.mine
+                            ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                            : "bg-background text-foreground hover:bg-secondary"
+                        }`
+                      : `flex flex-col items-center text-xs ${p.mine ? "text-accent" : "text-muted-foreground"}`
+                  }
                 >
-                  <ArrowBigUp className="h-6 w-6" />
+                  <ArrowBigUp className="h-5 w-5" />
                   {p.votes}
                 </button>
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-xl font-medium">{p.title}</h2>
-                  <p className="text-xs text-muted-foreground">
+                  {isManga && (
+                    <span className="mb-1 inline-block bg-foreground px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-background">
+                      THREAD #{String(idx + 1).padStart(2, "0")}
+                    </span>
+                  )}
+                  <h2
+                    className={
+                      isManga
+                        ? "font-display text-2xl uppercase tracking-wide"
+                        : "text-xl font-medium"
+                    }
+                  >
+                    {p.title}
+                  </h2>
+                  <p className="font-mono text-[11px] uppercase text-muted-foreground">
                     {p.author_name} · {new Date(p.created_at).toLocaleDateString()}
                   </p>
                   <p className="mt-2 whitespace-pre-line text-sm">{p.body}</p>
-                  <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
+                  <div className="mt-3 flex gap-3 font-mono text-[11px] uppercase text-muted-foreground">
                     <button
                       onClick={() => setOpenPost(openPost === p.id ? null : p.id)}
                       className="flex items-center gap-1 hover:text-foreground"
@@ -218,7 +276,7 @@ function Fandom() {
                     {(isStaff || p.author_id === user?.id) && (
                       <button
                         onClick={() => remove(p.id)}
-                        className="flex items-center gap-1 hover:text-destructive"
+                        className="flex items-center gap-1 hover:text-[#b91c1c]"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Delete
@@ -230,11 +288,17 @@ function Fandom() {
               </div>
             </article>
           ))}
-          {posts && !posts.length && (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              No discussions yet — start one.
-            </p>
-          )}
+          {posts &&
+            !posts.length &&
+            (isManga ? (
+              <MangaThoughtBox label="MAILBAG EMPTY">
+                No discussions yet — start the first debate.
+              </MangaThoughtBox>
+            ) : (
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No discussions yet — start one.
+              </p>
+            ))}
         </div>
       )}
     </main>

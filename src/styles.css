@@ -2778,3 +2778,230 @@ html[data-nexus-motion="off"] :is(.atlas-drift, .atlas-clouds, .atlas-compass, .
     animation: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MANGA UI MODE — Serialized Print Spreads, Ink Borders, Halftones & Hanko Stamps
+   Strictly scoped to html[data-ui="manga"] so Classic / Minimal / Nexus stay untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html[data-ui="manga"] body,
+html[data-ui="manga"] .manga-root {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(color-mix(in oklab, var(--foreground) 11%, transparent) 1px, transparent 1px),
+    radial-gradient(
+      color-mix(in oklab, var(--foreground) 5%, transparent) 0.75px,
+      transparent 0.75px
+    );
+  background-size:
+    16px 16px,
+    8px 8px;
+  background-position:
+    0 0,
+    4px 4px;
+}
+
+html[data-ui="manga"] :is(h1, h2, h3, .manga-display-title) {
+  font-family: var(--font-display);
+  letter-spacing: var(--ui-heading-tracking, 0.04em);
+  text-shadow: var(--ui-heading-shadow);
+}
+
+html[data-ui="manga"] .glow-text {
+  text-shadow: 2px 2px 0 color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+
+html[data-ui="manga"] .glow-ring {
+  box-shadow: 4px 4px 0 var(--foreground) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Abandon soft translucent glass cards inside Manga mode in favor of crisp ink-bordered panels */
+html[data-ui="manga"] .glass {
+  background: var(--card) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 2.5px solid var(--border) !important;
+  border-radius: 0 !important;
+  box-shadow: 5px 5px 0 var(--foreground) !important;
+}
+
+html[data-ui="manga"] .manga-panel {
+  border-radius: 0;
+  box-shadow: 5px 5px 0 var(--foreground);
+}
+
+html[data-ui="manga"] .manga-panel-hover:hover {
+  box-shadow: 8px 8px 0 #b91c1c;
+}
+html.dark[data-ui="manga"] .manga-panel-hover:hover {
+  box-shadow: 8px 8px 0 #dc2626;
+}
+
+html[data-ui="manga"] .manga-panel-slant {
+  clip-path: polygon(0 0, 100% 0, 98.5% 100%, 0% 100%);
+}
+
+html[data-ui="manga"] .manga-halftone {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--foreground) 16%, transparent) 1.15px,
+    transparent 1.15px
+  );
+  background-size: 7px 7px;
+}
+
+html[data-ui="manga"] .manga-halftone-edge::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto auto;
+  width: 96px;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: radial-gradient(var(--foreground) 1.3px, transparent 1.3px);
+  background-size: 6px 6px;
+  mask-image: linear-gradient(to left, black, transparent);
+}
+
+/* Ink portrait treatment: subtle comic-print tonal contrast while keeping clarity */
+html[data-ui="manga"] .manga-portrait-ink {
+  filter: contrast(1.08) saturate(0.88);
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+html[data-ui="manga"] article:hover .manga-portrait-ink {
+  filter: contrast(1.16) saturate(1);
+}
+
+/* Comic speech bubble tails */
+html[data-ui="manga"] .manga-speech-bubble {
+  box-shadow: 4px 4px 0 var(--foreground);
+}
+html[data-ui="manga"] .manga-tail-left::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  bottom: -14px;
+  border-width: 14px 14px 0 0;
+  border-style: solid;
+  border-color: var(--foreground) transparent transparent transparent;
+}
+html[data-ui="manga"] .manga-tail-left::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  bottom: -10px;
+  border-width: 11px 11px 0 0;
+  border-style: solid;
+  border-color: var(--card) transparent transparent transparent;
+}
+html[data-ui="manga"] .manga-tail-right::before {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: -14px;
+  border-width: 14px 0 0 14px;
+  border-style: solid;
+  border-color: var(--foreground) transparent transparent transparent;
+}
+html[data-ui="manga"] .manga-tail-right::after {
+  content: "";
+  position: absolute;
+  right: 20px;
+  bottom: -10px;
+  border-width: 11px 0 0 11px;
+  border-style: solid;
+  border-color: var(--card) transparent transparent transparent;
+}
+
+html[data-ui="manga"] .manga-ink-btn {
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--foreground);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.15s ease;
+}
+html[data-ui="manga"] .manga-ink-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--foreground);
+}
+html[data-ui="manga"] .manga-ink-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--foreground);
+}
+
+/* Ink-brush active nav bottom underline */
+html[data-ui="manga"] .manga-brush-underline {
+  clip-path: polygon(0 25%, 14% 0, 38% 30%, 63% 0, 86% 25%, 100% 0, 98% 100%, 2% 100%);
+}
+
+/* Strip pill rounding inside Manga pages on generic route controls */
+html[data-ui="manga"] .manga-page :is(input, textarea, select) {
+  border-radius: 0 !important;
+  border-width: 2px;
+  border-color: var(--foreground);
+}
+
+html[data-ui="manga"] .manga-page .rounded-2xl,
+html[data-ui="manga"] .manga-page .rounded-3xl {
+  border-radius: 0;
+  border: 2px solid var(--foreground);
+}
+
+/* Preserve LoreChat DOM primitives while restyling message cards into comic dialogue panels */
+html[data-ui="manga"] [data-manga-page="ai"] form,
+html[data-ui="manga"] [data-manga-page="ai"] main > div {
+  border-radius: 0;
+}
+
+/* HUD Floating Arc Navigation overrides for Manga mode */
+[data-hud-style="manga"] .hud-arc-track {
+  border: 3px solid var(--foreground);
+  background: var(--card);
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--foreground) 15%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 6px 6px;
+  box-shadow: 6px 6px 0 var(--foreground);
+}
+[data-hud-style="manga"] .hud-arc-track::after {
+  border: 1.5px dashed #b91c1c;
+}
+[data-hud-style="manga"] .hud-node {
+  border-radius: 0;
+  border: 2.5px solid var(--foreground);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 3px 3px 0 var(--foreground);
+}
+[data-hud-style="manga"] .hud-tab-active .hud-node {
+  background: var(--foreground);
+  color: var(--background);
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
+  box-shadow: 4px 4px 0 #dc2626;
+}
+[data-hud-style="manga"] .hud-label {
+  border-radius: 0;
+  border: 2px solid var(--foreground);
+  background: var(--card);
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 var(--foreground);
+}
+[data-hud-style="manga"] .hud-tab-active .hud-label {
+  background: #b91c1c;
+  color: #fffdf8;
+  border-color: #b91c1c;
+}
+html[data-ui="manga"] .hud-toggle {
+  border-radius: 0;
+  border: 2.5px solid var(--foreground);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 3px 3px 0 var(--foreground);
+}

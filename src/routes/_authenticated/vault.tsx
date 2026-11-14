@@ -21,6 +21,8 @@ import { parsePdf } from "@/utils/pdfParser";
 import { sfx } from "@/lib/scu-audio";
 import { ListSkeleton } from "@/components/route-skeleton";
 import type { Tables } from "@/integrations/supabase/types";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 
 type PdfVaultDoc = Tables<"pdf_vault">;
 
@@ -44,7 +46,9 @@ export const Route = createFileRoute("/_authenticated/vault")({
 const EMBED_BATCH = 20;
 
 function Vault() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
@@ -253,14 +257,30 @@ function Vault() {
   };
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-24 pt-28 sm:px-5">
-      <header className="mb-8">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
-        <h1 className="mt-2 text-5xl font-medium glow-text">PDF Vault</h1>
-      </header>
+    <main className={`mx-auto max-w-3xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}>
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 10 // PDF VAULT"
+          jp="原典資料室"
+          title="PDF Vault"
+          subtitle="Official canon manuscripts, scripts, and indexed source folios."
+          stamp="原典"
+        />
+      ) : (
+        <header className="mb-8">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
+          <h1 className="mt-2 text-5xl font-medium glow-text">PDF Vault</h1>
+        </header>
+      )}
 
       {isAdmin && (
-        <section className="glass mb-8 grid gap-3 rounded-2xl p-5">
+        <section
+          className={
+            isManga
+              ? "manga-panel mb-8 grid gap-3 border-[3px] border-foreground bg-card p-5"
+              : "glass mb-8 grid gap-3 rounded-2xl p-5"
+          }
+        >
           <Input
             placeholder="Title (optional)"
             value={title}
@@ -293,9 +313,15 @@ function Vault() {
       )}
 
       {isAdmin && (
-        <section className="glass mb-8 rounded-2xl border border-accent/20 p-5">
+        <section
+          className={
+            isManga
+              ? "manga-panel mb-8 border-[3px] border-foreground bg-card p-5"
+              : "glass mb-8 rounded-2xl border border-accent/20 p-5"
+          }
+        >
           <div className="mb-1 flex items-center gap-2">
-            <Database className="h-4 w-4 text-accent" />
+            <Database className={`h-4 w-4 ${isManga ? "text-[#b91c1c]" : "text-accent"}`} />
             <h2 className="text-lg font-medium">AI knowledge index</h2>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
@@ -403,16 +429,39 @@ function Vault() {
       ) : isLoading ? (
         <ListSkeleton />
       ) : !data?.length ? (
-        <p className="text-muted-foreground">No documents in the vault yet.</p>
+        isManga ? (
+          <MangaThoughtBox label="VAULT EMPTY">No documents in the vault yet.</MangaThoughtBox>
+        ) : (
+          <p className="text-muted-foreground">No documents in the vault yet.</p>
+        )
       ) : (
         <ul className="grid gap-3">
-          {data.map((d) => (
-            <li key={d.id} className="glass flex items-center gap-3 rounded-xl p-4">
-              <FileText className="h-5 w-5 shrink-0 text-accent" />
+          {data.map((d, idx) => (
+            <li
+              key={d.id}
+              className={
+                isManga
+                  ? "manga-panel flex items-center gap-3 border-2 border-foreground bg-card p-4 shadow-[4px_4px_0_var(--foreground)]"
+                  : "glass flex items-center gap-3 rounded-xl p-4"
+              }
+            >
+              {isManga ? (
+                <span className="border-2 border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold text-background">
+                  FOLIO {String(idx + 1).padStart(2, "0")}
+                </span>
+              ) : (
+                <FileText className="h-5 w-5 shrink-0 text-accent" />
+              )}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{d.title}</p>
+                <p
+                  className={`truncate ${
+                    isManga ? "font-display text-xl uppercase tracking-wide" : "font-medium"
+                  }`}
+                >
+                  {d.title}
+                </p>
                 {isAdmin && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-mono text-[10px] uppercase text-muted-foreground">
                     {d.is_public ? "Visible" : "Hidden"} ·{" "}
                     {d.downloadable ? "Downloadable" : "View locked"}
                   </p>

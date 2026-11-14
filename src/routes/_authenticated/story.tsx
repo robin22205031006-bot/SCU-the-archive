@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ambientPlaying, ambientStart, ambientStop } from "@/lib/scu-audio";
 import { useAppearance } from "@/hooks/use-appearance";
 import { sfx } from "@/lib/scu-audio";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 
 export const Route = createFileRoute("/_authenticated/story")({
   validateSearch: (s: Record<string, unknown>): { ep?: string } =>
@@ -33,9 +35,11 @@ export const Route = createFileRoute("/_authenticated/story")({
 });
 
 function Story() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const { ep } = Route.useSearch();
-  const { zoom, scaleIndex } = useAppearance();
+  const { zoom } = useAppearance();
   const [eyeCare, setEyeCare] = useState(() => localStorage.getItem("scu-story-eyecare") === "1");
   const [ambient, setAmbient] = useState(false);
 
@@ -103,14 +107,32 @@ function Story() {
   if (ep && story) {
     return (
       <div
-        className={`min-h-screen select-none ${eyeCare ? "bg-[#141210] text-[#e8ddc8]" : "bg-black text-foreground"}`}
+        className={`min-h-screen select-none ${
+          isManga
+            ? eyeCare
+              ? "bg-[#f3ead8] text-[#141414]"
+              : "bg-background text-foreground"
+            : eyeCare
+              ? "bg-[#141210] text-[#e8ddc8]"
+              : "bg-black text-foreground"
+        }`}
         style={{ fontSize: `${zoom}%` }}
         onCopy={(e) => e.preventDefault()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-black/80 px-4 py-2 backdrop-blur">
+        <div
+          className={
+            isManga
+              ? "sticky top-0 z-10 flex items-center justify-between border-b-[3px] border-foreground bg-card px-4 py-2"
+              : "sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-black/80 px-4 py-2 backdrop-blur"
+          }
+        >
           <Link
             to="/story"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            className={`flex items-center gap-1 text-xs ${
+              isManga
+                ? "border-2 border-foreground bg-background px-2.5 py-1 font-mono font-bold uppercase hover:bg-foreground hover:text-background"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Library
           </Link>
@@ -119,7 +141,7 @@ function Story() {
               onClick={() => {
                 zoom(-1);
               }}
-              className="rounded-full border p-1.5"
+              className={`border p-1.5 ${isManga ? "border-2 border-foreground bg-background" : "rounded-full"}`}
               aria-label="Smaller text"
             >
               <Minus className="h-3.5 w-3.5" />
@@ -128,20 +150,26 @@ function Story() {
               onClick={() => {
                 zoom(1);
               }}
-              className="rounded-full border p-1.5"
+              className={`border p-1.5 ${isManga ? "border-2 border-foreground bg-background" : "rounded-full"}`}
               aria-label="Larger text"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={toggleEyeCare}
-              className={`rounded-full border px-2.5 py-1 text-xs ${eyeCare ? "border-accent text-accent" : "text-muted-foreground"}`}
+              className={
+                isManga
+                  ? `border-2 border-foreground px-2.5 py-1 font-mono text-xs font-bold uppercase ${
+                      eyeCare ? "bg-[#b91c1c] text-white" : "bg-background text-foreground"
+                    }`
+                  : `rounded-full border px-2.5 py-1 text-xs ${eyeCare ? "border-accent text-accent" : "text-muted-foreground"}`
+              }
             >
               Eye care
             </button>
             <button
               onClick={toggleAmbient}
-              className="rounded-full border p-1.5"
+              className={`border p-1.5 ${isManga ? "border-2 border-foreground bg-background" : "rounded-full"}`}
               aria-label="Ambient sound"
             >
               {ambient ? (
@@ -152,19 +180,41 @@ function Story() {
             </button>
           </div>
         </div>
-        <article className="mx-auto max-w-2xl px-6 py-10">
+        <article
+          className={
+            isManga
+              ? "manga-panel mx-auto my-8 max-w-2xl border-[3px] border-foreground bg-card px-6 py-10 sm:px-10"
+              : "mx-auto max-w-2xl px-6 py-10"
+          }
+        >
           {story.series && (
-            <p className="mb-2 text-xs uppercase tracking-[0.3em] text-accent">{story.series}</p>
+            <p
+              className={`mb-2 text-xs uppercase tracking-[0.3em] ${
+                isManga ? "font-mono font-bold text-[#b91c1c]" : "text-accent"
+              }`}
+            >
+              {story.series}
+            </p>
           )}
-          <h1 className="font-display text-4xl font-bold">{story.title}</h1>
+          <h1
+            className={`font-display text-4xl font-bold ${isManga ? "uppercase tracking-wide" : ""}`}
+          >
+            {story.title}
+          </h1>
           <div className="mt-8 space-y-5 leading-relaxed">
             {blocks.map((b, i) =>
               b.startsWith("## ") ? (
-                <h2 key={i} className="pt-4 font-display text-2xl">
+                <h2
+                  key={i}
+                  className={`pt-4 font-display text-2xl ${isManga ? "border-b-2 border-foreground pb-1 uppercase" : ""}`}
+                >
                   {b.slice(3)}
                 </h2>
               ) : b.startsWith("# ") ? (
-                <h2 key={i} className="pt-4 font-display text-3xl">
+                <h2
+                  key={i}
+                  className={`pt-4 font-display text-3xl ${isManga ? "border-b-2 border-foreground pb-1 uppercase" : ""}`}
+                >
                   {b.slice(2)}
                 </h2>
               ) : (
@@ -180,13 +230,25 @@ function Story() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 pt-28">
-      <h1 className="flex items-center gap-2 font-display text-4xl">
-        <BookOpen className="h-7 w-7 text-accent" /> Story
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Official SCU epics and published stories.
-      </p>
+    <div className={`mx-auto max-w-3xl px-4 pb-24 ${isManga ? "pt-6" : "pt-28"}`}>
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 09 // STORY READER"
+          jp="公式物語・連載"
+          title="Story"
+          subtitle="Official SCU serialized epics and published manuscript chapters."
+          stamp="物語"
+        />
+      ) : (
+        <>
+          <h1 className="flex items-center gap-2 font-display text-4xl">
+            <BookOpen className="h-7 w-7 text-accent" /> Story
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Official SCU epics and published stories.
+          </p>
+        </>
+      )}
       {nexus ? (
         <div className="mt-6">
           <NexusExplorer
@@ -213,28 +275,52 @@ function Story() {
           />
         </div>
       ) : (
-        <ul className="mt-6 grid gap-2">
-          {(episodes ?? []).map((e) => (
+        <ul className="mt-6 grid gap-3">
+          {(episodes ?? []).map((e, idx) => (
             <li key={e.id}>
               <Link
                 to="/story"
                 search={{ ep: e.id }}
                 onClick={() => sfx.whoosh()}
-                className="glass flex items-center justify-between rounded-2xl px-4 py-3 transition hover:border-accent/50"
+                className={
+                  isManga
+                    ? "manga-panel manga-panel-hover flex items-center justify-between gap-3 border-[3px] border-foreground bg-card px-4 py-3 transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
+                    : "glass flex items-center justify-between rounded-2xl px-4 py-3 transition hover:border-accent/50"
+                }
               >
-                <span>
-                  <span className="block font-medium">{e.title}</span>
-                  {e.series && <span className="text-xs text-muted-foreground">{e.series}</span>}
+                <span className="flex items-center gap-3">
+                  {isManga && (
+                    <span className="border-2 border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold text-background">
+                      CH.{String(idx + 1).padStart(2, "0")}
+                    </span>
+                  )}
+                  <span>
+                    <span
+                      className={`block ${
+                        isManga ? "font-display text-xl uppercase tracking-wide" : "font-medium"
+                      }`}
+                    >
+                      {e.title}
+                    </span>
+                    {e.series && (
+                      <span className="font-mono text-[11px] uppercase text-muted-foreground">
+                        {e.series}
+                      </span>
+                    )}
+                  </span>
                 </span>
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                <span className="border border-foreground/40 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   {e.status}
                 </span>
               </Link>
             </li>
           ))}
-          {(episodes ?? []).length === 0 && (
-            <li className="text-sm text-muted-foreground">No published stories yet.</li>
-          )}
+          {(episodes ?? []).length === 0 &&
+            (isManga ? (
+              <MangaThoughtBox label="NO CHAPTERS">No published stories yet.</MangaThoughtBox>
+            ) : (
+              <li className="text-sm text-muted-foreground">No published stories yet.</li>
+            ))}
         </ul>
       )}
     </div>

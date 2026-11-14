@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useAppearance } from "@/hooks/use-appearance";
@@ -40,7 +41,7 @@ export const VISUAL_UI_MODES: readonly VisualUiModeInfo[] = [
   {
     id: "manga",
     label: "Manga",
-    desc: "High-contrast ink borders, halftone panels, and comic action typography.",
+    desc: "Serialized ink-washed spreads, halftone comic panels, and hanko stamps.",
   },
 ] as const;
 
@@ -102,6 +103,29 @@ function readStoredMode(): VisualUiMode | null {
   }
 }
 
+function readLiveVisualMode(): VisualUiMode {
+  if (typeof document !== "undefined") {
+    const attr = document.documentElement.dataset["uiMode"];
+    if (attr === "classic" || attr === "nexus" || attr === "minimal" || attr === "manga") {
+      return attr;
+    }
+  }
+  return readStoredMode() ?? "classic";
+}
+
+function subscribeVisualMode(cb: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => cb();
+  window.addEventListener("scu:ui-mode-change", handler);
+  window.addEventListener("scu:ui-style-change", handler);
+  window.addEventListener("storage", handler);
+  return () => {
+    window.removeEventListener("scu:ui-mode-change", handler);
+    window.removeEventListener("scu:ui-style-change", handler);
+    window.removeEventListener("storage", handler);
+  };
+}
+
 export function uiModeCssVars(mode: VisualUiMode, dark: boolean): Record<string, string> {
   switch (mode) {
     case "nexus":
@@ -152,65 +176,65 @@ export function uiModeCssVars(mode: VisualUiMode, dark: boolean): Record<string,
       return dark
         ? {
             "--ui-mode": "manga",
-            "--ui-transition": "220ms cubic-bezier(0.22, 1, 0.36, 1)",
+            "--ui-transition": "180ms cubic-bezier(0.22, 1, 0.36, 1)",
             "--ui-card-border-width": "2px",
-            "--ui-card-shadow": "4px 4px 0 rgba(0, 0, 0, 0.85)",
-            "--ui-heading-tracking": "0.02em",
-            "--ui-heading-shadow": "2px 2px 0 rgba(0, 0, 0, 0.72)",
-            "--background": "oklch(0.13 0.006 260)",
-            "--foreground": "oklch(0.96 0.005 85)",
-            "--card": "oklch(0.17 0.008 260)",
-            "--card-foreground": "oklch(0.96 0.005 85)",
-            "--popover": "oklch(0.17 0.008 260)",
-            "--popover-foreground": "oklch(0.96 0.005 85)",
-            "--primary": "oklch(0.65 0.23 25)",
-            "--primary-foreground": "oklch(0.98 0 0)",
-            "--secondary": "oklch(0.22 0.008 260)",
-            "--secondary-foreground": "oklch(0.96 0.005 85)",
-            "--muted": "oklch(0.22 0.008 260)",
-            "--muted-foreground": "oklch(0.74 0.01 80)",
-            "--accent": "oklch(0.65 0.23 25)",
-            "--accent-foreground": "oklch(0.98 0 0)",
-            "--border": "oklch(0.92 0.005 85 / 0.28)",
-            "--input": "oklch(0.92 0.005 85 / 0.32)",
-            "--ring": "oklch(0.65 0.23 25)",
-            "--glow": "oklch(0.65 0.23 25)",
+            "--ui-card-shadow": "5px 5px 0 #000000",
+            "--ui-heading-tracking": "0.04em",
+            "--ui-heading-shadow": "3px 3px 0 #000000",
+            "--background": "#121110",
+            "--foreground": "#f4efe4",
+            "--card": "#1b1917",
+            "--card-foreground": "#f4efe4",
+            "--popover": "#1b1917",
+            "--popover-foreground": "#f4efe4",
+            "--primary": "#dc2626",
+            "--primary-foreground": "#fffdf8",
+            "--secondary": "#262320",
+            "--secondary-foreground": "#f4efe4",
+            "--muted": "#262320",
+            "--muted-foreground": "#b8b0a2",
+            "--accent": "#dc2626",
+            "--accent-foreground": "#fffdf8",
+            "--border": "#f4efe4",
+            "--input": "#57524a",
+            "--ring": "#dc2626",
+            "--glow": "#dc2626",
             "--glow-strength": "0",
             "--glass-blur": "0px",
-            "--radius": "0.25rem",
-            "--font-display": '"Chakra Petch", "Space Grotesk", system-ui, sans-serif',
-            "--font-sans": '"Space Grotesk", system-ui, sans-serif',
+            "--radius": "0px",
+            "--font-display": '"Bangers", "Oswald", "Shippori Mincho", serif',
+            "--font-sans": '"Comic Neue", "Space Grotesk", system-ui, sans-serif',
           }
         : {
             "--ui-mode": "manga",
-            "--ui-transition": "220ms cubic-bezier(0.22, 1, 0.36, 1)",
+            "--ui-transition": "180ms cubic-bezier(0.22, 1, 0.36, 1)",
             "--ui-card-border-width": "2px",
-            "--ui-card-shadow": "4px 4px 0 rgba(15, 15, 15, 0.85)",
-            "--ui-heading-tracking": "0.02em",
-            "--ui-heading-shadow": "2px 2px 0 rgba(15, 15, 15, 0.22)",
-            "--background": "oklch(0.97 0.006 85)",
-            "--foreground": "oklch(0.14 0.01 260)",
-            "--card": "oklch(0.99 0.004 85)",
-            "--card-foreground": "oklch(0.14 0.01 260)",
-            "--popover": "oklch(0.99 0.004 85)",
-            "--popover-foreground": "oklch(0.14 0.01 260)",
-            "--primary": "oklch(0.55 0.23 25)",
-            "--primary-foreground": "oklch(0.98 0 0)",
-            "--secondary": "oklch(0.92 0.008 85)",
-            "--secondary-foreground": "oklch(0.14 0.01 260)",
-            "--muted": "oklch(0.92 0.008 85)",
-            "--muted-foreground": "oklch(0.42 0.01 260)",
-            "--accent": "oklch(0.55 0.23 25)",
-            "--accent-foreground": "oklch(0.98 0 0)",
-            "--border": "oklch(0.15 0.01 260 / 0.85)",
-            "--input": "oklch(0.15 0.01 260 / 0.45)",
-            "--ring": "oklch(0.55 0.23 25)",
-            "--glow": "oklch(0.55 0.23 25)",
+            "--ui-card-shadow": "5px 5px 0 #111111",
+            "--ui-heading-tracking": "0.04em",
+            "--ui-heading-shadow": "2px 2px 0 rgba(17, 17, 17, 0.25)",
+            "--background": "#f4efe4",
+            "--foreground": "#111111",
+            "--card": "#fffdf8",
+            "--card-foreground": "#111111",
+            "--popover": "#fffdf8",
+            "--popover-foreground": "#111111",
+            "--primary": "#b91c1c",
+            "--primary-foreground": "#fffdf8",
+            "--secondary": "#ebe3d2",
+            "--secondary-foreground": "#111111",
+            "--muted": "#ebe3d2",
+            "--muted-foreground": "#524c42",
+            "--accent": "#b91c1c",
+            "--accent-foreground": "#fffdf8",
+            "--border": "#111111",
+            "--input": "#111111",
+            "--ring": "#b91c1c",
+            "--glow": "#b91c1c",
             "--glow-strength": "0",
             "--glass-blur": "0px",
-            "--radius": "0.25rem",
-            "--font-display": '"Chakra Petch", "Space Grotesk", system-ui, sans-serif',
-            "--font-sans": '"Space Grotesk", system-ui, sans-serif',
+            "--radius": "0px",
+            "--font-display": '"Bangers", "Oswald", "Shippori Mincho", serif',
+            "--font-sans": '"Comic Neue", "Space Grotesk", system-ui, sans-serif',
           };
     case "classic":
     default:
@@ -275,7 +299,7 @@ export function UiModeProvider({
   children: ReactNode;
   initialMode?: VisualUiMode;
 }) {
-  const { theme, dark } = useAppearance();
+  const { theme, dark, loaded: appearanceLoaded } = useAppearance();
   const { settings } = useTypography();
   const externalStyle = useUiStyle();
   const transitionTimerRef = useRef<number | null>(null);
@@ -390,7 +414,7 @@ export function UiModeProvider({
   }, [mode, setMode]);
 
   // Re-apply CSS custom properties on <html> whenever mode, active palette, dark mode, or typography changes.
-  useEffect(() => {
+  const applyCurrentMode = useCallback(() => {
     const preset = THEMES.find((t) => t.id === theme) ?? THEMES.find((t) => t.id === DEFAULT_THEME);
     const baseThemeVars = preset ? themeVars(preset, dark) : {};
     const bodyFont = settings.bodyFont || "Manrope";
@@ -402,6 +426,14 @@ export function UiModeProvider({
     };
     applyUiModeCss(mode, dark, document.documentElement, baseVars);
   }, [mode, theme, dark, settings.bodyFont, settings.displayFont]);
+
+  useEffect(() => {
+    applyCurrentMode();
+    window.addEventListener("scu:theme-applied", applyCurrentMode);
+    return () => {
+      window.removeEventListener("scu:theme-applied", applyCurrentMode);
+    };
+  }, [applyCurrentMode, appearanceLoaded]);
 
   useEffect(() => {
     return () => {
@@ -434,4 +466,19 @@ export function useUiMode(): UiModeContextValue {
 
 export function useOptionalUiMode(): UiModeContextValue | null {
   return useContext(UiModeContext);
+}
+
+/** Works anywhere in the tree (including inside routes or standalone components). */
+export function useVisualMode(): VisualUiMode {
+  const ctx = useOptionalUiMode();
+  const external = useSyncExternalStore<VisualUiMode>(
+    subscribeVisualMode,
+    readLiveVisualMode,
+    () => "classic",
+  );
+  return ctx ? ctx.mode : external;
+}
+
+export function useIsManga(): boolean {
+  return useVisualMode() === "manga";
 }

@@ -332,6 +332,7 @@ export function ArsenalThreeStage({
       built = {
         root,
         orbitRings: [ring],
+        coreGlowMesh: null,
         dispose: () => {
           ringGeo.dispose();
           ringMat.dispose();

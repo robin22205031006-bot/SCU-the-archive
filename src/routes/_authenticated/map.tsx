@@ -6,6 +6,8 @@ import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { Map, Radio, Globe2 } from "lucide-react";
 import { NexusAtlas } from "@/components/nexus-atlas";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
@@ -29,18 +31,33 @@ export const Route = createFileRoute("/_authenticated/map")({
 });
 
 function MapPage() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const sectionStyle = useSectionStyle("timeline");
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5" style={sectionStyle}>
-      <header className="mb-8">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Strategic overview</p>
-        <h1 className="mt-2 text-5xl font-medium glow-text">Tactical Map</h1>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Known locations, controlling factions, historic battles, and Sentinel deployments across
-          the SCU theater.
-        </p>
-      </header>
+    <main
+      className={`mx-auto max-w-6xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}
+      style={sectionStyle}
+    >
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 07 // TACTICAL ATLAS"
+          jp="戦術地図・拠点"
+          title="Tactical Map"
+          subtitle="Known locations, controlling factions, historic battles, and Sentinel deployments across the SCU theater."
+          stamp="地図"
+        />
+      ) : (
+        <header className="mb-8">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Strategic overview</p>
+          <h1 className="mt-2 text-5xl font-medium glow-text">Tactical Map</h1>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Known locations, controlling factions, historic battles, and Sentinel deployments across
+            the SCU theater.
+          </p>
+        </header>
+      )}
       {nexus ? (
         <NexusWorkspace
           views={[
@@ -64,6 +81,15 @@ function MapPage() {
             },
           ]}
         />
+      ) : isManga ? (
+        <div className="grid gap-8">
+          <MangaPanel caption="THEATER ATLAS & ERAS // 勢力圏" badge="LOCATIONS">
+            <LoreLocations />
+          </MangaPanel>
+          <MangaPanel caption="DEPLOYMENT BOARD // 配備一覧" badge="FIELD LOGS">
+            <TacticalMap />
+          </MangaPanel>
+        </div>
       ) : (
         <>
           <LoreLocations />

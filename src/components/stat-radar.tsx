@@ -1,4 +1,5 @@
 import { COMBAT_STATS, type CombatStats } from "@/lib/combat-stats";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 const CX = 110;
 const CY = 105;
@@ -33,6 +34,7 @@ const SERIES_COLORS = ["#fb4d6d", "#f5b942"] as const;
 /**
  * Cinematic radar chart for the five canonical combat stats.
  * `a` renders crimson, optional `b` renders gold — used for comparisons.
+ * In Manga UI mode renders a circular Intervention Mandala ink wheel.
  */
 export function StatRadar({
   a,
@@ -47,7 +49,130 @@ export function StatRadar({
   nameB?: string;
   size?: number;
 }) {
+  const isManga = useIsManga();
   const labelR = R + 20;
+
+  if (isManga) {
+    return (
+      <div className="grid justify-items-center gap-2" data-manga-chart="mandala">
+        <svg
+          viewBox="0 0 220 215"
+          width={size}
+          height={size * (215 / 220)}
+          role="img"
+          aria-label="Combat Intervention Mandala chart"
+        >
+          {/* Concentric dashed ink calibration rings */}
+          {[0.25, 0.5, 0.75, 1].map((s) => (
+            <circle
+              key={s}
+              cx={CX}
+              cy={CY}
+              r={R * s}
+              fill="none"
+              stroke="currentColor"
+              strokeOpacity={s === 1 ? 0.85 : 0.25}
+              strokeWidth={s === 1 ? 2 : 0.9}
+              strokeDasharray={s === 1 ? undefined : "3 3"}
+            />
+          ))}
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R + 5}
+            fill="none"
+            stroke="#b91c1c"
+            strokeOpacity={0.65}
+            strokeWidth={1}
+          />
+          {COMBAT_STATS.map((_, i) => {
+            const p = point(i, 100);
+            return (
+              <line
+                key={i}
+                x1={CX}
+                y1={CY}
+                x2={p.x}
+                y2={p.y}
+                stroke="currentColor"
+                strokeOpacity={0.35}
+                strokeWidth={1}
+              />
+            );
+          })}
+          {b && (
+            <path
+              d={seriesPath(b)}
+              fill="#b91c1c"
+              fillOpacity={0.14}
+              stroke="#b91c1c"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+            />
+          )}
+          <path
+            d={seriesPath(a)}
+            fill="currentColor"
+            fillOpacity={0.14}
+            stroke="currentColor"
+            strokeWidth={2.4}
+          />
+          {COMBAT_STATS.map((s, i) => {
+            const lp = {
+              x: CX + Math.cos((Math.PI * 2 * i) / COMBAT_STATS.length - Math.PI / 2) * labelR,
+              y: CY + Math.sin((Math.PI * 2 * i) / COMBAT_STATS.length - Math.PI / 2) * labelR,
+            };
+            const v = a[s.key];
+            const vp = point(i, v);
+            return (
+              <g key={s.key}>
+                <text
+                  x={lp.x}
+                  y={lp.y}
+                  textAnchor={lp.x > CX + 4 ? "start" : lp.x < CX - 4 ? "end" : "middle"}
+                  dominantBaseline="middle"
+                  className="fill-current font-mono font-bold"
+                  fontSize={8}
+                  letterSpacing={0.6}
+                >
+                  {s.label.toUpperCase()}
+                </text>
+                <rect
+                  x={vp.x - 3}
+                  y={vp.y - 3}
+                  width={6}
+                  height={6}
+                  fill="#b91c1c"
+                  stroke="var(--card)"
+                  strokeWidth={1}
+                >
+                  <title>{`${s.label}: ${v}`}</title>
+                </rect>
+              </g>
+            );
+          })}
+          <circle cx={CX} cy={CY} r={3} fill="currentColor" />
+        </svg>
+        {(nameA || nameB) && (
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-[10px] font-bold uppercase tracking-widest">
+            {nameA && (
+              <span className="flex items-center gap-1.5 border border-foreground px-2 py-0.5">
+                <span className="h-2 w-2 bg-foreground" />
+                {nameA}
+              </span>
+            )}
+            {nameB && (
+              <span className="flex items-center gap-1.5 border border-[#b91c1c] px-2 py-0.5 text-[#b91c1c]">
+                <span className="h-2 w-2 bg-[#b91c1c]" />
+                {nameB}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="grid justify-items-center gap-2">
       <svg

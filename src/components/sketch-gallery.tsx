@@ -7,9 +7,11 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 /** Multi-angle sketch / turnaround viewer with swipe and angle dots. */
 export function SketchGallery({ images, name }: { images: string[]; name: string }) {
+  const isManga = useIsManga();
   const [api, setApi] = useState<CarouselApi>();
   const [i, setI] = useState(0);
   useEffect(() => {
@@ -26,7 +28,7 @@ export function SketchGallery({ images, name }: { images: string[]; name: string
   if (!images.length) return null;
   return (
     <div data-no-swipe className="grid gap-2">
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-widest text-muted-foreground">
+      <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
         <span>Sketch gallery</span>
         <span>
           Angle {i + 1}/{images.length} · {Math.round((360 / images.length) * i)}°
@@ -40,7 +42,11 @@ export function SketchGallery({ images, name }: { images: string[]; name: string
                 src={src}
                 alt={`${name} angle ${k + 1}`}
                 loading="lazy"
-                className="aspect-[4/5] w-full rounded-xl bg-secondary object-contain"
+                className={
+                  isManga
+                    ? "manga-portrait-ink aspect-[4/5] w-full border-2 border-foreground bg-secondary object-contain"
+                    : "aspect-[4/5] w-full rounded-xl bg-secondary object-contain"
+                }
               />
             </CarouselItem>
           ))}
@@ -58,7 +64,11 @@ export function SketchGallery({ images, name }: { images: string[]; name: string
             key={k}
             aria-label={`Angle ${k + 1}`}
             onClick={() => api?.scrollTo(k)}
-            className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ${k === i ? "w-5 bg-accent" : "w-1.5 bg-border"}`}
+            className={
+              isManga
+                ? `h-2 border border-foreground transition-[width,background-color] duration-300 ${k === i ? "w-6 bg-[#b91c1c]" : "w-2 bg-card"}`
+                : `h-1.5 rounded-full transition-[width,background-color] duration-300 ${k === i ? "w-5 bg-accent" : "w-1.5 bg-border"}`
+            }
           />
         ))}
       </div>

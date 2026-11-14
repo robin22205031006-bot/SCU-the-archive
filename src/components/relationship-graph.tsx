@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery, type Entity, type EntityMembership } from "@/lib/entities";
 import { PanelSkeleton } from "@/components/route-skeleton";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 const ALL_KINDS: Entity["kind"][] = ["character", "organization", "clan", "bloodline", "faction"];
 
@@ -60,6 +61,7 @@ function layoutPositions(nodes: Entity[]) {
 }
 
 export function RelationshipGraph() {
+  const isManga = useIsManga();
   const nav = useNavigate();
   const [kinds, setKinds] = useState<Set<Entity["kind"]>>(new Set(ALL_KINDS));
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -157,15 +159,29 @@ export function RelationshipGraph() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Highlight by name…"
-          className="glass h-9 w-56 rounded-full"
+          className={
+            isManga
+              ? "h-9 w-56 rounded-none border-2 border-foreground bg-card font-mono text-xs"
+              : "glass h-9 w-56 rounded-full"
+          }
         />
         {ALL_KINDS.map((k) => (
           <button
             key={k}
             onClick={() => toggleKind(k)}
-            className={`rounded-full px-3 py-1 text-xs capitalize transition-opacity ${
-              kinds.has(k) ? "bg-secondary text-foreground" : "text-muted-foreground opacity-50"
-            }`}
+            className={
+              isManga
+                ? `border-2 border-foreground px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                    kinds.has(k)
+                      ? "bg-foreground text-background"
+                      : "bg-card text-muted-foreground opacity-60 hover:opacity-100"
+                  }`
+                : `rounded-full px-3 py-1 text-xs capitalize transition-opacity ${
+                    kinds.has(k)
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground opacity-50"
+                  }`
+            }
           >
             {KIND_LABEL[k]}s
           </button>
@@ -176,7 +192,13 @@ export function RelationshipGraph() {
         {isLoading ? (
           <PanelSkeleton className="h-[70vh]" />
         ) : (
-          <div className="glass overflow-hidden rounded-2xl">
+          <div
+            className={
+              isManga
+                ? "manga-halftone overflow-hidden border-[3px] border-foreground bg-card shadow-[5px_5px_0_currentColor]"
+                : "glass overflow-hidden rounded-2xl"
+            }
+          >
             <svg
               viewBox={`${W / 2 - W / (2 * zoom)} ${H / 2 - H / (2 * zoom)} ${W / zoom} ${H / zoom}`}
               className="block h-[70vh] w-full"
@@ -198,9 +220,18 @@ export function RelationshipGraph() {
                     y1={a.y}
                     x2={b.x}
                     y2={b.y}
-                    stroke={hot ? "var(--accent)" : "var(--muted-foreground)"}
-                    strokeOpacity={active ? (hot ? 0.9 : 0.4) : 0.08}
-                    strokeWidth={hot ? 1.6 : 0.8}
+                    stroke={
+                      isManga
+                        ? hot
+                          ? "#b91c1c"
+                          : "var(--foreground)"
+                        : hot
+                          ? "var(--accent)"
+                          : "var(--muted-foreground)"
+                    }
+                    strokeOpacity={active ? (hot ? 0.95 : isManga ? 0.45 : 0.4) : 0.1}
+                    strokeWidth={hot ? 2 : isManga ? 1.1 : 0.8}
+                    strokeDasharray={isManga && !hot ? "3 3" : undefined}
                     className="transition-[stroke,stroke-opacity,stroke-width] duration-300"
                   />
                 );
@@ -219,37 +250,79 @@ export function RelationshipGraph() {
                     className="cursor-pointer"
                     style={{ opacity: hide ? 0.15 : 1, transition: "opacity .25s" }}
                   >
-                    {isSel && (
-                      <circle
-                        cx={p.x}
-                        cy={p.y}
-                        r={r + 7}
-                        fill="none"
-                        stroke="var(--accent)"
-                        strokeOpacity={0.5}
-                        strokeWidth={1}
-                      />
+                    {isManga ? (
+                      <>
+                        {isSel && (
+                          <rect
+                            x={p.x - r - 4}
+                            y={p.y - r - 4}
+                            width={(r + 4) * 2}
+                            height={(r + 4) * 2}
+                            fill="none"
+                            stroke="#b91c1c"
+                            strokeWidth={2}
+                          />
+                        )}
+                        <rect
+                          x={p.x - r + 2.5}
+                          y={p.y - r + 2.5}
+                          width={r * 2}
+                          height={r * 2}
+                          fill="var(--foreground)"
+                          opacity={0.75}
+                        />
+                        <rect
+                          x={p.x - r}
+                          y={p.y - r}
+                          width={r * 2}
+                          height={r * 2}
+                          fill={
+                            isSel
+                              ? "#b91c1c"
+                              : e.kind === "character"
+                                ? "var(--card)"
+                                : "var(--foreground)"
+                          }
+                          stroke="var(--foreground)"
+                          strokeWidth={1.8}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {isSel && (
+                          <circle
+                            cx={p.x}
+                            cy={p.y}
+                            r={r + 7}
+                            fill="none"
+                            stroke="var(--accent)"
+                            strokeOpacity={0.5}
+                            strokeWidth={1}
+                          />
+                        )}
+                        <circle
+                          cx={p.x}
+                          cy={p.y}
+                          r={r}
+                          fill={KIND_COLOR[e.kind]}
+                          fillOpacity={isSel ? 1 : 0.85}
+                          stroke="var(--background)"
+                          strokeWidth={1.5}
+                          style={{ transition: "r .2s" }}
+                        />
+                      </>
                     )}
-                    <circle
-                      cx={p.x}
-                      cy={p.y}
-                      r={r}
-                      fill={KIND_COLOR[e.kind]}
-                      fillOpacity={isSel ? 1 : 0.85}
-                      stroke="var(--background)"
-                      strokeWidth={1.5}
-                      style={{ transition: "r .2s" }}
-                    />
                     <text
                       x={p.x}
                       y={p.y + r + 11}
                       textAnchor="middle"
                       fontSize={9}
-                      fill="var(--muted-foreground)"
+                      fontWeight={isManga ? 700 : 400}
+                      fill={isManga ? "var(--foreground)" : "var(--muted-foreground)"}
                       style={{
                         pointerEvents: "none",
                         paintOrder: "stroke",
-                        stroke: "var(--background)",
+                        stroke: isManga ? "var(--card)" : "var(--background)",
                         strokeWidth: 3,
                       }}
                     >
@@ -269,21 +342,33 @@ export function RelationshipGraph() {
           <button
             aria-label="Zoom out"
             onClick={() => setZoom((z) => Math.max(0.4, +(z - 0.2).toFixed(2)))}
-            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            className={
+              isManga
+                ? "grid h-8 w-8 place-items-center border-2 border-foreground bg-card font-mono text-sm font-bold text-foreground hover:bg-foreground hover:text-background"
+                : "grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            }
           >
             −
           </button>
           <button
             aria-label="Reset zoom"
             onClick={() => setZoom(1)}
-            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-[10px] font-bold hover:text-foreground"
+            className={
+              isManga
+                ? "grid h-8 w-8 place-items-center border-2 border-foreground bg-card font-mono text-[10px] font-bold text-foreground hover:bg-foreground hover:text-background"
+                : "grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-[10px] font-bold hover:text-foreground"
+            }
           >
             {Math.round(zoom * 100)}%
           </button>
           <button
             aria-label="Zoom in"
             onClick={() => setZoom((z) => Math.min(3, +(z + 0.2).toFixed(2)))}
-            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            className={
+              isManga
+                ? "grid h-8 w-8 place-items-center border-2 border-foreground bg-card font-mono text-sm font-bold text-foreground hover:bg-foreground hover:text-background"
+                : "grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            }
           >
             +
           </button>
@@ -291,8 +376,14 @@ export function RelationshipGraph() {
 
         {/* Selection panel */}
         {selected && (
-          <div className="glass morph-in absolute right-3 top-3 w-64 rounded-2xl p-4 text-sm">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+          <div
+            className={
+              isManga
+                ? "absolute right-3 top-3 w-64 border-[3px] border-foreground bg-card p-4 text-sm shadow-[4px_4px_0_currentColor]"
+                : "glass morph-in absolute right-3 top-3 w-64 rounded-2xl p-4 text-sm"
+            }
+          >
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               {KIND_LABEL[selected.kind]}
             </p>
             <h3 className="mt-1 font-display text-2xl">{selected.name}</h3>
@@ -308,7 +399,11 @@ export function RelationshipGraph() {
                   <button
                     key={m.id}
                     onClick={() => setSelectedId(other.id)}
-                    className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-left text-xs hover:bg-secondary/60"
+                    className={`flex items-center justify-between gap-2 px-2 py-1 text-left text-xs ${
+                      isManga
+                        ? "border border-foreground/20 hover:bg-foreground hover:text-background"
+                        : "rounded-lg hover:bg-secondary/60"
+                    }`}
                   >
                     <span className="truncate">{other.name}</span>
                     <span className="shrink-0 text-[10px] uppercase text-muted-foreground">

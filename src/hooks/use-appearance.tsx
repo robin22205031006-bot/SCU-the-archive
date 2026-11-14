@@ -5,6 +5,7 @@ interface Appearance {
   theme: string;
   dark: boolean;
   scaleIndex: number;
+  loaded: boolean;
   setTheme: (id: string) => void;
   setDark: (d: boolean) => void;
   zoom: (dir: 1 | -1) => void;
@@ -50,13 +51,16 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     } catch {
       /* Storage is optional. */
     }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("scu:theme-applied"));
+    }
   }, [theme, dark, scaleIndex, loaded]);
 
   const zoom = (dir: 1 | -1) =>
     setScale((i) => Math.min(FONT_SCALES.length - 1, Math.max(0, i + dir)));
 
   return (
-    <Ctx.Provider value={{ theme, dark, scaleIndex, setTheme, setDark, zoom }}>
+    <Ctx.Provider value={{ theme, dark, scaleIndex, loaded, setTheme, setDark, zoom }}>
       {children}
     </Ctx.Provider>
   );

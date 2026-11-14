@@ -261,8 +261,12 @@ export function NexusNavigation({
         onClick={toggleNav}
         aria-expanded={navOpen}
         aria-label={navOpen ? "Close Nexus HUD" : "Open Nexus HUD"}
-        whileHover={reduceMotion ? undefined : { scale: 1.06 }}
-        whileTap={reduceMotion ? undefined : { scale: 0.94 }}
+        {...(reduceMotion
+          ? {}
+          : {
+              whileHover: { scale: 1.06 },
+              whileTap: { scale: 0.94 },
+            })}
         className="group relative inline-flex h-12 items-center gap-2.5 rounded-full border px-4 text-xs font-mono uppercase tracking-[0.2em] transition-colors"
         style={{
           backgroundColor: "var(--nexus-surface, oklch(0.18 0.014 210 / 0.95))",

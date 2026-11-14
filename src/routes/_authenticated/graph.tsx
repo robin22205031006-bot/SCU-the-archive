@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RelationshipGraph } from "@/components/relationship-graph";
-import { ClanGraph } from "@/components/clan-graph";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { NexusConstellation } from "@/components/nexus-constellation";
 import { NexusLineage } from "@/components/nexus-lineage";
 import { Network, Castle } from "lucide-react";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 
 export const Route = createFileRoute("/_authenticated/graph")({
   head: () => ({
@@ -28,17 +29,29 @@ export const Route = createFileRoute("/_authenticated/graph")({
 });
 
 function Graph() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
-      <header className="mb-8">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
-        <h1 className="mt-2 text-5xl font-medium glow-text">Relationship Graph</h1>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          The living web of the archive — every bond between characters and the factions, clans,
-          bloodlines and organizations they serve.
-        </p>
-      </header>
+    <main className={`mx-auto max-w-6xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}>
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 14 // RELATIONS"
+          jp="人物相関図"
+          title="Relationship Graph"
+          subtitle="The living web of the archive — every bond between sentinels, clans, bloodlines and factions."
+          stamp="相関"
+        />
+      ) : (
+        <header className="mb-8">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
+          <h1 className="mt-2 text-5xl font-medium glow-text">Relationship Graph</h1>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            The living web of the archive — every bond between characters and the factions, clans,
+            bloodlines and organizations they serve.
+          </p>
+        </header>
+      )}
       {nexus ? (
         <NexusWorkspace
           views={[
@@ -56,6 +69,10 @@ function Graph() {
             },
           ]}
         />
+      ) : isManga ? (
+        <MangaPanel caption="CORRELATION WEB // 連関網" badge="GRAPH PLATE">
+          <RelationshipGraph />
+        </MangaPanel>
       ) : (
         <RelationshipGraph />
       )}

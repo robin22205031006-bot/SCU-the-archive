@@ -1,4 +1,6 @@
 import type { Glyph } from "@/lib/arsenal-art";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaWoodblockCrest } from "@/components/manga-emblem";
 
 /** Stroke paths on a 48x48 grid, one per item type. */
 const G: Record<Glyph, string> = {
@@ -41,6 +43,17 @@ export function ArsenalEmblem({
   animate?: boolean;
   className?: string;
 }) {
+  const isManga = useIsManga();
+  if (isManga) {
+    return (
+      <MangaWoodblockCrest
+        code={glyph}
+        pathD={G[glyph]}
+        crimson={hue < 30 || hue > 320}
+        className={className}
+      />
+    );
+  }
   const c = `hsl(${hue} 85% 65%)`,
     dim = `hsl(${hue} 60% 20% / .85)`;
   return (

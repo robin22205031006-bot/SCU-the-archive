@@ -32,6 +32,8 @@ import { motion } from "framer-motion";
 import { useUiStyle } from "@/lib/ui-style";
 import { NexusDossier } from "@/components/nexus-dossier";
 import { StatusTooltip } from "@/components/status-tooltip";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaCharacterSpread } from "@/components/manga-view";
 
 export const Route = createFileRoute("/_authenticated/character")({
   validateSearch: (
@@ -252,12 +254,53 @@ function JourneyBars({ rows }: { rows: JRow[] }) {
   return <JourneyLine lines={[{ name: "Journey", rows }]} />;
 }
 
+function MangaDossierRedirect() {
+  const nav = useNavigate();
+  const { data: firstChar } = useQuery({
+    queryKey: ["first-character"],
+    staleTime: 300_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("entities")
+        .select("id")
+        .eq("kind", "character")
+        .order("name")
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+  useEffect(() => {
+    if (firstChar?.id) {
+      void nav({ to: "/character", search: { e: firstChar.id }, replace: true });
+    }
+  }, [firstChar?.id, nav]);
+  return (
+    <main className="mx-auto max-w-4xl px-4 py-20 text-center font-mono text-xs uppercase tracking-widest text-muted-foreground">
+      Opening first dossier plate…
+    </main>
+  );
+}
+
 function CharacterDossier() {
+  const isManga = useIsManga();
   const style = useUiStyle();
+  const nexus = !isManga && style === "nexus";
   const { e: rawId, series, season } = Route.useSearch();
   const id = resolveEntityId(rawId) || rawId;
-  const { data } = useQuery({ ...entityByIdQuery(id ?? ""), enabled: !!id && style === "nexus" });
-  if (style === "nexus" && data && data.kind === "character")
+  const { data } = useQuery({ ...entityByIdQuery(id ?? ""), enabled: !!id && nexus });
+  if (isManga) {
+    if (!id) return <MangaDossierRedirect />;
+    return (
+      <MangaCharacterSpread
+        key={`${id}:${series ?? ""}:${season ?? ""}`}
+        id={id}
+        initialSeries={series}
+        initialSeason={season}
+      />
+    );
+  }
+  if (nexus && data && data.kind === "character")
     return (
       <NexusDossier
         key={`${data.id}:${series ?? ""}:${season ?? ""}`}

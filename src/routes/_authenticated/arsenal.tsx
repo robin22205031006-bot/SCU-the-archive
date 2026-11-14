@@ -16,6 +16,8 @@ import { ArsenalIsolatedView } from "@/components/arsenal-isolated";
 import { DEFAULT_ARTIFACTS } from "@/lib/arsenal-art";
 import { uploadModel3d } from "@/lib/models-3d";
 import { Sparkles, Layers } from "lucide-react";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 
 type Artifact = Tables<"artifacts">;
 export const ARTIFACT_CATEGORIES = {
@@ -125,7 +127,9 @@ function ArsenalPage() {
   const [subTab, setSubTab] = useState<"catalog" | "isolated">("isolated");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<Cat | "all">("all");
+  const isManga = useIsManga();
   const style = useUiStyle();
+  const nexus = !isManga && style === "nexus";
   const motion = useNexusMotion();
   const [focusId, setFocusId] = useState<string | null>(null);
   const focus = useMemo(
@@ -219,49 +223,95 @@ function ArsenalPage() {
   });
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 pt-24 sm:px-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Arsenal & Relics</h1>
-          <p className="text-sm text-muted-foreground">
-            Weapons, cursed blades and sacred objects of the SCU.
-          </p>
-        </div>
-        {staff && (
-          <Button size="sm" onClick={() => open()}>
-            <Plus className="mr-1 size-4" />
-            Add item
-          </Button>
-        )}
-      </header>
+    <main
+      className={`mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 sm:px-6 ${isManga ? "pt-6" : "pt-24"}`}
+    >
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 04 // ARSENAL"
+          jp="武装・聖遺物"
+          title="Arsenal & Relics"
+          subtitle="Cursed blades, dimensional engines, and sacred weaponry inked as blueprint plates."
+          stamp="武装"
+          actions={
+            staff && (
+              <Button
+                size="sm"
+                onClick={() => open()}
+                className="manga-ink-btn border-2 border-foreground bg-foreground text-background"
+              >
+                <Plus className="mr-1 size-4" />
+                NEW PLATE
+              </Button>
+            )
+          }
+        />
+      ) : (
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Arsenal & Relics</h1>
+            <p className="text-sm text-muted-foreground">
+              Weapons, cursed blades and sacred objects of the SCU.
+            </p>
+          </div>
+          {staff && (
+            <Button size="sm" onClick={() => open()}>
+              <Plus className="mr-1 size-4" />
+              Add item
+            </Button>
+          )}
+        </header>
+      )}
 
       {/* Sub-tab Switcher: Isolated Objects vs Catalog */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-3">
+      <div
+        className={`flex flex-wrap items-center gap-2 pb-3 ${
+          isManga ? "border-b-[3px] border-foreground" : "border-b border-border/60"
+        }`}
+      >
         <button
           onClick={() => setSubTab("isolated")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-            subTab === "isolated"
-              ? "border border-nexus-glow/80 bg-nexus-glow/20 text-white shadow-[0_0_18px_rgba(56,189,248,0.35)]"
-              : "border border-transparent bg-card/60 text-muted-foreground hover:bg-card hover:text-foreground"
-          }`}
+          className={
+            isManga
+              ? `flex items-center gap-2 border-2 border-foreground px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition ${
+                  subTab === "isolated"
+                    ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
+                    : "bg-card text-foreground hover:bg-secondary"
+                }`
+              : `flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                  subTab === "isolated"
+                    ? "border border-nexus-glow/80 bg-nexus-glow/20 text-white shadow-[0_0_18px_rgba(56,189,248,0.35)]"
+                    : "border border-transparent bg-card/60 text-muted-foreground hover:bg-card hover:text-foreground"
+                }`
+          }
         >
-          <Sparkles className="size-4 text-nexus-glow" />
-          <span>Isolated Relics & Elemental Boosters</span>
-          <span className="rounded-full bg-nexus-glow/25 px-2 py-0.5 text-[10px] text-nexus-fg font-mono uppercase">
-            3D Void Mode
-          </span>
+          <Sparkles className={`size-4 ${isManga ? "text-[#b91c1c]" : "text-nexus-glow"}`} />
+          <span>{isManga ? "ISOLATED FORGE // 04A" : "Isolated Relics & Elemental Boosters"}</span>
+          {!isManga && (
+            <span className="rounded-full bg-nexus-glow/25 px-2 py-0.5 text-[10px] text-nexus-fg font-mono uppercase">
+              3D Void Mode
+            </span>
+          )}
         </button>
 
         <button
           onClick={() => setSubTab("catalog")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-            subTab === "catalog"
-              ? "border border-accent/80 bg-accent/20 text-white shadow-sm"
-              : "border border-transparent bg-card/60 text-muted-foreground hover:bg-card hover:text-foreground"
-          }`}
+          className={
+            isManga
+              ? `flex items-center gap-2 border-2 border-foreground px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition ${
+                  subTab === "catalog"
+                    ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
+                    : "bg-card text-foreground hover:bg-secondary"
+                }`
+              : `flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                  subTab === "catalog"
+                    ? "border border-accent/80 bg-accent/20 text-white shadow-sm"
+                    : "border border-transparent bg-card/60 text-muted-foreground hover:bg-card hover:text-foreground"
+                }`
+          }
         >
           <Layers className="size-4" />
-          <span>Archive Catalog (Dossier Cards)</span>
+          <span>{isManga ? "PLATE CATALOG // 04B" : "Archive Catalog (Dossier Cards)"}</span>
         </button>
       </div>
 
@@ -273,7 +323,11 @@ function ArsenalPage() {
             <div className="relative min-w-0 flex-1">
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
-                className="pl-8"
+                className={
+                  isManga
+                    ? "rounded-none border-2 border-foreground pl-8 font-mono text-xs"
+                    : "pl-8"
+                }
                 placeholder="Search name, wielder or lore"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -284,7 +338,15 @@ function ArsenalPage() {
                 <button
                   key={c}
                   onClick={() => setCat(c)}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${cat === c ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`}
+                  className={
+                    isManga
+                      ? `border-2 border-foreground px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                          cat === c
+                            ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                            : "bg-background text-foreground hover:bg-secondary"
+                        }`
+                      : `rounded-full border px-3 py-1 text-xs transition ${cat === c ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`
+                  }
                 >
                   {c === "all" ? "All" : ARTIFACT_CATEGORIES[c]}
                 </button>
@@ -292,7 +354,13 @@ function ArsenalPage() {
             </div>
           </div>
           {edit && (
-            <section className="grid gap-2 rounded-2xl border border-accent/40 bg-card p-4 sm:grid-cols-2">
+            <section
+              className={`grid gap-2 bg-card p-4 sm:grid-cols-2 ${
+                isManga
+                  ? "manga-panel border-[3px] border-foreground"
+                  : "rounded-2xl border border-accent/40"
+              }`}
+            >
               <div className="flex items-center justify-between sm:col-span-2">
                 <h2 className="font-semibold">{edit.id ? "Edit item" : "New item"}</h2>
                 <Button
@@ -394,11 +462,16 @@ function ArsenalPage() {
                 />
               </CardGuard>
             ))}
-            {list.length === 0 && <p className="text-sm text-muted-foreground">Nothing found.</p>}
+            {list.length === 0 &&
+              (isManga ? (
+                <MangaThoughtBox className="sm:col-span-3">Nothing found.</MangaThoughtBox>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nothing found.</p>
+              ))}
           </div>
         </>
       )}
-      {focus && style === "nexus" && (
+      {focus && nexus && (
         <CardGuard key={"v" + focus.id} name={focus.name}>
           <NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocusId(null)} />
         </CardGuard>

@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 type Props = {
   activeId: string;
@@ -191,8 +192,15 @@ function RegionDetail({ id, era }: { id: string; era: string }) {
 }
 
 export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
+  const isManga = useIsManga();
   return (
-    <div className="glass relative mb-4 overflow-hidden rounded-2xl border border-border">
+    <div
+      className={
+        isManga
+          ? "relative mb-4 overflow-hidden border-[3px] border-foreground bg-card shadow-[5px_5px_0_currentColor]"
+          : "glass relative mb-4 overflow-hidden rounded-2xl border border-border"
+      }
+    >
       <svg
         viewBox="0 0 900 480"
         className="mx-auto block h-auto max-h-[60dvh] w-full"
@@ -201,7 +209,13 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
       >
         <defs>
           <pattern id="lwm-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M40,0 L0,0 0,40" fill="none" stroke="var(--border)" strokeWidth={0.6} />
+            <path
+              d="M40,0 L0,0 0,40"
+              fill="none"
+              stroke={isManga ? "var(--foreground)" : "var(--border)"}
+              strokeOpacity={isManga ? 0.14 : 1}
+              strokeWidth={0.6}
+            />
           </pattern>
           <radialGradient id="lwm-sweep">
             <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.25} />
@@ -305,16 +319,27 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
                   <RegionDetail id={r.id} era={era} />
                 </motion.g>
               </AnimatePresence>
-              {active && (
-                <motion.circle
-                  cx={r.cx}
-                  cy={r.cy}
-                  r={18}
-                  fill="url(#lwm-sweep)"
-                  animate={{ r: [18, 95], opacity: [0.8, 0] }}
-                  transition={{ duration: 2.4, repeat: Infinity }}
-                />
-              )}
+              {active &&
+                (isManga ? (
+                  <rect
+                    x={r.cx - 10}
+                    y={r.cy - 10}
+                    width={20}
+                    height={20}
+                    fill="none"
+                    stroke="#b91c1c"
+                    strokeWidth={2}
+                  />
+                ) : (
+                  <motion.circle
+                    cx={r.cx}
+                    cy={r.cy}
+                    r={18}
+                    fill="url(#lwm-sweep)"
+                    animate={{ r: [18, 95], opacity: [0.8, 0] }}
+                    transition={{ duration: 2.4, repeat: Infinity }}
+                  />
+                ))}
               <text
                 x={r.cx}
                 y={r.cy + 56 > 455 ? r.cy - 54 : r.cy + 62}

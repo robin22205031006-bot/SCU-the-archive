@@ -10,9 +10,11 @@ import { invalidateArchive } from "@/lib/archive-sync";
 import { useIsStaff } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 /** Family/ancestor tree built from Archive bloodlines, clans and family links; shared by all UI styles. */
 export function FamilyTree() {
+  const isManga = useIsManga();
   const isStaff = useIsStaff();
   const { data: chars = [] } = useQuery(entitiesQuery(["character"]));
   const { data: groups = [] } = useQuery(entitiesQuery(["clan", "bloodline"]));
@@ -81,7 +83,13 @@ export function FamilyTree() {
           {isStaff ? " Add them below or read them from the PDFs." : ""}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-secondary/10">
+        <div
+          className={
+            isManga
+              ? "manga-halftone overflow-x-auto border-[3px] border-foreground bg-card shadow-[4px_4px_0_currentColor]"
+              : "overflow-x-auto rounded-2xl border border-border bg-secondary/10"
+          }
+        >
           <svg
             viewBox={`0 0 ${W} ${H}`}
             style={{ minWidth: Math.min(W, 900) }}
@@ -94,26 +102,35 @@ export function FamilyTree() {
                 b = pos.get(r.target_id);
               if (!a || !b) return null;
               const vertical = r.rel === "parent" || r.rel === "ancestor";
-              const d = vertical
-                ? `M${a.x},${a.y + 18} C${a.x},${(a.y + b.y) / 2} ${b.x},${(a.y + b.y) / 2} ${b.x},${b.y - 18}`
-                : `M${a.x},${a.y} Q${(a.x + b.x) / 2},${a.y - 30} ${b.x},${b.y}`;
+              const midY = (a.y + b.y) / 2;
+              const d = isManga
+                ? vertical
+                  ? `M${a.x},${a.y + 18} L${a.x},${midY} L${b.x},${midY} L${b.x},${b.y - 18}`
+                  : `M${a.x},${a.y} L${a.x},${a.y - 26} L${b.x},${b.y - 26} L${b.x},${b.y}`
+                : vertical
+                  ? `M${a.x},${a.y + 18} C${a.x},${midY} ${b.x},${midY} ${b.x},${b.y - 18}`
+                  : `M${a.x},${a.y} Q${(a.x + b.x) / 2},${a.y - 30} ${b.x},${b.y}`;
               return (
                 <path
                   key={r.id}
                   d={d}
                   fill="none"
                   stroke={
-                    r.rel === "spouse"
-                      ? "hsl(340 70% 65%)"
-                      : r.rel === "sibling"
-                        ? "hsl(190 70% 60%)"
-                        : "var(--accent)"
+                    isManga
+                      ? r.rel === "spouse"
+                        ? "#b91c1c"
+                        : "var(--foreground)"
+                      : r.rel === "spouse"
+                        ? "hsl(340 70% 65%)"
+                        : r.rel === "sibling"
+                          ? "hsl(190 70% 60%)"
+                          : "var(--accent)"
                   }
                   strokeWidth={r.rel === "ancestor" ? 1.5 : 2}
                   strokeDasharray={
                     r.rel === "ancestor" ? "6 5" : r.rel === "sibling" ? "2 4" : undefined
                   }
-                  opacity={0.8}
+                  opacity={isManga ? 0.9 : 0.8}
                 >
                   <title>{FAMILY_LABEL[r.rel as FamilyRel]}</title>
                 </path>
@@ -122,18 +139,36 @@ export function FamilyTree() {
             {people.map((p) => {
               const q = pos.get(p.id)!;
               const gname = groupName(p.id);
+              const h = gname ? 40 : 34;
               return (
                 <g key={p.id}>
+                  {isManga && (
+                    <rect
+                      x={q.x - 55}
+                      y={q.y - 15}
+                      width={116}
+                      height={h}
+                      fill="var(--foreground)"
+                    />
+                  )}
                   <rect
                     x={q.x - 58}
                     y={q.y - 18}
                     width={116}
-                    height={gname ? 40 : 34}
-                    rx={10}
+                    height={h}
+                    rx={isManga ? 0 : 10}
                     fill="var(--card)"
-                    stroke="var(--border)"
+                    stroke={isManga ? "var(--foreground)" : "var(--border)"}
+                    strokeWidth={isManga ? 2 : 1}
                   />
-                  <text x={q.x} y={q.y + 2} textAnchor="middle" fontSize={11} fill="currentColor">
+                  <text
+                    x={q.x}
+                    y={q.y + 2}
+                    textAnchor="middle"
+                    fontSize={11}
+                    fontWeight={isManga ? 700 : 400}
+                    fill="currentColor"
+                  >
                     {p.name.length > 18 ? p.name.slice(0, 17) + "…" : p.name}
                   </text>
                   {gname && (
@@ -142,8 +177,9 @@ export function FamilyTree() {
                       y={q.y + 15}
                       textAnchor="middle"
                       fontSize={8}
-                      fill="currentColor"
-                      opacity={0.6}
+                      fill={isManga ? "#b91c1c" : "currentColor"}
+                      fontWeight={isManga ? 700 : 400}
+                      opacity={isManga ? 1 : 0.6}
                     >
                       {gname.slice(0, 22)}
                     </text>

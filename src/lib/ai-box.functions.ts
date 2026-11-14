@@ -3,6 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { resolveArchiveBackend } from "../../archive-backend";
 import {
   AI_BOX_ROLES,
   GEMINI_CHAT_MODELS,
@@ -21,14 +22,14 @@ const input = z.object({
 });
 
 async function loadAuthenticatedArchive(token: string) {
-  const SUPABASE_URL =
-    process.env["SUPABASE_URL"] ||
-    process.env["VITE_SUPABASE_URL"] ||
-    "https://c--2c3743b4-a0ff-4079-b412-eba03e4ddcc7-prod.lovable.cloud";
-  const SUPABASE_PUBLISHABLE_KEY =
-    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
-    process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-    "sb_publishable_FSGOMkkM8_gDbaY7lfAyEg_d7tLjyhW";
+  const resolved = resolveArchiveBackend({
+    VITE_SUPABASE_URL: process.env["SUPABASE_URL"] || process.env["VITE_SUPABASE_URL"],
+    VITE_SUPABASE_PUBLISHABLE_KEY:
+      process.env["SUPABASE_PUBLISHABLE_KEY"] || process.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
+    VITE_SUPABASE_PROJECT_ID: process.env["VITE_SUPABASE_PROJECT_ID"],
+  });
+  const SUPABASE_URL = resolved.url;
+  const SUPABASE_PUBLISHABLE_KEY = resolved.key;
 
   const sb = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {

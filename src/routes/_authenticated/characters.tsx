@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { EntitySection } from "@/components/entity-section";
 import { CyanNeuralPlexusTheme } from "@/components/ability-canvas";
 import { CHARACTER_CATEGORIES } from "@/lib/entities";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 export const Route = createFileRoute("/_authenticated/characters")({
   validateSearch: (
@@ -35,9 +36,12 @@ export const Route = createFileRoute("/_authenticated/characters")({
 
 function Characters() {
   const { q, open } = Route.useSearch();
+  const isManga = useIsManga();
   return (
     <div className="relative">
-      <CyanNeuralPlexusTheme className="pointer-events-none fixed inset-0 -z-10 h-full w-full opacity-20" />
+      {!isManga && (
+        <CyanNeuralPlexusTheme className="pointer-events-none fixed inset-0 -z-10 h-full w-full opacity-20" />
+      )}
       <EntitySection
         kinds={["character"]}
         categories={CHARACTER_CATEGORIES}

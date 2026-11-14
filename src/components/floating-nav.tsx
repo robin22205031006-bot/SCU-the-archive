@@ -37,7 +37,7 @@ import { Dialog, DialogPortal, DialogTrigger, DialogTitle } from "@/components/u
 import { ThemeDrawer } from "./theme-drawer";
 import { useNavHidden } from "@/lib/nav-visibility";
 import { useAnimationsEnabled } from "@/lib/animations";
-import { useUiStyle } from "@/lib/ui-style";
+import { useVisualMode } from "@/hooks/use-ui-mode";
 import { useOptionalUIState } from "@/context/UIStateContext";
 import { NexusNavGlyph } from "./nexus-nav-glyph";
 export { navMode, setNavMode, hudNavEnabled, setHudNav, type NavMode } from "@/lib/nav-mode";
@@ -81,7 +81,7 @@ export function FloatingNav() {
   const hidden = useNavHidden();
   const deviceReduced = useReducedMotion();
   const animations = useAnimationsEnabled();
-  const style = useUiStyle();
+  const style = useVisualMode();
   const reduce = deviceReduced || !animations || style === "minimal";
   const uiState = useOptionalUIState();
   const [localOpen, setLocalOpen] = useState(false);

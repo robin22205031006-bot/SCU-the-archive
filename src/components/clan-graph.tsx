@@ -18,6 +18,7 @@ import {
 } from "@/lib/entities";
 import { getCombatStats } from "@/lib/combat-stats";
 import { invalidateArchive } from "@/lib/archive-sync";
+import { useIsManga } from "@/hooks/use-ui-mode";
 
 const ALL_KINDS: Entity["kind"][] = ["character", "organization", "clan", "bloodline", "faction"];
 const GROUP_KINDS = new Set(["organization", "clan", "bloodline", "faction"]);
@@ -89,6 +90,7 @@ interface Pos {
 }
 
 export function ClanGraph() {
+  const isManga = useIsManga();
   const nav = useNavigate();
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
@@ -264,12 +266,26 @@ export function ClanGraph() {
     <div className="grid gap-4">
       {/* controls */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex gap-1 rounded-full border border-white/10 bg-secondary/40 p-1">
+        <div
+          className={
+            isManga
+              ? "flex gap-1 border-2 border-foreground bg-card p-1"
+              : "flex gap-1 rounded-full border border-white/10 bg-secondary/40 p-1"
+          }
+        >
           {VIEWS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setView(id)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors ${view === id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={
+                isManga
+                  ? `flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-bold uppercase transition-colors ${
+                      view === id
+                        ? "bg-foreground text-background"
+                        : "text-foreground hover:bg-secondary"
+                    }`
+                  : `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors ${view === id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`
+              }
             >
               <Icon className="h-3.5 w-3.5" />
               {label}
@@ -278,7 +294,11 @@ export function ClanGraph() {
         </div>
         {(view === "hierarchy" || view === "squad") && groups.length > 0 && (
           <select
-            className="h-9 rounded-full border border-white/10 bg-secondary/40 px-3 text-sm"
+            className={
+              isManga
+                ? "h-9 border-2 border-foreground bg-card px-3 font-mono text-xs font-bold uppercase"
+                : "h-9 rounded-full border border-white/10 bg-secondary/40 px-3 text-sm"
+            }
             value={activeGroupId}
             onChange={(e) => setGroupId(e.target.value)}
           >
@@ -381,7 +401,13 @@ export function ClanGraph() {
       )}
 
       {/* graph */}
-      <div className="glass relative overflow-hidden rounded-2xl">
+      <div
+        className={
+          isManga
+            ? "manga-halftone relative overflow-hidden border-[3px] border-foreground bg-card shadow-[5px_5px_0_currentColor]"
+            : "glass relative overflow-hidden rounded-2xl"
+        }
+      >
         {nodes.length === 0 ? (
           <p className="grid h-72 place-items-center text-sm text-muted-foreground">
             {groups.length === 0
@@ -399,15 +425,26 @@ export function ClanGraph() {
               if (!a || !b) return null;
               const mx = (a.x + b.x) / 2;
               const my = (a.y + b.y) / 2 - 24;
+              const stroke = isManga
+                ? e2.kind === "member"
+                  ? "var(--foreground)"
+                  : e2.kind === "rival" || e2.kind === "commands"
+                    ? "#b91c1c"
+                    : "var(--foreground)"
+                : edgeColor(e2.kind);
               return (
                 <path
                   key={i}
-                  d={`M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`}
+                  d={
+                    isManga
+                      ? `M${a.x},${a.y} L${b.x},${b.y}`
+                      : `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`
+                  }
                   fill="none"
-                  stroke={edgeColor(e2.kind)}
-                  strokeWidth={e2.kind === "member" ? 1 : 1.6}
+                  stroke={stroke}
+                  strokeWidth={e2.kind === "member" ? (isManga ? 1.2 : 1) : isManga ? 2 : 1.6}
                   strokeDasharray={edgeDash(e2.kind)}
-                  opacity={e2.kind === "member" ? 0.7 : 0.9}
+                  opacity={e2.kind === "member" ? (isManga ? 0.35 : 0.7) : 0.9}
                 />
               );
             })}
@@ -421,11 +458,12 @@ export function ClanGraph() {
                   <text
                     key={`lbl${i}`}
                     x={(a.x + b.x) / 2}
-                    y={(a.y + b.y) / 2 - 30}
+                    y={(a.y + b.y) / 2 - (isManga ? 10 : 30)}
                     textAnchor="middle"
                     fontSize={10}
-                    fill={edgeColor(e2.kind)}
-                    opacity={0.85}
+                    fontWeight={isManga ? 700 : 400}
+                    fill={isManga ? "#b91c1c" : edgeColor(e2.kind)}
+                    opacity={0.9}
                   >
                     {e2.label}
                   </text>
@@ -441,62 +479,129 @@ export function ClanGraph() {
                   className="cursor-pointer"
                   onClick={() => setQuick({ id: e.id, x: p.x, y: p.y })}
                 >
-                  <circle r={r + 5} fill="transparent" />
-                  <circle
-                    r={r}
-                    fill="#0d1117"
-                    stroke={KIND_COLOR[e.kind]}
-                    strokeWidth={isGroup ? 2.4 : 1.6}
-                  />
-                  {e.image_url ? (
-                    <image
-                      href={e.image_url}
-                      x={-r + 4}
-                      y={-r + 4}
-                      width={(r - 4) * 2}
-                      height={(r - 4) * 2}
-                      preserveAspectRatio="xMidYMid slice"
-                      clipPath={`circle(${r - 4}px at ${r - 4}px ${r - 4}px)`}
-                    />
+                  {isManga ? (
+                    <>
+                      <rect
+                        x={-r + 3}
+                        y={-r + 3}
+                        width={r * 2}
+                        height={r * 2}
+                        fill="var(--foreground)"
+                        opacity={0.8}
+                      />
+                      <rect
+                        x={-r}
+                        y={-r}
+                        width={r * 2}
+                        height={r * 2}
+                        fill={isGroup ? "var(--foreground)" : "var(--card)"}
+                        stroke="var(--foreground)"
+                        strokeWidth={isGroup ? 3 : 2}
+                      />
+                      {e.image_url ? (
+                        <image
+                          href={e.image_url}
+                          x={-r + 4}
+                          y={-r + 4}
+                          width={(r - 4) * 2}
+                          height={(r - 4) * 2}
+                          preserveAspectRatio="xMidYMid slice"
+                          style={{ filter: "grayscale(1) contrast(1.2)" }}
+                        />
+                      ) : (
+                        <text
+                          textAnchor="middle"
+                          dy={6}
+                          fontSize={isGroup ? 22 : 16}
+                          fontWeight={700}
+                          fill={isGroup ? "var(--background)" : "var(--foreground)"}
+                        >
+                          {e.name[0]?.toUpperCase()}
+                        </text>
+                      )}
+                      <rect x={-r} y={r - 7} width={r * 2} height={13} fill="var(--foreground)" />
+                      <text
+                        y={r + 2}
+                        textAnchor="middle"
+                        fontSize={8.5}
+                        fontWeight={700}
+                        fill="var(--background)"
+                        letterSpacing={0.4}
+                      >
+                        {(e.name ?? "").length > 16
+                          ? `${(e.name ?? "").slice(0, 15)}…`
+                          : (e.name ?? "")}
+                      </text>
+                      <rect
+                        x={r - 8}
+                        y={-r}
+                        width={8}
+                        height={8}
+                        fill={e.status === "Dead" ? "#b91c1c" : "var(--foreground)"}
+                        stroke="var(--card)"
+                        strokeWidth={1}
+                      />
+                    </>
                   ) : (
-                    <text
-                      textAnchor="middle"
-                      dy={5}
-                      fontSize={isGroup ? 22 : 15}
-                      fill={KIND_COLOR[e.kind]}
-                      fontFamily="serif"
-                    >
-                      {e.name[0]?.toUpperCase()}
-                    </text>
+                    <>
+                      <circle r={r + 5} fill="transparent" />
+                      <circle
+                        r={r}
+                        fill="#0d1117"
+                        stroke={KIND_COLOR[e.kind]}
+                        strokeWidth={isGroup ? 2.4 : 1.6}
+                      />
+                      {e.image_url ? (
+                        <image
+                          href={e.image_url}
+                          x={-r + 4}
+                          y={-r + 4}
+                          width={(r - 4) * 2}
+                          height={(r - 4) * 2}
+                          preserveAspectRatio="xMidYMid slice"
+                          clipPath={`circle(${r - 4}px at ${r - 4}px ${r - 4}px)`}
+                        />
+                      ) : (
+                        <text
+                          textAnchor="middle"
+                          dy={5}
+                          fontSize={isGroup ? 22 : 15}
+                          fill={KIND_COLOR[e.kind]}
+                          fontFamily="serif"
+                        >
+                          {e.name[0]?.toUpperCase()}
+                        </text>
+                      )}
+                      <rect
+                        x={-r}
+                        y={r - 6}
+                        width={r * 2}
+                        height={11}
+                        rx={5.5}
+                        fill="#000"
+                        opacity={0.72}
+                      />
+                      <text
+                        y={r + 2}
+                        textAnchor="middle"
+                        fontSize={8.5}
+                        fill="#e4e4e7"
+                        letterSpacing={0.4}
+                      >
+                        {(e.name ?? "").length > 16
+                          ? `${(e.name ?? "").slice(0, 15)}…`
+                          : (e.name ?? "")}
+                      </text>
+                      <circle
+                        cx={r - 4}
+                        cy={-r + 4}
+                        r={4.5}
+                        fill={statusDot(e.status)}
+                        stroke="#000"
+                        strokeWidth={1}
+                      />
+                    </>
                   )}
-                  <rect
-                    x={-r}
-                    y={r - 6}
-                    width={r * 2}
-                    height={11}
-                    rx={5.5}
-                    fill="#000"
-                    opacity={0.72}
-                  />
-                  <text
-                    y={r + 2}
-                    textAnchor="middle"
-                    fontSize={8.5}
-                    fill="#e4e4e7"
-                    letterSpacing={0.4}
-                  >
-                    {(e.name ?? "").length > 16
-                      ? `${(e.name ?? "").slice(0, 15)}…`
-                      : (e.name ?? "")}
-                  </text>
-                  <circle
-                    cx={r - 4}
-                    cy={-r + 4}
-                    r={4.5}
-                    fill={statusDot(e.status)}
-                    stroke="#000"
-                    strokeWidth={1}
-                  />
                 </g>
               );
             })}
@@ -508,21 +613,33 @@ export function ClanGraph() {
           <button
             aria-label="Zoom out"
             onClick={() => setZoom((z) => Math.max(0.4, +(z - 0.2).toFixed(2)))}
-            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            className={
+              isManga
+                ? "grid h-8 w-8 place-items-center border-2 border-foreground bg-card font-mono text-sm font-bold hover:bg-foreground hover:text-background"
+                : "grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            }
           >
             −
           </button>
           <button
             aria-label="Reset zoom"
             onClick={() => setZoom(1)}
-            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-[10px] font-bold hover:text-foreground"
+            className={
+              isManga
+                ? "grid h-8 w-8 place-items-center border-2 border-foreground bg-card font-mono text-[10px] font-bold hover:bg-foreground hover:text-background"
+                : "grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-[10px] font-bold hover:text-foreground"
+            }
           >
             {Math.round(zoom * 100)}%
           </button>
           <button
             aria-label="Zoom in"
             onClick={() => setZoom((z) => Math.min(3, +(z + 0.2).toFixed(2)))}
-            className="grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            className={
+              isManga
+                ? "grid h-8 w-8 place-items-center border-2 border-foreground bg-card font-mono text-sm font-bold hover:bg-foreground hover:text-background"
+                : "grid h-8 w-8 place-items-center rounded-full bg-secondary/90 text-sm font-bold hover:text-foreground"
+            }
           >
             +
           </button>
@@ -531,7 +648,11 @@ export function ClanGraph() {
         {/* quick view card */}
         {quick && quickEntity && (
           <div
-            className="glass absolute z-10 w-64 rounded-2xl p-4 shadow-2xl"
+            className={
+              isManga
+                ? "absolute z-10 w-64 border-[3px] border-foreground bg-card p-4 shadow-[4px_4px_0_currentColor]"
+                : "glass absolute z-10 w-64 rounded-2xl p-4 shadow-2xl"
+            }
             style={{
               left: `${Math.min(Math.max((quick.x / W) * 100, 4), 68)}%`,
               top: `${Math.min(Math.max((quick.y / H) * 100, 6), 62)}%`,
@@ -540,7 +661,11 @@ export function ClanGraph() {
             <button
               aria-label="Close"
               onClick={() => setQuick(null)}
-              className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-secondary"
+              className={
+                isManga
+                  ? "absolute right-2 top-2 grid h-6 w-6 place-items-center border border-foreground bg-background hover:bg-foreground hover:text-background"
+                  : "absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-secondary"
+              }
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -551,12 +676,14 @@ export function ClanGraph() {
                   alt=""
                   loading="lazy"
                   decoding="async"
-                  className="h-12 w-12 rounded-xl object-cover"
+                  className={`h-12 w-12 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
                 />
               ) : (
                 <div
-                  className="grid h-12 w-12 place-items-center rounded-xl bg-secondary font-display text-xl"
-                  style={{ color: KIND_COLOR[quickEntity.kind] }}
+                  className={`grid h-12 w-12 place-items-center bg-secondary font-display text-xl ${
+                    isManga ? "border-2 border-foreground" : "rounded-xl"
+                  }`}
+                  style={isManga ? undefined : { color: KIND_COLOR[quickEntity.kind] }}
                 >
                   {quickEntity.name[0]}
                 </div>
@@ -570,8 +697,12 @@ export function ClanGraph() {
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs">
               <span
-                className="rounded-full bg-secondary px-2 py-0.5"
-                style={{ color: KIND_COLOR[quickEntity.kind] }}
+                className={
+                  isManga
+                    ? "border border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-background"
+                    : "rounded-full bg-secondary px-2 py-0.5"
+                }
+                style={isManga ? undefined : { color: KIND_COLOR[quickEntity.kind] }}
               >
                 {statusTag(quickEntity).label}
               </span>
@@ -597,23 +728,38 @@ export function ClanGraph() {
       {/* legend */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: "#fb4d6d" }} />
+          <span
+            className={isManga ? "h-2.5 w-2.5 bg-[#b91c1c]" : "h-2 w-2 rounded-full"}
+            style={isManga ? undefined : { background: "#fb4d6d" }}
+          />
           Rivalry
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: "#34d399" }} />
+          <span
+            className={isManga ? "h-2.5 w-2.5 bg-foreground" : "h-2 w-2 rounded-full"}
+            style={isManga ? undefined : { background: "#34d399" }}
+          />
           Alliance
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: "#f5b942" }} />
+          <span
+            className={isManga ? "h-2.5 w-2.5 border border-[#b91c1c]" : "h-2 w-2 rounded-full"}
+            style={isManga ? undefined : { background: "#f5b942" }}
+          />
           Commands
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: "#7dd3fc" }} />
+          <span
+            className={isManga ? "h-2.5 w-2.5 border border-foreground" : "h-2 w-2 rounded-full"}
+            style={isManga ? undefined : { background: "#7dd3fc" }}
+          />
           Mentor
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: "#c4b5fd" }} />
+          <span
+            className={isManga ? "h-2.5 w-2.5 bg-muted-foreground" : "h-2 w-2 rounded-full"}
+            style={isManga ? undefined : { background: "#c4b5fd" }}
+          />
           Kin
         </span>
         <span className="ml-auto">Click any node for quick view</span>

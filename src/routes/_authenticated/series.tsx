@@ -29,13 +29,21 @@ import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { entitiesQuery } from "@/lib/entities";
 import { SeriesStyleEditor, useSeriesTitleStyle } from "@/lib/series-style";
 import { Pencil } from "lucide-react";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
+import { HankoStamp } from "@/components/manga-emblem";
 
 /** Series title with the admin-chosen font, colour and effect. */
 function SeriesTitle({ series, className = "" }: { series: Series; className?: string }) {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const t = useSeriesTitleStyle(series.id, nexus);
   return (
-    <span className={`${className} ${t.className}`} style={t.style}>
+    <span
+      className={`${className} ${isManga ? "" : t.className}`}
+      style={isManga ? undefined : t.style}
+    >
       {series.title}
     </span>
   );
@@ -44,6 +52,7 @@ function SeriesTitle({ series, className = "" }: { series: Series; className?: s
 /** Season buttons for readers plus a per-season roster editor for admins/mods (all UI styles). */
 function SeasonList({ series }: { series: Series }) {
   const isStaff = useIsStaff();
+  const isManga = useIsManga();
   const [editing, setEditing] = useState<number | null>(null);
   const { data: characters = [] } = useQuery({
     ...entitiesQuery(["character"]),
@@ -57,7 +66,9 @@ function SeasonList({ series }: { series: Series }) {
           <Button
             asChild
             variant="outline"
-            className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal text-left"
+            className={`h-auto min-h-12 min-w-0 flex-1 whitespace-normal text-left ${
+              isManga ? "rounded-none border-2 border-foreground font-mono text-xs uppercase" : ""
+            }`}
           >
             <Link to="/characters" search={{ series: series.id, season: i + 1 }}>
               {name}
@@ -123,6 +134,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
   const { data: rows } = useQuery(seriesCharactersQuery(seriesId));
   const { data: members } = useQuery(seriesMembersQuery(rows));
   const isStaff = useIsStaff();
+  const isManga = useIsManga();
   const hide = useSpoilerMask("series") && !isStaff;
 
   const memberRows: MemberRow[] = useMemo(() => {
@@ -156,7 +168,11 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
         className="mx-auto max-w-3xl px-4 pb-16 pt-24 sm:px-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <section className="morph-in glass grid gap-6 rounded-2xl p-5 sm:p-7">
+        <section
+          className={`morph-in grid gap-6 p-5 sm:p-7 ${
+            isManga ? "manga-panel border-[3px] border-foreground bg-card" : "glass rounded-2xl"
+          }`}
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
               {series?.cover_image_url ? (
@@ -165,16 +181,24 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
                   alt={series.title}
                   loading="lazy"
                   decoding="async"
-                  className="h-16 w-16 rounded-xl object-cover"
+                  className={`h-16 w-16 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
                 />
               ) : (
-                <div className="grid h-16 w-16 place-items-center rounded-xl bg-secondary text-muted-foreground">
+                <div
+                  className={`grid h-16 w-16 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground" : "rounded-xl"}`}
+                >
                   <BookMarked className="h-6 w-6" />
                 </div>
               )}
               <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Series</p>
-                <h2 className="mt-1 break-words text-3xl font-medium glow-text">
+                <p
+                  className={`text-[11px] uppercase tracking-[0.25em] ${isManga ? "font-mono font-bold text-[#b91c1c]" : "text-accent"}`}
+                >
+                  Series
+                </p>
+                <h2
+                  className={`mt-1 break-words ${isManga ? "font-display text-4xl uppercase tracking-wide" : "text-3xl font-medium glow-text"}`}
+                >
                   {series ? <SeriesTitle series={series} /> : "…"}
                 </h2>
               </div>
@@ -249,7 +273,60 @@ function SeriesHero({
   counts: Map<string, number>;
   onOpen: (id: string) => void;
 }) {
+  const isManga = useIsManga();
   if (series.length === 0) return null;
+  if (isManga) {
+    return (
+      <div className="mb-8">
+        <div className="mb-3 flex items-center justify-between border-b-2 border-foreground pb-1.5">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-[#b91c1c] dark:text-[#fca5a5]">
+            TANKŌBON ISSUE COVERS // 表紙一覧
+          </span>
+          <span className="font-mono text-[10px] uppercase text-muted-foreground">
+            {series.length} VOLUMES
+          </span>
+        </div>
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {series.map((s, i) => (
+            <button
+              key={s.id}
+              onClick={() => onOpen(s.id)}
+              className="manga-panel manga-panel-hover group relative flex w-[78vw] max-w-sm shrink-0 snap-center flex-col justify-between overflow-hidden border-[3px] border-foreground bg-card text-left sm:w-[22rem]"
+            >
+              <div className="manga-halftone relative h-44 w-full overflow-hidden border-b-[3px] border-foreground bg-secondary">
+                {s.cover_image_url ? (
+                  <img
+                    src={s.cover_image_url}
+                    alt={s.title}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    className="manga-portrait-ink h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center font-display text-6xl text-foreground/20">
+                    VOL.{String(i + 1).padStart(2, "0")}
+                  </div>
+                )}
+                <span className="absolute left-2 top-2 border-2 border-foreground bg-[#b91c1c] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
+                  VOLUME {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="absolute bottom-2 right-2 border border-foreground bg-card px-2 py-0.5 font-mono text-[10px] font-bold uppercase">
+                  {counts.get(s.id) ?? 0} CAST
+                </span>
+              </div>
+              <div className="p-4">
+                <h2 className="break-words font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]">
+                  <SeriesTitle series={s} />
+                </h2>
+                {s.description && (
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{s.description}</p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mb-8">
       <p className="mb-3 text-[11px] uppercase tracking-[0.3em] text-accent">Now streaming</p>
@@ -317,7 +394,9 @@ function StaffSeriesManager() {
 }
 
 export function SeriesPage() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const { s } = useSearch({ strict: false }) as { s?: string };
   const sectionStyle = useSectionStyle("series");
   const nav = useNavigate();
@@ -353,18 +432,35 @@ export function SeriesPage() {
   }, [series, q]);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-28 sm:px-5" style={sectionStyle}>
-      <header className="mb-8">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
-        <h1 className="mt-2 text-5xl font-medium glow-text">Series</h1>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Story arcs and sagas — who lived, died, or vanished in each.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <SpoilerToggle scope="series" />
+    <main
+      className={`mx-auto w-full max-w-5xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}
+      style={sectionStyle}
+    >
+      {isManga ? (
+        <div className="mb-8">
+          <MangaChapterBanner
+            chapter="CH. 11 // SAGAS"
+            jp="連載年表・外伝"
+            title="Series"
+            subtitle="Serialized story arcs and volume indices — track who lived, vanished, or stood at center stage."
+            stamp="連載"
+            actions={<SpoilerToggle scope="series" />}
+          />
+          <StaffSeriesManager />
         </div>
-        <StaffSeriesManager />
-      </header>
+      ) : (
+        <header className="mb-8">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
+          <h1 className="mt-2 text-5xl font-medium glow-text">Series</h1>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            Story arcs and sagas — who lived, died, or vanished in each.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SpoilerToggle scope="series" />
+          </div>
+          <StaffSeriesManager />
+        </header>
+      )}
 
       {nexus ? (
         <NexusExplorer
@@ -407,7 +503,11 @@ export function SeriesPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search series…"
-              className="glass h-11 rounded-full pl-10"
+              className={
+                isManga
+                  ? "h-10 rounded-none border-2 border-foreground bg-background pl-10 font-mono text-xs"
+                  : "glass h-11 rounded-full pl-10"
+              }
             />
           </div>
 
@@ -422,18 +522,28 @@ export function SeriesPage() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : list.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              {series?.length
-                ? "No matches."
-                : "No series defined yet — an admin can add them from the Admin panel."}
-            </p>
+            isManga ? (
+              <MangaThoughtBox label="NO VOLUMES">
+                {series?.length ? "No matches." : "No series defined yet."}
+              </MangaThoughtBox>
+            ) : (
+              <p className="py-16 text-center text-sm text-muted-foreground">
+                {series?.length
+                  ? "No matches."
+                  : "No series defined yet — an admin can add them from the Admin panel."}
+              </p>
+            )
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {list.map((s) => (
+              {list.map((s, idx) => (
                 <button
                   key={s.id}
                   onClick={() => navigate({ search: { s: s.id } })}
-                  className="glass group flex gap-4 rounded-2xl p-4 text-left transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring"
+                  className={
+                    isManga
+                      ? "manga-panel manga-panel-hover group flex gap-4 border-[3px] border-foreground bg-card p-4 text-left transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
+                      : "glass group flex gap-4 rounded-2xl p-4 text-left transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring"
+                  }
                 >
                   {s.cover_image_url ? (
                     <img
@@ -441,16 +551,29 @@ export function SeriesPage() {
                       alt={s.title}
                       loading="lazy"
                       decoding="async"
-                      className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                      className={`h-16 w-16 shrink-0 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
                     />
                   ) : (
-                    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
-                      <BookMarked className="h-6 w-6" />
+                    <div
+                      className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
+                    >
+                      {isManga ? (
+                        `#${String(idx + 1).padStart(2, "0")}`
+                      ) : (
+                        <BookMarked className="h-6 w-6" />
+                      )}
                     </div>
                   )}
                   <span className="min-w-0 flex-1">
-                    <SeriesTitle series={s} className="block truncate text-xl font-medium" />
-                    <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <SeriesTitle
+                      series={s}
+                      className={
+                        isManga
+                          ? "block truncate font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]"
+                          : "block truncate text-xl font-medium"
+                      }
+                    />
+                    <span className="mt-1 flex items-center gap-1.5 font-mono text-[11px] uppercase text-muted-foreground">
                       <Users className="h-3.5 w-3.5" />
                       {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
                     </span>
@@ -481,23 +604,54 @@ export function SeriesPage() {
       )}
       {(episodes?.length ?? 0) > 0 && (
         <section className="mt-14">
-          <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
-          <h2 className="mb-4 text-3xl font-medium">Published episodes</h2>
+          {isManga ? (
+            <div className="mb-4 flex items-center justify-between border-b-[3px] border-foreground pb-2">
+              <span className="flex items-center gap-2 font-display text-3xl uppercase tracking-wide">
+                <HankoStamp kanji="本編" tilt={-2} />
+                Published Episodes
+              </span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {episodes?.length ?? 0} CHAPTERS
+              </span>
+            </div>
+          ) : (
+            <>
+              <p className="mb-1 text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
+              <h2 className="mb-4 text-3xl font-medium">Published episodes</h2>
+            </>
+          )}
           <div className="grid gap-3">
-            {(episodes ?? []).map((ep) => (
-              <details key={ep.id} className="glass group rounded-2xl p-4">
+            {(episodes ?? []).map((ep, idx) => (
+              <details
+                key={ep.id}
+                className={
+                  isManga
+                    ? "manga-panel group border-[3px] border-foreground bg-card p-4"
+                    : "glass group rounded-2xl p-4"
+                }
+              >
                 <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
-                  <FileText className="h-5 w-5 shrink-0 text-accent" />
+                  {isManga ? (
+                    <span className="border-2 border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold text-background">
+                      EP.{String(idx + 1).padStart(2, "0")}
+                    </span>
+                  ) : (
+                    <FileText className="h-5 w-5 shrink-0 text-accent" />
+                  )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-lg font-medium">{ep.title}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span
+                      className={`block truncate ${isManga ? "font-display text-xl uppercase tracking-wide" : "text-lg font-medium"}`}
+                    >
+                      {ep.title}
+                    </span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
                       {[ep.series, new Date(ep.created_at).toLocaleDateString()]
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
                   </span>
                 </summary>
-                <div className="mt-4 whitespace-pre-line border-t border-border/60 pt-4 text-sm leading-relaxed text-foreground/85">
+                <div className="mt-4 whitespace-pre-line border-t-2 border-foreground/20 pt-4 text-sm leading-relaxed text-foreground/85">
                   {ep.body}
                 </div>
               </details>

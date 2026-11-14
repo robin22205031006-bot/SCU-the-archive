@@ -19,7 +19,7 @@ import { PlexusWallpaper } from "@/components/plexus-wallpaper";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { AppearanceProvider } from "@/hooks/use-appearance";
 import { TypographyProvider } from "@/hooks/use-typography";
-import { UiModeProvider } from "@/hooks/use-ui-mode";
+import { UiModeProvider, useUiMode } from "@/hooks/use-ui-mode";
 import { UIStateProvider } from "@/context/UIStateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { syncSessionCache } from "@/lib/session-cache";
@@ -27,7 +27,7 @@ import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
 import { playWelcome } from "@/lib/scu-audio";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NexusShell } from "@/components/nexus-shell";
-import { useUiStyle } from "@/lib/ui-style";
+import { MangaShell } from "@/components/manga-shell";
 import { MotionConfig } from "framer-motion";
 
 import appCss from "../styles.css?url";
@@ -138,7 +138,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:ital,wght@0,400;0,700;1,700&family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Oswald:wght@500;700&family=Rajdhani:wght@400;500;600;700&family=Shippori+Mincho:wght@600;800&family=Space+Grotesk:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -167,8 +167,53 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function RootContent({ offline }: { offline: boolean }) {
+  const { mode } = useUiMode();
+  return (
+    <MotionConfig
+      reducedMotion={mode === "minimal" ? "always" : "user"}
+      {...(mode === "minimal" ? { transition: { duration: 0 } } : {})}
+    >
+      <div
+        className={`relative min-h-screen ${
+          mode === "minimal"
+            ? "minimal-shell"
+            : mode === "nexus"
+              ? ""
+              : mode === "manga"
+                ? "manga-root"
+                : "ambient-bg"
+        }`}
+      >
+        {mode === "classic" && <AmbientField />}
+        {mode === "classic" && <PlexusWallpaper />}
+        <ScrollProgress />
+        {mode !== "nexus" && mode !== "manga" && <SiteNav />}
+        <FloatingNav />
+        {mode === "classic" && <WelcomeVfx />}
+        {offline && (
+          <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
+            <WifiOff className="h-3.5 w-3.5" />
+            Offline — showing cached archive data
+          </div>
+        )}
+        {mode === "nexus" ? (
+          <NexusShell>
+            <Outlet />
+          </NexusShell>
+        ) : mode === "manga" ? (
+          <MangaShell>
+            <Outlet />
+          </MangaShell>
+        ) : (
+          <Outlet />
+        )}
+      </div>
+    </MotionConfig>
+  );
+}
+
 function RootComponent() {
-  const uiStyle = useUiStyle();
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const [offline, setOffline] = useState(false);
@@ -255,34 +300,7 @@ function RootComponent() {
           <UiModeProvider>
             <UIStateProvider applyAttributesToHtml={false}>
               <ErrorBoundary>
-                <MotionConfig
-                  reducedMotion={uiStyle === "minimal" ? "always" : "user"}
-                  {...(uiStyle === "minimal" ? { transition: { duration: 0 } } : {})}
-                >
-                  <div
-                    className={`relative min-h-screen ${uiStyle === "minimal" ? "minimal-shell" : uiStyle === "nexus" ? "" : "ambient-bg"}`}
-                  >
-                    {uiStyle === "classic" && <AmbientField />}
-                    {uiStyle === "classic" && <PlexusWallpaper />}
-                    <ScrollProgress />
-                    {uiStyle !== "nexus" && <SiteNav />}
-                    <FloatingNav />
-                    {uiStyle === "classic" && <WelcomeVfx />}
-                    {offline && (
-                      <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
-                        <WifiOff className="h-3.5 w-3.5" />
-                        Offline — showing cached archive data
-                      </div>
-                    )}
-                    {uiStyle === "nexus" ? (
-                      <NexusShell>
-                        <Outlet />
-                      </NexusShell>
-                    ) : (
-                      <Outlet />
-                    )}
-                  </div>
-                </MotionConfig>
+                <RootContent offline={offline} />
               </ErrorBoundary>
               <Toaster />
             </UIStateProvider>

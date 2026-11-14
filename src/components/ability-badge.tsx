@@ -1,5 +1,6 @@
 import { abilityDef, type AbilityTier } from "@/lib/abilities";
 import { useUiStyle } from "@/lib/ui-style";
+import { useIsManga } from "@/hooks/use-ui-mode";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useState } from "react";
 import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
@@ -20,6 +21,7 @@ const TIER_RANK: Record<AbilityTier, number> = {
 /** Compact ability badge with registry color/icon and tier tooltip. */
 export function AbilityBadge({ name, className = "" }: { name: string; className?: string }) {
   const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
   const advanced = useNexusAdvancedFx();
   const [fxOpen, setFxOpen] = useState(false);
   useAbilityRegistryVersion();
@@ -30,6 +32,23 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
   const rarePlus = def.tier === "Rare" || def.tier === "Exceptional" || def.tier === "Unique";
   const ancient = def.tier === "Ancient";
   const title = `${def.label} — ${def.tier}${def.group === "beast" ? " · Beast trait" : ""}${def.description ? `\n${def.description}` : ""}`;
+  if (isManga)
+    return (
+      <span
+        title={title}
+        data-manga-badge="stamp"
+        className={`inline-flex items-center gap-1.5 border-2 border-foreground px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+          mythic
+            ? "bg-foreground text-background shadow-[2px_2px_0_#b91c1c]"
+            : legendary
+              ? "bg-card text-foreground border-[#b91c1c] dark:border-[#dc2626] shadow-[2px_2px_0_#b91c1c]"
+              : "bg-card text-foreground shadow-[2px_2px_0_currentColor]"
+        } ${className}`}
+      >
+        <Icon className={`h-3 w-3 shrink-0 ${mythic ? "text-[#f87171]" : "text-current"}`} />
+        <span>{def.label}</span>
+      </span>
+    );
   if (nexus && advanced)
     return (
       <>

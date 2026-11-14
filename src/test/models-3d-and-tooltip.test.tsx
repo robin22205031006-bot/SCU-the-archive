@@ -55,6 +55,7 @@ vi.mock("@/integrations/supabase/client", () => {
               eq: () => ({
                 maybeSingle: () => mockAppSettingsSelect(),
               }),
+              in: () => Promise.resolve({ data: [], error: null }),
             }),
             upsert: (...args: unknown[]) => mockAppSettingsUpsert(...args),
           };

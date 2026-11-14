@@ -43,6 +43,9 @@ import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useUiStyle } from "@/lib/ui-style";
 import type { Json } from "@/integrations/supabase/types";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
+import { useIsManga } from "@/hooks/use-ui-mode";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
+import { HankoStamp } from "@/components/manga-emblem";
 
 const ALL_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
 const CUSTOM_SETTINGS_KEY = "ability_registry";
@@ -79,22 +82,41 @@ const HUB_TABS = [
   ["action", "Ability in Action"],
 ] as const;
 
+const MANGA_HUB_LABELS: Record<(typeof HUB_TABS)[number][0], string> = {
+  catalog: "CH. 03A // CATALOG",
+  fx: "CH. 03B // FX LINEAGES",
+  action: "CH. 03C // COMBAT DEMO",
+};
+
 function AbilitiesTabs() {
   const { tab = "catalog" } = Route.useSearch();
   const nav = Route.useNavigate();
+  const isManga = useIsManga();
   return (
     <>
-      <div className="mx-auto max-w-6xl px-4 pt-24 sm:px-5">
-        <div role="tablist" aria-label="Abilities sections" className="flex flex-wrap gap-1.5">
+      <div className={`mx-auto max-w-6xl px-4 sm:px-5 ${isManga ? "pt-6" : "pt-24"}`}>
+        <div
+          role="tablist"
+          aria-label="Abilities sections"
+          className={`flex flex-wrap gap-2 ${isManga ? "border-b-[3px] border-foreground pb-3" : "gap-1.5"}`}
+        >
           {HUB_TABS.map(([id, label]) => (
             <button
               key={id}
               role="tab"
               aria-selected={tab === id}
               onClick={() => nav({ search: id === "catalog" ? {} : { tab: id }, replace: true })}
-              className={`rounded-full border px-3.5 py-1.5 text-sm transition ${tab === id ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+              className={
+                isManga
+                  ? `border-2 border-foreground px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition ${
+                      tab === id
+                        ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
+                        : "bg-card text-foreground hover:bg-secondary"
+                    }`
+                  : `rounded-full border px-3.5 py-1.5 text-sm transition ${tab === id ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`
+              }
             >
-              {label}
+              {isManga ? MANGA_HUB_LABELS[id] : label}
             </button>
           ))}
         </div>
@@ -111,7 +133,9 @@ function AbilitiesTabs() {
 }
 
 function AbilitiesHub() {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const isAdmin = useIsAdmin();
   const holdersMasked = useSpoilerMask("abilities");
   const qc = useQueryClient();
@@ -242,25 +266,49 @@ function AbilitiesHub() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-5">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
-          <h1 className="mt-2 flex items-center gap-2 text-5xl font-medium glow-text">
-            <Sparkles className="h-8 w-8 text-accent" /> Abilities Hub
-          </h1>
-          <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Every power, beast trait and role — cross-referenced to the characters who wield them.
-          </p>
-          <div className="mt-3">
-            <SpoilerToggle scope="abilities" />
+      {isManga ? (
+        <MangaChapterBanner
+          chapter="CH. 03 // POWERS"
+          jp="異能・能力目録"
+          title="Abilities Hub"
+          subtitle="Every innate art, beast trait, and battle classification — cross-referenced to every canon wielder."
+          stamp="異能"
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <SpoilerToggle scope="abilities" />
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowAdd((v) => !v)}
+                  className="manga-ink-btn border-2 border-foreground bg-foreground text-background"
+                >
+                  {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />} ADD ABILITY
+                </Button>
+              )}
+            </div>
+          }
+        />
+      ) : (
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
+            <h1 className="mt-2 flex items-center gap-2 text-5xl font-medium glow-text">
+              <Sparkles className="h-8 w-8 text-accent" /> Abilities Hub
+            </h1>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              Every power, beast trait and role — cross-referenced to the characters who wield them.
+            </p>
+            <div className="mt-3">
+              <SpoilerToggle scope="abilities" />
+            </div>
           </div>
-        </div>
-        {isAdmin && (
-          <Button size="sm" onClick={() => setShowAdd((v) => !v)}>
-            {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />} Add ability
-          </Button>
-        )}
-      </header>
+          {isAdmin && (
+            <Button size="sm" onClick={() => setShowAdd((v) => !v)}>
+              {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />} Add ability
+            </Button>
+          )}
+        </header>
+      )}
 
       {isAdmin && showAdd && (
         <AddAbilityForm
@@ -315,19 +363,35 @@ function AbilitiesHub() {
         />
       ) : (
         <>
-          <div className="mb-6 flex flex-wrap items-center gap-2">
+          <div
+            className={`mb-6 flex flex-wrap items-center gap-2 ${
+              isManga ? "manga-panel border-[3px] border-foreground bg-card p-3" : ""
+            }`}
+          >
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search abilities or characters…"
-                className="glass h-9 w-64 rounded-full pl-8 text-sm"
+                className={
+                  isManga
+                    ? "h-9 w-64 rounded-none border-2 border-foreground bg-background pl-8 font-mono text-xs"
+                    : "glass h-9 w-64 rounded-full pl-8 text-sm"
+                }
               />
             </div>
             <button
               onClick={() => setTier("all")}
-              className={`rounded-full px-3 py-1 text-xs ${tier === "all" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={
+                isManga
+                  ? `border-2 border-foreground px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                      tier === "all"
+                        ? "bg-foreground text-background"
+                        : "bg-background text-foreground hover:bg-secondary"
+                    }`
+                  : `rounded-full px-3 py-1 text-xs ${tier === "all" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`
+              }
             >
               All
             </button>
@@ -335,7 +399,15 @@ function AbilitiesHub() {
               <button
                 key={t}
                 onClick={() => setTier(tier === t ? "all" : t)}
-                className={`rounded-full px-3 py-1 text-xs ${tier === t ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={
+                  isManga
+                    ? `border-2 border-foreground px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                        tier === t
+                          ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                          : "bg-background text-foreground hover:bg-secondary"
+                      }`
+                    : `rounded-full px-3 py-1 text-xs ${tier === t ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`
+                }
               >
                 {TIER_LABELS[t]}
               </button>
@@ -345,15 +417,36 @@ function AbilitiesHub() {
           {isLoading ? (
             <EntityGridSkeleton count={6} />
           ) : filtered.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">No abilities match.</p>
+            isManga ? (
+              <MangaThoughtBox label="EMPTY REGISTRY" className="py-12 text-center">
+                No abilities match this tier stamp or search needle.
+              </MangaThoughtBox>
+            ) : (
+              <p className="py-16 text-center text-sm text-muted-foreground">No abilities match.</p>
+            )
           ) : (
             presentTiers.map((t) => (
               <section key={t} className="mb-8">
-                <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: tierColor(t) }} />
-                  {TIER_LABELS[t]}{" "}
-                  <span className="text-muted-foreground/60">({byTier.get(t)?.length ?? 0})</span>
-                </h2>
+                {isManga ? (
+                  <h2 className="mb-4 flex items-center justify-between gap-2 border-b-[3px] border-foreground pb-2">
+                    <span className="flex items-center gap-2 font-display text-2xl uppercase tracking-wider">
+                      <HankoStamp kanji={t.slice(0, 3).toUpperCase()} tilt={-2} />
+                      <span>{TIER_LABELS[t]}</span>
+                    </span>
+                    <span className="border border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-background">
+                      {byTier.get(t)?.length ?? 0} ENTRIES
+                    </span>
+                  </h2>
+                ) : (
+                  <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: tierColor(t) }}
+                    />
+                    {TIER_LABELS[t]}{" "}
+                    <span className="text-muted-foreground/60">({byTier.get(t)?.length ?? 0})</span>
+                  </h2>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {(byTier.get(t) ?? []).map((d) => (
                     <AbilityCard
@@ -419,22 +512,40 @@ function AbilityCard({
   onDeleteCustom: () => void;
   onEdit: () => void;
 }) {
-  const nexus = useUiStyle() === "nexus";
+  const isManga = useIsManga();
+  const uiStyle = useUiStyle();
+  const nexus = !isManga && uiStyle === "nexus";
   const Icon = def.icon;
   const holdersMasked = useSpoilerMask("abilities");
   return (
     <div
-      className="glass rounded-2xl p-4 transition-shadow"
-      style={{ boxShadow: `0 0 12px ${def.color}22, inset 0 0 0 1px ${def.color}33` }}
+      className={
+        isManga
+          ? "manga-panel manga-panel-hover border-[3px] border-foreground bg-card p-4 transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
+          : "glass rounded-2xl p-4 transition-shadow"
+      }
+      style={
+        isManga
+          ? undefined
+          : { boxShadow: `0 0 12px ${def.color}22, inset 0 0 0 1px ${def.color}33` }
+      }
     >
       <button onClick={onToggle} className="flex w-full items-start gap-3 text-left">
         <span
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-          style={{
-            background: `${def.color}1f`,
-            color: def.color,
-            boxShadow: `0 0 10px ${def.color}44`,
-          }}
+          className={
+            isManga
+              ? "grid h-10 w-10 shrink-0 place-items-center border-2 border-foreground bg-foreground text-background"
+              : "grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+          }
+          style={
+            isManga
+              ? undefined
+              : {
+                  background: `${def.color}1f`,
+                  color: def.color,
+                  boxShadow: `0 0 10px ${def.color}44`,
+                }
+          }
         >
           {nexus ? (
             <NexusAbilitySymbol name={def.key} className="h-10 w-10" />
@@ -444,13 +555,26 @@ function AbilityCard({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
-            <span className="truncate font-medium">{def.label}</span>
+            <span
+              className={
+                isManga
+                  ? "truncate font-display text-xl uppercase tracking-wide"
+                  : "truncate font-medium"
+              }
+            >
+              {def.label}
+            </span>
             <ChevronDown
               className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
             />
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-            <span style={{ color: def.color }}>{def.tier}</span>
+            <span
+              style={isManga ? undefined : { color: def.color }}
+              className={isManga ? "font-bold text-[#b91c1c] dark:text-[#fca5a5]" : undefined}
+            >
+              {def.tier}
+            </span>
             <span>·</span>
             <span>{ABILITY_GROUP_LABELS[def.group]}</span>
             <span>·</span>
@@ -479,7 +603,11 @@ function AbilityCard({
                   key={e.id}
                   to="/reader"
                   search={{ e: e.id }}
-                  className="rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs hover:border-accent hover:text-accent"
+                  className={
+                    isManga
+                      ? "border-2 border-foreground bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-foreground hover:text-background"
+                      : "rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs hover:border-accent hover:text-accent"
+                  }
                 >
                   {e.name}
                 </Link>

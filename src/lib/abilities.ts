@@ -52,6 +52,7 @@ export interface AbilityDef {
   color: string;
   icon: LucideIcon;
   description?: string;
+  custom?: boolean;
 }
 
 const BEAST = "#f97316";

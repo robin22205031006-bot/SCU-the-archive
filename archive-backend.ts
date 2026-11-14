@@ -8,7 +8,12 @@ export const ARCHIVE_BACKEND = {
 export function resolveArchiveBackend(env: Record<string, string | undefined>) {
   const url = env["VITE_SUPABASE_URL"];
   // Imported configuration belongs to a different archive. Never ship it again.
-  if (!url || url.includes("placeholder") || url.includes("2c3743b4-a0ff-4079-b412-eba03e4ddcc7") || url.includes("raplydgyiqrxoyxzdpbr")) {
+  if (
+    !url ||
+    url.includes("placeholder") ||
+    url.includes("2c3743b4-a0ff-4079-b412-eba03e4ddcc7") ||
+    url.includes("raplydgyiqrxoyxzdpbr")
+  ) {
     return ARCHIVE_BACKEND;
   }
   return {

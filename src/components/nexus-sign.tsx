@@ -26,6 +26,10 @@ export function NexusSign({
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(([entry]) =>
       setVisible(entry?.isIntersecting ?? false),
     );

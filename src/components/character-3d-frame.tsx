@@ -10,7 +10,7 @@ import { GlbModelViewer } from "@/components/glb-model-viewer";
 export interface Character3dFrameProps {
   entity: Entity;
   fallback: ReactNode;
-  accentColor?: string;
+  accentColor?: string | undefined;
   className?: string;
   compact?: boolean;
 }
