@@ -37,7 +37,7 @@ import { EntityLinks } from "@/components/entity-links";
 import { CharacterRelationships, OrgHierarchy } from "@/components/lineage-panel";
 import { SeriesAppearances } from "@/components/series-appearances";
 import { SketchGallery } from "@/components/sketch-gallery";
-import { GlbModelViewer } from "@/components/glb-model-viewer";
+import { GlbModelViewer } from "@/components/lazy-three";
 import { CompareSentinel } from "@/components/compare-sentinel";
 import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
 import { isFavorite, toggleFavorite, onFavoritesChange } from "@/lib/favorites";

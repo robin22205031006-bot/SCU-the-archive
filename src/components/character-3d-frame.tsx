@@ -5,7 +5,7 @@ import { readCharacter3dAvatars } from "@/lib/models-3d";
 import { useUiStyle } from "@/lib/ui-style";
 import { useUiToggles } from "@/lib/ui-toggles";
 import { useOptionalUIState } from "@/context/UIStateContext";
-import { GlbModelViewer } from "@/components/glb-model-viewer";
+import { GlbModelViewer } from "@/components/lazy-three";
 
 export interface Character3dFrameProps {
   entity: Entity;

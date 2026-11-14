@@ -7,7 +7,7 @@ import type { UiStyle } from "@/lib/ui-style";
 import { artFor, artUrl, type ArsenalForm, type ArsenalArt } from "@/lib/arsenal-art";
 import { ArsenalFx } from "@/components/arsenal-fx";
 import { ArsenalEmblem } from "@/components/arsenal-emblem";
-import { GlbModelViewer } from "@/components/glb-model-viewer";
+import { GlbModelViewer } from "@/components/lazy-three";
 import { useIsManga } from "@/hooks/use-ui-mode";
 
 type Artifact = Tables<"artifacts">;

@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import type { Tables } from "@/integrations/supabase/types";
 import { artFor, artUrl, type ArsenalArt, type ArsenalForm } from "@/lib/arsenal-art";
 import { ArsenalEmblem } from "@/components/arsenal-emblem";
-import { ArsenalThreeStage } from "@/components/arsenal-three-stage";
+import { ArsenalThreeStage } from "@/components/lazy-three";
 import { sfx } from "@/lib/scu-audio";
 import { useIsManga } from "@/hooks/use-ui-mode";
 

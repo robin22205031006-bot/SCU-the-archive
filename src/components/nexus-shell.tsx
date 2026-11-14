@@ -11,7 +11,7 @@ import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { ThemeDrawer } from "@/components/theme-drawer";
 import { NexusSectionRail } from "@/components/nexus-section-rail";
-import { NexusFxLayer } from "@/components/nexus-fx";
+import { NexusFxLayer } from "@/components/lazy-three";
 import { useNexusTheme, useNexus3dFxEnabled } from "@/hooks/use-nexus-theme";
 import { NexusNavGlyph } from "@/components/nexus-nav-glyph";
 import { useNavMode } from "@/lib/nav-mode";
