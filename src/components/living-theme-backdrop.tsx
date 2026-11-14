@@ -256,6 +256,13 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
     rightVineMesh.position.set(0.82, 0, -0.1);
     scene.add(rightVineMesh);
 
+    const topCanopyGeo = new THREE.PlaneGeometry(2.2, 0.38, 32, 8);
+    const topCanopyMesh = new THREE.Mesh(topCanopyGeo, foliageMat);
+    topCanopyMesh.rotation.z = -Math.PI / 2;
+    topCanopyMesh.scale.set(0.36, 5.8, 1);
+    topCanopyMesh.position.set(0, 0.86, -0.12);
+    scene.add(topCanopyMesh);
+
     // 3. Drifting Fireflies / Botanical Dust Motes
     const moteCount = isSoftwareGl ? 18 : 44;
     const motePositions = new Float32Array(moteCount * 3);
@@ -441,6 +448,7 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
       waterMat.dispose();
       leftVineGeo.dispose();
       rightVineGeo.dispose();
+      topCanopyGeo.dispose();
       foliageMat.dispose();
       moteGeo.dispose();
       moteMat.dispose();

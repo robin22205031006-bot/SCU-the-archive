@@ -28,6 +28,8 @@ import {
   Swords,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
 import { useScuMute } from "@/hooks/use-scu-audio";
 import { setAnimationsEnabled, useAnimationsEnabled } from "@/lib/animations";
@@ -106,6 +108,7 @@ export function SiteNav() {
   const { muted, toggleMute } = useScuMute();
   const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback();
   const animOn = useAnimationsEnabled();
+  const { motionActive, spec } = useAppMotion();
   const [ambient, setAmbient] = useState(false);
   const [hideSpoilers, setHideSpoilers] = useState(spoilersHidden);
   useEffect(() => onSpoilerChange(() => setHideSpoilers(spoilersHidden())), []);
@@ -225,14 +228,19 @@ export function SiteNav() {
   }
 
   return (
-    <nav
-      className={`fixed inset-x-0 top-3 z-40 flex flex-col items-center gap-1.5 px-2 transition-all duration-300 ease-in-out ${autoHidden || hudMode ? "pointer-events-none -translate-y-[120%] opacity-0" : "translate-y-0 opacity-100"}`}
+    <motion.nav
+      initial={motionActive ? { opacity: 0, y: -10 } : false}
+      animate={{ opacity: autoHidden || hudMode ? 0 : 1, y: autoHidden || hudMode ? -56 : 0 }}
+      transition={motionActive ? spec.transition : { duration: 0 }}
+      className={`fixed inset-x-0 top-3 z-40 flex flex-col items-center gap-1.5 px-2 ${autoHidden || hudMode ? "pointer-events-none" : ""}`}
       aria-hidden={autoHidden || hudMode ? true : undefined}
     >
       <div className="glass glow-ring flex w-full max-w-full md:w-auto items-center gap-0.5 rounded-full px-1.5 py-1.5">
         <div className="relative flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none]">
           <span
-            className="absolute inset-y-0 left-0 rounded-full bg-secondary transition-[transform,opacity,width] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] will-change-transform"
+            className={`absolute inset-y-0 left-0 rounded-full bg-secondary will-change-transform ${
+              motionActive ? "transition-[transform,opacity,width] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]" : ""
+            }`}
             style={{
               transform: `translateX(${pill.left}px)`,
               width: pill.width,
@@ -255,9 +263,16 @@ export function SiteNav() {
               >
                 <Icon className={`h-3.5 w-3.5 ${on ? "text-accent" : ""}`} />
                 <span className={on ? "" : "hidden md:inline"}>{t.label}</span>
-                {on && (
-                  <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent glow-ring" />
-                )}
+                {on &&
+                  (motionActive ? (
+                    <motion.span
+                      layoutId="site-nav-active-dot"
+                      transition={spec.tabIndicatorTransition}
+                      className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent glow-ring"
+                    />
+                  ) : (
+                    <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent glow-ring" />
+                  ))}
               </Link>
             );
           })}

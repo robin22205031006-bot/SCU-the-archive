@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Context,
   type ReactNode,
@@ -314,7 +315,10 @@ export function ThemeProvider({
   const primarySystem: PrimarySystem = initialSystem ?? uiModeCtx?.mode ?? fallbackSystem;
 
   // Keep sub-theme synced when external GenreTheme changes (e.g. quick ribbon / ThemeDrawer)
+  const prevStoredGenreRef = useRef(storedGenre);
   useEffect(() => {
+    if (prevStoredGenreRef.current === storedGenre) return;
+    prevStoredGenreRef.current = storedGenre;
     if (storedGenre === "none") return;
     setMangaSubThemeState((prev) => {
       // Preserve explicit "manhwa" when its backing genre ("cyber-anime") is unchanged

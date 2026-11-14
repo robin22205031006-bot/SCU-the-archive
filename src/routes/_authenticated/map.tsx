@@ -9,6 +9,7 @@ import { NexusAtlas } from "@/components/nexus-atlas";
 import { useIsManga, useActiveGenre } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 import { GenreDiamondMediaFrame } from "@/components/genre-decorations";
+import { FantasyMapSpread } from "@/components/fantasy-map-spread";
 
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
@@ -36,6 +37,7 @@ function MapPage() {
   const activeGenre = useActiveGenre();
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
+  const isFantasy = isManga && activeGenre === "fantasy";
   const sectionStyle = useSectionStyle("timeline");
   return (
     <main
@@ -83,6 +85,8 @@ function MapPage() {
             },
           ]}
         />
+      ) : isFantasy ? (
+        <FantasyMapSpread />
       ) : isManga ? (
         <div className="grid gap-8">
           <GenreDiamondMediaFrame

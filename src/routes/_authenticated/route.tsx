@@ -10,6 +10,17 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | "__timeout__
   ]);
 }
 
+import { useAppMotion } from "@/hooks/use-app-motion";
+
+function AuthenticatedLayout() {
+  const { motionActive } = useAppMotion();
+  return (
+    <div className={motionActive ? "morph-in" : undefined}>
+      <Outlet />
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
@@ -34,9 +45,5 @@ export const Route = createFileRoute("/_authenticated")({
       throw redirect({ to: "/auth", search: { banned: "1" } });
     }
   },
-  component: () => (
-    <div className="morph-in">
-      <Outlet />
-    </div>
-  ),
+  component: AuthenticatedLayout,
 });

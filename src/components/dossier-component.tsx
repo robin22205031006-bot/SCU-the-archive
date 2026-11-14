@@ -3,6 +3,11 @@ import { useActiveGenre } from "@/hooks/use-ui-mode";
 import { getGenreThemeMeta, normalizeGenreThemeId, type GenreThemeId } from "@/lib/genre-themes";
 import { MANGA_SCALE } from "@/lib/manga-scale";
 import { GenreCardFrame, GenreDivider } from "@/components/genre-decorations";
+import {
+  AstralClockworkAstrolabe,
+  type AstrolabeAbilityNode,
+} from "@/components/astral-clockwork-astrolabe";
+import { FantasyFullDossier } from "@/components/fantasy-full-dossier";
 
 export type DossierTemplateId =
   | "scroll-parchment"
@@ -94,6 +99,7 @@ export interface DossierComponentProps {
   tabContentSlot?: ReactNode;
   standardTabBarSlot?: ReactNode;
   actionsSlot?: ReactNode;
+  abilities?: AstrolabeAbilityNode[];
   className?: string;
 }
 
@@ -128,6 +134,7 @@ export function DossierComponent({
   tabContentSlot,
   standardTabBarSlot,
   actionsSlot,
+  abilities,
   className = "",
 }: DossierComponentProps) {
   const activeGenre = useDocumentGenreTheme(theme);
@@ -141,126 +148,35 @@ export function DossierComponent({
     </div>
   );
 
-  // 1. FANTASY — 'scroll-parchment' (Arcane Botanical Fantasy Grimoire Showcase)
+  // 1. FANTASY — 'scroll-parchment' (Arcane Botanical Fantasy Full Dossier + Astrolabe Dial)
   if (template === "scroll-parchment") {
     return (
-      <div
-        data-dossier-template="scroll-parchment"
-        data-genre-theme={activeGenre}
-        className={`space-y-4 ${className}`}
-      >
-        <div className="flex flex-col items-center text-center">
-          <div className="relative mb-1.5 grid h-9 w-9 place-items-center">
-            <span className="absolute inset-0 rotate-45 border border-[#c5a869] bg-[#15221b] shadow-[0_0_14px_rgba(92,225,184,0.38)]" />
-            <span className="relative font-display text-xs font-bold text-[#5ce1b8]">✦</span>
-          </div>
-          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.34em] text-[#c5a869]">
-            ◄ BOTANICAL GRIMOIRE · {seriesTitle} ►
-          </p>
-        </div>
-
-        <section
-          className={`manga-panel ${MANGA_SCALE.banner} relative overflow-hidden rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6]`}
-        >
-          <GenreCardFrame theme={activeGenre} />
-          <div className="relative grid items-center gap-5 lg:grid-cols-[210px_minmax(0,1fr)_270px]">
-            <div
-              role="tablist"
-              aria-label="Dossier tabs"
-              className="flex flex-col gap-2 border-[#c5a869]/35 lg:border-r lg:pr-4"
-            >
-              {tabs.map((t, idx) => {
-                const active = activeTab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={(ev) => onSelectTab?.(t.id, ev)}
-                    className={`group flex items-center gap-3 rounded border px-2.5 py-2 text-left transition ${
-                      active
-                        ? "fantasy-discover-btn border-[#5ce1b8] text-[#f5ebe6]"
-                        : "border-[#c5a869]/35 bg-[#111915]/80 text-[#e6dcc5]/80 hover:border-[#c5a869] hover:text-[#f5ebe6]"
-                    }`}
-                  >
-                    <span
-                      className={`grid h-7 w-7 shrink-0 rotate-45 place-items-center border text-[10px] font-bold transition ${
-                        active
-                          ? "border-[#5ce1b8] bg-[#15221b] text-[#5ce1b8]"
-                          : "border-[#c5a869]/60 bg-[#1a241e] text-[#c5a869]"
-                      }`}
-                    >
-                      <span className="-rotate-45 font-mono">0{idx + 1}</span>
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-display text-xs font-bold uppercase tracking-wider">
-                        {t.short}
-                      </span>
-                      <span className="block font-mono text-[9px] opacity-80">{t.jp}</span>
-                    </span>
-                  </button>
-                );
-              })}
-              {seasonSlot}
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center py-2 text-center">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-4 rounded-full bg-[radial-gradient(circle,rgba(92,225,184,0.2)_0%,transparent_68%)]"
-              />
-              {badgesSlot && (
-                <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5">
-                  {badgesSlot}
-                </div>
-              )}
-              <div className="relative w-full max-w-[280px]">{fallbackPortrait}</div>
-            </div>
-
-            <div className="parchment-dot-grid flex flex-col gap-3 rounded border border-[#c5a869]/80 p-3 text-[#15221b] shadow-inner">
-              <div className="text-center lg:text-left">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-[#2e5a52]">
-                  {resolvedKicker}
-                </p>
-                <h1
-                  className={`manga-display-title ${MANGA_SCALE.heroTitle} mt-0.5 uppercase text-[#15221b]`}
-                >
-                  {name}
-                </h1>
-                <div className="mt-1.5 flex items-center justify-center gap-1.5 lg:justify-start">
-                  <span className="font-mono text-[9px] font-bold uppercase text-[#2e5a52]">
-                    RANK:
-                  </span>
-                  {[1, 2, 3, 4].map((pip) => (
-                    <span
-                      key={pip}
-                      className={`h-2 w-2 rotate-45 border ${
-                        pip <= tierPipCount
-                          ? "border-[#2e5a52] bg-[#5ce1b8] shadow-[0_0_6px_rgba(92,225,184,0.65)]"
-                          : "border-[#2e5a52]/40 bg-transparent"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-              {abilityMedallionsLeftSlot}
-              {radarSlot}
-            </div>
-          </div>
-          <GenreDivider theme={activeGenre} label={meta.jpLabel} />
-          <div className="parchment-dot-grid rounded border border-[#c5a869]/70 p-2 text-[#15221b]">
-            {profileSlot}
-          </div>
-        </section>
-
-        {(tabContentSlot || combatMatrixSlot) && (
-          <div className="grid gap-4 lg:grid-cols-[1fr_290px]">
-            <div className="flex flex-col gap-4">{tabContentSlot}</div>
-            <div className="flex flex-col gap-4">{combatMatrixSlot}</div>
-          </div>
-        )}
-      </div>
+      <FantasyFullDossier
+        activeGenre={activeGenre}
+        name={name}
+        resolvedKicker={resolvedKicker}
+        metaJpLabel={meta.jpLabel}
+        status={status}
+        roleLabel={roleLabel}
+        seriesTitle={seriesTitle}
+        tierPipCount={tierPipCount}
+        tabs={tabs}
+        activeTab={activeTab}
+        onSelectTab={onSelectTab}
+        portraitSlot={portraitSlot}
+        badgesSlot={badgesSlot}
+        stampSlot={stampSlot}
+        profileSlot={profileSlot}
+        seasonSlot={seasonSlot}
+        radarSlot={radarSlot}
+        combatMatrixSlot={combatMatrixSlot}
+        abilityMedallionsLeftSlot={abilityMedallionsLeftSlot}
+        abilityMedallionsRightSlot={abilityMedallionsRightSlot}
+        tabContentSlot={tabContentSlot}
+        actionsSlot={actionsSlot}
+        abilities={abilities}
+        className={className}
+      />
     );
   }
 
@@ -309,7 +225,7 @@ export function DossierComponent({
     );
   }
 
-  // 3. ISEKAI — 'astrolabe-relic' (Sunburst Guild Ribbon + Compass Arc Tab Dial)
+  // 3. ISEKAI — 'astrolabe-relic' (Sunburst Guild Ribbon + Astral Clockwork Astrolabe HUD)
   if (template === "astrolabe-relic") {
     return (
       <div
@@ -331,71 +247,36 @@ export function DossierComponent({
           className={`manga-panel ${MANGA_SCALE.banner} relative rounded-md border-2 border-border`}
         >
           <GenreCardFrame theme={activeGenre} />
-          <div className="relative grid items-center gap-5 lg:grid-cols-[275px_minmax(0,1fr)_215px]">
-            <div className="relative flex flex-col items-center">
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute left-2 top-1 font-display text-3xl font-bold tracking-widest text-foreground/15"
-              >
-                IX
-              </span>
-              <div className="relative w-full max-w-[235px]">{fallbackPortrait}</div>
+          <div className="relative space-y-4">
+            <AstralClockworkAstrolabe
+              name={name}
+              subtitle={resolvedKicker}
+              seriesTitle={seriesTitle}
+              status={status}
+              tabs={tabs}
+              activeTab={activeTab}
+              onSelectTab={onSelectTab}
+              portraitSlot={portraitSlot}
+              badgesSlot={badgesSlot}
+              abilities={abilities}
+              variant="isekai"
+            />
+
+            <div className="grid gap-4 lg:grid-cols-[275px_minmax(0,1fr)]">
               {abilityMedallionsLeftSlot && (
-                <div className="mt-3 w-full border-t border-border/30 pt-2.5">
+                <div className="rounded-md border border-border/50 bg-background/60 p-3">
                   <p className="mb-2 text-center font-mono text-[8px] font-bold uppercase tracking-[0.26em] text-muted-foreground">
                     ORBITAL SKILL SOCKETS
                   </p>
                   {abilityMedallionsLeftSlot}
                 </div>
               )}
-            </div>
 
-            <div className="min-w-0">
-              {badgesSlot && (
-                <div className="mb-2 flex flex-wrap items-center gap-1.5">{badgesSlot}</div>
-              )}
-              {profileSlot}
-              {statBarsSlot}
-              {seasonSlot}
-            </div>
-
-            <div
-              role="tablist"
-              aria-label="Dossier tabs"
-              className="relative flex flex-col justify-center gap-2 border-l-2 border-dashed border-[var(--genre-gold,#e09f3e)]/45 pl-4"
-            >
-              <span className="font-mono text-[8px] font-bold uppercase tracking-[0.26em] text-muted-foreground">
-                COMPASS DIAL
-              </span>
-              {tabs.map((t, idx) => {
-                const active = activeTab === t.id;
-                const arcIndent = idx === 1 || idx === 2 ? "lg:translate-x-2" : "";
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={(ev) => onSelectTab?.(t.id, ev)}
-                    className={`relative flex items-center gap-2.5 rounded-r-md border px-2.5 py-1.5 text-left transition ${arcIndent} ${
-                      active
-                        ? "border-[var(--genre-gold,#e09f3e)] bg-primary/20 text-foreground shadow-[0_0_14px_color-mix(in_oklab,var(--accent)_28%,transparent)]"
-                        : "border-border/45 bg-background/60 text-muted-foreground hover:border-[var(--genre-gold,#e09f3e)]/70 hover:text-foreground"
-                    }`}
-                  >
-                    <span
-                      className={`h-2.5 w-2.5 rotate-45 border ${
-                        active
-                          ? "border-[var(--genre-gold,#e09f3e)] bg-[var(--genre-gold,#e09f3e)] shadow-[0_0_8px_var(--genre-gold,#e09f3e)]"
-                          : "border-border/60 bg-background"
-                      }`}
-                    />
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
-                      0{idx + 1}. {t.short}
-                    </span>
-                  </button>
-                );
-              })}
+              <div className={`min-w-0 ${abilityMedallionsLeftSlot ? "" : "lg:col-span-2"}`}>
+                {profileSlot}
+                {statBarsSlot}
+                {seasonSlot}
+              </div>
             </div>
           </div>
         </section>

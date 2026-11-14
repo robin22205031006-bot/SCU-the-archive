@@ -1,8 +1,10 @@
-import { useId, type ComponentType, type ReactNode } from "react";
+import { useId, useState, type ComponentType, type ReactNode } from "react";
 import type { GenreThemeId } from "@/lib/genre-themes";
 import { MANGA_SCALE } from "@/lib/manga-scale";
 import { COMBAT_STATS, type CombatStats } from "@/lib/combat-stats";
 import { useAnimationsEnabled } from "@/lib/animations";
+import { PortraitSvgFallback } from "@/components/astral-clockwork-astrolabe";
+import { BotanicalCanopyOverlay } from "@/components/botanical-foliage-canopy";
 
 /* ───────────────────────────────────────────────────────────────────────────
    1. Card Corner Filigree & Border Decorations (Inspired by Fantasy / Xianxia / Anime UI)
@@ -345,45 +347,13 @@ export function GenreCardFrame({
         data-genre-decoration="fantasy"
         className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] ${className}`}
       >
-        <div className="absolute inset-x-0 top-0 h-[40%] bg-gradient-to-b from-[#5ce1b8]/10 via-[#c5a869]/10 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-[#5ce1b8]/12 via-[#c5a869]/10 to-transparent" />
         {/* Double-lined antique brass borders */}
         <div className="absolute inset-[3px] rounded-[inherit] border border-[#c5a869]/75" />
         <div className="absolute inset-[7px] rounded-[inherit] border border-[#c5a869]/30" />
-        {/* Animated swaying ivy vines & pressed leaves (top-left & bottom-right) */}
-        <svg
-          viewBox="0 0 64 64"
-          className="ivy-sway absolute -left-0.5 -top-0.5 h-12 w-12 origin-top-left text-[#2e5a52] drop-shadow-[0_0_6px_rgba(92,225,184,0.35)]"
-          fill="none"
-        >
-          <path
-            d="M4 54 C6 34, 16 18, 46 6 C26 14, 14 26, 8 44"
-            stroke="#c5a869"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M14 24 C10 16, 14 10, 22 12 C20 18, 17 22, 14 24 Z"
-            fill="#5ce1b8"
-            fillOpacity="0.45"
-            stroke="#c5a869"
-            strokeWidth="0.9"
-          />
-          <path
-            d="M27 14 C25 8, 31 4, 37 7 C34 12, 30 14, 27 14 Z"
-            fill="#2e5a52"
-            fillOpacity="0.85"
-            stroke="#5ce1b8"
-            strokeWidth="0.8"
-          />
-          <path
-            d="M8 38 C3 34, 4 27, 11 28 C11 33, 10 36, 8 38 Z"
-            fill="#2e5a52"
-            fillOpacity="0.8"
-            stroke="#c5a869"
-            strokeWidth="0.8"
-          />
-          <circle cx="19" cy="18" r="1.4" fill="#5ce1b8" />
-        </svg>
+        {/* Overhanging botanical branch & articulated swaying hanging ivy tendrils */}
+        <BotanicalCanopyOverlay variant="card" />
+        {/* Bottom-right trailing ivy filigree */}
         <svg
           viewBox="0 0 64 64"
           className="ivy-sway-alt absolute -bottom-0.5 -right-0.5 h-12 w-12 origin-bottom-right rotate-180 text-[#2e5a52] drop-shadow-[0_0_6px_rgba(92,225,184,0.35)]"
@@ -744,24 +714,34 @@ export function GenrePortraitFrame({
 }) {
   const uid = useId().replace(/:/g, "");
   const isDossier = size === "dossier";
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showImg = Boolean(src && failedSrc !== src);
 
-  const imgContent = src ? (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-    />
-  ) : (
-    <div
-      className={`grid h-full w-full place-items-center font-display ${
-        isDossier ? "text-5xl" : "text-2xl"
-      }`}
-    >
-      {fallback}
-    </div>
-  );
+  const imgContent =
+    showImg && src ? (
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailedSrc(src)}
+        className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+      />
+    ) : theme === "fantasy" || theme === "isekai" ? (
+      <PortraitSvgFallback
+        name={alt || fallback}
+        variant={theme === "fantasy" ? "fantasy" : "isekai"}
+      />
+    ) : (
+      <div
+        data-portrait-fallback="monogram"
+        className={`grid h-full w-full place-items-center font-display ${
+          isDossier ? "text-5xl" : "text-2xl"
+        }`}
+      >
+        {fallback}
+      </div>
+    );
 
   // Xianxia: Quatrefoil scalloped bezel + radiating sun rays
   if (theme === "xianxia") {

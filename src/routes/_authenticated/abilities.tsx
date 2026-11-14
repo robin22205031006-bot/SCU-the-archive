@@ -44,9 +44,12 @@ import { useUiStyle } from "@/lib/ui-style";
 import type { Json } from "@/integrations/supabase/types";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
+import { useOptionalThemeContext } from "@/context/ThemeContext";
+import { useAnimationsEnabled } from "@/lib/animations";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
 import { GenreCardFrame } from "@/components/genre-decorations";
+import { IvyDecoration } from "@/components/manga/fantasy/IvyDecoration";
 
 const ALL_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
 const CUSTOM_SETTINGS_KEY = "ability_registry";
@@ -449,9 +452,10 @@ function AbilitiesHub() {
                   </h2>
                 )}
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {(byTier.get(t) ?? []).map((d) => (
+                  {(byTier.get(t) ?? []).map((d, idx) => (
                     <AbilityCard
                       key={d.key}
+                      index={idx}
                       def={d}
                       holders={holders.get(d.key) ?? []}
                       open={openKey === d.key}
@@ -495,6 +499,7 @@ function tierColor(t: AbilityTier): string {
 }
 
 function AbilityCard({
+  index = 0,
   def,
   holders,
   open,
@@ -504,6 +509,7 @@ function AbilityCard({
   onDeleteCustom,
   onEdit,
 }: {
+  index?: number;
   def: AbilityDef;
   holders: Entity[];
   open: boolean;
@@ -515,7 +521,14 @@ function AbilityCard({
 }) {
   const isManga = useIsManga();
   const activeGenre = useActiveGenre();
-  const isFantasy = isManga && activeGenre === "fantasy";
+  const themeCtx = useOptionalThemeContext();
+  const animEnabled = useAnimationsEnabled();
+  const isFantasy =
+    (themeCtx
+      ? themeCtx.primarySystem === "manga" && themeCtx.mangaSubTheme === "fantasy"
+      : false) ||
+    (isManga && activeGenre === "fantasy");
+  const motionActive = animEnabled && !themeCtx?.isMinimal;
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
   const Icon = def.icon;
@@ -524,18 +537,21 @@ function AbilityCard({
     <div
       className={
         isFantasy
-          ? "manga-panel manga-panel-hover card-idle-breath group relative rounded-lg border-2 border-[#c5a869] bg-[#15221b] p-3.5 text-[#f5ebe6] transition-all hover:border-[#5ce1b8] hover:shadow-[0_14px_32px_rgba(92,225,184,0.28)]"
+          ? `manga-panel manga-panel-hover ${motionActive ? "card-idle-breath" : ""} fantasy-mint-aura-hover hover:mint-emerald-aura focus-within:mint-emerald-aura group relative rounded-lg border-2 border-[#c5a869] bg-[#15221b] p-3.5 text-[#f5ebe6]`
           : isManga
             ? "manga-panel manga-panel-hover manga-card-scale relative border-2 border-border bg-card transition-transform hover:-translate-y-0.5"
             : "glass rounded-2xl p-4 transition-shadow"
       }
       style={
-        isManga
-          ? undefined
-          : { boxShadow: `0 0 12px ${def.color}22, inset 0 0 0 1px ${def.color}33` }
+        isFantasy && motionActive
+          ? { animationDelay: `${(index % 6) * 0.45}s` }
+          : isManga
+            ? undefined
+            : { boxShadow: `0 0 12px ${def.color}22, inset 0 0 0 1px ${def.color}33` }
       }
     >
       {isManga && <GenreCardFrame theme={activeGenre ?? "manga-ink"} compact />}
+      {isFantasy && <IvyDecoration variant="card" />}
       <button onClick={onToggle} className="relative flex w-full items-start gap-3 text-left">
         <span
           className={

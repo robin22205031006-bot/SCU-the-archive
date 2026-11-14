@@ -48,7 +48,7 @@ import { HankoStamp, MangaCategorySeal } from "@/components/manga-emblem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusTooltip } from "@/components/status-tooltip";
-import { useActiveGenre } from "@/hooks/use-ui-mode";
+import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
 import { getThemeMotionSpec } from "@/lib/motionVariants";
 import { useAnimationsEnabled } from "@/lib/animations";
@@ -62,6 +62,7 @@ import {
   GenrePortraitFrame,
 } from "@/components/genre-decorations";
 import { DossierComponent } from "@/components/dossier-component";
+import { IvyDecoration } from "@/components/manga/fantasy/IvyDecoration";
 import { useMangaSfx } from "@/hooks/use-manga-sfx";
 import { MANGA_SCALE } from "@/lib/manga-scale";
 
@@ -363,7 +364,10 @@ export function MangaEntitySpread({
     themeCtx?.mangaSubTheme ?? (activeGenre === "fantasy" ? "fantasy" : undefined),
   );
   const motionActive = animEnabled && !themeCtx?.isMinimal;
-  const isFantasy = activeGenre === "fantasy";
+  const isManga = useIsManga();
+  const isFantasy = themeCtx
+    ? themeCtx.primarySystem === "manga" && themeCtx.mangaSubTheme === "fantasy"
+    : isManga && activeGenre === "fantasy";
   const { triggerSfx, triggerInteractionSfx, bindInteractionSfx } = useMangaSfx();
   const { playTap, playSwitch } = useSensoryFeedback();
   const isChar = kind === "character";
@@ -497,6 +501,9 @@ export function MangaEntitySpread({
                 variants={motionSpec.cardVariants}
                 initial={false}
                 {...(motionActive ? { whileHover: "hover", whileTap: "tap" } : {})}
+                {...(isFantasy && motionActive
+                  ? { style: { animationDelay: `${(idx % 6) * 0.48}s` } }
+                  : {})}
                 onClick={(ev) => {
                   playTap();
                   triggerInteractionSfx("click", ev);
@@ -511,15 +518,16 @@ export function MangaEntitySpread({
                     onSelect(e);
                   }
                 }}
-                className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex cursor-pointer flex-col justify-between transition-shadow ${
+                className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex cursor-pointer flex-col justify-between ${
                   isFantasy
-                    ? `rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] hover:shadow-[0_14px_32px_rgba(92,225,184,0.28)] ${
+                    ? `rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] fantasy-mint-aura-hover hover:mint-emerald-aura focus-within:mint-emerald-aura ${
                         motionActive ? "card-idle-breath" : ""
                       }`
-                    : "border-2 border-border bg-card"
+                    : "border-2 border-border bg-card transition-shadow"
                 }`}
               >
                 <GenreCardFrame theme={activeGenre} compact />
+                {isFantasy && <IvyDecoration variant="card" />}
 
                 {/* Top Frame: Index + Status + Actions */}
                 <div
@@ -731,7 +739,11 @@ export function MangaCharacterSpread({
   const nav = useNavigate();
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
+  const isManga = useIsManga();
   const activeGenre = useActiveGenre() ?? "manga-ink";
+  const themeCtx = useOptionalThemeContext();
+  const animEnabled = useAnimationsEnabled();
+  const motionActive = animEnabled && !themeCtx?.isMinimal;
   const dossierLayout = resolveDossierLayout(activeGenre);
   const { triggerInteractionSfx } = useMangaSfx();
 
@@ -1042,24 +1054,52 @@ export function MangaCharacterSpread({
           {mergedAbilities.length === 0 ? (
             <MangaThoughtBox>No combat arts recorded yet.</MangaThoughtBox>
           ) : (
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {mergedAbilities.map((ab) => {
+            <div className="grid gap-3 sm:grid-cols-2">
+              {mergedAbilities.map((ab, idx) => {
                 const def = abilityDef(ab);
+                const isFantasyGenre = themeCtx
+                  ? themeCtx.primarySystem === "manga" && themeCtx.mangaSubTheme === "fantasy"
+                  : isManga && activeGenre === "fantasy";
                 return (
-                  <div key={ab} className="relative border border-border bg-background/80 p-2.5">
+                  <motion.div
+                    key={ab}
+                    {...(isFantasyGenre && motionActive
+                      ? { whileHover: { y: -3, scale: 1.01 } }
+                      : {})}
+                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                    {...(isFantasyGenre && motionActive
+                      ? { style: { animationDelay: `${(idx % 4) * 0.55}s` } }
+                      : {})}
+                    className={`relative overflow-hidden p-3 ${
+                      isFantasyGenre
+                        ? `${motionActive ? "card-idle-breath" : ""} rounded-lg border-2 border-[#c5a869]/85 bg-[#15221b] text-[#f5ebe6] shadow-[0_8px_22px_rgba(0,0,0,0.45),0_0_14px_rgba(92,225,184,0.16)] fantasy-mint-aura-hover hover:mint-emerald-aura focus-within:mint-emerald-aura`
+                        : "border border-border bg-background/80"
+                    }`}
+                  >
                     <GenreCardFrame theme={activeGenre} compact />
+                    {isFantasyGenre && <IvyDecoration variant="compact" />}
                     <div className="relative flex items-center justify-between gap-2">
                       <AbilityBadge name={ab} />
-                      <span className="font-mono text-[9px] font-bold uppercase text-muted-foreground">
+                      <span
+                        className={`font-mono text-[9px] font-bold uppercase ${
+                          isFantasyGenre ? "text-[#5ce1b8]" : "text-muted-foreground"
+                        }`}
+                      >
                         {def.tier}
                       </span>
                     </div>
                     {def.description && (
-                      <p className="relative mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                      <p
+                        className={`relative mt-2 rounded p-2 text-xs leading-relaxed ${
+                          isFantasyGenre
+                            ? "parchment-dot-grid border border-[#c5a869]/60 text-[#15221b]"
+                            : "text-muted-foreground"
+                        }`}
+                      >
                         {def.description}
                       </p>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -1425,6 +1465,10 @@ export function MangaCharacterSpread({
         standardTabBarSlot={renderStandardTabBar()}
         tabContentSlot={renderTabSpreadContent()}
         actionsSlot={renderActionButtons("manga-ink-btn rounded-sm")}
+        abilities={mergedAbilities.map((ab) => {
+          const def = abilityDef(ab);
+          return { name: ab, label: def.label, tier: def.tier };
+        })}
       />
 
       {e.kind === "character" && (

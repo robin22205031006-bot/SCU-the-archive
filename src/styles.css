@@ -166,6 +166,15 @@
     color-mix(in oklab, var(--accent) 70%, transparent);
 }
 
+@utility mint-emerald-aura {
+  border-color: #5ce1b8;
+  box-shadow:
+    inset 0 0 0 1px rgba(92, 225, 184, 0.58),
+    inset 0 0 26px rgba(92, 225, 184, 0.2),
+    0 18px 36px -12px rgba(0, 0, 0, 0.8),
+    0 0 26px rgba(92, 225, 184, 0.44);
+}
+
 @utility glow-text {
   text-shadow: 0 0 calc(18px * var(--glow-strength))
     color-mix(in oklab, var(--accent) 60%, transparent);
@@ -3576,16 +3585,23 @@ html[data-genre-theme="fantasy"] .manga-panel-hover,
 html[data-manga-subtheme="fantasy"] .manga-panel-hover {
   animation: cardIdleBreath 6s ease-in-out infinite alternate;
   will-change: transform;
+  transition:
+    transform 280ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 280ms ease,
+    box-shadow 280ms ease;
 }
 html[data-genre-theme="fantasy"] .manga-panel-hover:hover,
-html[data-manga-subtheme="fantasy"] .manga-panel-hover:hover {
-  transform: translateY(-4px) scale(1.01);
+html[data-genre-theme="fantasy"] .manga-panel-hover:focus-within,
+html[data-manga-subtheme="fantasy"] .manga-panel-hover:hover,
+html[data-manga-subtheme="fantasy"] .manga-panel-hover:focus-within {
+  animation: none;
+  transform: translate3d(0, -4px, 0) scale(1.01);
   border-color: #5ce1b8;
   box-shadow:
     inset 0 0 0 1px rgba(92, 225, 184, 0.55),
     inset 0 0 26px rgba(92, 225, 184, 0.18),
     0 18px 36px -12px rgba(0, 0, 0, 0.8),
-    0 0 24px rgba(92, 225, 184, 0.35);
+    0 0 26px rgba(92, 225, 184, 0.42);
 }
 
 /* 4. Isekai: Glossy translucent RPG System HUD crystal window (NOT matte) */
@@ -4772,35 +4788,152 @@ html[data-motion="off"] [data-genre-viz] {
 
 @keyframes ivySway {
   0% {
-    transform: rotate(-1.6deg) translate3d(0, 0, 0);
+    transform: rotate(-2.2deg) translate3d(0, 0, 0);
   }
   50% {
-    transform: rotate(1.4deg) translate3d(1.5px, -1.5px, 0);
+    transform: rotate(2.1deg) translate3d(2px, -1.5px, 0);
   }
   100% {
-    transform: rotate(-0.8deg) translate3d(-1px, 1px, 0);
+    transform: rotate(-1.4deg) translate3d(-1.5px, 1px, 0);
+  }
+}
+
+@keyframes branchWindSway {
+  0% {
+    transform: rotate(-1.3deg) translate3d(0, 0, 0);
+  }
+  45% {
+    transform: rotate(1.6deg) translate3d(3px, 1px, 0);
+  }
+  100% {
+    transform: rotate(-0.9deg) translate3d(-2px, -0.5px, 0);
+  }
+}
+
+@keyframes leafBreezeFlutter {
+  0% {
+    transform: rotate(-5deg) translate3d(0, 0, 0) scale(1);
+  }
+  35% {
+    transform: rotate(4deg) translate3d(1.5px, -1.5px, 0) scale(1.03);
+  }
+  70% {
+    transform: rotate(-3deg) translate3d(-1px, 1px, 0) scale(0.98);
+  }
+  100% {
+    transform: rotate(5deg) translate3d(1px, -0.5px, 0) scale(1);
+  }
+}
+
+@keyframes botanicalLeafDrift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0) rotate(0deg);
+  }
+  15% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(24px, 76px, 0) rotate(52deg);
   }
 }
 
 @keyframes cardIdleBreath {
   0% {
-    transform: translate3d(0, 0px, 0) rotate(0deg);
+    transform: translate3d(0px, 0px, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate3d(1px, -3px, 0) rotate(0.28deg);
+  }
+  66% {
+    transform: translate3d(-0.75px, -5px, 0) rotate(-0.22deg);
   }
   100% {
-    transform: translate3d(0, -4px, 0) rotate(0.2deg);
+    transform: translate3d(0.5px, -2px, 0) rotate(0.14deg);
   }
 }
 
 .ivy-sway {
   transform-origin: top left;
-  animation: ivySway 8s ease-in-out infinite alternate;
+  animation: ivySway 6.8s ease-in-out infinite alternate;
   will-change: transform;
 }
 
 .ivy-sway-alt {
   transform-origin: bottom right;
-  animation: ivySway 8s ease-in-out infinite alternate-reverse;
+  animation: ivySway 7.4s ease-in-out infinite alternate-reverse;
   will-change: transform;
+}
+
+.ivy-pendulum-slow {
+  transform-origin: top center;
+  animation: ivySway 6.2s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.ivy-pendulum-fast {
+  transform-origin: top center;
+  animation: ivySway 4.6s ease-in-out infinite alternate-reverse;
+  will-change: transform;
+}
+
+.botanical-branch-sway {
+  transform-origin: top left;
+  animation: branchWindSway 8.5s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.botanical-branch-sway-right {
+  transform-origin: top right;
+  animation: branchWindSway 9.2s ease-in-out infinite alternate-reverse;
+  will-change: transform;
+}
+
+.leaf-flutter {
+  transform-origin: center top;
+  animation: leafBreezeFlutter 3.6s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.leaf-drift {
+  animation: botanicalLeafDrift 9.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.card-idle-breath {
+  animation: cardIdleBreath 5.4s ease-in-out infinite alternate;
+  will-change: transform;
+  transition:
+    transform 300ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 280ms ease,
+    box-shadow 280ms ease;
+}
+
+.card-idle-breath:hover,
+.card-idle-breath:focus-within {
+  animation: none;
+}
+
+.fantasy-mint-aura-hover {
+  transition:
+    transform 300ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 280ms ease,
+    box-shadow 280ms ease;
+}
+
+.fantasy-mint-aura-hover:hover,
+.fantasy-mint-aura-hover:focus-within {
+  border-color: #5ce1b8;
+  box-shadow:
+    inset 0 0 0 1px rgba(92, 225, 184, 0.58),
+    inset 0 0 26px rgba(92, 225, 184, 0.2),
+    0 18px 36px -12px rgba(0, 0, 0, 0.8),
+    0 0 26px rgba(92, 225, 184, 0.44);
+  transform: translate3d(0, -4px, 0) scale(1.01);
 }
 
 .parchment-dot-grid {
@@ -4834,12 +4967,13 @@ html[data-motion="off"] [data-genre-viz] {
 }
 
 .fantasy-discover-btn {
-  background: linear-gradient(135deg, #16332d 0%, #2e5a52 50%, #16332d 100%);
+  background: linear-gradient(135deg, #123c42 0%, #1d758c 48%, #144d56 100%);
   border: 1.5px solid #c5a869;
   color: #f5ebe6;
   box-shadow:
-    inset 0 0 14px rgba(92, 225, 184, 0.4),
-    0 4px 14px -4px rgba(0, 0, 0, 0.65);
+    inset 0 0 16px rgba(92, 225, 184, 0.48),
+    0 6px 18px -4px rgba(0, 0, 0, 0.7),
+    0 0 18px rgba(92, 225, 184, 0.28);
   transition:
     transform 220ms cubic-bezier(0.25, 0.1, 0.25, 1),
     box-shadow 220ms cubic-bezier(0.25, 0.1, 0.25, 1),
@@ -4848,12 +4982,19 @@ html[data-motion="off"] [data-genre-viz] {
 .fantasy-discover-btn:hover {
   border-color: #5ce1b8;
   box-shadow:
-    inset 0 0 20px rgba(92, 225, 184, 0.65),
-    0 0 20px rgba(92, 225, 184, 0.35);
+    inset 0 0 24px rgba(92, 225, 184, 0.78),
+    0 0 24px rgba(92, 225, 184, 0.48);
   transform: translateY(-1px);
 }
 .fantasy-discover-btn:active {
   transform: scale(0.98);
+}
+
+.fantasy-emerald-orb {
+  background: radial-gradient(circle at 32% 28%, #9fffe0 0%, #5ce1b8 32%, #1d574b 72%, #11241d 100%);
+  box-shadow:
+    0 0 22px rgba(92, 225, 184, 0.52),
+    inset 0 0 12px rgba(255, 255, 255, 0.35);
 }
 
 .fantasy-diamond-viewport {
@@ -4862,6 +5003,46 @@ html[data-motion="off"] [data-genre-viz] {
 
 .fantasy-arch-viewport {
   clip-path: polygon(50% 0%, 84% 12%, 98% 36%, 98% 98%, 2% 98%, 2% 36%, 16% 12%);
+}
+
+@keyframes astrolabe-cw-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes astrolabe-ccw-spin {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.astrolabe-ring-cw {
+  animation: astrolabe-cw-spin 48s linear infinite;
+  will-change: transform;
+}
+
+.astrolabe-ring-ccw {
+  animation: astrolabe-ccw-spin 36s linear infinite;
+  will-change: transform;
+}
+
+html[data-motion="off"] .astrolabe-ring-cw,
+html[data-motion="off"] .astrolabe-ring-ccw {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .astrolabe-ring-cw,
+  .astrolabe-ring-ccw {
+    animation: none !important;
+  }
 }
 
 /* Hierarchical Manga Sub-Theme attribute bindings */
@@ -5110,10 +5291,24 @@ html[data-ambient-atmosphere="on"][data-lore-weather="rift"]
 html[data-motion="off"] [data-frame-vfx] *,
 html[data-motion="off"] .ivy-sway,
 html[data-motion="off"] .ivy-sway-alt,
+html[data-motion="off"] .ivy-pendulum-slow,
+html[data-motion="off"] .ivy-pendulum-fast,
+html[data-motion="off"] .botanical-branch-sway,
+html[data-motion="off"] .botanical-branch-sway-right,
+html[data-motion="off"] .leaf-flutter,
+html[data-motion="off"] .leaf-drift,
+html[data-motion="off"] .card-idle-breath,
 html[data-motion="off"] .manga-panel-hover,
 html[data-motion="off"] .glass::after,
 html[data-primary-system="minimal"] .ivy-sway,
 html[data-primary-system="minimal"] .ivy-sway-alt,
+html[data-primary-system="minimal"] .ivy-pendulum-slow,
+html[data-primary-system="minimal"] .ivy-pendulum-fast,
+html[data-primary-system="minimal"] .botanical-branch-sway,
+html[data-primary-system="minimal"] .botanical-branch-sway-right,
+html[data-primary-system="minimal"] .leaf-flutter,
+html[data-primary-system="minimal"] .leaf-drift,
+html[data-primary-system="minimal"] .card-idle-breath,
 html[data-primary-system="minimal"] .manga-panel-hover,
 html[data-primary-system="minimal"] .glass::after,
 [data-ui-mode="minimal"] .glass::after {
@@ -5124,6 +5319,13 @@ html[data-primary-system="minimal"] .glass::after,
   [data-frame-vfx] *,
   .ivy-sway,
   .ivy-sway-alt,
+  .ivy-pendulum-slow,
+  .ivy-pendulum-fast,
+  .botanical-branch-sway,
+  .botanical-branch-sway-right,
+  .leaf-flutter,
+  .leaf-drift,
+  .card-idle-breath,
   .manga-panel-hover,
   .glass::after {
     animation: none !important;

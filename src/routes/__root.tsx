@@ -3,6 +3,7 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  useLocation,
   useRouter,
   HeadContent,
   Scripts,
@@ -32,7 +33,8 @@ import { playWelcome } from "@/lib/scu-audio";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NexusShell } from "@/components/nexus-shell";
 import { MangaShell } from "@/components/manga-shell";
-import { MotionConfig } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { useAppMotion } from "@/hooks/use-app-motion";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -173,10 +175,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootContent({ offline }: { offline: boolean }) {
   const { mode } = useUiMode();
+  const { pathname } = useLocation();
+  const { isMinimal, motionActive, spec } = useAppMotion();
   return (
     <MotionConfig
-      reducedMotion={mode === "minimal" ? "always" : "user"}
-      {...(mode === "minimal" ? { transition: { duration: 0 } } : {})}
+      reducedMotion={isMinimal || !motionActive ? "always" : "user"}
+      transition={motionActive ? spec.transition : { duration: 0 }}
     >
       <div
         className={`relative min-h-screen ${
@@ -209,8 +213,27 @@ function RootContent({ offline }: { offline: boolean }) {
           <MangaShell>
             <Outlet />
           </MangaShell>
+        ) : isMinimal || !motionActive ? (
+          <div
+            key={pathname}
+            data-minimal-page={isMinimal ? pathname.slice(1) || "home" : undefined}
+          >
+            <Outlet />
+          </div>
         ) : (
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={pathname}
+              data-classic-page={pathname.slice(1) || "home"}
+              variants={spec.pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="relative"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         )}
       </div>
     </MotionConfig>
