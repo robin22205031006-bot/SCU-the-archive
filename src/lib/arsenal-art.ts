@@ -709,7 +709,7 @@ export function artUrl(key?: ArtKey) {
 
 import type { Tables } from "@/integrations/supabase/types";
 
-export const DEFAULT_ARTIFACTS: Tables<"artifacts">[] = [
+export const DEFAULT_ARTIFACTS: Tables<"artifacts">[] = ([
   {
     id: "art-kara-yazgi",
     name: "Kara Yazgi",
@@ -1247,4 +1247,4 @@ export const DEFAULT_ARTIFACTS: Tables<"artifacts">[] = [
     created_at: "2026-11-10T00:00:00Z",
     updated_at: "2026-11-10T00:00:00Z",
   },
-];
+] as Omit<Tables<"artifacts">, "model_3d_url">[]).map((a) => ({ ...a, model_3d_url: null }));
