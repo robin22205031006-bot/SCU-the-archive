@@ -8,6 +8,11 @@ import { Character3dFrame } from "@/components/character-3d-frame";
 import { AdminUiToggles } from "@/components/admin-ui-toggles";
 import { EntityDialog } from "@/components/entity-dialog";
 import { labelFromModelFilename, readCharacter3dAvatars, uploadModel3d } from "@/lib/models-3d";
+import {
+  createConfiguredGltfLoader,
+  createSafeWebGLRenderer,
+  normalizeThreeColor,
+} from "@/lib/three-stage-utils";
 import { setUiStyle } from "@/lib/ui-style";
 import type { Entity } from "@/lib/entities";
 import type { Tables } from "@/integrations/supabase/types";
@@ -420,5 +425,39 @@ describe("Character Edit Modal .glb multi-avatar upload", () => {
       "Awakened Form",
       "Overdrive",
     ]);
+  });
+});
+
+describe("3D viewer robustness & Three.js utility fixes", () => {
+  it("normalizes CSS Color 4 space-separated hsl() strings without falling back to white", () => {
+    const c = normalizeThreeColor("hsl(210 85% 60%)");
+    expect(c.r).toBeLessThan(0.2);
+    expect(c.b).toBeGreaterThan(0.7);
+  });
+
+  it("configures GLTFLoader with local /draco/ decoder, MeshoptDecoder, and anonymous CORS", () => {
+    const loader = createConfiguredGltfLoader();
+    expect(loader.crossOrigin).toBe("anonymous");
+    expect(loader.dracoLoader).not.toBeNull();
+  });
+
+  it("returns null safely from createSafeWebGLRenderer when WebGL context creation fails", () => {
+    expect(createSafeWebGLRenderer({ canvas: document.createElement("canvas") })).toBeNull();
+  });
+
+  it("does not apply backdrop-blur overlays over the active WebGL frame in Character3dFrame", () => {
+    setUiStyle("nexus");
+    const { container } = render(
+      withQueryClient(
+        <Character3dFrame
+          entity={sampleCharacter}
+          fallback={<img src={sampleCharacter.image_url!} alt="2D portrait" />}
+        />,
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^3D$/i }));
+    const frame = screen.getByTestId("character-3d-frame");
+    expect(frame.innerHTML).not.toMatch(/backdrop-blur/);
+    expect(container.querySelector('[data-testid="glb-model-viewer"]')).toBeInTheDocument();
   });
 });

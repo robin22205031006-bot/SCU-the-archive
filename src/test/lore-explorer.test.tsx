@@ -97,3 +97,85 @@ describe("LoreExplorer reactive section relocation", () => {
     expect(within(vanguardSection).getByText("Kael Varn")).toBeInTheDocument();
   });
 });
+
+describe("LoreExplorer bookmarking and personalized collection", () => {
+  afterEach(() => {
+    localStorage.clear();
+    cleanup();
+  });
+
+  const sampleItems: LoreItem[] = [
+    {
+      id: "char-ethan",
+      name: "Ethan Reed",
+      tier: "Mythic",
+      category: "Vanguard",
+      description: "Commander of the Vanguard division.",
+    },
+    {
+      id: "char-elizah",
+      name: "Elizah Vale",
+      tier: "Legendary",
+      category: "Sentinel",
+      description: "Master strategist and archivist.",
+    },
+  ];
+
+  it("saves and removes bookmarks, persists across reloads, and filters the personalized collection", () => {
+    const { unmount } = render(<LoreExplorer initialItems={sampleItems} />);
+
+    const collectionToggle = screen.getByRole("button", {
+      name: /view bookmarked collection \(0\)/i,
+    });
+    expect(collectionToggle).toHaveAttribute("aria-pressed", "false");
+
+    const bookmarkEthan = screen.getByRole("button", { name: "Bookmark Ethan Reed" });
+    fireEvent.click(bookmarkEthan);
+
+    expect(
+      screen.getByRole("button", { name: "Remove bookmark for Ethan Reed" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: /view bookmarked collection \(1\)/i }),
+    ).toBeInTheDocument();
+
+    // Unmount and remount to verify localStorage persistence
+    unmount();
+    render(<LoreExplorer initialItems={sampleItems} />);
+
+    const persistedToggle = screen.getByRole("button", {
+      name: /view bookmarked collection \(1\)/i,
+    });
+    fireEvent.click(persistedToggle);
+    expect(persistedToggle).toHaveAttribute("aria-pressed", "true");
+
+    expect(screen.getByRole("region", { name: "Personalized bookmark collection" })).toBeInTheDocument();
+    expect(screen.getByText("Ethan Reed")).toBeInTheDocument();
+    expect(screen.queryByText("Elizah Vale")).not.toBeInTheDocument();
+
+    // Updating a bookmarked item's tier keeps it synced inside the collection
+    fireEvent.change(screen.getByLabelText("Tier for Ethan Reed"), {
+      target: { value: "Ancient" },
+    });
+    expect(within(screen.getByRole("region", { name: "Ancient section" })).getByText("Ethan Reed")).toBeInTheDocument();
+
+    // Removing the bookmark removes it from the collection view
+    fireEvent.click(screen.getByRole("button", { name: "Remove bookmark for Ethan Reed" }));
+    expect(screen.queryByText("Ethan Reed")).not.toBeInTheDocument();
+    expect(screen.getByText(/Your personalized collection is empty/i)).toBeInTheDocument();
+  });
+
+  it("clears all saved bookmarks when Clear all is clicked", () => {
+    render(<LoreExplorer initialItems={sampleItems} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Bookmark Ethan Reed" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bookmark Elizah Vale" }));
+    fireEvent.click(screen.getByRole("button", { name: /view bookmarked collection \(2\)/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear all bookmarks" }));
+    expect(
+      screen.getByRole("button", { name: /view bookmarked collection \(0\)/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Your personalized collection is empty/i)).toBeInTheDocument();
+  });
+});

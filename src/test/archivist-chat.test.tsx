@@ -1,11 +1,20 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ArchivistChat } from "@/components/ArchivistChat";
+import { LoreChat } from "@/components/LoreChat";
 
 const mockAskLore = vi.fn();
 
 vi.mock("@/lib/ai-box.functions", () => ({
   askLore: (...args: unknown[]) => mockAskLore(...args),
+}));
+
+vi.mock("@tanstack/react-start", () => ({
+  useServerFn: (fn: unknown) => fn,
+}));
+
+vi.mock("@/hooks/use-ui-mode", () => ({
+  useIsManga: () => false,
 }));
 
 type MockRecognitionInstance = {
@@ -200,5 +209,74 @@ describe("ArchivistChat microphone speech-to-text", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/speech-to-text is not supported/i);
+  });
+
+  it("auto-submits finalized voice queries when Hands-free mode is enabled in ArchivistChat", async () => {
+    render(<ArchivistChat />);
+
+    const handsFreeBtn = screen.getByRole("button", { name: /toggle hands-free/i });
+    fireEvent.click(handsFreeBtn);
+    expect(handsFreeBtn).toHaveAttribute("aria-pressed", "true");
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /start voice input/i }));
+    });
+
+    await waitFor(() => expect(activeRecognition?.start).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      activeRecognition?.onresult?.({
+        resultIndex: 0,
+        results: {
+          0: { isFinal: true, length: 1, 0: { transcript: "Summarize the Diablo War" } },
+          length: 1,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockAskLore).toHaveBeenCalledWith({
+        data: {
+          messages: [{ role: "user", content: "Summarize the Diablo War" }],
+          model: "gemini-4-hydrogen",
+          role: "archivist",
+        },
+      });
+    });
+  });
+
+  it("supports voice-to-text dictation and hands-free auto-submit in LoreChat", async () => {
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+    render(<LoreChat />);
+
+    fireEvent.click(screen.getByRole("button", { name: /toggle hands-free/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /start voice input/i }));
+    });
+
+    await waitFor(() => expect(activeRecognition?.start).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("status")).toHaveTextContent(/listening/i);
+
+    await act(async () => {
+      activeRecognition?.onresult?.({
+        resultIndex: 0,
+        results: {
+          0: { isFinal: true, length: 1, 0: { transcript: "Who forged Kara Yazgi?" } },
+          length: 1,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockAskLore).toHaveBeenCalledWith({
+        data: {
+          messages: [{ role: "user", content: "Who forged Kara Yazgi?" }],
+          model: "gemini-4-hydrogen",
+          role: "archivist",
+        },
+      });
+    });
+
+    expect(await screen.findByText("Ethan leads the Vanguard.")).toBeInTheDocument();
   });
 });

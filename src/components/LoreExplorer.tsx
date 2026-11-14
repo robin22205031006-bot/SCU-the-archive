@@ -1,6 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Bookmark, Trash2 } from "lucide-react";
 import { scuCache } from "../services/scuCache";
 import { StatusTooltip } from "@/components/status-tooltip";
+import {
+  clearLoreBookmarkEntries,
+  readLoreBookmarks,
+  subscribeLoreBookmarks,
+  syncLoreBookmarkItem,
+  toggleLoreBookmarkEntry,
+  type LoreBookmarkEntry,
+} from "@/lib/lore-bookmarks";
 
 export interface LoreItem {
   id?: string;
@@ -124,6 +133,15 @@ export function LoreExplorer({
   const [loading, setLoading] = useState(!initialItems);
   const [activeSection, setActiveSection] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [bookmarks, setBookmarks] = useState<LoreBookmarkEntry[]>(() => readLoreBookmarks());
+  const [viewBookmarksOnly, setViewBookmarksOnly] = useState(false);
+
+  useEffect(() => {
+    setBookmarks(readLoreBookmarks());
+    return subscribeLoreBookmarks(() => {
+      setBookmarks(readLoreBookmarks());
+    });
+  }, []);
 
   useEffect(() => {
     if (initialItems) {
@@ -153,6 +171,28 @@ export function LoreExplorer({
     };
   }, [tab, initialItems]);
 
+  const bookmarkedKeySet = useMemo(() => new Set(bookmarks.map((b) => b.key)), [bookmarks]);
+
+  const liveItemByKey = useMemo(() => {
+    const map = new Map<string, LoreItem>();
+    items.forEach((item, idx) => {
+      map.set(getLoreItemKey(item, idx), item);
+    });
+    return map;
+  }, [items]);
+
+  const handleToggleBookmark = useCallback(
+    (itemKey: string, item: LoreItem) => {
+      const result = toggleLoreBookmarkEntry(itemKey, item, tab);
+      setBookmarks(result.entries);
+    },
+    [tab],
+  );
+
+  const handleClearBookmarks = useCallback(() => {
+    setBookmarks(clearLoreBookmarkEntries());
+  }, []);
+
   // Immutable property updater: updating tier/category replaces the item object
   // in the single-source-of-truth array so derived sections immediately re-render
   // and relocate the item to its new section.
@@ -164,7 +204,9 @@ export function LoreExplorer({
       };
 
       const targetIndex = items.findIndex((item, idx) => getLoreItemKey(item, idx) === itemKey);
-      const existingItem = targetIndex >= 0 ? items[targetIndex] : undefined;
+      const existingItem =
+        (targetIndex >= 0 ? items[targetIndex] : undefined) ??
+        bookmarks.find((b) => b.key === itemKey)?.item;
       const updatedSnapshot: LoreItem | undefined = existingItem
         ? { ...existingItem, ...normalizedPatch }
         : undefined;
@@ -183,6 +225,8 @@ export function LoreExplorer({
       writeLocalOverrides(overrides);
 
       if (updatedSnapshot) {
+        const synced = syncLoreBookmarkItem(itemKey, updatedSnapshot);
+        if (synced) setBookmarks(synced);
         if (activeSection !== "all") {
           const targetSection = resolveItemSection(updatedSnapshot, groupBy);
           if (targetSection !== activeSection) {
@@ -195,14 +239,26 @@ export function LoreExplorer({
         }
       }
     },
-    [items, activeSection, groupBy, onItemUpdate],
+    [items, bookmarks, activeSection, groupBy, onItemUpdate],
   );
 
-  // Derived section ordering and counts from the single-source-of-truth `items` array.
+  // Choose base dataset: full active tab items or the user's personalized bookmarked collection.
+  const sourceItems = useMemo(() => {
+    if (!viewBookmarksOnly) return items;
+    const overrides = readLocalOverrides();
+    return bookmarks.map((entry) => {
+      const live = liveItemByKey.get(entry.key);
+      if (live) return live;
+      const patch = overrides[entry.key];
+      return patch ? { ...entry.item, ...patch } : entry.item;
+    });
+  }, [viewBookmarksOnly, items, bookmarks, liveItemByKey]);
+
+  // Derived section ordering and counts from the active `sourceItems` array.
   const query = search.trim().toLowerCase();
   const filteredBySearch = useMemo(() => {
-    if (!query) return items;
-    return items.filter((item) => {
+    if (!query) return sourceItems;
+    return sourceItems.filter((item) => {
       const haystack = [
         item.name,
         item.event_name,
@@ -220,7 +276,7 @@ export function LoreExplorer({
         .toLowerCase();
       return haystack.includes(query);
     });
-  }, [items, query]);
+  }, [sourceItems, query]);
 
   const sectionsMap = useMemo(() => {
     const map = new Map<string, LoreItem[]>();
@@ -266,7 +322,28 @@ export function LoreExplorer({
           Sentinels Cinematic Universe
         </h1>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <button
+            type="button"
+            onClick={() => {
+              setViewBookmarksOnly((v) => !v);
+              setActiveSection("all");
+            }}
+            aria-pressed={viewBookmarksOnly}
+            aria-label={`View bookmarked collection (${bookmarks.length})`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded font-semibold uppercase transition-colors border ${
+              viewBookmarksOnly
+                ? "border-amber-400 bg-amber-500/20 text-amber-200"
+                : "border-gray-700 bg-gray-800 text-gray-200 hover:border-amber-400/60 hover:text-white"
+            }`}
+          >
+            <Bookmark
+              className={`h-3.5 w-3.5 ${viewBookmarksOnly ? "fill-amber-400 text-amber-300" : ""}`}
+              aria-hidden="true"
+            />
+            <span>Bookmarks ({bookmarks.length})</span>
+          </button>
+
           <span className="text-gray-400 uppercase tracking-wider">Group by:</span>
           {(["tier", "category"] as const).map((mode) => (
             <button
@@ -295,9 +372,14 @@ export function LoreExplorer({
             <button
               key={t}
               type="button"
-              onClick={() => setTab(t)}
+              onClick={() => {
+                setViewBookmarksOnly(false);
+                setTab(t);
+              }}
               className={`px-4 py-2 rounded uppercase font-semibold text-sm transition-colors ${
-                tab === t ? "bg-red-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                !viewBookmarksOnly && tab === t
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
               }`}
             >
               {t}
@@ -306,13 +388,54 @@ export function LoreExplorer({
         </div>
       )}
 
+      {viewBookmarksOnly && (
+        <section
+          aria-label="Personalized bookmark collection"
+          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-950/25 px-4 py-3 text-sm"
+        >
+          <div className="flex items-center gap-2">
+            <Bookmark className="h-4 w-4 fill-amber-400 text-amber-300" aria-hidden="true" />
+            <span className="font-semibold text-amber-200">
+              Personalized Lore Collection
+            </span>
+            <span className="text-xs text-amber-300/80">
+              ({bookmarks.length} {bookmarks.length === 1 ? "saved entry" : "saved entries"})
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            {bookmarks.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearBookmarks}
+                aria-label="Clear all bookmarks"
+                className="inline-flex items-center gap-1 rounded border border-red-500/40 bg-red-950/40 px-2.5 py-1 text-red-200 hover:bg-red-900/50"
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Clear all
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setViewBookmarksOnly(false)}
+              className="rounded border border-gray-700 bg-gray-800 px-2.5 py-1 text-gray-200 hover:bg-gray-700"
+            >
+              Browse all
+            </button>
+          </div>
+        </section>
+      )}
+
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
           type="search"
           aria-label="Search lore entries"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter entries by name, faction, tier…"
+          placeholder={
+            viewBookmarksOnly
+              ? "Filter your bookmarked entries…"
+              : "Filter entries by name, faction, tier…"
+          }
           className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500 w-full sm:w-64"
         />
 
@@ -349,10 +472,30 @@ export function LoreExplorer({
         </div>
       </div>
 
-      {loading ? (
+      {loading && !viewBookmarksOnly ? (
         <div className="text-gray-400 animate-pulse">Decrypting SCU Archives...</div>
       ) : visibleSectionNames.length === 0 ? (
-        <p className="text-gray-500">No records found in cache or database.</p>
+        viewBookmarksOnly ? (
+          <div className="rounded-lg border border-dashed border-gray-700 bg-gray-800/50 p-8 text-center">
+            <p className="text-sm text-gray-300">
+              {bookmarks.length === 0
+                ? "Your personalized collection is empty. Bookmark any lore card to save it here."
+                : "No bookmarked entries match your current search filter."}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setViewBookmarksOnly(false);
+              }}
+              className="mt-3 rounded bg-red-600 px-4 py-1.5 text-xs font-semibold uppercase text-white hover:bg-red-700"
+            >
+              Browse lore entries
+            </button>
+          </div>
+        ) : (
+          <p className="text-gray-500">No records found in cache or database.</p>
+        )
       ) : (
         <div className="space-y-8">
           {visibleSectionNames.map((sectionName) => {
@@ -374,8 +517,9 @@ export function LoreExplorer({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {sectionItems.map((item) => {
-                    const itemKey = getLoreItemKey(item, items.indexOf(item));
+                  {sectionItems.map((item, idx) => {
+                    const fallbackIdx = items.indexOf(item);
+                    const itemKey = getLoreItemKey(item, fallbackIdx >= 0 ? fallbackIdx : idx);
                     const displayName = item.name || item.event_name || item.title || "Unnamed";
                     const currentTier = resolveItemTier(item);
                     const currentCategory = resolveItemCategory(item);
@@ -383,6 +527,7 @@ export function LoreExplorer({
                     const categoryChoices = Array.from(
                       new Set([...LORE_CATEGORY_OPTIONS, currentCategory]),
                     );
+                    const isBookmarked = bookmarkedKeySet.has(itemKey);
 
                     return (
                       <article
@@ -393,11 +538,38 @@ export function LoreExplorer({
                         <div>
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h3 className="text-xl font-bold text-red-400">{displayName}</h3>
-                            <StatusTooltip label={currentTier}>
-                              <span className="bg-red-900/50 text-red-200 text-[11px] font-semibold uppercase px-2 py-0.5 rounded">
-                                {currentTier}
-                              </span>
-                            </StatusTooltip>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <StatusTooltip label={currentTier}>
+                                <span className="bg-red-900/50 text-red-200 text-[11px] font-semibold uppercase px-2 py-0.5 rounded">
+                                  {currentTier}
+                                </span>
+                              </StatusTooltip>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleBookmark(itemKey, item)}
+                                aria-pressed={isBookmarked}
+                                aria-label={
+                                  isBookmarked
+                                    ? `Remove bookmark for ${displayName}`
+                                    : `Bookmark ${displayName}`
+                                }
+                                title={
+                                  isBookmarked
+                                    ? "Remove from personalized collection"
+                                    : "Save to personalized collection"
+                                }
+                                className={`inline-flex items-center justify-center rounded border p-1 transition-colors ${
+                                  isBookmarked
+                                    ? "border-amber-400/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                                    : "border-gray-700 bg-gray-900/80 text-gray-400 hover:border-amber-400/50 hover:text-amber-200"
+                                }`}
+                              >
+                                <Bookmark
+                                  className={`h-3.5 w-3.5 ${isBookmarked ? "fill-amber-300" : ""}`}
+                                  aria-hidden="true"
+                                />
+                              </button>
+                            </div>
                           </div>
 
                           {(item.faction || item.category) && (

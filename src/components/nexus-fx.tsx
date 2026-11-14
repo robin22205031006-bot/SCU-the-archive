@@ -214,10 +214,14 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
   const [visible, setVisible] = useState(true);
   const [supported, setSupported] = useState(false);
   useEffect(() => {
-    const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl2");
-    setSupported(!!gl);
-    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl2");
+      setSupported(!!gl);
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      setSupported(false);
+    }
     const update = () => setVisible(!document.hidden);
     document.addEventListener("visibilitychange", update);
     return () => document.removeEventListener("visibilitychange", update);

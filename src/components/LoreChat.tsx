@@ -1,11 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bot, FileText, RotateCcw, Send, Sparkles } from "lucide-react";
+import {
+  Bot,
+  FileText,
+  Headphones,
+  Mic,
+  MicOff,
+  RotateCcw,
+  Send,
+  Sparkles,
+  Square,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { askLore } from "@/lib/ai-box.functions";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { HankoStamp } from "@/components/manga-emblem";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 type Msg = {
   role: "user" | "assistant";
@@ -40,48 +51,83 @@ export function LoreChat() {
   const [model, setModel] = useState<ModelOption>("gemini-4-hydrogen");
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [handsFree, setHandsFree] = useState(false);
   const end = useRef<HTMLDivElement>(null);
+
+  const msgsRef = useRef(msgs);
+  msgsRef.current = msgs;
+  const textRef = useRef(text);
+  textRef.current = text;
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  const modelRef = useRef(model);
+  modelRef.current = model;
+  const roleRef = useRef(role);
+  roleRef.current = role;
 
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs.length, busy]);
 
-  const send = async (overrideText?: string) => {
-    const q = (overrideText ?? text).trim();
-    if (!q || busy) return;
-    const next = [...msgs, { role: "user" as const, content: q }];
-    setMsgs(next);
-    if (!overrideText) setText("");
-    setErrorMsg(null);
-    setBusy(true);
-    try {
-      const r = await ask({
-        data: {
-          messages: next.slice(-20).map((m) => ({ role: m.role, content: m.content })),
-          model,
-          role,
-        },
-      });
-      setMsgs([
-        ...next,
-        {
-          role: "assistant",
-          content: r.reply,
-          sources: r.sources,
-          model: r.model,
-        },
-      ]);
-    } catch (err) {
-      const message =
-        err instanceof Error && err.message
-          ? err.message
-          : "The archive is unreachable right now. Please try again.";
-      setErrorMsg(message);
-      setMsgs([...next, { role: "assistant", content: message }]);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const send = useCallback(
+    async (overrideText?: string) => {
+      const q = (overrideText ?? textRef.current).trim();
+      if (!q || busyRef.current) return;
+      const next = [...msgsRef.current, { role: "user" as const, content: q }];
+      setMsgs(next);
+      setText("");
+      setErrorMsg(null);
+      setBusy(true);
+      busyRef.current = true;
+      try {
+        const r = await ask({
+          data: {
+            messages: next.slice(-20).map((m) => ({ role: m.role, content: m.content })),
+            model: modelRef.current,
+            role: roleRef.current,
+          },
+        });
+        setMsgs([
+          ...next,
+          {
+            role: "assistant",
+            content: r.reply,
+            sources: r.sources,
+            model: r.model,
+          },
+        ]);
+      } catch (err) {
+        const message =
+          err instanceof Error && err.message
+            ? err.message
+            : "The archive is unreachable right now. Please try again.";
+        setErrorMsg(message);
+        setMsgs([...next, { role: "assistant", content: message }]);
+      } finally {
+        busyRef.current = false;
+        setBusy(false);
+      }
+    },
+    [ask],
+  );
+
+  const {
+    isListening,
+    interimTranscript,
+    speechSupported,
+    micError,
+    setMicError,
+    stopListening,
+    toggleMicrophone,
+    syncBaseValue,
+    clearBuffers,
+  } = useVoiceInput({
+    value: text,
+    onChange: setText,
+    disabled: busy,
+    handsFree,
+    onHandsFreeSubmit: send,
+  });
 
   return (
     <main
@@ -284,24 +330,152 @@ export function LoreChat() {
         <div ref={end} />
       </div>
 
+      {isListening && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`mt-2 flex items-center justify-between gap-2 border px-3 py-1.5 text-xs ${
+            isManga
+              ? "border-2 border-foreground bg-card font-mono text-foreground"
+              : "rounded-xl border-accent/40 bg-accent/10 text-foreground"
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" aria-hidden="true" />
+            <span>
+              Listening…{" "}
+              {handsFree && <span className="font-semibold text-accent">[Hands-free] </span>}
+              {interimTranscript ? (
+                <span className="italic text-muted-foreground">{interimTranscript}</span>
+              ) : handsFree ? (
+                "Speak naturally — pauses submit automatically"
+              ) : (
+                "Speak your lore question"
+              )}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={stopListening}
+            className="text-accent underline hover:opacity-80"
+          >
+            Stop
+          </button>
+        </div>
+      )}
+
+      {micError && (
+        <div
+          role="alert"
+          className={`mt-2 flex items-center justify-between gap-2 border px-3 py-1.5 text-xs text-destructive ${
+            isManga
+              ? "border-2 border-[#b91c1c] bg-[#b91c1c]/10 font-mono"
+              : "rounded-xl border-destructive/40 bg-destructive/10"
+          }`}
+        >
+          <span>{micError}</span>
+          <button
+            type="button"
+            onClick={() => setMicError(null)}
+            className="underline hover:opacity-80"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <form
         className={
           isManga
-            ? "sticky bottom-2 mt-4 flex gap-2 border-[3px] border-foreground bg-card p-1.5 shadow-[4px_4px_0_var(--foreground)]"
-            : "glass sticky bottom-2 mt-4 flex gap-2 rounded-full p-1.5"
+            ? "sticky bottom-2 mt-4 flex items-center gap-2 border-[3px] border-foreground bg-card p-1.5 shadow-[4px_4px_0_var(--foreground)]"
+            : "glass sticky bottom-2 mt-4 flex items-center gap-2 rounded-full p-1.5"
         }
         onSubmit={(e) => {
           e.preventDefault();
+          if (isListening) stopListening();
+          clearBuffers();
           void send();
         }}
       >
         <Input
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Ask Gemini about the SCU archive…"
+          onChange={(e) => {
+            syncBaseValue(e.target.value);
+            setText(e.target.value);
+          }}
+          placeholder={
+            isListening
+              ? "Listening for speech..."
+              : "Ask Gemini about the SCU archive…"
+          }
           className="border-0 bg-transparent"
           maxLength={2000}
         />
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => setHandsFree((v) => !v)}
+          disabled={busy}
+          aria-pressed={handsFree}
+          aria-label="Toggle hands-free voice auto-send"
+          title={
+            handsFree
+              ? "Hands-free auto-send ON (finalized speech submits automatically)"
+              : "Hands-free auto-send OFF (dictate into input box)"
+          }
+          className={
+            isManga
+              ? `h-8 rounded-none border-2 border-foreground px-2 font-mono text-[10px] font-bold uppercase ${
+                  handsFree ? "bg-foreground text-background" : "bg-background text-foreground"
+                }`
+              : `h-8 rounded-full px-2.5 text-xs ${
+                  handsFree
+                    ? "border border-accent/60 bg-accent/20 text-accent"
+                    : "text-muted-foreground hover:text-foreground"
+                }`
+          }
+        >
+          <Headphones className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="hidden sm:inline ml-1">Hands-free</span>
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          onClick={toggleMicrophone}
+          disabled={busy}
+          aria-pressed={isListening}
+          aria-label={isListening ? "Stop voice input" : "Start voice input"}
+          title={
+            !speechSupported
+              ? "Speech-to-text unavailable in this browser"
+              : isListening
+                ? "Stop microphone"
+                : "Dictate with microphone"
+          }
+          className={
+            isManga
+              ? `h-8 w-8 rounded-none border-2 border-foreground ${
+                  isListening ? "bg-[#b91c1c] text-white" : "bg-background text-foreground"
+                }`
+              : `h-8 w-8 rounded-full ${
+                  isListening
+                    ? "bg-red-600/25 text-red-400 hover:bg-red-600/35"
+                    : speechSupported
+                      ? "text-foreground hover:bg-secondary/60"
+                      : "text-muted-foreground opacity-60"
+                }`
+          }
+        >
+          {isListening ? (
+            <Square className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+          ) : speechSupported ? (
+            <Mic className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <MicOff className="h-4 w-4" aria-hidden="true" />
+          )}
+        </Button>
         <Button
           type="submit"
           size="icon"

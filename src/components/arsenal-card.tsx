@@ -234,7 +234,7 @@ export function ArtifactCard({
                 a.curse_level > 0 ? "cursed" : null,
               ]}
               fallbackImageUrl={fallbackImg}
-              accentColor={isManga ? "#b91c1c" : `hsl(${art.hue} 85% 60%)`}
+              accentColor={isManga ? "#b91c1c" : `hsl(${art.hue}, 85%, 60%)`}
               compact
               onFallbackTo2d={() => setViewMode("2d")}
             />
@@ -263,7 +263,7 @@ export function ArtifactCard({
                 className={`pointer-events-none absolute inset-x-2 bottom-2 z-20 px-2 py-1 text-center text-[10px] ${
                   isManga
                     ? "border-2 border-foreground bg-card font-mono font-bold uppercase text-foreground"
-                    : "rounded-md border border-white/15 bg-black/75 text-zinc-200 backdrop-blur-sm"
+                    : "rounded-md border border-white/15 bg-[#060a14]/92 text-zinc-200"
                 }`}
               >
                 No 3D model uploaded — showing 2D
@@ -278,7 +278,7 @@ export function ArtifactCard({
           className={
             isManga
               ? "absolute left-2 top-2 z-20 inline-flex items-center border-2 border-foreground bg-card p-0.5 font-mono text-[10px] font-bold"
-              : "absolute left-2 top-2 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-black/70 p-0.5 text-[10px] font-semibold backdrop-blur-md"
+              : "absolute left-2 top-2 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-[#060a14]/90 p-0.5 text-[10px] font-semibold"
           }
         >
           <button
@@ -425,7 +425,7 @@ export function NexusArtifactViewer({
                 a.curse_level > 0 ? "cursed" : null,
               ]}
               fallbackImageUrl={artUrl(form.art) ?? null}
-              accentColor={`hsl(${art.hue} 85% 60%)`}
+              accentColor={`hsl(${art.hue}, 85%, 60%)`}
               onFallbackTo2d={() => setViewMode("2d")}
             />
           </div>
@@ -435,7 +435,7 @@ export function NexusArtifactViewer({
         <div
           role="group"
           aria-label={`View mode for ${a.name}`}
-          className="absolute left-6 top-6 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-black/75 p-0.5 text-xs font-semibold backdrop-blur-md"
+          className="absolute left-6 top-6 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-[#060a14]/90 p-0.5 text-xs font-semibold"
         >
           <button
             type="button"

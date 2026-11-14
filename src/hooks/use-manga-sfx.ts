@@ -101,20 +101,25 @@ export function useMangaSfx() {
           word: preset.word,
           variant: extra.variant ?? preset.variant,
           tone: extra.tone ?? preset.tone,
-          x: extra.x,
-          y: extra.y,
+          ...(extra.x !== undefined ? { x: extra.x } : {}),
+          ...(extra.y !== undefined ? { y: extra.y } : {}),
         });
         return;
       }
 
       const preset = keywordOrOptions.word ? resolveMangaSfxPreset(keywordOrOptions.word) : null;
       const extra = extractCoordinates(target);
+      const word = preset ? preset.word : keywordOrOptions.word;
+      const variant = keywordOrOptions.variant ?? preset?.variant ?? extra.variant;
+      const tone = keywordOrOptions.tone ?? preset?.tone ?? extra.tone;
+      const x = keywordOrOptions.x ?? extra.x;
+      const y = keywordOrOptions.y ?? extra.y;
       triggerMangaSfx({
-        word: preset ? preset.word : keywordOrOptions.word,
-        variant: keywordOrOptions.variant ?? preset?.variant ?? extra.variant,
-        tone: keywordOrOptions.tone ?? preset?.tone ?? extra.tone,
-        x: keywordOrOptions.x ?? extra.x,
-        y: keywordOrOptions.y ?? extra.y,
+        ...(word !== undefined ? { word } : {}),
+        ...(variant !== undefined ? { variant } : {}),
+        ...(tone !== undefined ? { tone } : {}),
+        ...(x !== undefined ? { x } : {}),
+        ...(y !== undefined ? { y } : {}),
       });
     },
     [isEnabled],

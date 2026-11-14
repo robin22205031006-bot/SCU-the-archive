@@ -91,7 +91,7 @@ export function Character3dFrame({
       <div
         role="group"
         aria-label="Character view mode"
-        className="absolute left-2 top-2 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-black/70 p-0.5 text-[10px] font-semibold backdrop-blur-md"
+        className="absolute left-2 top-2 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-[#060a14]/90 p-0.5 text-[10px] font-semibold"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -139,10 +139,10 @@ export function Character3dFrame({
                 setViewMode("3d");
               }}
               aria-pressed={showing3d && safeIdx === idx}
-              className={`truncate rounded-full border px-2 py-0.5 text-[10px] font-medium backdrop-blur-md transition ${
+              className={`truncate rounded-full border px-2 py-0.5 text-[10px] font-medium transition ${
                 showing3d && safeIdx === idx
                   ? "border-accent bg-accent/25 text-white"
-                  : "border-white/20 bg-black/65 text-zinc-300 hover:border-accent/60 hover:text-white"
+                  : "border-white/20 bg-[#060a14]/88 text-zinc-300 hover:border-accent/60 hover:text-white"
               }`}
             >
               {av.label}
@@ -153,7 +153,7 @@ export function Character3dFrame({
 
       {/* Subtle hint if user toggled 3D on a character with no uploaded .glb */}
       {viewMode === "3d" && !activeAvatar && (
-        <div className="pointer-events-none absolute inset-x-2 bottom-2 z-20 rounded-md border border-white/15 bg-black/75 px-2 py-1 text-center text-[10px] text-zinc-200 backdrop-blur-sm">
+        <div className="pointer-events-none absolute inset-x-2 bottom-2 z-20 rounded-md border border-white/15 bg-[#060a14]/92 px-2 py-1 text-center text-[10px] text-zinc-200">
           No 3D avatar uploaded — showing 2D portrait
         </div>
       )}

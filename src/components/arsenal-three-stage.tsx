@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import {
   ChevronDown,
@@ -27,6 +26,13 @@ import {
   resolveModelVfxPreset,
   type ModelVfxSystem,
 } from "@/lib/model-3d-vfx";
+import {
+  createAfterDrawScheduler,
+  createConfiguredGltfLoader,
+  createSafeWebGLRenderer,
+  detectWebGLContext,
+  disposeObjectTree,
+} from "@/lib/three-stage-utils";
 import { Button } from "@/components/ui/button";
 
 type Artifact = Tables<"artifacts">;
@@ -47,20 +53,6 @@ const CAMERA_PRESETS: Record<
 const _targetCamPos = new THREE.Vector3();
 const _targetLookAt = new THREE.Vector3();
 const _scratchVec = new THREE.Vector3();
-
-function detectSoftwareWebGL(): { supported: boolean; isSoftwareGl: boolean } {
-  const probe = document.createElement("canvas");
-  const gl = probe.getContext("webgl2");
-  if (!gl) return { supported: false, isSoftwareGl: true };
-  const ext = gl.getExtension("WEBGL_debug_renderer_info");
-  const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
-  const gpu = String(gl.getParameter(param) ?? "");
-  gl.getExtension("WEBGL_lose_context")?.loseContext();
-  return {
-    supported: true,
-    isSoftwareGl: /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu),
-  };
-}
 
 export function ArsenalThreeStage({
   artifact,
@@ -156,7 +148,7 @@ export function ArsenalThreeStage({
     const container = mountRef.current;
     if (!container) return;
 
-    const { supported, isSoftwareGl } = detectSoftwareWebGL();
+    const { supported, isSoftwareGl } = detectWebGLContext();
     if (!supported) {
       setWebglReady(false);
       return;
@@ -165,14 +157,20 @@ export function ArsenalThreeStage({
     const width = Math.max(container.clientWidth, 320);
     const height = Math.max(container.clientHeight, 440);
 
-    const renderer = new THREE.WebGLRenderer({
+    const maybeRenderer = createSafeWebGLRenderer({
       antialias: !isSoftwareGl,
       powerPreference: "high-performance",
     });
+    if (!maybeRenderer) {
+      setWebglReady(false);
+      return;
+    }
+    const renderer = maybeRenderer;
+    setWebglReady(true);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
-    const pixelRatio = isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2);
+    const pixelRatio = isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2);
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
     renderer.shadowMap.enabled = !isSoftwareGl;
@@ -189,10 +187,17 @@ export function ArsenalThreeStage({
     scene.background = new THREE.Color(horizonColor);
     scene.fog = new THREE.FogExp2(horizonColor, 0.05);
 
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    const envTex = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environment = envTex;
-    pmremGenerator.dispose();
+    let envTex: THREE.Texture | null = null;
+    try {
+      const roomEnv = new RoomEnvironment();
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      envTex = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+      scene.environment = envTex;
+      pmremGenerator.dispose();
+      roomEnv.dispose();
+    } catch {
+      envTex = null;
+    }
 
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 60);
     camera.position.set(...CAMERA_PRESETS.hero.pos);
@@ -337,26 +342,18 @@ export function ArsenalThreeStage({
           ringGeo.dispose();
           ringMat.dispose();
           if (gltfScene) {
-            gltfScene.traverse((obj) => {
-              if (obj instanceof THREE.Mesh) {
-                obj.geometry?.dispose();
-                const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-                for (const m of mats) m?.dispose?.();
-              }
-            });
+            disposeObjectTree(gltfScene);
           }
         },
       };
       scene.add(root);
 
-      const gltfLoader = new GLTFLoader();
+      const gltfLoader = createConfiguredGltfLoader();
       gltfLoader.load(
         modelUrl,
         (gltf) => {
           if (disposed || ticket !== loadTicket) {
-            gltf.scene.traverse((obj) => {
-              if (obj instanceof THREE.Mesh) obj.geometry?.dispose();
-            });
+            disposeObjectTree(gltf.scene);
             return;
           }
           const model = gltf.scene;
@@ -367,19 +364,21 @@ export function ArsenalThreeStage({
             }
           });
           const box = new THREE.Box3().setFromObject(model);
-          const size = new THREE.Vector3();
-          const center = new THREE.Vector3();
-          box.getSize(size);
-          const scale = 2.0 / Math.max(size.x, size.y, size.z, 0.001);
-          model.scale.setScalar(scale);
-          box.setFromObject(model);
-          box.getCenter(center);
-          model.position.x -= center.x;
-          model.position.z -= center.z;
-          model.position.y += 0.2 - box.min.y;
+          if (!box.isEmpty()) {
+            const size = new THREE.Vector3();
+            const center = new THREE.Vector3();
+            box.getSize(size);
+            const scale = 2.0 / Math.max(size.x, size.y, size.z, 0.001);
+            model.scale.setScalar(scale);
+            box.setFromObject(model);
+            box.getCenter(center);
+            model.position.x -= center.x;
+            model.position.z -= center.z;
+            model.position.y += 0.2 - box.min.y;
+          }
           gltfScene = model;
           root.add(model);
-          if (!isSoftwareGl) renderer.compile(scene, camera);
+          if (!isSoftwareGl && !contextLost) renderer.compile(scene, camera);
           requestRender();
         },
         undefined,
@@ -396,34 +395,24 @@ export function ArsenalThreeStage({
       );
     };
 
-    rebuildModel();
-
     let disposed = false;
+    let contextLost = false;
     let frameId = 0;
+    let timeoutId = 0;
     let renderBusy = false;
     let renderDirty = false;
     let lastTime = performance.now();
     let elapsed = 0;
 
-    function afterDraw(cb: () => void) {
-      const gl = renderer.getContext() as WebGL2RenderingContext;
-      const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-      gl.flush();
-      const poll = () => {
-        if (disposed) {
-          if (sync) gl.deleteSync(sync);
-          return;
-        }
-        const state = sync && gl.getSyncParameter(sync, gl.SYNC_STATUS);
-        if (state === gl.UNSIGNALED) {
-          frameId = window.setTimeout(poll, 5);
-        } else {
-          if (sync) gl.deleteSync(sync);
-          frameId = window.setTimeout(cb, 80);
-        }
-      };
-      frameId = window.setTimeout(poll, 5);
-    }
+    rebuildModel();
+
+    const afterDraw = createAfterDrawScheduler(
+      renderer,
+      () => disposed || contextLost,
+      (id) => {
+        timeoutId = id;
+      },
+    );
 
     function stepAndDraw(now: number) {
       const dt = Math.min((now - lastTime) / 1000, 0.08);
@@ -480,23 +469,26 @@ export function ArsenalThreeStage({
       renderer.render(scene, camera);
 
       const settling = s.presetAnimating || Math.abs(s.currentExplode - s.explode) > 0.004;
-      return settling || !isSoftwareGl || s.boostSurge;
+      return settling || ((!isSoftwareGl || s.boostSurge) && !document.hidden);
     }
 
     function requestRender() {
-      if (disposed) return;
+      if (disposed || contextLost) return;
       if (renderBusy) {
         renderDirty = true;
         return;
       }
       renderBusy = true;
       frameId = requestAnimationFrame((now) => {
-        if (disposed) return;
+        if (disposed || contextLost) {
+          renderBusy = false;
+          return;
+        }
         renderDirty = false;
         const keepGoing = stepAndDraw(now);
         const done = () => {
           renderBusy = false;
-          if (!disposed && (renderDirty || keepGoing)) {
+          if (!disposed && !contextLost && (renderDirty || keepGoing)) {
             requestRender();
           }
         };
@@ -512,8 +504,36 @@ export function ArsenalThreeStage({
       requestRender();
     });
 
-    const ro = new ResizeObserver(() => {
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+      contextLost = true;
+      renderBusy = false;
+      cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+      setWebglReady(false);
+    };
+
+    const handleContextRestored = () => {
       if (disposed) return;
+      contextLost = false;
+      setWebglReady(true);
+      requestRender();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !disposed && !contextLost) {
+        lastTime = performance.now();
+        requestRender();
+      }
+    };
+
+    renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
+    renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    const ro = new ResizeObserver(() => {
+      if (disposed || contextLost) return;
+      if (container.clientWidth === 0 || container.clientHeight === 0) return;
       const w = Math.max(container.clientWidth, 240);
       const h = Math.max(container.clientHeight, 320);
       camera.aspect = w / h;
@@ -541,8 +561,11 @@ export function ArsenalThreeStage({
     return () => {
       disposed = true;
       cancelAnimationFrame(frameId);
-      window.clearTimeout(frameId);
+      window.clearTimeout(timeoutId);
       ro.disconnect();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
+      renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
       controls.dispose();
       if (vfxSystem) {
         scene.remove(vfxSystem.group);
@@ -553,7 +576,7 @@ export function ArsenalThreeStage({
       floorGeo.dispose();
       floorMat.dispose();
       textures.dispose();
-      envTex.dispose();
+      envTex?.dispose();
       renderer.dispose();
       sceneHooksRef.current = null;
     };

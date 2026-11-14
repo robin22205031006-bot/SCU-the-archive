@@ -1,76 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Square } from "lucide-react";
+import React, { useCallback, useRef, useState } from "react";
+import { Headphones, Mic, MicOff, Square } from "lucide-react";
 import { askLore } from "@/lib/ai-box.functions";
-
-interface SpeechRecognitionAlternativeLike {
-  transcript: string;
-}
-
-interface SpeechRecognitionResultLike {
-  readonly isFinal: boolean;
-  readonly length: number;
-  [index: number]: SpeechRecognitionAlternativeLike | undefined;
-}
-
-interface SpeechRecognitionEventLike extends Event {
-  readonly resultIndex: number;
-  readonly results: ArrayLike<SpeechRecognitionResultLike>;
-}
-
-interface SpeechRecognitionErrorEventLike extends Event {
-  readonly error: string;
-  readonly message?: string;
-}
-
-interface SpeechRecognitionInstance extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onstart: (() => void) | null;
-  onend: (() => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-}
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
-
-type SpeechWindow = Window & {
-  SpeechRecognition?: SpeechRecognitionConstructor;
-  webkitSpeechRecognition?: SpeechRecognitionConstructor;
-};
-
-function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
-  if (typeof window === "undefined") return null;
-  const w = window as SpeechWindow;
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-function joinTranscript(base: string, addition: string): string {
-  const left = base.trimEnd();
-  const right = addition.trim();
-  if (!left) return right;
-  if (!right) return left;
-  return `${left} ${right}`;
-}
-
-function mapSpeechError(code: string): string {
-  switch (code) {
-    case "not-allowed":
-    case "service-not-allowed":
-      return "Microphone permission was denied. Allow mic access in your browser settings to dictate lore queries.";
-    case "audio-capture":
-      return "No microphone was detected. Connect a microphone and try again.";
-    case "no-speech":
-      return "No speech detected. Try speaking closer to your microphone.";
-    case "network":
-      return "Speech recognition network error. Please check your connection and try again.";
-    default:
-      return "Voice input could not complete. You can keep typing or try again.";
-  }
-}
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 export function ArchivistChat() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([
@@ -81,177 +12,22 @@ export function ArchivistChat() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [interimTranscript, setInterimTranscript] = useState("");
-  const [speechSupported, setSpeechSupported] = useState(true);
-  const [micError, setMicError] = useState<string | null>(null);
+  const [handsFree, setHandsFree] = useState(false);
 
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  const baseInputRef = useRef("");
-  const finalSpeechRef = useRef("");
-  const interimRef = useRef("");
-  const isStoppingRef = useRef(false);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
 
-  useEffect(() => {
-    setSpeechSupported(getSpeechRecognitionCtor() !== null);
-    return () => {
-      const rec = recognitionRef.current;
-      if (rec) {
-        rec.onstart = null;
-        rec.onresult = null;
-        rec.onerror = null;
-        rec.onend = null;
-        try {
-          rec.abort();
-        } catch {
-          /* already stopped */
-        }
-        recognitionRef.current = null;
-      }
-    };
-  }, []);
+  const submitQuery = useCallback(async (rawText: string) => {
+    const candidate = rawText.trim();
+    if (!candidate || loadingRef.current) return;
 
-  const stopListening = useCallback(() => {
-    isStoppingRef.current = true;
-    const rec = recognitionRef.current;
-    if (rec) {
-      try {
-        rec.stop();
-      } catch {
-        /* ignore stop errors */
-      }
-    }
-    if (interimRef.current.trim()) {
-      const committed = joinTranscript(
-        joinTranscript(baseInputRef.current, finalSpeechRef.current),
-        interimRef.current,
-      );
-      baseInputRef.current = committed;
-      finalSpeechRef.current = "";
-      setInput(committed);
-    }
-    interimRef.current = "";
-    setInterimTranscript("");
-    setIsListening(false);
-  }, []);
-
-  const startListening = useCallback(async () => {
-    if (loading || isListening) return;
-    setMicError(null);
-
-    const SpeechRecognitionCtor = getSpeechRecognitionCtor();
-    if (!SpeechRecognitionCtor) {
-      setSpeechSupported(false);
-      setMicError(
-        "Speech-to-text is not supported in this browser. Try Chrome, Edge, or Safari, or type your question.",
-      );
-      return;
-    }
-
-    // Request explicit microphone permission cleanly before starting SpeechRecognition,
-    // releasing tracks right away so the speech engine can bind to the mic without conflict.
-    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        for (const track of stream.getTracks()) {
-          track.stop();
-        }
-      } catch (err) {
-        const name = err instanceof Error ? err.name : "";
-        if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-          setMicError("No microphone device was found. Connect a microphone and try again.");
-        } else {
-          setMicError(
-            "Microphone access was denied. Enable microphone permission in your browser and try again.",
-          );
-        }
-        return;
-      }
-    }
-
-    const recognition = new SpeechRecognitionCtor();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang =
-      typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
-
-    baseInputRef.current = input;
-    finalSpeechRef.current = "";
-    interimRef.current = "";
-    isStoppingRef.current = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setMicError(null);
-    };
-
-    recognition.onresult = (event) => {
-      let finalized = "";
-      let interim = "";
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        const piece = result?.[0]?.transcript ?? "";
-        if (!piece) continue;
-        if (result?.isFinal) {
-          finalized = joinTranscript(finalized, piece);
-        } else {
-          interim = joinTranscript(interim, piece);
-        }
-      }
-      finalSpeechRef.current = finalized;
-      interimRef.current = interim;
-      const combined = joinTranscript(joinTranscript(baseInputRef.current, finalized), interim);
-      setInterimTranscript(interim);
-      setInput(combined);
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === "aborted" && isStoppingRef.current) return;
-      setMicError(mapSpeechError(event.error));
-      setIsListening(false);
-      interimRef.current = "";
-      setInterimTranscript("");
-    };
-
-    recognition.onend = () => {
-      recognitionRef.current = null;
-      interimRef.current = "";
-      setInterimTranscript("");
-      setIsListening(false);
-    };
-
-    recognitionRef.current = recognition;
-    try {
-      recognition.start();
-      setIsListening(true);
-    } catch {
-      recognitionRef.current = null;
-      setIsListening(false);
-      setMicError("Unable to start voice recognition. Please try again.");
-    }
-  }, [input, isListening, loading]);
-
-  const toggleMicrophone = () => {
-    if (isListening) stopListening();
-    else void startListening();
-  };
-
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    if (isListening) stopListening();
-
-    const candidate = input.trim();
-    if (!candidate || loading) return;
-
-    const userMessage = candidate;
-    const nextMessages = [...messages, { role: "user", content: userMessage }];
-    baseInputRef.current = "";
-    finalSpeechRef.current = "";
-    interimRef.current = "";
-    setInterimTranscript("");
+    const nextMessages = [...messagesRef.current, { role: "user", content: candidate }];
     setInput("");
     setMessages(nextMessages);
     setLoading(true);
+    loadingRef.current = true;
 
     try {
       const apiMessages = nextMessages
@@ -275,8 +51,37 @@ export function ArchivistChat() {
         { role: "assistant", content: "Error communicating with Archivist core." },
       ]);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
+  }, []);
+
+  const {
+    isListening,
+    interimTranscript,
+    speechSupported,
+    micError,
+    setMicError,
+    stopListening,
+    toggleMicrophone,
+    syncBaseValue,
+    clearBuffers,
+  } = useVoiceInput({
+    value: input,
+    onChange: setInput,
+    disabled: loading,
+    handsFree,
+    onHandsFreeSubmit: submitQuery,
+  });
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (isListening) stopListening();
+
+    const candidate = input.trim();
+    if (!candidate || loading) return;
+    clearBuffers();
+    await submitQuery(candidate);
   }
 
   return (
@@ -309,8 +114,11 @@ export function ArchivistChat() {
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" aria-hidden="true" />
             <span>
               Listening…{" "}
+              {handsFree && <span className="font-semibold text-amber-300">[Hands-free] </span>}
               {interimTranscript ? (
                 <span className="text-gray-300 italic">{interimTranscript}</span>
+              ) : handsFree ? (
+                "Speak naturally — pauses submit automatically"
               ) : (
                 "Speak your lore question or input"
               )}
@@ -347,7 +155,7 @@ export function ArchivistChat() {
           type="text"
           value={input}
           onChange={(e) => {
-            baseInputRef.current = e.target.value;
+            syncBaseValue(e.target.value);
             setInput(e.target.value);
           }}
           placeholder={
@@ -357,6 +165,26 @@ export function ArchivistChat() {
           }
           className="flex-1 bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white focus:outline-none focus:border-red-500"
         />
+        <button
+          type="button"
+          onClick={() => setHandsFree((v) => !v)}
+          disabled={loading}
+          aria-pressed={handsFree}
+          aria-label="Toggle hands-free voice auto-send"
+          title={
+            handsFree
+              ? "Hands-free auto-send ON (finalized speech submits automatically)"
+              : "Hands-free auto-send OFF (dictate into input box)"
+          }
+          className={`inline-flex items-center justify-center gap-1.5 rounded border px-2.5 py-2 text-xs font-medium transition-colors ${
+            handsFree
+              ? "border-amber-500/60 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
+              : "border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-500 hover:text-gray-200"
+          }`}
+        >
+          <Headphones className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="hidden md:inline">Hands-free</span>
+        </button>
         <button
           type="button"
           onClick={toggleMicrophone}

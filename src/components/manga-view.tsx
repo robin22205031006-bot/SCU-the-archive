@@ -350,7 +350,7 @@ export function MangaEntitySpread({
 }) {
   const [groupFilter, setGroupFilter] = useState<string>("ALL");
   const activeGenre = useActiveGenre() ?? "manga-ink";
-  const { triggerInteractionSfx, bindInteractionSfx } = useMangaSfx();
+  const { triggerSfx, triggerInteractionSfx, bindInteractionSfx } = useMangaSfx();
   const isChar = kind === "character";
   const spoilerMasked = useSpoilerMask(spoilerScope);
 

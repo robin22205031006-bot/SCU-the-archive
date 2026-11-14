@@ -2,49 +2,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { Box, Loader2, RotateCcw } from "lucide-react";
+import { Box, Crosshair, Loader2, RotateCcw } from "lucide-react";
 import {
   createModelVfxSystem,
   resolveModelVfxPreset,
   type ModelVfxConfig,
   type ModelVfxSystem,
 } from "@/lib/model-3d-vfx";
-
-function detectSoftwareWebGL(): { supported: boolean; isSoftwareGl: boolean } {
-  if (typeof document === "undefined") return { supported: false, isSoftwareGl: true };
-  try {
-    const probe = document.createElement("canvas");
-    const gl = probe.getContext("webgl2");
-    if (!gl) return { supported: false, isSoftwareGl: true };
-    const ext = gl.getExtension("WEBGL_debug_renderer_info");
-    const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
-    const gpu = String(gl.getParameter(param) ?? "");
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
-    return {
-      supported: true,
-      isSoftwareGl: /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu),
-    };
-  } catch {
-    return { supported: false, isSoftwareGl: true };
-  }
-}
-
-function disposeObjectTree(root: THREE.Object3D) {
-  root.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) {
-      obj.geometry?.dispose();
-      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-      for (const m of mats) {
-        if (!m) continue;
-        for (const val of Object.values(m)) {
-          if (val instanceof THREE.Texture) val.dispose();
-        }
-        m.dispose();
-      }
-    }
-  });
-}
+import {
+  createAfterDrawScheduler,
+  createConfiguredGltfLoader,
+  createSafeWebGLRenderer,
+  detectWebGLContext,
+  disposeObjectTree,
+  normalizeThreeColor,
+} from "@/lib/three-stage-utils";
 
 export interface GlbModelViewerProps {
   url: string;
@@ -60,9 +32,9 @@ export interface GlbModelViewerProps {
 }
 
 /**
- * Interactive Three.js .glb/.gltf model stage with OrbitControls, PMREM RoomEnvironment
- * reflections, 3-point warm/cool studio lighting, dynamic lore-driven VFX particles/auras,
- * software-WebGL guard, and 2D fallback.
+ * Interactive Three.js .glb/.gltf model stage with OrbitControls, Draco/Meshopt decoding,
+ * PMREM RoomEnvironment reflections, 3-point warm/cool studio lighting, dynamic lore-driven
+ * VFX particles/auras, software-WebGL pacing, context-loss recovery, and 2D fallback.
  */
 export function GlbModelViewer({
   url,
@@ -77,7 +49,9 @@ export function GlbModelViewer({
   onFallbackTo2d,
 }: GlbModelViewerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error" | "no-webgl">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error" | "no-webgl" | "context-lost">(
+    "loading",
+  );
   const [autoRotate, setAutoRotate] = useState(true);
   const autoRotateRef = useRef(autoRotate);
   autoRotateRef.current = autoRotate;
@@ -94,13 +68,17 @@ export function GlbModelViewer({
   const vfxConfigRef = useRef(vfxConfig);
   vfxConfigRef.current = vfxConfig;
 
-  const vfxHooksRef = useRef<{ rebuildVfx: (cfg: ModelVfxConfig) => void } | null>(null);
+  const viewerHooksRef = useRef<{
+    rebuildVfx: (cfg: ModelVfxConfig) => void;
+    resetView: () => void;
+    requestRender: () => void;
+  } | null>(null);
 
   useEffect(() => {
     const container = mountRef.current;
     if (!container || !url) return;
 
-    const { supported, isSoftwareGl } = detectSoftwareWebGL();
+    const { supported, isSoftwareGl } = detectWebGLContext();
     if (!supported) {
       setStatus("no-webgl");
       return;
@@ -111,11 +89,16 @@ export function GlbModelViewer({
     const width = Math.max(container.clientWidth, 180);
     const height = Math.max(container.clientHeight, 180);
 
-    const renderer = new THREE.WebGLRenderer({
+    const renderer = createSafeWebGLRenderer({
       antialias: !isSoftwareGl,
       alpha: true,
       powerPreference: "high-performance",
     });
+    if (!renderer) {
+      setStatus("no-webgl");
+      return;
+    }
+
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
@@ -134,24 +117,35 @@ export function GlbModelViewer({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x060a14);
 
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    const envTex = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environment = envTex;
-    pmremGenerator.dispose();
+    let envTex: THREE.Texture | null = null;
+    try {
+      const roomEnv = new RoomEnvironment();
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      envTex = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+      scene.environment = envTex;
+      pmremGenerator.dispose();
+      roomEnv.dispose();
+    } catch {
+      envTex = null;
+    }
 
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.05, 50);
-    camera.position.set(2.2, 1.55, 2.75);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.05, 60);
+    const heroCameraPos = new THREE.Vector3(2.2, 1.45, 2.75);
+    const heroTarget = new THREE.Vector3(0, 0.85, 0);
+    camera.position.copy(heroCameraPos);
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0.9, 0);
+    controls.target.copy(heroTarget);
     controls.enableDamping = !isSoftwareGl;
     controls.dampingFactor = 0.06;
-    controls.minDistance = 0.9;
-    controls.maxDistance = 8.0;
-    controls.maxPolarAngle = Math.PI * 0.52;
+    controls.minDistance = 0.7;
+    controls.maxDistance = 12.0;
+    controls.maxPolarAngle = Math.PI * 0.56;
     controls.autoRotate = !isSoftwareGl && autoRotateRef.current;
     controls.autoRotateSpeed = 1.25;
     controls.update();
+
+    const resolvedAccent = normalizeThreeColor(accentColor, "#38bdf8");
 
     // 3-point warm key + cool Hemisphere fill + rim directional light
     const hemiLight = new THREE.HemisphereLight(0x9bd2ff, 0x101827, 0.85);
@@ -165,7 +159,7 @@ export function GlbModelViewer({
     keyLight.shadow.normalBias = 0.02;
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(new THREE.Color(accentColor), 1.45);
+    const rimLight = new THREE.DirectionalLight(resolvedAccent, 1.45);
     rimLight.position.set(-3.4, 2.8, -3.0);
     scene.add(rimLight);
 
@@ -184,7 +178,7 @@ export function GlbModelViewer({
 
     const ringGeo = new THREE.RingGeometry(0.95, 1.0, 64);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(vfxConfigRef.current.primaryHex || accentColor),
+      color: normalizeThreeColor(vfxConfigRef.current.primaryHex, "#38bdf8"),
       transparent: true,
       opacity: 0.45,
       side: THREE.DoubleSide,
@@ -194,7 +188,7 @@ export function GlbModelViewer({
     ringMesh.position.y = 0.004;
     scene.add(ringMesh);
 
-    let modelBounds = { centerY: 0.9, radius: 0.85, height: 1.85 };
+    let modelBounds = { centerY: 0.85, radius: 0.85, height: 1.85 };
     let vfxSystem: ModelVfxSystem | null = createModelVfxSystem(vfxConfigRef.current, {
       isSoftwareGl,
       pixelRatio,
@@ -205,12 +199,22 @@ export function GlbModelViewer({
     let loadedModel: THREE.Object3D | null = null;
     let mixer: THREE.AnimationMixer | null = null;
     let disposed = false;
+    let contextLost = false;
     let frameId = 0;
+    let timeoutId = 0;
     let lastTime = performance.now();
     let elapsed = 0;
 
+    const afterDraw = createAfterDrawScheduler(
+      renderer,
+      () => disposed || contextLost,
+      (id) => {
+        timeoutId = id;
+      },
+    );
+
     const renderFrame = () => {
-      if (disposed) return;
+      if (disposed || contextLost) return;
       frameId = 0;
       const now = performance.now();
       const dt = Math.min((now - lastTime) / 1000, 0.08);
@@ -223,20 +227,27 @@ export function GlbModelViewer({
       controls.update();
       renderer.render(scene, camera);
 
-      if (!isSoftwareGl) {
+      const keepRunning = !isSoftwareGl && !document.hidden;
+      if (keepRunning) {
         frameId = requestAnimationFrame(renderFrame);
+      } else if (isSoftwareGl && autoRotateRef.current) {
+        afterDraw(() => {
+          if (!disposed && !contextLost && autoRotateRef.current) {
+            scheduleRender();
+          }
+        });
       }
     };
 
     const scheduleRender = () => {
-      if (disposed || frameId) return;
+      if (disposed || contextLost || frameId) return;
       frameId = requestAnimationFrame(() => {
         frameId = 0;
         renderFrame();
       });
     };
 
-    vfxHooksRef.current = {
+    viewerHooksRef.current = {
       rebuildVfx: (cfg: ModelVfxConfig) => {
         if (disposed) return;
         if (vfxSystem) {
@@ -249,17 +260,52 @@ export function GlbModelViewer({
           ...modelBounds,
         });
         scene.add(vfxSystem.group);
-        ringMat.color.set(cfg.primaryHex || accentColor);
+        ringMat.color.copy(normalizeThreeColor(cfg.primaryHex, accentColor));
         scheduleRender();
       },
+      resetView: () => {
+        if (disposed) return;
+        camera.position.copy(heroCameraPos);
+        controls.target.copy(heroTarget);
+        controls.update();
+        scheduleRender();
+      },
+      requestRender: scheduleRender,
     };
 
     controls.addEventListener("change", () => {
-      if (!isSoftwareGl) return;
+      if (!isSoftwareGl && !document.hidden) return;
       scheduleRender();
     });
 
-    const loader = new GLTFLoader();
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+      contextLost = true;
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+      window.clearTimeout(timeoutId);
+      setStatus("context-lost");
+    };
+
+    const handleContextRestored = () => {
+      if (disposed) return;
+      contextLost = false;
+      setStatus(loadedModel ? "ready" : "loading");
+      scheduleRender();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !disposed && !contextLost) {
+        lastTime = performance.now();
+        scheduleRender();
+      }
+    };
+
+    renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
+    renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    const loader = createConfiguredGltfLoader();
     loader.load(
       url,
       (gltf) => {
@@ -278,34 +324,53 @@ export function GlbModelViewer({
         const box = new THREE.Box3().setFromObject(model);
         const size = new THREE.Vector3();
         const center = new THREE.Vector3();
-        box.getSize(size);
-        box.getCenter(center);
 
-        const maxDim = Math.max(size.x, size.y, size.z, 0.001);
-        const targetHeight = 1.9;
-        const scale = targetHeight / maxDim;
-        model.scale.setScalar(scale);
+        if (!box.isEmpty()) {
+          box.getSize(size);
+          box.getCenter(center);
 
-        box.setFromObject(model);
-        box.getCenter(center);
-        model.position.x -= center.x;
-        model.position.z -= center.z;
-        model.position.y -= box.min.y;
+          const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+          const targetSpan = 1.9;
+          const scale = targetSpan / maxDim;
+          model.scale.setScalar(scale);
 
-        box.setFromObject(model);
-        box.getCenter(center);
-        box.getSize(size);
-        const radius = Math.max(size.x, size.z) * 0.55;
+          box.setFromObject(model);
+          box.getCenter(center);
+          model.position.x -= center.x;
+          model.position.z -= center.z;
+          model.position.y -= box.min.y;
+
+          box.setFromObject(model);
+          box.getCenter(center);
+          box.getSize(size);
+        } else {
+          size.set(1, 1.5, 1);
+          center.set(0, 0.75, 0);
+        }
+
+        const radius = Math.max(Math.hypot(size.x, size.z) * 0.5, 0.45);
+        const safeCenterY = Number.isFinite(center.y) ? Math.max(center.y, 0.25) : 0.85;
+        const safeHeight = Number.isFinite(size.y) ? Math.max(size.y, 0.5) : 1.5;
+
         modelBounds = {
-          centerY: Math.max(center.y, 0.5),
-          radius: Math.max(0.45, radius),
-          height: Math.max(0.9, size.y),
+          centerY: safeCenterY,
+          radius,
+          height: safeHeight,
         };
         if (vfxSystem) {
           vfxSystem.setBounds(modelBounds.centerY, modelBounds.radius, modelBounds.height);
         }
 
-        controls.target.set(0, Math.max(center.y, 0.5), 0);
+        // Fit camera cleanly to the model bounding sphere so tall characters or wide weapons stay centered
+        const fitRadius = Math.max(Math.hypot(size.x, size.y, size.z) * 0.5, 0.6);
+        const fovRad = THREE.MathUtils.degToRad(camera.fov);
+        const dist = (fitRadius / Math.sin(fovRad / 2)) * 1.15;
+        heroTarget.set(0, safeCenterY, 0);
+        heroCameraPos.set(dist * 0.62, safeCenterY + dist * 0.28, dist * 0.78);
+        camera.position.copy(heroCameraPos);
+        controls.target.copy(heroTarget);
+        controls.minDistance = Math.max(0.4, fitRadius * 0.7);
+        controls.maxDistance = Math.max(8, fitRadius * 8);
         controls.update();
 
         scene.add(model);
@@ -316,7 +381,7 @@ export function GlbModelViewer({
           gltf.animations.forEach((clip) => mixer!.clipAction(clip).play());
         }
 
-        if (!isSoftwareGl) {
+        if (!isSoftwareGl && !contextLost) {
           renderer.compile(scene, camera);
         }
         setStatus("ready");
@@ -331,7 +396,8 @@ export function GlbModelViewer({
     );
 
     const ro = new ResizeObserver(() => {
-      if (disposed) return;
+      if (disposed || contextLost) return;
+      if (container.clientWidth === 0 || container.clientHeight === 0) return;
       const w = Math.max(container.clientWidth, 180);
       const h = Math.max(container.clientHeight, 180);
       camera.aspect = w / h;
@@ -344,8 +410,12 @@ export function GlbModelViewer({
     return () => {
       disposed = true;
       cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
       ro.disconnect();
-      vfxHooksRef.current = null;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
+      renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
+      viewerHooksRef.current = null;
       controls.dispose();
       if (mixer) mixer.stopAllAction();
       if (vfxSystem) {
@@ -361,7 +431,7 @@ export function GlbModelViewer({
       floorMat.dispose();
       ringGeo.dispose();
       ringMat.dispose();
-      envTex.dispose();
+      envTex?.dispose();
       renderer.dispose();
       container.innerHTML = "";
     };
@@ -369,10 +439,15 @@ export function GlbModelViewer({
 
   // Dynamically regenerate Three.js VFX if name, description, or tags change
   useEffect(() => {
-    vfxHooksRef.current?.rebuildVfx(vfxConfig);
+    viewerHooksRef.current?.rebuildVfx(vfxConfig);
   }, [vfxConfig]);
 
-  const showFallback = status === "error" || status === "no-webgl";
+  // Sync Auto / Paused button changes cleanly with renderer scheduling
+  useEffect(() => {
+    viewerHooksRef.current?.requestRender();
+  }, [autoRotate]);
+
+  const showFallback = status === "error" || status === "no-webgl" || status === "context-lost";
 
   return (
     <div
@@ -403,11 +478,13 @@ export function GlbModelViewer({
           ) : (
             <Box className="size-10 text-muted-foreground" />
           )}
-          <div className="pointer-events-auto absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-black/75 px-2.5 py-1.5 text-[10px] text-zinc-200 backdrop-blur-sm">
+          <div className="pointer-events-auto absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-[#060a14]/92 px-2.5 py-1.5 text-[10px] text-zinc-200">
             <span>
               {status === "error"
                 ? "3D model failed to load — showing 2D preview."
-                : "3D stage initialized (WebGL context unavailable in this environment)."}
+                : status === "context-lost"
+                  ? "WebGL context was interrupted — showing 2D preview."
+                  : "3D stage initialized (WebGL context unavailable in this environment)."}
             </span>
             {onFallbackTo2d && (
               <button
@@ -423,28 +500,42 @@ export function GlbModelViewer({
       )}
 
       {status === "loading" && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/50 text-xs text-zinc-200 backdrop-blur-[2px]">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[#060a14]/85 text-xs text-zinc-200">
           <Loader2 className="size-5 animate-spin text-accent" />
           <span>Loading 3D model…</span>
         </div>
       )}
 
       {status === "ready" && !compact && (
-        <div className="pointer-events-none absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] text-zinc-300">
-          <span className="rounded bg-black/60 px-2 py-0.5 backdrop-blur-sm">
+        <div className="pointer-events-none absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2 text-[10px] text-zinc-300">
+          <span className="rounded bg-[#060a14]/85 px-2 py-0.5">
             {vfxConfig.label} · Drag to orbit
           </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setAutoRotate((v) => !v);
-            }}
-            className="pointer-events-auto inline-flex items-center gap-1 rounded border border-white/15 bg-black/65 px-2 py-0.5 text-[10px] hover:border-accent"
-          >
-            <RotateCcw className="size-3" />
-            {autoRotate ? "Auto" : "Paused"}
-          </button>
+          <div className="pointer-events-auto flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                viewerHooksRef.current?.resetView();
+              }}
+              aria-label="Reset 3D camera"
+              className="inline-flex items-center gap-1 rounded border border-white/15 bg-[#060a14]/90 px-2 py-0.5 text-[10px] hover:border-accent"
+            >
+              <Crosshair className="size-3" />
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAutoRotate((v) => !v);
+              }}
+              className="inline-flex items-center gap-1 rounded border border-white/15 bg-[#060a14]/90 px-2 py-0.5 text-[10px] hover:border-accent"
+            >
+              <RotateCcw className="size-3" />
+              {autoRotate ? "Auto" : "Paused"}
+            </button>
+          </div>
         </div>
       )}
     </div>
