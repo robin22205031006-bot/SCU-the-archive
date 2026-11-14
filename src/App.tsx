@@ -9,6 +9,7 @@ import {
   type UIMode,
 } from "@/context/UIStateContext";
 import { applyUiModeCss } from "@/hooks/use-ui-mode";
+import { MangaSfxLayer } from "@/components/manga-sfx";
 
 const APP_NAV_LINKS: readonly NexusNavLink[] = [
   { to: "/archive", label: "Lore Explorer", icon: "archive" },
@@ -28,6 +29,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {mode === "manga" && <MangaSfxLayer />}
       {/* Navigation Header */}
       <header className="glass border-b border-border px-6 py-4 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3">

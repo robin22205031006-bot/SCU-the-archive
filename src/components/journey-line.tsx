@@ -11,7 +11,13 @@ const PALETTE = [
   "hsl(300 75% 65%)",
   "hsl(120 65% 55%)",
 ];
-const MANGA_PALETTE = ["var(--foreground)", "#b91c1c", "#52525b", "#dc2626", "#27272a"];
+const MANGA_PALETTE = [
+  "var(--foreground)",
+  "var(--primary)",
+  "var(--accent)",
+  "var(--genre-gold, var(--primary))",
+  "var(--muted-foreground)",
+];
 const LEVEL = [
   "",
   "Minor / fallen",
@@ -103,14 +109,14 @@ export function JourneyLine({
       data-manga-chart={isManga ? "journey-stepped" : undefined}
       className={
         isManga
-          ? "min-w-0 border-[3px] border-foreground bg-card p-3 shadow-[4px_4px_0_currentColor]"
+          ? "min-w-0 border-2 border-border bg-card p-3 shadow-[3px_3px_0_currentColor]"
           : "min-w-0 rounded-xl border border-border bg-secondary/20 p-3"
       }
     >
       <figcaption
         className={
           isManga
-            ? "mb-2 border-b-2 border-foreground pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-foreground"
+            ? "mb-2 border-b border-border/60 pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground"
             : "mb-1 text-[11px] uppercase tracking-widest text-muted-foreground"
         }
       >
@@ -217,7 +223,7 @@ export function JourneyLine({
                       y={p.y - 4}
                       width={8}
                       height={8}
-                      fill={k === pts.length - 1 ? "#b91c1c" : "var(--card)"}
+                      fill={k === pts.length - 1 ? "var(--primary)" : "var(--card)"}
                       stroke={color}
                       strokeWidth={2}
                     >

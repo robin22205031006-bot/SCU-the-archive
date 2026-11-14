@@ -13,6 +13,13 @@ import { useAppearance } from "@/hooks/use-appearance";
 import { useTypography } from "@/hooks/use-typography";
 import { DEFAULT_THEME, THEMES, themeVars } from "@/lib/themes";
 import { setUiStyle, useUiStyle, type UiStyle } from "@/lib/ui-style";
+import {
+  readStoredGenreTheme,
+  resolveActiveGenreTheme,
+  useStoredGenreTheme,
+  type ClassicGenreSelection,
+  type GenreThemeId,
+} from "@/lib/genre-themes";
 
 export type VisualUiMode = "classic" | "nexus" | "minimal" | "manga";
 
@@ -77,6 +84,8 @@ const MANAGED_MODE_CSS_PROPS = [
   "--radius",
   "--font-display",
   "--font-sans",
+  "--genre-gold",
+  "--genre-accent-2",
 ] as const;
 
 export function resolveVisualUiMode(value: string | null | undefined): VisualUiMode {
@@ -255,6 +264,7 @@ export function applyUiModeCss(
   dark: boolean,
   root: HTMLElement = document.documentElement,
   baseVars?: Record<string, string>,
+  storedGenre?: ClassicGenreSelection,
 ): void {
   // 1. Clear all mode-managed properties first so switching back from nexus/manga leaves zero residue.
   for (const prop of MANAGED_MODE_CSS_PROPS) {
@@ -269,12 +279,27 @@ export function applyUiModeCss(
   }
 
   // 3. Apply the active mode's CSS custom properties onto <html>.
+  const activeGenre = resolveActiveGenreTheme(mode, storedGenre ?? readStoredGenreTheme());
   const vars = uiModeCssVars(mode, dark);
   for (const [k, v] of Object.entries(vars)) {
     root.style.setProperty(k, v);
   }
 
-  // 4. Sync root data attributes used by CSS selectors across the app.
+  // 4. For Manga non-ink genre themes, clear manga-ink inline palette/font/border/radius overrides
+  //    so the CSS-based [data-genre-theme="..."] selectors in src/styles.css control colors, patterns & borders.
+  if (activeGenre) {
+    root.dataset["genreTheme"] = activeGenre;
+    if (activeGenre !== "manga-ink") {
+      for (const prop of MANAGED_MODE_CSS_PROPS) {
+        if (prop === "--ui-mode" || prop === "--ui-transition") continue;
+        root.style.removeProperty(prop);
+      }
+    }
+  } else {
+    delete root.dataset["genreTheme"];
+  }
+
+  // 5. Sync root data attributes used by CSS selectors across the app.
   root.dataset["uiMode"] = mode;
   if (mode === "classic") {
     delete root.dataset["ui"];
@@ -302,6 +327,7 @@ export function UiModeProvider({
   const { theme, dark, loaded: appearanceLoaded } = useAppearance();
   const { settings } = useTypography();
   const externalStyle = useUiStyle();
+  const storedGenre = useStoredGenreTheme();
   const transitionTimerRef = useRef<number | null>(null);
 
   const [mode, setModeState] = useState<VisualUiMode>(() => {
@@ -413,7 +439,7 @@ export function UiModeProvider({
     setMode(next);
   }, [mode, setMode]);
 
-  // Re-apply CSS custom properties on <html> whenever mode, active palette, dark mode, or typography changes.
+  // Re-apply CSS custom properties on <html> whenever mode, active palette, genre theme, dark mode, or typography changes.
   const applyCurrentMode = useCallback(() => {
     const preset = THEMES.find((t) => t.id === theme) ?? THEMES.find((t) => t.id === DEFAULT_THEME);
     const baseThemeVars = preset ? themeVars(preset, dark) : {};
@@ -424,14 +450,16 @@ export function UiModeProvider({
       "--font-sans": `"${bodyFont}", system-ui, -apple-system, "Segoe UI", sans-serif`,
       "--font-display": `"${displayFont}", Georgia, "Times New Roman", serif`,
     };
-    applyUiModeCss(mode, dark, document.documentElement, baseVars);
-  }, [mode, theme, dark, settings.bodyFont, settings.displayFont]);
+    applyUiModeCss(mode, dark, document.documentElement, baseVars, storedGenre);
+  }, [mode, theme, dark, settings.bodyFont, settings.displayFont, storedGenre]);
 
   useEffect(() => {
     applyCurrentMode();
     window.addEventListener("scu:theme-applied", applyCurrentMode);
+    window.addEventListener("scu:genre-theme-change", applyCurrentMode);
     return () => {
       window.removeEventListener("scu:theme-applied", applyCurrentMode);
+      window.removeEventListener("scu:genre-theme-change", applyCurrentMode);
     };
   }, [applyCurrentMode, appearanceLoaded]);
 
@@ -481,4 +509,10 @@ export function useVisualMode(): VisualUiMode {
 
 export function useIsManga(): boolean {
   return useVisualMode() === "manga";
+}
+
+export function useActiveGenre(): GenreThemeId | null {
+  const mode = useVisualMode();
+  const stored = useStoredGenreTheme();
+  return resolveActiveGenreTheme(mode, stored);
 }

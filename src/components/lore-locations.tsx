@@ -5,6 +5,7 @@ import { LoreWorldMap } from "@/components/lore-world-map";
 import { AtlasOverlay } from "@/components/nexus-atlas";
 import { useUiStyle } from "@/lib/ui-style";
 import { useIsManga } from "@/hooks/use-ui-mode";
+import { MANGA_SCALE } from "@/lib/manga-scale";
 
 type Era = {
   id: string;
@@ -269,9 +270,9 @@ export function LoreLocations() {
               onClick={() => setLocId(l.id)}
               className={
                 isManga
-                  ? `shrink-0 border-2 border-foreground p-3.5 text-left transition ${
+                  ? `shrink-0 border-2 border-foreground p-3 text-left transition ${
                       l.id === locId
-                        ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
+                        ? "bg-foreground text-background shadow-[3px_3px_0_var(--primary)]"
                         : "bg-card text-foreground hover:bg-secondary"
                     }`
                   : `glass shrink-0 rounded-xl p-3.5 text-left transition-all ${l.id === locId ? "glow-ring border-accent/50" : "hover:glow-ring"}`
@@ -281,7 +282,7 @@ export function LoreLocations() {
                 className={`h-4 w-4 ${
                   isManga
                     ? l.id === locId
-                      ? "text-[#fca5a5]"
+                      ? "text-primary"
                       : "text-foreground"
                     : l.id === locId
                       ? "text-accent"
@@ -289,7 +290,7 @@ export function LoreLocations() {
                 }`}
               />
               <div
-                className={`mt-1.5 ${isManga ? "font-display text-lg uppercase" : "font-medium"}`}
+                className={`mt-1.5 ${isManga ? `font-display ${MANGA_SCALE.cardTitle} uppercase` : "font-medium"}`}
               >
                 {l.name}
               </div>
@@ -303,7 +304,7 @@ export function LoreLocations() {
         <div
           className={
             isManga
-              ? "manga-halftone relative overflow-hidden border-[3px] border-foreground bg-card p-5 shadow-[5px_5px_0_currentColor]"
+              ? `manga-panel manga-halftone ${MANGA_SCALE.banner} relative overflow-hidden border-2 border-border bg-card`
               : "glass relative overflow-hidden rounded-2xl border border-border p-5"
           }
         >
@@ -324,7 +325,7 @@ export function LoreLocations() {
               <div>
                 <p
                   className={`text-[11px] font-bold uppercase tracking-[0.25em] ${
-                    isManga ? "font-mono text-[#b91c1c] dark:text-[#fca5a5]" : "text-accent"
+                    isManga ? "font-mono text-primary" : "text-accent"
                   }`}
                 >
                   {loc.epithet}
@@ -332,7 +333,7 @@ export function LoreLocations() {
                 <h2
                   className={
                     isManga
-                      ? "manga-display-title mt-1 text-4xl uppercase"
+                      ? `manga-display-title ${MANGA_SCALE.heroTitle} mt-1 uppercase`
                       : "mt-1 text-3xl font-medium glow-text"
                   }
                 >
@@ -361,9 +362,9 @@ export function LoreLocations() {
                   onClick={() => setEraIdx((s) => ({ ...s, [loc.id]: i }))}
                   className={
                     isManga
-                      ? `border-2 border-foreground px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                      ? `border-2 border-border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           i === idx
-                            ? "bg-[#b91c1c] text-white border-[#b91c1c]"
+                            ? "bg-primary text-primary-foreground border-primary"
                             : "bg-background text-foreground hover:bg-secondary"
                         }`
                       : `relative rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${i === idx ? "border-accent/60 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`
@@ -394,7 +395,7 @@ export function LoreLocations() {
                     State
                   </div>
                   <div
-                    className={isManga ? "font-display text-3xl uppercase" : "text-2xl font-medium"}
+                    className={isManga ? "font-display text-2xl uppercase" : "text-2xl font-medium"}
                   >
                     {era.state}
                   </div>
@@ -403,7 +404,7 @@ export function LoreLocations() {
                 <div
                   className={
                     isManga
-                      ? "border-2 border-foreground bg-background p-4 md:col-span-2"
+                      ? "border-2 border-border bg-background p-4 md:col-span-2"
                       : "rounded-xl border border-border bg-background/40 p-4 md:col-span-2"
                   }
                 >
@@ -415,7 +416,7 @@ export function LoreLocations() {
                 <div
                   className={
                     isManga
-                      ? "border-2 border-foreground bg-foreground p-4 text-background"
+                      ? "border-2 border-border bg-foreground p-4 text-background"
                       : "rounded-xl border border-border bg-background/40 p-4"
                   }
                 >
@@ -423,7 +424,7 @@ export function LoreLocations() {
                     Environment status
                   </div>
                   <p
-                    className={`mt-1 text-sm font-bold ${isManga ? "text-[#fca5a5]" : "text-accent"}`}
+                    className={`mt-1 text-sm font-bold ${isManga ? "text-primary" : "text-accent"}`}
                   >
                     {era.status}
                   </p>

@@ -81,7 +81,7 @@ export function StatRadar({
             cy={CY}
             r={R + 5}
             fill="none"
-            stroke="#b91c1c"
+            stroke="var(--primary)"
             strokeOpacity={0.65}
             strokeWidth={1}
           />
@@ -103,9 +103,9 @@ export function StatRadar({
           {b && (
             <path
               d={seriesPath(b)}
-              fill="#b91c1c"
+              fill="var(--primary)"
               fillOpacity={0.14}
-              stroke="#b91c1c"
+              stroke="var(--primary)"
               strokeWidth={2}
               strokeDasharray="4 2"
             />
@@ -142,7 +142,7 @@ export function StatRadar({
                   y={vp.y - 3}
                   width={6}
                   height={6}
-                  fill="#b91c1c"
+                  fill="var(--primary)"
                   stroke="var(--card)"
                   strokeWidth={1}
                 >
@@ -156,14 +156,14 @@ export function StatRadar({
         {(nameA || nameB) && (
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-[10px] font-bold uppercase tracking-widest">
             {nameA && (
-              <span className="flex items-center gap-1.5 border border-foreground px-2 py-0.5">
+              <span className="flex items-center gap-1.5 border border-border px-2 py-0.5">
                 <span className="h-2 w-2 bg-foreground" />
                 {nameA}
               </span>
             )}
             {nameB && (
-              <span className="flex items-center gap-1.5 border border-[#b91c1c] px-2 py-0.5 text-[#b91c1c]">
-                <span className="h-2 w-2 bg-[#b91c1c]" />
+              <span className="flex items-center gap-1.5 border border-primary px-2 py-0.5 text-primary">
+                <span className="h-2 w-2 bg-primary" />
                 {nameB}
               </span>
             )}

@@ -7,7 +7,8 @@ import { THEMES } from "@/lib/themes";
 import { UiStylePicker } from "@/components/ui-style-picker";
 import { Button } from "@/components/ui/button";
 import { useUiStyle } from "@/lib/ui-style";
-import { useVisualMode } from "@/hooks/use-ui-mode";
+import { useActiveGenre, useVisualMode } from "@/hooks/use-ui-mode";
+import { GENRE_THEMES, setGenreTheme } from "@/lib/genre-themes";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
 import {
   useNexusTheme,
@@ -40,6 +41,7 @@ export function ThemeDrawer({
   const { theme, setTheme, zoom, scaleIndex, dark, setDark } = useAppearance();
   const nexus = useUiStyle() === "nexus";
   const visualMode = useVisualMode();
+  const activeGenre = useActiveGenre();
   const navigationMode = useNavMode();
   const nexusTheme = useNexusTheme();
   const fx3dEnabled = useNexus3dFxEnabled();
@@ -60,39 +62,85 @@ export function ThemeDrawer({
           <Palette className="h-3.5 w-3.5" />
         </button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+      <SheetContent side="bottom" className="max-h-[82vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="font-display text-2xl">Appearance</SheetTitle>
+          <SheetTitle className="font-display text-xl">Appearance</SheetTitle>
         </SheetHeader>
-        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <span className="mr-auto text-sm text-muted-foreground">UI Style</span>
           <UiStylePicker />
         </div>
         {visualMode === "manga" && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <div>
-              <h3 className="text-sm font-medium">Manga Paper Finish</h3>
-              <p className="text-xs text-muted-foreground">
-                Switch between Washi Cream Daylight and Midnight Sumi-Ink Plates.
-              </p>
+          <section
+            aria-label="Genre and anime visual themes"
+            className="border-b border-border px-4 py-4"
+          >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-medium">Genre &amp; Anime Aesthetics</h3>
+                <p className="text-xs text-muted-foreground">
+                  Each style applies unique color logic, card filigree, portrait bezels, dossier
+                  arrangements &amp; ambient visualizations.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant={!dark ? "secondary" : "ghost"}
+                  onClick={() => setDark(false)}
+                >
+                  Daylight
+                </Button>
+                <Button
+                  size="sm"
+                  variant={dark ? "secondary" : "ghost"}
+                  onClick={() => setDark(true)}
+                >
+                  Dark Edition
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-1.5">
-              <Button
-                size="sm"
-                variant={!dark ? "secondary" : "ghost"}
-                onClick={() => setDark(false)}
-              >
-                Washi Parchment
-              </Button>
-              <Button
-                size="sm"
-                variant={dark ? "secondary" : "ghost"}
-                onClick={() => setDark(true)}
-              >
-                Sumi Dark Ink
-              </Button>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {GENRE_THEMES.map((g) => {
+                const selected = activeGenre === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setGenreTheme(g.id)}
+                    className={`flex flex-col justify-between rounded-xl border p-3 text-left text-xs transition ${
+                      selected
+                        ? "border-accent bg-accent/10 glow-ring"
+                        : "border-border hover:border-foreground/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold">{g.shortLabel}</span>
+                      <span className="font-mono text-[9px] text-muted-foreground">
+                        {g.jpLabel}
+                      </span>
+                    </div>
+                    <div className="my-2 flex items-center gap-1.5">
+                      {g.swatches.map((hex, i) => (
+                        <span
+                          key={i}
+                          className="h-3.5 w-3.5 rounded-full border border-foreground/20"
+                          style={{ background: hex }}
+                        />
+                      ))}
+                      <span className="ml-auto font-mono text-[9px] uppercase text-muted-foreground">
+                        {g.portraitShape.replace("-", " ")}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+                      {g.tagline}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </section>
         )}
         {nexus ? (
           <section aria-label="Nexus 3D element wallpapers" className="p-4">

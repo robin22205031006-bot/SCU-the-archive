@@ -521,7 +521,7 @@ function AbilityCard({
     <div
       className={
         isManga
-          ? "manga-panel manga-panel-hover border-[3px] border-foreground bg-card p-4 transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
+          ? "manga-panel manga-panel-hover manga-card-scale relative border-2 border-border bg-card transition-transform hover:-translate-y-0.5"
           : "glass rounded-2xl p-4 transition-shadow"
       }
       style={
@@ -534,7 +534,7 @@ function AbilityCard({
         <span
           className={
             isManga
-              ? "grid h-10 w-10 shrink-0 place-items-center border-2 border-foreground bg-foreground text-background"
+              ? "grid h-9 w-9 shrink-0 place-items-center border-2 border-border bg-foreground text-background"
               : "grid h-10 w-10 shrink-0 place-items-center rounded-xl"
           }
           style={
@@ -558,7 +558,7 @@ function AbilityCard({
             <span
               className={
                 isManga
-                  ? "truncate font-display text-xl uppercase tracking-wide"
+                  ? "truncate font-display text-lg uppercase tracking-wide"
                   : "truncate font-medium"
               }
             >
@@ -571,7 +571,7 @@ function AbilityCard({
           <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             <span
               style={isManga ? undefined : { color: def.color }}
-              className={isManga ? "font-bold text-[#b91c1c] dark:text-[#fca5a5]" : undefined}
+              className={isManga ? "font-bold text-primary" : undefined}
             >
               {def.tier}
             </span>
@@ -605,7 +605,7 @@ function AbilityCard({
                   search={{ e: e.id }}
                   className={
                     isManga
-                      ? "border-2 border-foreground bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-foreground hover:text-background"
+                      ? "border border-border bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-primary hover:text-primary-foreground"
                       : "rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs hover:border-accent hover:text-accent"
                   }
                 >

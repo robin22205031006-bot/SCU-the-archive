@@ -1827,7 +1827,7 @@ export function EntitySection({
                           <Link
                             to="/character"
                             search={{ e: e.id }}
-                            className="flex min-w-0 flex-1 gap-4"
+                            className="relative flex min-w-0 flex-1 gap-4"
                           >
                             <Avatar e={e} size="h-16 w-16" />
                             <CardBody e={e} showKind={kinds.length > 1} />
