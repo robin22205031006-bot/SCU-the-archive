@@ -198,6 +198,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#b91c1c",
     icon: Droplets,
+    description: "Shapes and weaponizes blood into crimson lances, shields, and arterial strikes.",
   },
   {
     key: "red_lightning",
@@ -206,6 +207,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#ef4444",
     icon: Zap,
+    description: "Volatile scarlet storm current that discharges with devastating explosive force.",
   },
   {
     key: "demonic",
@@ -214,6 +216,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#7c3aed",
     icon: Ghost,
+    description: "Abyssal demonic essence amplifying lethality, curses, and dark combat aura.",
   },
   {
     key: "draconic_flame",
@@ -222,6 +225,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#f97316",
     icon: Flame,
+    description: "Apex dragonfire roaring with scorching breath and relentless thermal pressure.",
   },
   {
     key: "destructive_legendary",
@@ -230,6 +234,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#dc2626",
     icon: Bomb,
+    description: "Cataclysmic kinetic devastation capable of shattering terrain and defenses.",
   },
 
   // ---- Rare ----
@@ -240,6 +245,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#a855f7",
     icon: WandSparkles,
+    description: "Structured arcane spellwork channeling geometric sigils and astral bolts.",
   },
   {
     key: "manipulation",
@@ -248,6 +254,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#c084fc",
     icon: WandSparkles,
+    description: "Subtle compulsion and vector distortion bending targets and trajectories.",
   },
   {
     key: "regeneration",
@@ -256,6 +263,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#34d399",
     icon: HeartPulse,
+    description: "Accelerated cellular restoration mending severe wounds mid-combat.",
   },
   {
     key: "super_speed",
@@ -264,6 +272,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#22d3ee",
     icon: Gauge,
+    description:
+      "High-velocity burst locomotion leaving blinding afterimages across the battlefield.",
   },
   {
     key: "wild_energy",
@@ -272,6 +282,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#f97316",
     icon: Radiation,
+    description: "Untamed reactive energy surges flaring unpredictably with raw kinetic shock.",
   },
   {
     key: "chaos_magic",
@@ -280,6 +291,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#dc2626",
     icon: Shuffle,
+    description: "Entropy-driven sorcery warping spatial rules and combat rhythm.",
   },
   {
     key: "dark_magic",
@@ -288,6 +300,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#7c3aed",
     icon: Moon,
+    description: "Forbidden nocturnal incantations weaving hexes, bindings, and abyssal chill.",
   },
   {
     key: "aerokinesis",
@@ -323,6 +336,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#dc2626",
     icon: Flame,
+    description: "Disciplined crimson pyromancy focused into scorching arcs and searing rings.",
   },
   {
     key: "bestiakinesis",
@@ -340,6 +354,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#fbbf24",
     icon: Zap,
+    description: "Surging kinetic overdrive sharpening reflexes and high-velocity impacts.",
   },
   {
     key: "hemokinesis",
@@ -357,6 +372,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#7f1d1d",
     icon: Droplets,
+    description: "Fluid crimson phase-shift converting vital force into evasive dashes and blades.",
   },
   {
     key: "chaos_order",
@@ -374,6 +390,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#38bdf8",
     icon: Cpu,
+    description:
+      "Master engineering intellect designing exosuits, tactical rigs, and counter-tech.",
   },
   {
     key: "long_range_overwatch",
@@ -411,6 +429,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#ff0033",
     icon: Zap,
+    description: "Hyper-dense crimson lightning branch erupting in razor storm bolts.",
   },
   {
     key: "duskmoor_blue_flame",
@@ -446,6 +465,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#312e81",
     icon: Moon,
+    description: "Solidified shadow projection shaping tendrils, ambushes, and dark cover.",
   },
   {
     key: "psychokinetic_daggers",
@@ -483,6 +503,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#f59e0b",
     icon: Expand,
+    description:
+      "Encloses combatants inside an absolute metaphysical zone governed by the caster's rules.",
   },
   {
     key: "tech_suits",
@@ -491,6 +513,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#64748b",
     icon: Shield,
+    description: "Armored tactical exosuits integrating reactor shielding, flight, and telemetry.",
   },
   {
     key: "kinetic_suits",
@@ -499,6 +522,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#eab308",
     icon: Zap,
+    description:
+      "Impact-absorbing armor suits converting incoming blows into counter-burst energy.",
   },
   {
     key: "prismorph",
@@ -554,6 +579,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#991b1b",
     icon: Scroll,
+    description: "Lineage-bound blood techniques passed down through ancient clans.",
   },
   {
     key: "ancient_art",
@@ -562,6 +588,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#78716c",
     icon: BookOpen,
+    description: "Traditional foundational discipline predating modern power classifications.",
   },
 
   // ---- Elements ----
@@ -572,8 +599,17 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#f97316",
     icon: Flame,
+    description: "Innate flame generation shaped into fireballs, flares, and heated strikes.",
   },
-  { key: "fire", label: "Fire", tier: "Standard", group: "element", color: "#ea580c", icon: Flame },
+  {
+    key: "fire",
+    label: "Fire",
+    tier: "Standard",
+    group: "element",
+    color: "#ea580c",
+    icon: Flame,
+    description: "Elemental fire affinity igniting sweeping bursts and burning barriers.",
+  },
   {
     key: "earth",
     label: "Earth",
@@ -581,6 +617,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#a16207",
     icon: Mountain,
+    description: "Geomantic control raising stone bulwarks, tectonic fissures, and heavy impacts.",
   },
   {
     key: "nature",
@@ -589,6 +626,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#22c55e",
     icon: Leaf,
+    description: "Botanical resonance summoning thorny vines, spores, and living barriers.",
   },
   {
     key: "water",
@@ -597,8 +635,17 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#0ea5e9",
     icon: Droplets,
+    description: "Fluid hydro-manipulation forming whips, currents, and defensive surges.",
   },
-  { key: "wind", label: "Wind", tier: "Standard", group: "element", color: "#4ade80", icon: Wind },
+  {
+    key: "wind",
+    label: "Wind",
+    tier: "Standard",
+    group: "element",
+    color: "#4ade80",
+    icon: Wind,
+    description: "Slicing air currents used for agile repositioning and compressed wind blades.",
+  },
   {
     key: "lightning",
     label: "Lightning",
@@ -606,6 +653,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#eab308",
     icon: Zap,
+    description: "High-voltage electrical discharge striking with rapid arc velocity.",
   },
   {
     key: "purple_lightning",
@@ -614,6 +662,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#c084fc",
     icon: Zap,
+    description: "Ascended violet storm current bridging standard lightning and crimson branches.",
   },
   {
     key: "healing",
@@ -622,6 +671,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "element",
     color: "#34d399",
     icon: HeartPulse,
+    description: "Restorative resonance knitting injuries and stabilizing allies under fire.",
   },
   {
     key: "speed",
@@ -630,6 +680,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#4ade80",
     icon: Rabbit,
+    description: "Heightened sprint reflexes and rapid close-quarters dash momentum.",
   },
 
   // ---- Signature powers / techniques ----
@@ -640,6 +691,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#38bdf8",
     icon: DoorOpen,
+    description: "Spatial gateways tearing open short- and long-range warp passages.",
   },
   {
     key: "authority",
@@ -648,6 +700,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#eab308",
     icon: Crown,
+    description: "Commanding aura projecting weight, resolve, and hierarchy over combat zones.",
   },
   {
     key: "destructive",
@@ -656,6 +709,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#dc2626",
     icon: Bomb,
+    description: "Explosive force amplification focused on breaking guard and cover.",
   },
   {
     key: "shadow_steps",
@@ -664,6 +718,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#64748b",
     icon: Footprints,
+    description: "Stealth footwork slipping across blind spots through shadow-veiled blinks.",
   },
   {
     key: "long_range",
@@ -672,6 +727,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#94a3b8",
     icon: Locate,
+    description: "Precision ballistic and projected-energy marksmanship across wide sightlines.",
   },
   {
     key: "rune_magic",
@@ -680,6 +736,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#a78bfa",
     icon: Hash,
+    description: "Inscribed rune seals storing delayed wards, traps, and amplified strikes.",
   },
   {
     key: "card_magic",
@@ -688,8 +745,17 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#f472b6",
     icon: CreditCard,
+    description: "Sleight-of-hand arcane cards concealing blades, illusions, and shifting seals.",
   },
-  { key: "jester", label: "Jester", tier: "Role", group: "role", color: "#f472b6", icon: Drama },
+  {
+    key: "jester",
+    label: "Jester",
+    tier: "Role",
+    group: "role",
+    color: "#f472b6",
+    icon: Drama,
+    description: "Unpredictable trickster fighting role pairing misdirection with lethal timing.",
+  },
   {
     key: "super_soldier",
     label: "Super Soldier",
@@ -697,6 +763,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#60a5fa",
     icon: Shield,
+    description:
+      "Enhanced strength, endurance, and military conditioning built for prolonged engagements.",
   },
 
   // ---- Combat roles ----
@@ -707,8 +775,17 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#dc2626",
     icon: Crosshair,
+    description: "Precision elimination specialist targeting vital openings from stealth.",
   },
-  { key: "spy", label: "Spy", tier: "Role", group: "role", color: "#64748b", icon: Eye },
+  {
+    key: "spy",
+    label: "Spy",
+    tier: "Role",
+    group: "role",
+    color: "#64748b",
+    icon: Eye,
+    description: "Clandestine reconnaissance, infiltration, and counter-intelligence operative.",
+  },
   {
     key: "combat_specialist",
     label: "Combat Specialist",
@@ -716,6 +793,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#f97316",
     icon: Swords,
+    description: "Versatile hand-to-hand and weapon tactician excelling in direct exchanges.",
   },
   {
     key: "tactician",
@@ -724,6 +802,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#0ea5e9",
     icon: Landmark,
+    description: "Battlefield strategist orchestrating positioning, counters, and squad synergy.",
   },
   {
     key: "swordsman",
@@ -732,6 +811,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#94a3b8",
     icon: Swords,
+    description: "Trained blade duelist relying on clean footwork and disciplined parries.",
   },
   {
     key: "sword_master",
@@ -740,6 +820,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: "#d4af37",
     icon: Swords,
+    description: "Peak blade virtuoso executing multi-angle slashes faster than the eye can track.",
   },
   {
     key: "beast_transformation",
@@ -748,10 +829,19 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "role",
     color: BEAST,
     icon: PawPrint,
+    description: "Full or partial shift unleashing primal anatomy, claws, and predatory instincts.",
   },
 
   // ---- Beast classifications ----
-  { key: "wolf", label: "Wolf", tier: "Standard", group: "beast", color: BEAST, icon: PawPrint },
+  {
+    key: "wolf",
+    label: "Wolf",
+    tier: "Standard",
+    group: "beast",
+    color: BEAST,
+    icon: PawPrint,
+    description: "Lupine beast trait granting heightened scent, pack agility, and tearing fangs.",
+  },
   {
     key: "tiger",
     label: "Tiger",
@@ -759,6 +849,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "beast",
     color: "#f59e0b",
     icon: PawPrint,
+    description: "Explosive feline ambush power paired with heavy claw strikes.",
   },
   {
     key: "lion",
@@ -767,6 +858,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "beast",
     color: "#eab308",
     icon: PawPrint,
+    description: "Regal apex predator strength and concussive roar shockwaves.",
   },
   {
     key: "dragon",
@@ -775,6 +867,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "beast",
     color: "#dc2626",
     icon: PawPrint,
+    description: "Scaled draconic heritage conferring flight, breath pressure, and armored hide.",
   },
   {
     key: "hyena",
@@ -783,6 +876,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "beast",
     color: "#92400e",
     icon: PawPrint,
+    description: "Relentless endurance and bone-crushing pack ferocity.",
   },
   {
     key: "snakes",
@@ -791,6 +885,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "beast",
     color: "#16a34a",
     icon: PawPrint,
+    description: "Serpentine flexibility, venom precision, and coiling strikes.",
   },
   {
     key: "vampire",
@@ -799,6 +894,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "beast",
     color: "#7f1d1d",
     icon: Moon,
+    description: "Nocturnal bloodline granting superhuman speed, fangs, and crimson vitality.",
   },
   {
     key: "vampire_hybrid",
@@ -807,6 +903,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "beast",
     color: "#9f1239",
     icon: Moon,
+    description: "Merged vampiric and human lineage balancing blood traits with weapon mastery.",
   },
 
   // ---- Missing combat & PDF lore abilities ----
@@ -1047,6 +1144,12 @@ export function getAbilityRegistryVersion() {
 /** Admin-defined abilities persisted locally + mirrored to app_settings by the hub. */
 export type CustomAbilityDef = AbilityDef;
 
+function resolveAbilityIcon(icon: unknown): LucideIcon {
+  if (typeof icon === "function") return icon as LucideIcon;
+  if (icon && typeof icon === "object" && "$$typeof" in icon) return icon as LucideIcon;
+  return Sparkles;
+}
+
 export function getCustomAbilities(): CustomAbilityDef[] {
   try {
     const raw = localStorage.getItem(CUSTOM_STORAGE_KEY);
@@ -1054,7 +1157,7 @@ export function getCustomAbilities(): CustomAbilityDef[] {
     return Array.isArray(parsed)
       ? parsed
           .filter((a) => a && typeof a.label === "string")
-          .map((a) => ({ ...a, icon: a.icon ?? Sparkles }))
+          .map((a) => ({ ...a, icon: resolveAbilityIcon(a.icon) }))
       : [];
   } catch {
     return [];
@@ -1123,11 +1226,11 @@ export function removeAbilityOverride(key: string) {
 
 function applyOverride(def: AbilityDef): AbilityDef {
   const o = getAbilityOverrides()[normalizeAbilityKey(def.key)];
-  if (!o) return { ...def, icon: def.icon ?? Sparkles };
+  if (!o) return { ...def, icon: resolveAbilityIcon(def.icon) };
   return {
     ...def,
     ...o,
-    icon: o.icon ?? def.icon ?? Sparkles,
+    icon: resolveAbilityIcon(o.icon ?? def.icon),
   };
 }
 

@@ -5,12 +5,13 @@ import {
   createRootRouteWithContext,
   useLocation,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { WifiOff } from "lucide-react";
+import { Loader2, WifiOff } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteNav } from "@/components/site-nav";
 import { FloatingNav } from "@/components/floating-nav";
@@ -22,6 +23,7 @@ import { AppearanceProvider } from "@/hooks/use-appearance";
 import { TypographyProvider } from "@/hooks/use-typography";
 import { UiModeProvider, useUiMode } from "@/hooks/use-ui-mode";
 import { AuthProvider } from "@/context/AuthContext";
+import { AbilityProvider } from "@/context/AbilityContext";
 import { UIStateProvider } from "@/context/UIStateContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AppVersionChecker } from "@/components/AppVersionChecker";
@@ -178,6 +180,11 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootContent({ offline }: { offline: boolean }) {
   const { mode } = useUiMode();
   const { pathname } = useLocation();
+  const isInitialRoutePending = useRouterState({
+    select: (s) =>
+      s.status === "pending" &&
+      !s.matches.some((m) => m.routeId !== "__root__" && m.status === "success"),
+  });
   const { isMinimal, motionActive, spec } = useAppMotion();
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const outletContainerRef = useRef<HTMLDivElement>(null);
@@ -235,7 +242,18 @@ function RootContent({ offline }: { offline: boolean }) {
         >
           {showNexusRail ? <NexusSectionRailAside containerRef={outletContainerRef} /> : null}
           <div ref={outletContainerRef} className={showNexusRail ? "min-w-0" : undefined}>
-            <Outlet />
+            {isInitialRoutePending ? (
+              <main
+                role="status"
+                aria-live="polite"
+                className="mx-auto flex min-h-[70dvh] w-full max-w-md flex-col items-center justify-center gap-3 px-5 py-16 text-center"
+              >
+                <Loader2 className="h-7 w-7 animate-spin text-accent" aria-hidden="true" />
+                <p className="text-sm font-medium text-muted-foreground">Loading archive…</p>
+              </main>
+            ) : (
+              <Outlet />
+            )}
           </div>
         </div>
       </div>
@@ -286,11 +304,13 @@ function RootComponent() {
               <UiModeProvider>
                 <ThemeProvider>
                   <UIStateProvider applyAttributesToHtml={false}>
-                    <ErrorBoundary>
-                      <RootContent offline={offline} />
-                      <AppVersionChecker />
-                    </ErrorBoundary>
-                    <Toaster />
+                    <AbilityProvider>
+                      <ErrorBoundary>
+                        <RootContent offline={offline} />
+                        <AppVersionChecker />
+                      </ErrorBoundary>
+                      <Toaster />
+                    </AbilityProvider>
                   </UIStateProvider>
                 </ThemeProvider>
               </UiModeProvider>

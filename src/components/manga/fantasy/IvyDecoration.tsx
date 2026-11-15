@@ -45,6 +45,7 @@ export function IvyDecoration({ variant = "card", className = "" }: IvyDecoratio
         }`}
         style={{
           transformOrigin: "top left",
+          animation: motionActive ? "ivySway 6.8s ease-in-out infinite alternate" : "none",
         }}
         fill="none"
       >
@@ -104,6 +105,7 @@ export function IvyDecoration({ variant = "card", className = "" }: IvyDecoratio
         }`}
         style={{
           transformOrigin: "top right",
+          animation: motionActive ? "ivySway 4.6s ease-in-out infinite alternate-reverse" : "none",
         }}
         fill="none"
       >
@@ -157,6 +159,9 @@ export function IvyDecoration({ variant = "card", className = "" }: IvyDecoratio
           }`}
           style={{
             transformOrigin: "bottom right",
+            animation: motionActive
+              ? "ivySway 7.4s ease-in-out infinite alternate-reverse"
+              : "none",
           }}
           fill="none"
         >

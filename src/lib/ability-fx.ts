@@ -1,5 +1,6 @@
 /** Browser-safe recipes for the Nexus advanced ability FX showcase. */
 import { abilityDef, type AbilityTier } from "@/lib/abilities";
+import { parseAbilityRank, type AbilityEmblemRank } from "@/lib/ability-rank";
 
 export type FxMotif =
   | "flame"
@@ -773,9 +774,17 @@ function hash(s: string) {
   return h >>> 0;
 }
 
-export function abilityFxRecipe(name: string): FxRecipe {
+/** Maps a character's 1..5 rank onto the 1..8 canvas FX power scale. */
+export function rankToFxPower(rank: AbilityEmblemRank, basePower: number): number {
+  const scaled = Math.round(1.5 + (rank - 1) * 1.625); // 1->2, 2->3, 3->5, 4->6, 5->8
+  return Math.max(1, Math.min(8, Math.round(scaled * 0.75 + basePower * 0.25)));
+}
+
+export function abilityFxRecipe(name: string, rank?: number | undefined): FxRecipe {
   const def = abilityDef(name);
-  const power = TIER_POWER[def.tier] ?? 2;
+  const basePower = TIER_POWER[def.tier] ?? 2;
+  const parsedRank = parseAbilityRank(rank);
+  const power = parsedRank ? rankToFxPower(parsedRank, basePower) : basePower;
   const row = TABLE[def.key];
   if (row)
     return {
@@ -889,6 +898,86 @@ export const FX_LINEAGES: FxLineage[] = [
     label: "Animal forms (order unconfirmed)",
     steps: ["bestiakinesis", "beast_transformation", "hyena", "wolf", "tiger", "lion", "dragon"],
   },
+  {
+    id: "hydro_cryo",
+    label: "Hydro & Cryo discipline",
+    steps: ["hydrokinesis", "cryokinesis"],
+  },
+  {
+    id: "wind_sky",
+    label: "Wind & Sky ascension",
+    steps: ["wind_surge", "aerokinesis", "sky_guardian"],
+  },
+  {
+    id: "velocity",
+    label: "Velocity & Kinetics",
+    steps: ["speed", "velocity_genome", "super_speed", "hyperkinesis"],
+  },
+  {
+    id: "vitality",
+    label: "Vitality & Regeneration",
+    steps: ["healing", "regeneration"],
+  },
+  {
+    id: "impact_force",
+    label: "Destructive force & Judgement",
+    steps: ["destructive", "destructive_legendary", "athenas_judgement"],
+  },
+  {
+    id: "authority_sovereign",
+    label: "Sovereign authority",
+    steps: ["authority", "architect_cube_guardian", "qahr_al_wujud"],
+  },
+  {
+    id: "blood_pacts",
+    label: "Blood Arts & Demonic pacts",
+    steps: ["blood_art", "bloodbinding", "demonic"],
+  },
+  {
+    id: "occult_arts",
+    label: "Ancient & Spectral arts",
+    steps: ["ancient_art", "shishjutsu", "ethereal_splicing", "domain_expansion"],
+  },
+  {
+    id: "mind_sight",
+    label: "Perception & Shadow manipulation",
+    steps: ["omen_sight", "manipulation", "umbra_control"],
+  },
+  {
+    id: "energy_omni",
+    label: "Raw Energy & Omni-Argon",
+    steps: ["energy", "errorcore", "omni_argon"],
+  },
+  {
+    id: "dual_blades",
+    label: "Soldier & Ghost Armament",
+    steps: ["super_soldier", "blades", "ghost_01_armament"],
+  },
+  {
+    id: "overwatch",
+    label: "Long-range discipline",
+    steps: ["long_range", "long_range_overwatch"],
+  },
+  {
+    id: "adaptive",
+    label: "Adaptive & Nightmare states",
+    steps: ["mimic_form", "prismorph", "azure_revenant_state", "paleborne_nightmare"],
+  },
+  {
+    id: "serpent",
+    label: "Serpent & Venomous beast",
+    steps: ["snakes", "beast_transformation"],
+  },
+  {
+    id: "tactics_espionage",
+    label: "Reconnaissance & Strategy",
+    steps: ["spy", "tactician"],
+  },
+  {
+    id: "martial_trickery",
+    label: "Close-Quarters & Trickery",
+    steps: ["combat_specialist", "jester", "swordsman"],
+  },
 ];
 
 /** Validates admin-saved chains; returns null when the value is unusable. */
@@ -965,12 +1054,54 @@ const KEY_COMBAT: Record<string, [number, number, number, number]> = {
   domain_expansion: [7, 5, 10, 3],
   aether_dominion: [10, 7, 10, 8],
   omni_ergon: [10, 8, 9, 8],
+  qahr_al_wujud: [10, 6, 10, 5],
+  athenas_judgement: [10, 5, 10, 4],
+  duskmoor_blue_flame: [9, 6, 6, 6],
+  draconic_flame: [9, 6, 7, 5],
+  demonic_hemokinesis: [8, 7, 5, 7],
+  shishjutsu: [6, 5, 8, 5],
+  ethereal_splicing: [7, 6, 9, 6],
+  omen_sight: [4, 7, 9, 6],
+  bloodbinding: [6, 5, 6, 5],
+  umbra_control: [7, 7, 6, 8],
+  errorcore: [8, 7, 6, 6],
+  velocity_genome: [5, 10, 4, 10],
+  mimic_form: [8, 8, 3, 8],
+  blades: [8, 8, 2, 8],
+  energy: [7, 6, 7, 5],
+  wind_surge: [5, 8, 6, 8],
+  aldercrest_arcane: [7, 5, 8, 4],
+  vanguard_x_protocol: [8, 7, 7, 7],
+  sentinel_frame_tech: [7, 6, 8, 6],
+  ghost_01_armament: [7, 8, 5, 8],
+  azure_revenant_state: [8, 8, 6, 8],
+  paleborne_nightmare: [9, 6, 8, 6],
+  prismorph: [7, 8, 4, 8],
+  architect_cube_guardian: [8, 5, 8, 5],
+  authority: [6, 5, 7, 4],
+  manipulation: [5, 6, 8, 5],
+  tactician: [3, 6, 9, 5],
+  spy: [4, 7, 6, 8],
+  combat_specialist: [7, 8, 3, 7],
+  jester: [6, 8, 5, 8],
+  swordsman: [7, 7, 2, 7],
+  sword_master: [9, 9, 3, 8],
+  super_soldier: [8, 7, 3, 7],
+  tech_genius: [5, 6, 8, 5],
+  tech_suits: [7, 6, 6, 7],
+  kinetic_suits: [8, 7, 5, 7],
 };
-/** Reader combat simulator: tier scales the ability's base combat profile. */
-export function simulateCombat(name: string, tier: AbilityTier): CombatStats {
+/** Reader combat simulator: tier and character rank (1..5) scale the ability's combat profile. */
+export function simulateCombat(
+  name: string,
+  tier: AbilityTier,
+  rank?: number | undefined,
+): CombatStats {
   const r = abilityFxRecipe(name);
   const [d, sp, rg, mo] = KEY_COMBAT[r.key] ?? MOTIF_COMBAT[r.motif];
-  const m = 0.55 + (TIER_POWER[tier] ?? 2) * 0.08;
+  const parsedRank = parseAbilityRank(rank);
+  const rankMult = parsedRank ? 0.72 + (parsedRank - 1) * 0.11 : 1;
+  const m = (0.55 + (TIER_POWER[tier] ?? 2) * 0.08) * rankMult;
   const sc = (x: number) => Math.min(100, Math.round(x * 10 * m));
   const range = sc(rg),
     mobility = sc(mo);

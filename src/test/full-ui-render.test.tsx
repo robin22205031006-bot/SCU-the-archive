@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthDefaultExport, { AuthPage } from "@/routes/auth";
 import { routeTree } from "@/routeTree.gen";
@@ -147,7 +147,12 @@ describe("Full UI, Auth Protection & Route Stability", () => {
     const view = render(<RouterProvider router={router} />);
 
     // While pendingComponent / auth verification runs, a non-blank status spinner is shown
-    expect(view.container.querySelector('[role="status"]')).not.toBeNull();
+    await waitFor(
+      () => {
+        expect(view.container.querySelector('[role="status"]')).not.toBeNull();
+      },
+      { timeout: 50 },
+    );
 
     await act(async () => {
       await loadPromise;
@@ -221,9 +226,10 @@ describe("Full UI, Auth Protection & Route Stability", () => {
         const pageOpacity = pageDiv instanceof HTMLElement ? getComputedStyle(pageDiv).opacity : "";
         const mainOpacity = mainEl instanceof HTMLElement ? getComputedStyle(mainEl).opacity : "";
         expect(textLen, `${mode} -> ${nextPath} <main> should render content`).toBeGreaterThan(0);
-        expect(pageOpacity, `${mode} -> ${nextPath} shell wrapper should not be opacity 0`).not.toBe(
-          "0",
-        );
+        expect(
+          pageOpacity,
+          `${mode} -> ${nextPath} shell wrapper should not be opacity 0`,
+        ).not.toBe("0");
         expect(mainOpacity, `${mode} -> ${nextPath} main should not be opacity 0`).not.toBe("0");
       }
     }

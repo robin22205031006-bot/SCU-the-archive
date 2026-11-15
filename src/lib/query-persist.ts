@@ -17,7 +17,7 @@ import { hasSupabaseConfig } from "@/integrations/supabase/client";
 export const IDB_CACHE_KEY = "scu-rq-idb-cache-v1";
 const CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 24; // 24 hours
 const CACHE_BUSTER = "v1";
-const SKIP = /^\[(session|session-cache|admin|roles|banned|profile)/;
+const SKIP = /^\["?(session|session-cache|admin|roles|banned|profile)/;
 
 function createSafeIdbPersister(key = IDB_CACHE_KEY): Persister {
   return {

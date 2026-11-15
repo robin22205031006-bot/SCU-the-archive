@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { entitiesQuery } from "@/lib/entities";
+import { entitiesQuery, type Entity } from "@/lib/entities";
 import {
   CANON_CHARACTER_ABILITIES,
   abilityDef,
@@ -21,6 +21,10 @@ const HUB_ENTITY_KINDS = ["character", "organization", "clan", "bloodline", "fac
 
 let hydrated = false;
 let inflight: Promise<void> | null = null;
+
+function formatCanonName(raw: string): string {
+  return raw.replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
 
 /** Hydrate admin-defined abilities and overrides from app_settings once per session (or when forced). */
 export async function hydrateAbilityRegistry(force = false): Promise<void> {
@@ -95,4 +99,60 @@ export function useAllHubAbilities(): AbilityDef[] {
     return merged;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entities, registryVersion]);
+}
+
+export interface AbilityHoldersIndex {
+  /** DB entity holders keyed by normalized ability key. */
+  holdersMap: Map<string, Entity[]>;
+  /** Canon wielder names (from CANON_CHARACTER_ABILITIES) keyed by normalized ability key. */
+  canonNamesMap: Map<string, string[]>;
+  isLoading: boolean;
+}
+
+const CANON_HOLDERS_BY_KEY: Map<string, string[]> = (() => {
+  const map = new Map<string, string[]>();
+  for (const [charName, abilities] of Object.entries(CANON_CHARACTER_ABILITIES)) {
+    const displayName = formatCanonName(charName);
+    for (const raw of abilities) {
+      const nk = normalizeAbilityKey(abilityDef(raw).key);
+      if (!nk) continue;
+      const arr = map.get(nk) ?? [];
+      if (!arr.includes(displayName)) arr.push(displayName);
+      map.set(nk, arr);
+    }
+  }
+  return map;
+})();
+
+/**
+ * Shared reverse index from normalized ability key -> live entity wielders + canon character names.
+ * Used across Abilities Hub catalog, Ability FX cards/showcase/simulator, and Ability in Action.
+ */
+export function useAbilityHolders(): AbilityHoldersIndex {
+  const registryVersion = useAbilityRegistryVersion();
+  const { data: entities, isLoading } = useQuery(entitiesQuery([...HUB_ENTITY_KINDS]));
+
+  const holdersMap = useMemo(() => {
+    const map = new Map<string, Entity[]>();
+    for (const e of entities ?? []) {
+      const names = [...(e.abilities ?? []), ...(e.beast_traits ?? [])];
+      const seen = new Set<string>();
+      for (const n of names) {
+        const nk = normalizeAbilityKey(abilityDef(n).key);
+        if (!nk || seen.has(nk)) continue;
+        seen.add(nk);
+        const arr = map.get(nk) ?? [];
+        arr.push(e);
+        map.set(nk, arr);
+      }
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entities, registryVersion]);
+
+  return {
+    holdersMap,
+    canonNamesMap: CANON_HOLDERS_BY_KEY,
+    isLoading,
+  };
 }

@@ -1,8 +1,24 @@
-import { useEffect, useState } from "react";
-import { Box, Layers, Pause, Play, SkipBack, SkipForward, Swords } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Box, Layers, Pause, Play, SkipBack, SkipForward, Swords, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { allAbilityDefs, abilityDef } from "@/lib/abilities";
-import { abilityFxRecipe } from "@/lib/ability-fx";
+import { ABILITY_GROUP_LABELS, abilityDef, normalizeAbilityKey } from "@/lib/abilities";
+import { abilityFxRecipe, simulateCombat } from "@/lib/ability-fx";
+import {
+  ABILITY_RANKS,
+  ABILITY_RANK_META,
+  clampDbAbilityLevel,
+  tierToIntrinsicRank,
+  type AbilityEmblemRank,
+} from "@/lib/ability-rank";
+import {
+  useAbilityHolders,
+  useAllHubAbilities,
+  hydrateAbilityRegistry,
+} from "@/hooks/use-ability-registry";
+import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { AbilityHoldersChips } from "@/components/ability-holders-chips";
+import { AbilityImpactOverlay } from "@/components/ability-impact-overlay";
 import {
   FIGHT_STYLES,
   STORY_FIGHTS,
@@ -15,7 +31,7 @@ import {
 } from "@/lib/ability-action";
 import { AbilityActionCanvas } from "@/components/ability-action-canvas";
 import { CelCombatStage } from "@/components/lazy-three";
-import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
+import { MotionCard, MotionSection } from "@/components/app-motion";
 import {
   CHARACTER_COMBAT,
   characterCombat,
@@ -23,12 +39,36 @@ import {
   type CombatSceneId,
 } from "@/lib/character-combat";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
+import {
+  isHighTierAbility,
+  useOptionalAbilityContext,
+  type AbilityImpactState,
+} from "@/context/AbilityContext";
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
-export function AbilityActionPanel() {
-  const defs = allAbilityDefs().sort((a, b) => a.label.localeCompare(b.label));
-  const [k, setK] = useState("crimson_astrapo");
+export function AbilityActionPanel({ initialAbility }: { initialAbility?: string | undefined }) {
+  const ctx = useOptionalAbilityContext();
+  const holdersMasked = useSpoilerMask("abilities");
+  const { holdersMap } = useAbilityHolders();
+  const hubAbilities = useAllHubAbilities();
+  const defs = useMemo(
+    () => [...hubAbilities].sort((a, b) => a.label.localeCompare(b.label)),
+    [hubAbilities],
+  );
+  const [k, setK] = useState(() =>
+    initialAbility ? abilityDef(initialAbility).key : (ctx?.abilityKey ?? "crimson_astrapo"),
+  );
+  const [localRank, setLocalRank] = useState<AbilityEmblemRank>(() => {
+    const startKey = initialAbility ? abilityDef(initialAbility).key : (ctx?.abilityKey ?? "crimson_astrapo");
+    return ctx && ctx.abilityKey === startKey
+      ? ctx.rank
+      : tierToIntrinsicRank(abilityDef(startKey).tier);
+  });
+  const [localImpact, setLocalImpact] = useState<AbilityImpactState | null>(null);
+  const impactTimerRef = useRef<number | null>(null);
+  const impactSeqRef = useRef(0);
+
   const [gender, setGender] = useState<Gender>("male");
   const [speed, setSpeed] = useState(1);
   const [playing, setPlaying] = useState(true);
@@ -40,6 +80,69 @@ export function AbilityActionPanel() {
   const [backdrop, setBackdrop] = useState<CombatBackdrop>("rooftop");
   const [frame, setFrame] = useState<number | undefined>();
   const [stageMode, setStageMode] = useState<"2d" | "3d">("2d");
+
+  const fireImpact = useCallback(
+    (key: string, rank: AbilityEmblemRank, force = false) => {
+      const targetDef = abilityDef(key);
+      if (!force && !isHighTierAbility(targetDef.tier, rank)) return;
+      if (ctx) {
+        ctx.triggerAbilityImpact({
+          abilityKey: targetDef.key,
+          rank,
+          force,
+          reason: force ? "manual" : "high-tier",
+        });
+        return;
+      }
+      if (impactTimerRef.current !== null) window.clearTimeout(impactTimerRef.current);
+      impactSeqRef.current += 1;
+      setLocalImpact({
+        id: impactSeqRef.current,
+        active: true,
+        abilityKey: targetDef.key,
+        label: targetDef.label,
+        color: targetDef.color,
+        tier: targetDef.tier,
+        rank,
+        reason: force ? "manual" : "high-tier",
+        startedAt: Date.now(),
+      });
+      impactTimerRef.current = window.setTimeout(() => {
+        setLocalImpact(null);
+        impactTimerRef.current = null;
+      }, 1400);
+    },
+    [ctx],
+  );
+
+  useEffect(
+    () => () => {
+      if (impactTimerRef.current !== null) window.clearTimeout(impactTimerRef.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    void hydrateAbilityRegistry(true);
+  }, []);
+
+  useEffect(() => {
+    if (!initialAbility) return;
+    const resolved = abilityDef(initialAbility).key;
+    setK(resolved);
+    setSceneId(undefined);
+    setFightId(null);
+    setFrame(undefined);
+    const nextRank =
+      ctx && ctx.abilityKey === resolved
+        ? ctx.rank
+        : tierToIntrinsicRank(abilityDef(resolved).tier);
+    setLocalRank(nextRank);
+    ctx?.selectAbility(resolved, { rank: nextRank, triggerImpact: false });
+    // Sync only when initialAbility changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAbility]);
+
   const scene = characterCombat(sceneId);
   const fight = STORY_FIGHTS.find((f) => f.id === fightId) ?? null,
     cur = fight?.beats[beat];
@@ -59,16 +162,38 @@ export function AbilityActionPanel() {
     setPlaying(false);
     setFrame((f) => Math.max(0, Math.min(frameCount - 1, (f ?? 0) + delta)));
   };
-  const d = abilityDef(ability),
-    r = abilityFxRecipe(ability);
+  const d = abilityDef(ability);
+  const activeRank: AbilityEmblemRank =
+    ctx && ctx.abilityKey === d.key
+      ? ctx.rank
+      : !scene && !cur
+        ? localRank
+        : tierToIntrinsicRank(d.tier);
+  const r = abilityFxRecipe(ability, activeRank);
+  const combat = simulateCombat(d.key, d.tier, activeRank);
+  const activeImpact = ctx ? ctx.abilityImpact : localImpact;
+  const impactOnStage = Boolean(activeImpact?.active && activeImpact.abilityKey === d.key);
+  const wielders = useMemo(
+    () => holdersMap.get(normalizeAbilityKey(d.key)) ?? [],
+    [holdersMap, d.key],
+  );
+  const selectedProgression = useMemo(
+    () =>
+      ctx?.selectedEntityId ? ctx.getCharacterSeasonProgression(ctx.selectedEntityId, d.key) : [],
+    [ctx, d.key],
+  );
+
   return (
-    <MotionPage as="main" className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6">
-      <MotionSection as="header" className="grid gap-1">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl border border-accent/40 bg-accent/15 text-accent">
-            <Swords className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Ability in Action</h1>
+    <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6">
+      <MotionSection as="header" className="grid gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-xl border border-accent/40 bg-accent/15 text-accent">
+              <Swords className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Ability in Action</h1>
+          </div>
+          <SpoilerToggle scope="abilities" />
         </div>
         <p className="text-sm text-muted-foreground">
           How a fighter actually uses each power: wind-up, movement, release and impact.
@@ -100,10 +225,17 @@ export function AbilityActionPanel() {
           value={k}
           onChange={(e) => {
             const nextDef = abilityDef(e.target.value);
-            setK(e.target.value);
+            const nextRank = tierToIntrinsicRank(nextDef.tier);
+            setK(nextDef.key);
+            setLocalRank(nextRank);
             setFightId(null);
             setSceneId(undefined);
             setFrame(undefined);
+            if (ctx) {
+              ctx.selectAbility(nextDef.key, { rank: nextRank });
+            } else {
+              fireImpact(nextDef.key, nextRank);
+            }
             triggerAnimeActionCut({ color: nextDef.color, label: nextDef.label });
           }}
           aria-label="Ability"
@@ -111,6 +243,29 @@ export function AbilityActionPanel() {
           {defs.map((x) => (
             <option key={x.key} value={x.key}>
               {x.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className={sel}
+          value={activeRank}
+          onChange={(e) => {
+            const nextRank = clampDbAbilityLevel(Number(e.target.value));
+            setLocalRank(nextRank);
+            if (ctx) {
+              ctx.selectAbility(d.key, {
+                rank: nextRank,
+                triggerImpact: nextRank >= 4,
+              });
+            } else {
+              fireImpact(d.key, nextRank);
+            }
+          }}
+          aria-label="Mastery rank"
+        >
+          {ABILITY_RANKS.map((rk) => (
+            <option key={rk} value={rk}>
+              {ABILITY_RANK_META[rk].label}
             </option>
           ))}
         </select>
@@ -198,6 +353,14 @@ export function AbilityActionPanel() {
         </Button>
         <Button
           size="sm"
+          variant={impactOnStage ? "default" : "outline"}
+          onClick={() => fireImpact(d.key, activeRank, true)}
+        >
+          <Zap className="mr-1 h-4 w-4" aria-hidden="true" />
+          AbilityImpact
+        </Button>
+        <Button
+          size="sm"
           variant={stageMode === "3d" ? "default" : "outline"}
           onClick={() => {
             triggerAnimeActionCut({
@@ -217,6 +380,61 @@ export function AbilityActionPanel() {
           {stageMode === "3d" ? "3D Cel Arena" : "2D Canvas"}
         </Button>
       </div>
+
+      {!holdersMasked && !scene && !cur && wielders.length > 0 && ctx && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border/80 bg-card/40 px-3 py-2 text-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Wielder mastery:
+          </span>
+          {wielders.map((w) => {
+            const assigned = ctx.resolveCharacterRank(w.id, d.key);
+            const isSel = ctx.selectedEntityId === w.id;
+            return (
+              <button
+                key={w.id}
+                type="button"
+                onClick={() => {
+                  ctx.selectAbility(d.key, { entityId: isSel ? null : w.id, triggerImpact: false });
+                  if (!isSel) ctx.selectWielder(w.id);
+                }}
+                className={`rounded-full border px-2.5 py-0.5 transition ${
+                  isSel
+                    ? "border-accent bg-accent/20 font-medium text-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {w.name}
+                {assigned ? ` · Lv.${ABILITY_RANK_META[assigned].roman}` : ""}
+              </button>
+            );
+          })}
+          {ctx.selectedEntityId && selectedProgression.length > 0 && (
+            <span className="ml-1 flex flex-wrap items-center gap-1 border-l border-border pl-2">
+              {selectedProgression.map((step) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => {
+                    ctx.setSeasonScope(step.seriesId, step.seasonNumber);
+                    ctx.setRank(step.level, { triggerImpact: step.level >= 4 });
+                  }}
+                  className={`rounded border px-1.5 py-0.5 text-[11px] ${
+                    ctx.selectedSeriesId === step.seriesId &&
+                    ctx.selectedSeasonNumber === step.seasonNumber
+                      ? "border-accent bg-accent/20 text-foreground"
+                      : "border-border/80 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {step.seriesId ? step.seriesTitle : "Base"}
+                  {step.seasonNumber != null ? ` S${step.seasonNumber}` : ""} · Lv.
+                  {ABILITY_RANK_META[step.level].roman}
+                </button>
+              ))}
+            </span>
+          )}
+        </div>
+      )}
+
       <MotionSection
         delay={0.04}
         className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border"
@@ -250,6 +468,7 @@ export function AbilityActionPanel() {
             onPhase={(label, i, n) => setPhase({ label, i, n })}
           />
         )}
+        {impactOnStage && <AbilityImpactOverlay impact={activeImpact} />}
         <span
           className="absolute left-3 top-3 z-10 rounded-full border border-border bg-background/70 px-2.5 py-0.5 text-xs uppercase tracking-widest"
           style={{ color: r.palette[0] }}
@@ -316,12 +535,24 @@ export function AbilityActionPanel() {
           </div>
         </div>
       )}
-      <div className="grid gap-1 rounded-2xl border border-border bg-card/50 p-4 text-sm">
-        <p className="font-semibold text-foreground">
-          {d.label} <span className="font-normal text-muted-foreground">· {d.tier}</span>
-        </p>
+      <div className="grid gap-1.5 rounded-2xl border border-border bg-card/50 p-4 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-semibold text-foreground">
+            {d.label}{" "}
+            <span className="font-normal text-muted-foreground">
+              · {d.tier} · {ABILITY_GROUP_LABELS[d.group]} · {combat.role} ({combat.meters} m reach)
+            </span>
+          </p>
+          <AbilityRankPips rank={activeRank} showLabel compact />
+        </div>
+        {d.description && <p className="text-foreground">{d.description}</p>}
         <p className="text-foreground">{actionNote(ability)}</p>
-        <p className="text-muted-foreground">{r.note}</p>
+        {r.note && r.note !== d.description && (
+          <p className="text-muted-foreground">FX signature: {r.note}</p>
+        )}
+        <div className="pt-0.5">
+          <AbilityHoldersChips abilityKey={d.key} />
+        </div>
         {fs !== "auto" && (
           <p className="text-foreground">
             <span className="font-semibold">{FIGHT_STYLES[fs].label}:</span> {FIGHT_STYLES[fs].note}
@@ -374,6 +605,6 @@ export function AbilityActionPanel() {
           ))}
         </div>
       </section>
-    </MotionPage>
+    </main>
   );
 }

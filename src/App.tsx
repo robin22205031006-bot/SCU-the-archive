@@ -105,7 +105,7 @@ function AppContent() {
                     type="button"
                     onClick={(e) => {
                       const nextMode = opt.id as UIMode;
-                      triggerFeedback("switch", nextMode, e);
+                      triggerFeedback("click", nextMode, e);
                       triggerTierSwitchHitstop(nextMode);
                       setMode(nextMode);
                     }}

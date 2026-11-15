@@ -1,11 +1,15 @@
 import { useEffect, useRef } from "react";
 import type { FxRecipe } from "@/lib/ability-fx";
+import { parseAbilityRank, type AbilityEmblemRank } from "@/lib/ability-rank";
 import { glowDot, guardianAura, rgba, type PF } from "@/components/fx-painters";
 import { ALL_PAINT } from "@/components/fx-brush";
+import { useOptionalAbilityContext } from "@/context/AbilityContext";
 
 type C = CanvasRenderingContext2D;
 
 const TAU = Math.PI * 2;
+const IMPACT_ANIM_MS = 1250;
+
 function seeded(seed: number) {
   return (i: number) => {
     const x = Math.sin(seed * 127.1 + i * 311.7) * 43758.5453;
@@ -39,63 +43,174 @@ function star(c: C, n: number, r0: number, r1: number, rot: number, col: string)
   c.fill();
 }
 
-function aura(c: C, s: number, t: number, r: FxRecipe, boosted = false) {
-  const p = r.power + (boosted ? 2 : 0);
+function powerToRank(power: number): AbilityEmblemRank {
+  if (power <= 2) return 1;
+  if (power <= 4) return 2;
+  if (power <= 5) return 3;
+  if (power <= 6) return 4;
+  return 5;
+}
+
+function aura(
+  c: C,
+  s: number,
+  t: number,
+  r: FxRecipe,
+  boosted = false,
+  rank: AbilityEmblemRank = 3,
+) {
+  const effectiveRank = Math.min(5, rank + (boosted ? 1 : 0)) as AbilityEmblemRank;
+  const p = Math.min(8, Math.round(r.power + (effectiveRank - 3) * 0.75 + (boosted ? 2 : 0)));
   const [a, b, hi] = r.palette;
 
   c.save();
   c.globalCompositeOperation = "lighter";
-  glowDot(c, 0, 0, s * (boosted ? 0.52 : 0.44), a, boosted ? 0.28 : 0.14);
+  glowDot(
+    c,
+    0,
+    0,
+    s * (0.32 + effectiveRank * 0.04 + (boosted ? 0.06 : 0)),
+    a,
+    boosted ? 0.28 : 0.07 + effectiveRank * 0.03,
+  );
 
-  // Level 1+: Soft breathing glow ring and celestial motes
-  const pulse = Math.sin(t * 3.2) * 0.03;
-  ring(c, s * (0.42 + pulse), rgba(a, boosted ? 0.65 : 0.3), boosted ? 2 : 1, [s * 0.02, s * 0.03]);
+  // Rank 1+: Minimal breathing ring and sparse motes (restrained at Rank 1)
+  const pulse = Math.sin(t * 3.2) * (0.015 + effectiveRank * 0.005);
+  ring(
+    c,
+    s * (0.36 + effectiveRank * 0.015 + pulse),
+    rgba(a, boosted ? 0.65 : 0.16 + effectiveRank * 0.07),
+    boosted ? 2 : 0.8 + effectiveRank * 0.22,
+    [s * 0.02, s * 0.035],
+  );
 
-  // Floating ambient motes for every power level
-  for (let m = 0; m < 4 + p; m++) {
-    const k = (t * 0.35 + ((m * 47) % 100) / 100) % 1;
+  const moteCount = effectiveRank === 1 ? 3 : 3 + effectiveRank * 2 + Math.max(0, p - 4);
+  for (let m = 0; m < moteCount; m++) {
+    const k = (t * (0.28 + effectiveRank * 0.04) + ((m * 47) % 100) / 100) % 1;
     const ang = m * 1.618 * TAU + t * 0.15;
-    const dist = s * (0.28 + k * 0.18);
-    dot(c, Math.cos(ang) * dist, Math.sin(ang) * dist, s * (0.008 + (1 - k) * 0.012), hi);
+    const dist = s * (0.24 + k * (0.14 + effectiveRank * 0.02));
+    dot(
+      c,
+      Math.cos(ang) * dist,
+      Math.sin(ang) * dist,
+      s * (0.005 + (1 - k) * (0.006 + effectiveRank * 0.002)),
+      hi,
+    );
   }
 
-  // Level 4+: Inner resonant harmonic ring with counter-rotation
-  if (p >= 4) {
+  // Rank 2+: Inner resonant harmonic ring
+  if (effectiveRank >= 2 || p >= 4) {
     c.save();
-    c.rotate(t * 0.35);
-    ring(c, s * 0.36, rgba(b, boosted ? 0.8 : 0.42), boosted ? 2.5 : 1.2, [s * 0.04, s * 0.03]);
+    c.rotate(t * (0.25 + effectiveRank * 0.06));
+    ring(
+      c,
+      s * (0.31 + effectiveRank * 0.012),
+      rgba(b, boosted ? 0.8 : 0.24 + effectiveRank * 0.08),
+      boosted ? 2.4 : 0.9 + effectiveRank * 0.2,
+      [s * 0.04, s * 0.03],
+    );
     c.restore();
   }
 
-  // Level 6+: Rotating outer runic celestial compass ring with tick marks
-  if (p >= 6) {
+  // Rank 3+: Rotating outer runic celestial compass ring with tick marks
+  if (effectiveRank >= 3 || p >= 6) {
     c.save();
     c.rotate(-t * 0.25);
-    ring(c, s * 0.46, rgba(a, boosted ? 0.95 : 0.65), p >= 8 || boosted ? 3 : 1.8, [
-      s * 0.025,
-      s * 0.04,
-    ]);
-    const ticks = p >= 8 ? 16 : 8;
+    ring(
+      c,
+      s * 0.45,
+      rgba(a, boosted ? 0.95 : 0.35 + effectiveRank * 0.1),
+      effectiveRank >= 4 || boosted ? 2.4 : 1.4,
+      [s * 0.025, s * 0.04],
+    );
+    const ticks = effectiveRank >= 5 ? 16 : effectiveRank >= 4 ? 12 : 8;
     for (let i = 0; i < ticks; i++) {
       c.rotate(TAU / ticks);
       c.fillStyle = i % 2 === 0 ? hi : a;
-      c.fillRect(s * 0.45, -1, s * 0.035, 2);
+      c.fillRect(s * 0.44, -1, s * (0.02 + effectiveRank * 0.004), 2);
     }
     c.restore();
   }
 
-  // Level 8+ (Apex / Mythic / Overcharged): Coronal bursts and geometric diamond flares
-  if (p >= 8) {
+  // Rank 4+: Cardinal resonance nodes; Rank 5: Apex coronal starbursts
+  if (effectiveRank >= 4 || p >= 8) {
     c.save();
     c.rotate(t * 0.45);
-    for (let i = 0; i < 8; i++) {
-      c.rotate(TAU / 8);
+    const flares = effectiveRank >= 5 ? 8 : 4;
+    for (let i = 0; i < flares; i++) {
+      c.rotate(TAU / flares);
       c.fillStyle = hi;
-      c.fillRect(s * 0.44, -1.5, s * 0.05, 3);
-      star(c, 4, s * 0.01, s * 0.03, t * 2 + i, hi);
+      c.fillRect(s * 0.44, -1.5, s * (effectiveRank >= 5 ? 0.055 : 0.035), 2.5);
+      if (effectiveRank >= 5) {
+        c.save();
+        c.translate(s * 0.47, 0);
+        star(c, 4, s * 0.008, s * 0.026, t * 2 + i, hi);
+        c.restore();
+      }
     }
     c.restore();
   }
+  c.restore();
+}
+
+/** High-tier AbilityImpact burst: shockwaves, anime speed lines, central starburst, and shard debris. */
+function drawAbilityImpact(
+  c: C,
+  s: number,
+  progress: number,
+  palette: [string, string, string],
+  rank: AbilityEmblemRank,
+) {
+  const [a, b, hi] = palette;
+  const k = Math.max(0, Math.min(1, progress));
+  const env = Math.sin(k * Math.PI);
+  const flash = Math.max(0, 1 - k * 3.2);
+
+  c.save();
+  c.globalCompositeOperation = "lighter";
+
+  // Initial bright core flash
+  if (flash > 0.01) {
+    glowDot(c, 0, 0, s * (0.35 + flash * 0.35), hi, flash * 0.65);
+  }
+
+  // Dual expanding shockwave rings
+  const r1 = s * (0.08 + k * (0.48 + rank * 0.02));
+  ring(c, r1, rgba(hi, env * 0.9), Math.max(1.5, (1 - k) * (4 + rank)));
+  const r2 = s * (0.04 + Math.max(0, k - 0.12) * 0.46);
+  if (r2 > 2) {
+    ring(c, r2, rgba(a, env * 0.75), Math.max(1, (1 - k) * 3), [s * 0.03, s * 0.02]);
+  }
+
+  // Anime radial speed lines converging / bursting from the impact center
+  const rays = 14 + rank * 4;
+  for (let i = 0; i < rays; i++) {
+    const ang = (i / rays) * TAU + (i % 2 ? 0.08 : -0.04);
+    const inner = s * (0.14 + k * 0.18 + (i % 3) * 0.03);
+    const outer = s * (0.44 + (i % 4) * 0.035);
+    c.strokeStyle = rgba(i % 2 === 0 ? hi : b, env * 0.75);
+    c.lineWidth = i % 3 === 0 ? 2.4 : 1.2;
+    c.beginPath();
+    c.moveTo(Math.cos(ang) * inner, Math.sin(ang) * inner);
+    c.lineTo(Math.cos(ang) * outer, Math.sin(ang) * outer);
+    c.stroke();
+  }
+
+  // Central 4-point starburst + diamond spark shards
+  const starScale = (1 - k * 0.45) * (0.11 + rank * 0.018);
+  star(c, 4, s * starScale * 0.28, s * starScale, k * 0.9, hi);
+  for (let i = 0; i < 6 + rank * 2; i++) {
+    const ang = i * 2.39996 + k * 1.4;
+    const dist = s * (0.12 + k * (0.34 + (i % 3) * 0.04));
+    const sz = s * (0.012 * (1 - k * 0.6));
+    c.save();
+    c.translate(Math.cos(ang) * dist, Math.sin(ang) * dist);
+    c.rotate(ang);
+    c.fillStyle = rgba(i % 2 === 0 ? hi : a, env);
+    c.fillRect(-sz * 1.5, -sz * 0.4, sz * 3, sz * 0.8);
+    c.restore();
+  }
+
   c.restore();
 }
 
@@ -107,6 +222,8 @@ export function AbilityFxCanvas({
   fps = 24,
   label,
   boosted = false,
+  rank,
+  impactActive,
 }: {
   recipe: FxRecipe;
   className?: string;
@@ -114,8 +231,30 @@ export function AbilityFxCanvas({
   fps?: number;
   label?: string;
   boosted?: boolean;
+  rank?: number | undefined;
+  impactActive?: boolean | undefined;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const ctx = useOptionalAbilityContext();
+
+  const resolvedRank: AbilityEmblemRank =
+    parseAbilityRank(rank) ??
+    (ctx && ctx.abilityKey === recipe.key ? ctx.rank : powerToRank(recipe.power));
+
+  const isImpacting = Boolean(
+    impactActive || (ctx?.abilityImpact?.active && ctx.abilityImpact.abilityKey === recipe.key),
+  );
+  const impactId = ctx?.abilityImpact?.id ?? 0;
+
+  const impactStartRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (isImpacting) {
+      impactStartRef.current = performance.now();
+    } else {
+      impactStartRef.current = null;
+    }
+  }, [isImpacting, impactId]);
+
   useEffect(() => {
     const cv = ref.current;
     if (!cv) return;
@@ -150,11 +289,20 @@ export function AbilityFxCanvas({
         cv.height = Math.round(h * dpr);
       }
       const frame = Math.floor(((now - start) / 1000) * (boosted ? fps * 1.25 : fps));
-      if (frame !== last || !playing || reduce) {
+      if (frame !== last || !playing || reduce || isImpacting) {
         last = frame;
         const t =
           ((reduce || !playing ? (2.9 * recipe.tempo) / 1.6 : frame / fps) / recipe.tempo) *
           (boosted ? 2.2 : 1.6);
+        let impactProgress = 0;
+        if (isImpacting) {
+          if (reduce || !playing) {
+            impactProgress = 0.42;
+          } else {
+            const elapsed = Math.max(0, now - (impactStartRef.current ?? now));
+            impactProgress = Math.min(1, elapsed / IMPACT_ANIM_MS);
+          }
+        }
         c.setTransform(dpr, 0, 0, dpr, 0, 0);
         c.clearRect(0, 0, w, h);
         c.fillStyle = "#07070d";
@@ -162,8 +310,18 @@ export function AbilityFxCanvas({
         const s = Math.min(w, h);
         c.save();
         c.translate(w / 2, h / 2);
-        const bg = c.createRadialGradient(0, 0, 0, 0, 0, s * (boosted ? 0.75 : 0.55));
-        bg.addColorStop(0, rgba(recipe.palette[1], boosted ? 0.6 : 0.4));
+        const bg = c.createRadialGradient(
+          0,
+          0,
+          0,
+          0,
+          0,
+          s * (0.42 + resolvedRank * 0.04 + (boosted ? 0.14 : 0)),
+        );
+        bg.addColorStop(
+          0,
+          rgba(recipe.palette[1], boosted ? 0.62 : 0.22 + resolvedRank * 0.05),
+        );
         bg.addColorStop(1, "transparent");
         c.fillStyle = bg;
         c.fillRect(-w, -h, w * 2, h * 2);
@@ -178,6 +336,8 @@ export function AbilityFxCanvas({
           rnd,
           v: recipe.variant,
           step: Math.floor(t * (boosted ? 12 : 8)),
+          rank: resolvedRank,
+          impact: impactProgress,
         };
         const guardian = recipe.key.endsWith("_guardian");
         if (guardian) guardianAura(pf, true);
@@ -186,9 +346,12 @@ export function AbilityFxCanvas({
           c.globalCompositeOperation = "source-over";
           c.globalAlpha = 1;
         }
-        aura(c, s, t, recipe, boosted);
+        aura(c, s, t, recipe, boosted, resolvedRank);
         if (guardian) {
           guardianAura(pf, false);
+        }
+        if (isImpacting && impactProgress > 0 && impactProgress < 1) {
+          drawAbilityImpact(c, s, impactProgress, recipe.palette, resolvedRank);
         }
         c.globalCompositeOperation = "source-over";
         c.restore();
@@ -201,12 +364,15 @@ export function AbilityFxCanvas({
       cancelAnimationFrame(raf);
       io?.disconnect();
     };
-  }, [recipe, playing, fps, boosted]);
+  }, [recipe, playing, fps, boosted, resolvedRank, isImpacting]);
+
   return (
     <canvas
       ref={ref}
       data-motif={recipe.motif}
       data-variant={recipe.variant}
+      data-ability-rank={resolvedRank}
+      data-ability-impact={isImpacting ? "active" : "idle"}
       style={{ width: "100%", height: "100%" }}
       role="img"
       aria-label={label ?? `${recipe.key} animation`}

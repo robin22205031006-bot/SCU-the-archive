@@ -1400,7 +1400,20 @@ export function GenreAbilityEmblem({
   const isMythic = tier === "Mythic";
   const isLegendary = tier === "Legendary";
   const resolvedRank = parseAbilityRank(rank);
+  const effectiveRank = resolvedRank ?? (isMythic ? 5 : isLegendary ? 4 : 1);
   const rankMeta = resolvedRank ? abilityRankMeta(resolvedRank) : null;
+  const rankGlow = rankMeta && effectiveRank >= 2 ? rankMeta.ringColor : undefined;
+  const rankCrest =
+    effectiveRank === 5 ? "✦" : effectiveRank === 4 ? "◈" : effectiveRank === 3 ? "◆" : null;
+  const stageStyle =
+    rankMeta && effectiveRank >= 2
+      ? {
+          borderColor: effectiveRank >= 4 ? rankMeta.ringColor : undefined,
+          boxShadow: `0 0 ${rankMeta.glowRadiusPx + 2}px ${rankMeta.ringColor}48${
+            effectiveRank === 5 ? `, inset 0 0 8px ${rankMeta.ringColor}30` : ""
+          }`,
+        }
+      : undefined;
   const fullTitle = `${title ?? `${label} — ${tier}`}${rankMeta ? ` (${rankMeta.label})` : ""}`;
 
   const renderGlyph = (glyphClass: string) =>
@@ -1409,6 +1422,42 @@ export function GenreAbilityEmblem({
     ) : (
       <Icon className={glyphClass} />
     );
+
+  const renderMedallionRankSvg = (vb = 36) => {
+    if (!resolvedRank || resolvedRank < 2) return null;
+    const c = vb / 2;
+    const r = c - 1.5;
+    const col = rankMeta?.ringColor ?? "var(--accent)";
+    return (
+      <g data-emblem-rank-stage={resolvedRank} opacity={resolvedRank >= 4 ? 0.92 : 0.72}>
+        <circle
+          cx={c}
+          cy={c}
+          r={r}
+          stroke={col}
+          strokeWidth={resolvedRank >= 4 ? "1.1" : "0.75"}
+          strokeDasharray={resolvedRank >= 4 ? undefined : "2.5 2"}
+        />
+        {resolvedRank >= 3 && (
+          <>
+            <polygon points={`${c},0.5 ${c + 1.5},3 ${c},5.5 ${c - 1.5},3`} fill={col} />
+            <polygon
+              points={`${c},${vb - 0.5} ${c + 1.5},${vb - 3} ${c},${vb - 5.5} ${c - 1.5},${vb - 3}`}
+              fill={col}
+            />
+          </>
+        )}
+        {resolvedRank >= 5 && (
+          <>
+            <circle cx={3} cy={3} r="1.2" fill="#ffffff" />
+            <circle cx={vb - 3} cy={3} r="1.2" fill="#ffffff" />
+            <circle cx={3} cy={vb - 3} r="1.2" fill="#ffffff" />
+            <circle cx={vb - 3} cy={vb - 3} r="1.2" fill="#ffffff" />
+          </>
+        )}
+      </g>
+    );
+  };
 
   if (variant === "medallion") {
     // Isekai (Pic 1): Intersecting tilted orbital rings + brass clockwork cog + luminous teal core
@@ -1420,6 +1469,7 @@ export function GenreAbilityEmblem({
           data-emblem-style="astrolabe-gear"
           data-ability-tier={tier}
           data-ability-rank={resolvedRank}
+          data-emblem-stage={effectiveRank}
           className={`group relative flex flex-col items-center gap-1 ${className}`}
         >
           <div className="relative grid h-12 w-12 place-items-center">
@@ -1429,12 +1479,13 @@ export function GenreAbilityEmblem({
               className="pointer-events-none absolute inset-0 h-full w-full text-[var(--genre-gold,#e09f3e)]"
               fill="none"
             >
+              {renderMedallionRankSvg(48)}
               <circle
                 cx="24"
                 cy="24"
                 r="21"
                 stroke="currentColor"
-                strokeWidth="1"
+                strokeWidth={effectiveRank >= 4 ? "1.4" : "1"}
                 strokeDasharray="3 2"
               />
               <ellipse
@@ -1445,16 +1496,19 @@ export function GenreAbilityEmblem({
                 transform="rotate(-24 24 24)"
                 stroke="currentColor"
                 strokeWidth="0.9"
-                strokeOpacity="0.65"
+                strokeOpacity={effectiveRank >= 3 ? "0.85" : "0.65"}
               />
               <circle cx="40" cy="14" r="1.8" fill="var(--accent)" />
             </svg>
-            <span className="relative grid h-7 w-7 place-items-center rounded-full border border-[var(--genre-gold,#e09f3e)] bg-background/90 text-primary shadow-[0_0_10px_color-mix(in_oklab,var(--accent)_35%,transparent)]">
+            <span
+              style={stageStyle}
+              className="relative grid h-7 w-7 place-items-center rounded-full border border-[var(--genre-gold,#e09f3e)] bg-background/90 text-primary shadow-[0_0_10px_color-mix(in_oklab,var(--accent)_35%,transparent)]"
+            >
               {renderGlyph("h-3.5 w-3.5")}
             </span>
           </div>
           <span className="max-w-[78px] truncate font-mono text-[9px] font-bold uppercase tracking-wider text-foreground">
-            {label}
+            {rankCrest ? `${rankCrest} ${label}` : label}
           </span>
           {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
         </div>
@@ -1470,6 +1524,7 @@ export function GenreAbilityEmblem({
           data-emblem-style="carved-rune-diamond"
           data-ability-tier={tier}
           data-ability-rank={resolvedRank}
+          data-emblem-stage={effectiveRank}
           className={`group relative flex items-center gap-2 ${className}`}
         >
           <div className="relative grid h-11 w-11 shrink-0 place-items-center">
@@ -1479,17 +1534,18 @@ export function GenreAbilityEmblem({
               className="pointer-events-none absolute inset-0 h-full w-full"
               fill="none"
             >
+              {renderMedallionRankSvg(44)}
               <polygon
                 points="22,3 41,22 22,41 3,22"
-                stroke="var(--primary)"
-                strokeWidth="1.4"
+                stroke={rankGlow ?? "var(--primary)"}
+                strokeWidth={effectiveRank >= 4 ? "1.9" : "1.4"}
                 fill="color-mix(in_oklab,var(--background)_88%,black)"
               />
               <polygon
                 points="22,8 36,22 22,36 8,22"
                 stroke="var(--accent)"
-                strokeWidth="0.9"
-                strokeOpacity="0.7"
+                strokeWidth={effectiveRank >= 3 ? "1.2" : "0.9"}
+                strokeOpacity={effectiveRank >= 3 ? "0.9" : "0.7"}
               />
               {/* Subtle veined marble fracture + floating rune sparks */}
               <path
@@ -1503,7 +1559,9 @@ export function GenreAbilityEmblem({
             </svg>
             <span
               className={`relative grid place-items-center ${
-                isMythic ? "text-accent drop-shadow-[0_0_6px_var(--accent)]" : "text-primary"
+                isMythic || effectiveRank === 5
+                  ? "text-accent drop-shadow-[0_0_6px_var(--accent)]"
+                  : "text-primary"
               }`}
             >
               {renderGlyph("h-4 w-4")}
@@ -1511,7 +1569,7 @@ export function GenreAbilityEmblem({
           </div>
           <div className="min-w-0">
             <span className="block truncate font-display text-[11px] font-bold uppercase tracking-wider text-foreground">
-              {label}
+              {rankCrest ? `${rankCrest} ${label}` : label}
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
               <span>{tier}</span>
@@ -1527,10 +1585,12 @@ export function GenreAbilityEmblem({
       return (
         <div
           title={fullTitle}
+          style={stageStyle}
           data-ability-emblem="fantasy"
           data-emblem-style="crowned-heraldic-shield"
           data-ability-tier={tier}
           data-ability-rank={resolvedRank}
+          data-emblem-stage={effectiveRank}
           className={`flex items-center gap-2 rounded border border-[#c5a869]/80 bg-[#15221b] px-2.5 py-1.5 text-[#f5ebe6] shadow-[0_0_14px_rgba(92,225,184,0.22),inset_0_0_10px_rgba(92,225,184,0.12)] ${className}`}
         >
           <span className="relative grid h-8 w-8 shrink-0 place-items-center text-[#5ce1b8]">
@@ -1540,12 +1600,13 @@ export function GenreAbilityEmblem({
               className="pointer-events-none absolute inset-0 h-full w-full text-[#c5a869]"
               fill="none"
             >
+              {renderMedallionRankSvg(36)}
               <circle
                 cx="18"
                 cy="18"
                 r="15.5"
                 stroke="#5ce1b8"
-                strokeOpacity="0.4"
+                strokeOpacity={effectiveRank >= 3 ? "0.7" : "0.4"}
                 strokeWidth="0.9"
                 strokeDasharray="3 2"
               />
@@ -1553,8 +1614,8 @@ export function GenreAbilityEmblem({
               <path
                 d="M7 9 H29 V21 C29 27 18 33 18 33 C18 33 7 27 7 21 Z"
                 fill="#111915"
-                stroke="currentColor"
-                strokeWidth="1.4"
+                stroke={rankGlow ?? "currentColor"}
+                strokeWidth={effectiveRank >= 4 ? "1.8" : "1.4"}
               />
             </svg>
             <span className="relative mt-1 grid place-items-center text-[#5ce1b8] drop-shadow-[0_0_6px_rgba(92,225,184,0.7)]">
@@ -1563,7 +1624,7 @@ export function GenreAbilityEmblem({
           </span>
           <div className="min-w-0">
             <span className="block truncate font-display text-[11px] font-bold uppercase tracking-wider text-[#f5ebe6]">
-              {label}
+              {rankCrest ? `${rankCrest} ${label}` : label}
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[8px] uppercase tracking-widest text-[#5ce1b8]">
               <span>{tier}</span>
@@ -1579,10 +1640,12 @@ export function GenreAbilityEmblem({
       return (
         <div
           title={fullTitle}
+          style={stageStyle}
           data-ability-emblem="xianxia"
           data-emblem-style="jade-cloud-seal"
           data-ability-tier={tier}
           data-ability-rank={resolvedRank}
+          data-emblem-stage={effectiveRank}
           className={`flex items-center gap-2 rounded-full border border-[var(--genre-gold,#d6b26a)]/65 bg-background/85 px-2.5 py-1 ${className}`}
         >
           <span className="relative grid h-8 w-8 shrink-0 place-items-center text-primary">
@@ -1592,6 +1655,7 @@ export function GenreAbilityEmblem({
               className="pointer-events-none absolute inset-0 h-full w-full text-[var(--genre-gold,#d6b26a)]"
               fill="none"
             >
+              {renderMedallionRankSvg(36)}
               <circle cx="18" cy="18" r="15" stroke="currentColor" strokeWidth="1.3" />
               <path
                 d="M5 18 C3 14 7 10 10 12 M31 18 C33 22 29 26 26 24"
@@ -1605,7 +1669,7 @@ export function GenreAbilityEmblem({
           </span>
           <div className="min-w-0">
             <span className="block truncate font-serif text-[11px] font-bold text-foreground">
-              {label}
+              {rankCrest ? `${rankCrest} ${label}` : label}
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[8px] uppercase tracking-widest text-[var(--genre-gold,#d6b26a)]">
               <span>{tier}</span>
@@ -1621,10 +1685,12 @@ export function GenreAbilityEmblem({
       return (
         <div
           title={fullTitle}
+          style={stageStyle}
           data-ability-emblem="ghibli"
           data-emblem-style="botanical-hex-seal"
           data-ability-tier={tier}
           data-ability-rank={resolvedRank}
+          data-emblem-stage={effectiveRank}
           className={`flex items-center gap-2 rounded-xl border border-primary/45 bg-background/85 px-2.5 py-1 ${className}`}
         >
           <span className="relative grid h-8 w-8 shrink-0 place-items-center text-primary">
@@ -1634,10 +1700,11 @@ export function GenreAbilityEmblem({
               className="pointer-events-none absolute inset-0 h-full w-full text-primary"
               fill="none"
             >
+              {renderMedallionRankSvg(36)}
               <polygon
                 points="18,3 31,10.5 31,25.5 18,33 5,25.5 5,10.5"
-                stroke="currentColor"
-                strokeWidth="1.4"
+                stroke={rankGlow ?? "currentColor"}
+                strokeWidth={effectiveRank >= 4 ? "1.8" : "1.4"}
                 fill="color-mix(in_oklab,var(--primary)_14%,transparent)"
               />
               <path
@@ -1651,7 +1718,7 @@ export function GenreAbilityEmblem({
           </span>
           <div className="min-w-0">
             <span className="block truncate font-sans text-[11px] font-bold text-foreground">
-              {label}
+              {rankCrest ? `${rankCrest} ${label}` : label}
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[8px] uppercase tracking-wider text-muted-foreground">
               <span>{tier}</span>
@@ -1667,10 +1734,12 @@ export function GenreAbilityEmblem({
       return (
         <div
           title={fullTitle}
+          style={stageStyle}
           data-ability-emblem="cyber-anime"
           data-emblem-style="crescent-holo-node"
           data-ability-tier={tier}
           data-ability-rank={resolvedRank}
+          data-emblem-stage={effectiveRank}
           className={`flex items-center gap-2 rounded-full border border-primary/55 bg-background/80 px-2.5 py-1 backdrop-blur-sm ${className}`}
         >
           <span className="relative grid h-8 w-8 shrink-0 place-items-center text-primary">
@@ -1680,9 +1749,10 @@ export function GenreAbilityEmblem({
               className="pointer-events-none absolute inset-0 h-full w-full text-primary"
               fill="none"
             >
+              {renderMedallionRankSvg(36)}
               <path
                 d="M27 8 A13 13 0 1 0 27 28"
-                stroke="currentColor"
+                stroke={rankGlow ?? "currentColor"}
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />
@@ -1693,7 +1763,7 @@ export function GenreAbilityEmblem({
           </span>
           <div className="min-w-0">
             <span className="block truncate font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-              {label}
+              {rankCrest ? `${rankCrest} ${label}` : label}
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[8px] uppercase tracking-widest text-primary">
               <span>{tier}</span>
@@ -1708,15 +1778,17 @@ export function GenreAbilityEmblem({
     return (
       <div
         title={fullTitle}
+        style={stageStyle}
         data-ability-emblem={active}
         data-emblem-style={active === "shonen" ? "kinetic-spark-crest" : "hanko-plate"}
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`flex items-center gap-2 border-2 px-2.5 py-1 ${
           active === "shonen"
             ? "-skew-x-6 border-[#1e293b] bg-[#fffdf8]/90 shadow-[4px_4px_0_#0f172a]"
             : "border-border bg-card shadow-[2px_2px_0_var(--primary)]"
-        } ${isMythic || isLegendary ? "studio-bloom-node " : ""}${className}`}
+        } ${isMythic || isLegendary || effectiveRank >= 4 ? "studio-bloom-node " : ""}${className}`}
       >
         <span
           className={`grid h-6 w-6 shrink-0 place-items-center border ${
@@ -1729,7 +1801,7 @@ export function GenreAbilityEmblem({
         </span>
         <div className="min-w-0">
           <span className="block truncate font-display text-[11px] font-bold uppercase tracking-wider text-foreground">
-            {label}
+            {rankCrest ? `${rankCrest} ${label}` : label}
           </span>
           <span
             className={`flex items-center gap-1.5 font-mono text-[8px] font-bold uppercase tracking-widest ${
@@ -1749,11 +1821,13 @@ export function GenreAbilityEmblem({
     return (
       <span
         title={fullTitle}
+        style={stageStyle}
         data-manga-badge="stamp"
         data-ability-emblem="fantasy"
         data-emblem-style="crowned-heraldic-shield"
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wider ${
           isMythic
             ? "border-[#5ce1b8] bg-[#2e5a52] text-[#f5ebe6] shadow-[0_0_12px_rgba(92,225,184,0.45)]"
@@ -1765,12 +1839,20 @@ export function GenreAbilityEmblem({
         <span className="relative grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5ce1b8]">
           <span
             aria-hidden="true"
-            className="absolute inset-0 rotate-45 border border-[#c5a869] bg-[#5ce1b8]/20"
+            className={`absolute inset-0 rotate-45 border bg-[#5ce1b8]/20 ${
+              effectiveRank >= 4 ? "border-2" : "border"
+            }`}
+            style={{ borderColor: rankGlow ?? "#c5a869" }}
           />
           <span className="relative grid place-items-center text-[#5ce1b8]">
             {renderGlyph("h-2.5 w-2.5 shrink-0")}
           </span>
         </span>
+        {rankCrest && (
+          <span aria-hidden="true" className="text-[9px]" style={{ color: rankGlow }}>
+            {rankCrest}
+          </span>
+        )}
         <span>{label}</span>
         {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
       </span>
@@ -1781,11 +1863,13 @@ export function GenreAbilityEmblem({
     return (
       <span
         title={fullTitle}
+        style={stageStyle}
         data-manga-badge="stamp"
         data-ability-emblem="isekai"
         data-emblem-style="astrolabe-gear"
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
           isMythic
             ? "border-[var(--genre-gold,#e09f3e)] bg-primary text-primary-foreground shadow-[0_0_10px_color-mix(in_oklab,var(--accent)_40%,transparent)]"
@@ -1797,6 +1881,11 @@ export function GenreAbilityEmblem({
         <span className="grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border border-dashed border-current/80 bg-accent/15">
           {renderGlyph("h-2.5 w-2.5 shrink-0")}
         </span>
+        {rankCrest && (
+          <span aria-hidden="true" className="text-[9px]" style={{ color: rankGlow }}>
+            {rankCrest}
+          </span>
+        )}
         <span>{label}</span>
         {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
       </span>
@@ -1807,11 +1896,13 @@ export function GenreAbilityEmblem({
     return (
       <span
         title={fullTitle}
+        style={stageStyle}
         data-manga-badge="stamp"
         data-ability-emblem="dark-fantasy"
         data-emblem-style="carved-rune-diamond"
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`inline-flex items-center gap-1.5 border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
           isMythic
             ? "border-accent bg-accent/20 text-foreground shadow-[0_0_12px_color-mix(in_oklab,var(--accent)_45%,transparent)]"
@@ -1824,11 +1915,17 @@ export function GenreAbilityEmblem({
           <span
             aria-hidden="true"
             className="absolute inset-0 rotate-45 border border-primary/80"
+            style={rankGlow ? { borderColor: rankGlow } : undefined}
           />
           <span className="relative grid place-items-center text-primary">
             {renderGlyph("h-2.5 w-2.5 shrink-0")}
           </span>
         </span>
+        {rankCrest && (
+          <span aria-hidden="true" className="text-[9px]" style={{ color: rankGlow }}>
+            {rankCrest}
+          </span>
+        )}
         <span>{label}</span>
         {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
       </span>
@@ -1839,11 +1936,13 @@ export function GenreAbilityEmblem({
     return (
       <span
         title={fullTitle}
+        style={stageStyle}
         data-manga-badge="stamp"
         data-ability-emblem="xianxia"
         data-emblem-style="jade-cloud-seal"
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-serif text-[10px] font-bold tracking-wide ${
           isMythic
             ? "border-[var(--genre-gold,#d6b26a)] bg-primary text-primary-foreground shadow-[0_0_10px_color-mix(in_oklab,var(--genre-gold,#d6b26a)_35%,transparent)]"
@@ -1855,6 +1954,11 @@ export function GenreAbilityEmblem({
         <span className="grid shrink-0 place-items-center text-[var(--genre-gold,#d6b26a)]">
           {renderGlyph("h-3 w-3 shrink-0")}
         </span>
+        {rankCrest && (
+          <span aria-hidden="true" className="text-[9px]" style={{ color: rankGlow }}>
+            {rankCrest}
+          </span>
+        )}
         <span>{label}</span>
         {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
       </span>
@@ -1865,21 +1969,31 @@ export function GenreAbilityEmblem({
     return (
       <span
         title={fullTitle}
+        style={stageStyle}
         data-manga-badge="stamp"
         data-ability-emblem="cyber-anime"
         data-emblem-style="crescent-holo-node"
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${
           isMythic
             ? "border-primary bg-primary/25 text-foreground shadow-[0_0_12px_color-mix(in_oklab,var(--primary)_45%,transparent)]"
             : "border-primary/55 bg-background/75 text-foreground"
         } ${className}`}
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--primary)]" />
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--primary)]"
+          style={rankGlow ? { backgroundColor: rankGlow } : undefined}
+        />
         <span className="grid shrink-0 place-items-center text-primary">
           {renderGlyph("h-3 w-3 shrink-0")}
         </span>
+        {rankCrest && (
+          <span aria-hidden="true" className="text-[9px]" style={{ color: rankGlow }}>
+            {rankCrest}
+          </span>
+        )}
         <span>{label}</span>
         {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
       </span>
@@ -1890,11 +2004,13 @@ export function GenreAbilityEmblem({
     return (
       <span
         title={fullTitle}
+        style={stageStyle}
         data-manga-badge="stamp"
         data-ability-emblem="ghibli"
         data-emblem-style="botanical-hex-seal"
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-0.5 font-sans text-[10px] font-bold ${
           isMythic
             ? "border-primary bg-primary text-primary-foreground"
@@ -1904,6 +2020,11 @@ export function GenreAbilityEmblem({
         <span className="grid shrink-0 place-items-center text-primary">
           {renderGlyph("h-3 w-3 shrink-0")}
         </span>
+        {rankCrest && (
+          <span aria-hidden="true" className="text-[9px]" style={{ color: rankGlow }}>
+            {rankCrest}
+          </span>
+        )}
         <span>{label}</span>
         {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
       </span>
@@ -1914,11 +2035,13 @@ export function GenreAbilityEmblem({
     return (
       <span
         title={fullTitle}
+        style={stageStyle}
         data-manga-badge="stamp"
         data-ability-emblem="shonen"
         data-emblem-style="kinetic-spark-crest"
         data-ability-tier={tier}
         data-ability-rank={resolvedRank}
+        data-emblem-stage={effectiveRank}
         className={`inline-flex -skew-x-6 items-center gap-1.5 border-2 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wider ${
           isMythic
             ? "studio-bloom-node border-[#1e293b] bg-[#e86a33] text-white shadow-[2px_2px_0_#0f172a]"
@@ -1930,6 +2053,11 @@ export function GenreAbilityEmblem({
         <span className="grid shrink-0 skew-x-6 place-items-center">
           {renderGlyph("h-3 w-3 shrink-0")}
         </span>
+        {rankCrest && (
+          <span aria-hidden="true" className="skew-x-6 text-[9px]" style={{ color: rankGlow }}>
+            {rankCrest}
+          </span>
+        )}
         <span className="skew-x-6">{label}</span>
         {resolvedRank && <AbilityRankPips rank={resolvedRank} compact className="skew-x-6" />}
       </span>
@@ -1940,11 +2068,13 @@ export function GenreAbilityEmblem({
   return (
     <span
       title={fullTitle}
+      style={stageStyle}
       data-manga-badge="stamp"
       data-ability-emblem="manga-ink"
       data-emblem-style="hanko-plate"
       data-ability-tier={tier}
       data-ability-rank={resolvedRank}
+      data-emblem-stage={effectiveRank}
       className={`inline-flex items-center gap-1.5 border border-border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
         isMythic
           ? "bg-foreground text-background shadow-[2px_2px_0_var(--primary)]"
@@ -1958,6 +2088,11 @@ export function GenreAbilityEmblem({
       >
         {renderGlyph("h-3 w-3 shrink-0")}
       </span>
+      {rankCrest && (
+        <span aria-hidden="true" className="text-[9px]" style={{ color: rankGlow }}>
+          {rankCrest}
+        </span>
+      )}
       <span>{label}</span>
       {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
     </span>

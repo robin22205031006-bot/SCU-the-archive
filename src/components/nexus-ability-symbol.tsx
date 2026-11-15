@@ -72,6 +72,12 @@ export function NexusAbilitySymbol({
     : index < 16
       ? elementalAtlas
       : skillAtlas;
+  const emblemStage = resolvedRank ?? 0;
+  const stageGlow =
+    rankMeta && rankMeta.glowRadiusPx > 0
+      ? `drop-shadow(0 0 ${Math.round(rankMeta.glowRadiusPx * 0.45)}px ${rankMeta.ringColor})`
+      : undefined;
+
   return (
     <NexusSign
       symbolName={name}
@@ -82,6 +88,8 @@ export function NexusAbilitySymbol({
         viewBox="0 0 100 100"
         data-ability-art={art}
         data-ability-rank={resolvedRank}
+        data-emblem-rank-stage={emblemStage || undefined}
+        style={stageGlow ? { filter: stageGlow } : undefined}
         aria-label={
           rankMeta ? `${label ?? def.label} (${rankMeta.label})` : label ? label : undefined
         }
@@ -127,8 +135,85 @@ export function NexusAbilitySymbol({
         </g>
         <path
           className="nexus-emblem-glint"
+          opacity={emblemStage === 1 ? 0.35 : emblemStage >= 4 ? 1 : 0.7}
           d="M50 8 L52 15 L59 17 L52 19 L50 26 L48 19 L41 17 L48 15Z"
         />
+        {resolvedRank && rankMeta && (
+          <g data-emblem-rank-stage={resolvedRank} aria-hidden="true">
+            {/* Rank 2+: Inner dashed harmonic ring */}
+            {resolvedRank >= 2 && (
+              <circle
+                cx="50"
+                cy="50"
+                r="41.5"
+                fill="none"
+                stroke={rankMeta.ringColor}
+                strokeOpacity={0.35 + resolvedRank * 0.1}
+                strokeWidth={resolvedRank >= 4 ? "1.3" : "0.9"}
+                strokeDasharray={resolvedRank >= 3 ? "5 3" : "3 4"}
+              />
+            )}
+            {/* Rank 3+: 4 cardinal geometric diamond ticks */}
+            {resolvedRank >= 3 &&
+              [0, 90, 180, 270].map((deg) => (
+                <polygon
+                  key={deg}
+                  points="50,1 52.8,5 50,9 47.2,5"
+                  fill={rankMeta.ringColor}
+                  stroke="#ffffff"
+                  strokeWidth="0.4"
+                  transform={`rotate(${deg} 50 50)`}
+                />
+              ))}
+            {/* Rank 4+: Master octagonal inner bezel + 8 radial flare rays */}
+            {resolvedRank >= 4 && (
+              <>
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="43.5"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeOpacity="0.35"
+                  strokeWidth="0.8"
+                />
+                {[45, 135, 225, 315].map((deg) => (
+                  <line
+                    key={deg}
+                    x1="50"
+                    y1="3"
+                    x2="50"
+                    y2="10"
+                    stroke={rankMeta.ringColor}
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    transform={`rotate(${deg} 50 50)`}
+                  />
+                ))}
+              </>
+            )}
+            {/* Rank 5 (Apex): Sovereign crown crest + diagonal star nodes */}
+            {resolvedRank >= 5 && (
+              <>
+                <path
+                  d="M40 9 L44 2 L50 6.5 L56 2 L60 9 Z"
+                  fill={rankMeta.ringColor}
+                  stroke="#ffffff"
+                  strokeWidth="0.7"
+                  strokeLinejoin="round"
+                />
+                {[45, 135, 225, 315].map((deg) => (
+                  <polygon
+                    key={`apex-${deg}`}
+                    points="50,2 52.2,5 50,8 47.8,5"
+                    fill="#ffffff"
+                    transform={`rotate(${deg} 50 50)`}
+                  />
+                ))}
+              </>
+            )}
+          </g>
+        )}
         {resolvedRank && rankMeta && (
           <g data-nexus-rank-arc={resolvedRank}>
             <circle
@@ -137,8 +222,8 @@ export function NexusAbilitySymbol({
               r="46"
               fill="none"
               stroke={rankMeta.ringColor}
-              strokeOpacity={0.35 + resolvedRank * 0.11}
-              strokeWidth={resolvedRank >= 4 ? "2.4" : "1.6"}
+              strokeOpacity={0.35 + resolvedRank * 0.12}
+              strokeWidth={resolvedRank >= 4 ? "2.4" : resolvedRank >= 2 ? "1.8" : "1.2"}
             />
             {ABILITY_RANKS.map((n, idx) => {
               const deg = 54 + idx * 18;

@@ -78,7 +78,7 @@ export function NexusChrome() {
       <NexusFxLayer>{null}</NexusFxLayer>
       {!hud && (
         <header
-          className={`nexus-command fixed z-40 flex items-center gap-2 rounded-2xl border border-cyan-400/35 bg-slate-950/90 p-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.5)] ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}
+          className={`nexus-command fixed z-40 flex items-center gap-2 rounded-2xl border border-cyan-400/35 bg-slate-950/90 p-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-xl ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}
         >
           {pathname !== "/character" && (
             <Link
@@ -219,10 +219,7 @@ export function NexusShell({ children }: { children: ReactNode }) {
     >
       <div className="nexus-shell relative min-h-dvh">
         <NexusChrome />
-        <div
-          data-nexus-page={pathname.slice(1) || "home"}
-          className="nexus-page relative z-[1]"
-        >
+        <div data-nexus-page={pathname.slice(1) || "home"} className="nexus-page relative z-[1]">
           {["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? (
             <NexusSectionRail>{children}</NexusSectionRail>
           ) : (

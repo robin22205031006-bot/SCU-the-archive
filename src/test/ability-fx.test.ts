@@ -98,8 +98,24 @@ describe("ability FX complete coverage", () => {
       ),
     );
     const customSamples = ["Solar Flare", "Gravity Warp", "Chrono Tether", "Soundwave Burst"];
-    const combined = Array.from(new Set([...ABILITIES.map((a) => a.key), ...canonKeys, ...customSamples]));
+    const combined = Array.from(
+      new Set([...ABILITIES.map((a) => a.key), ...canonKeys, ...customSamples]),
+    );
     const sigs = combined.map((k) => fxSignature(abilityFxRecipe(k)));
     expect(new Set(sigs).size).toBe(sigs.length);
+  });
+
+  it("every hub registry ability has a non-empty lore description", () => {
+    const missing = ABILITIES.filter((a) => !a.description || !a.description.trim()).map(
+      (a) => a.key,
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it("every non-Role registry ability belongs to at least one FX lineage", () => {
+    const unchained = ABILITIES.filter((a) => a.group !== "role" && !abilityLineage(a.key)).map(
+      (a) => a.key,
+    );
+    expect(unchained).toEqual([]);
   });
 });

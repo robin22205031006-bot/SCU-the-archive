@@ -1,32 +1,33 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { describe, expect, it } from "vitest";
 import {
   computeBackdropCanvasDimensions,
   getBackdropFrameIntervalMs,
   shouldAnimateGridCardIdle,
 } from "./manga-perf";
 
-test("computeBackdropCanvasDimensions downscales WebGL backdrop buffer safely", () => {
-  const gpu = computeBackdropCanvasDimensions(1440, 900, false, 2);
-  assert.equal(gpu.pixelRatio, 1);
-  assert.ok(gpu.renderWidth < 1440);
-  assert.ok(gpu.renderHeight < 900);
-  assert.ok(gpu.renderWidth >= 700);
+describe("manga-perf", () => {
+  it("computeBackdropCanvasDimensions downscales WebGL backdrop buffer safely", () => {
+    const gpu = computeBackdropCanvasDimensions(1440, 900, false, 2);
+    expect(gpu.pixelRatio).toBe(1);
+    expect(gpu.renderWidth).toBeLessThan(1440);
+    expect(gpu.renderHeight).toBeLessThan(900);
+    expect(gpu.renderWidth).toBeGreaterThanOrEqual(700);
 
-  const sw = computeBackdropCanvasDimensions(100, 100, true, 2);
-  assert.equal(sw.pixelRatio, 1);
-  assert.equal(sw.renderWidth, 160);
-  assert.equal(sw.renderHeight, 160);
-});
+    const sw = computeBackdropCanvasDimensions(100, 100, true, 2);
+    expect(sw.pixelRatio).toBe(1);
+    expect(sw.renderWidth).toBe(160);
+    expect(sw.renderHeight).toBe(160);
+  });
 
-test("getBackdropFrameIntervalMs paces GPU vs software GL loops", () => {
-  assert.ok(getBackdropFrameIntervalMs(false) >= 30);
-  assert.ok(getBackdropFrameIntervalMs(true) >= 140);
-});
+  it("getBackdropFrameIntervalMs paces GPU vs software GL loops", () => {
+    expect(getBackdropFrameIntervalMs(false)).toBeGreaterThanOrEqual(30);
+    expect(getBackdropFrameIntervalMs(true)).toBeGreaterThanOrEqual(140);
+  });
 
-test("shouldAnimateGridCardIdle disables per-card idle loops on dense grids", () => {
-  assert.equal(shouldAnimateGridCardIdle(0), false);
-  assert.equal(shouldAnimateGridCardIdle(6), true);
-  assert.equal(shouldAnimateGridCardIdle(12), true);
-  assert.equal(shouldAnimateGridCardIdle(13), false);
+  it("shouldAnimateGridCardIdle disables per-card idle loops on dense grids", () => {
+    expect(shouldAnimateGridCardIdle(0)).toBe(false);
+    expect(shouldAnimateGridCardIdle(6)).toBe(true);
+    expect(shouldAnimateGridCardIdle(12)).toBe(true);
+    expect(shouldAnimateGridCardIdle(13)).toBe(false);
+  });
 });

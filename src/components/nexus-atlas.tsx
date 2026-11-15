@@ -343,21 +343,18 @@ function MapSurface({
       style={{ width: `${fitSize.width}px`, height: `${fitSize.height}px` }}
       className="relative shrink-0 overflow-hidden rounded-lg border border-border/50 shadow-2xl"
     >
-      <AnimatePresence mode="sync">
-        <motion.img
-          key={image}
-          src={image}
-          alt={alt}
-          width={mediaWidth}
-          height={mediaHeight}
-          draggable={false}
-          initial={moving ? { opacity: 0, scale: 1.02 } : false}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0 h-full w-full select-none object-contain"
-        />
-      </AnimatePresence>
+      <motion.img
+        key={image}
+        src={image}
+        alt={alt}
+        width={mediaWidth}
+        height={mediaHeight}
+        draggable={false}
+        initial={moving ? { opacity: 0.92, scale: 1.02 } : false}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="absolute inset-0 h-full w-full select-none object-contain"
+      />
 
       {compareImage && compareSplit !== undefined && (
         <>
@@ -1109,28 +1106,25 @@ export function AtlasOverlay({
       className="fixed inset-0 z-[200] overflow-hidden bg-background"
       style={{ maxWidth: "none", maxHeight: "none" }}
     >
-      <AnimatePresence mode="sync" initial={false}>
-        <motion.div
-          key={view}
-          className="absolute inset-0"
-          initial={{ opacity: 0, scale: 1.02 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {loc ? (
-            <LocationView
-              loc={loc}
-              initialMode={mode}
-              onClose={onClose}
-              onWorld={() => setView("world")}
-              onSelectRealm={setView}
-            />
-          ) : (
-            <WorldView onPick={setView} onClose={onClose} />
-          )}
-        </motion.div>
-      </AnimatePresence>
+      <motion.div
+        key={view}
+        className="absolute inset-0"
+        initial={{ opacity: 0.92, scale: 1.02 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {loc ? (
+          <LocationView
+            loc={loc}
+            initialMode={mode}
+            onClose={onClose}
+            onWorld={() => setView("world")}
+            onSelectRealm={setView}
+          />
+        ) : (
+          <WorldView onPick={setView} onClose={onClose} />
+        )}
+      </motion.div>
     </motion.div>,
     document.body,
   );

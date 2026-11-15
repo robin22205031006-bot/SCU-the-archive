@@ -1,5 +1,6 @@
 /** Hand-painted, cel-shaded 2D FX painters for elements, lightning, flame, beasts and guardians. Browser-only (canvas). */
 import type { FxMotif, FxRecipe } from "@/lib/ability-fx";
+import type { AbilityEmblemRank } from "@/lib/ability-rank";
 
 type C = CanvasRenderingContext2D;
 export interface PF {
@@ -11,6 +12,16 @@ export interface PF {
   p: number;
   rnd: (i: number) => number;
   step: number;
+  rank?: AbilityEmblemRank | undefined;
+  impact?: number | undefined;
+}
+export function rankLevel(f: PF): AbilityEmblemRank {
+  if (f.rank && f.rank >= 1 && f.rank <= 5) return f.rank;
+  if (f.p <= 2) return 1;
+  if (f.p <= 4) return 2;
+  if (f.p <= 5) return 3;
+  if (f.p <= 6) return 4;
+  return 5;
 }
 const TAU = Math.PI * 2;
 const fr = (x: number) => x - Math.floor(x);
@@ -400,14 +411,24 @@ export function quadruped(
   return { mx: x + (hx + sn) * L, my: y + (hy + bob) * L };
 }
 
-function roarWaves(c: C, mx: number, my: number, s: number, t: number, col: string, k: number) {
+function roarWaves(
+  c: C,
+  mx: number,
+  my: number,
+  s: number,
+  t: number,
+  col: string,
+  k: number,
+  rk = 3,
+) {
   add(c);
-  for (let i = 0; i < 4; i++) {
-    const q = fr(t * 2.2 + i / 4);
+  const count = 2 + rk;
+  for (let i = 0; i < count; i++) {
+    const q = fr(t * 2.2 + i / count);
     c.strokeStyle = rgba(col, (1 - q) * 0.9 * k);
-    c.lineWidth = 6 * (1 - q) + 1;
+    c.lineWidth = (4 + rk) * (1 - q) + 1;
     c.beginPath();
-    c.arc(mx, my, s * (0.03 + q * 0.42), -0.65, 0.65);
+    c.arc(mx, my, s * (0.03 + q * (0.28 + rk * 0.04)), -0.65, 0.65);
     c.stroke();
   }
   norm(c);
@@ -415,63 +436,84 @@ function roarWaves(c: C, mx: number, my: number, s: number, t: number, col: stri
 
 function transformation(f: PF, sp: Species) {
   const { c, s, t, r, rnd } = f;
+  const rk = rankLevel(f);
   const [a, , hi] = r.palette;
   const gy = s * GY;
   const ph = fr(t * 0.2);
-  const shaking = ph > 0.78 && ph < 0.95;
+  const shaking = ph > 0.78 && ph < 0.95 && rk >= 3;
   c.save();
-  if (shaking) c.translate((rnd(f.step) - 0.5) * s * 0.02, (rnd(f.step + 9) - 0.5) * s * 0.01);
-  groundGlow(f, a, 0.7);
+  if (shaking)
+    c.translate(
+      (rnd(f.step) - 0.5) * s * (0.008 + rk * 0.004),
+      (rnd(f.step + 9) - 0.5) * s * 0.01,
+    );
+  groundGlow(f, a, 0.4 + rk * 0.14);
   const vort = clamp(1 - Math.abs(ph - 0.35) / 0.16),
     manA = 1 - ease((ph - 0.27) / 0.14),
     beastA = ease((ph - 0.3) / 0.15);
-  for (let i = 0; i < 22; i++) {
+  const smokeCount = 8 + rk * 4;
+  for (let i = 0; i < smokeCount; i++) {
     const q = fr(t * 0.35 + rnd(i));
     const ang = rnd(i + 40) * TAU + t * (1 + vort * 4);
-    const rad = s * (0.06 + 0.2 * q) * (1 - vort * 0.35);
+    const rad = s * (0.06 + (0.14 + rk * 0.025) * q) * (1 - vort * 0.35);
     smoke(
       c,
       Math.cos(ang) * rad,
       gy - s * 0.16 - q * s * 0.26 + Math.sin(ang) * rad * 0.35,
-      s * (0.05 + 0.06 * q),
+      s * (0.04 + 0.05 * q),
       "#000000",
-      (1 - q) * (0.28 + vort * 0.55),
+      (1 - q) * (0.22 + vort * 0.55),
     );
   }
   if (manA > 0) {
     c.globalAlpha = manA;
     add(c);
-    glowDot(c, 0, gy - s * 0.22, s * 0.24, a, 0.35 * manA);
+    glowDot(c, 0, gy - s * 0.22, s * (0.16 + rk * 0.03), a, 0.35 * manA);
     norm(c);
     const hd = humanoid(c, 0, gy, s * 0.44, "#110e18", ease((ph - 0.12) / 0.15) * 0.9, 0);
-    glowDot(c, hd.hx + hd.u * 0.35, hd.hy, s * 0.03, a);
-    glowDot(c, hd.hx - hd.u * 0.35, hd.hy, s * 0.03, a);
+    glowDot(c, hd.hx + hd.u * 0.35, hd.hy, s * (0.02 + rk * 0.004), a);
+    glowDot(c, hd.hx - hd.u * 0.35, hd.hy, s * (0.02 + rk * 0.004), a);
     c.globalAlpha = 1;
   }
   if (beastA > 0) {
-    const L = s * 0.62 * (0.6 + 0.4 * beastA),
+    const L = s * (0.48 + rk * 0.04) * (0.6 + 0.4 * beastA),
       walk = ph < 0.78 ? t * 7 : t * 7 * 0.2,
       roar = clamp((ph - 0.78) / 0.05) * (1 - clamp((ph - 0.95) / 0.05));
     const x = lerp(s * 0.04, s * 0.1, clamp((ph - 0.45) / 0.33));
     add(c);
-    glowDot(c, x, gy - L * 0.3, L * 0.8, a, 0.45 * beastA);
+    glowDot(c, x, gy - L * 0.3, L * (0.55 + rk * 0.08), a, (0.25 + rk * 0.06) * beastA);
     norm(c);
     c.globalAlpha = beastA;
     const m = quadruped(c, sp, x, gy, L, walk, roar, "#15111c", a, hi, a);
     c.globalAlpha = 1;
     if (roar > 0) {
-      roarWaves(c, m.mx, m.my, s, t, hi, roar);
+      roarWaves(c, m.mx, m.my, s, t, hi, roar, rk);
       add(c);
-      glowDot(c, m.mx, m.my, s * 0.12, a, 0.6 * roar);
+      glowDot(c, m.mx, m.my, s * (0.07 + rk * 0.02), a, 0.6 * roar);
+      norm(c);
+    }
+    if (rk >= 4) {
+      add(c);
+      for (let i = 0; i < rk * 2; i++) {
+        const q = fr(t * 0.8 + i / (rk * 2));
+        glowDot(
+          c,
+          x + Math.cos(i * 1.9 + t) * L * 0.45,
+          gy - q * L * 0.85,
+          s * 0.012 * (1 - q),
+          i % 2 ? hi : a,
+          (1 - q) * 0.85,
+        );
+      }
       norm(c);
     }
   }
   if (vort > 0.2) {
     add(c);
-    glowDot(c, 0, gy - s * 0.18, s * 0.32 * vort, a, 0.55 * vort);
+    glowDot(c, 0, gy - s * 0.18, s * (0.2 + rk * 0.035) * vort, a, 0.55 * vort);
     c.strokeStyle = rgba(hi, vort);
-    c.lineWidth = 1.5;
-    for (let i = 0; i < 7; i++) {
+    c.lineWidth = 1 + rk * 0.25;
+    for (let i = 0; i < 3 + rk; i++) {
       const q = rnd(f.step * 3 + i) * TAU;
       c.beginPath();
       c.moveTo(Math.cos(q) * s * 0.08, gy - s * 0.18 + Math.sin(q) * s * 0.1);
@@ -557,43 +599,46 @@ function serpentHead(
 
 function snakes(f: PF) {
   const { c, s, t, r } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
-  groundGlow(f, a, 0.6);
-  for (let k = 0; k < 3; k++) {
-    const y0 = s * (GY - 0.02 - k * 0.12),
-      ph = fr(t * 0.5 + k * 0.33),
+  groundGlow(f, a, 0.4 + rk * 0.1);
+  const count = Math.min(5, 1 + rk);
+  for (let k = 0; k < count; k++) {
+    const y0 = s * (GY - 0.02 - (k / Math.max(1, count - 1)) * 0.24),
+      ph = fr(t * 0.5 + k / count),
       strike = ph > 0.7 ? Math.sin(((ph - 0.7) / 0.3) * Math.PI) : 0;
-    const hx = -s * 0.1 + k * s * 0.06 + strike * s * 0.22,
+    const hx = -s * 0.1 + k * s * 0.04 + strike * s * (0.16 + rk * 0.02),
       pts: Pt[] = [];
     for (let i = 70; i >= 0; i--) {
       const q = i / 70;
       pts.push([
         hx - q * s * 0.55,
         y0 + Math.sin(q * 9 - t * 5 + k) * s * 0.04 * (q + 0.2) - strike * s * 0.06 * (1 - q),
-        s * (0.028 - q * 0.02),
+        s * ((0.022 + rk * 0.002) - q * 0.018),
       ]);
     }
     tube(c, pts, b === "#14532d" ? "#0a1a06" : b, a);
     const [x, y] = pts[pts.length - 1]!;
-    serpentHead(c, x, y, -strike * 0.3, s * 0.03, "#0a1a06", hi, strike);
+    serpentHead(c, x, y, -strike * 0.3, s * (0.024 + rk * 0.0025), "#0a1a06", hi, strike);
   }
 }
 function dragon(f: PF) {
   const { c, s, t, r } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
   add(c);
-  glowDot(c, 0, -s * 0.02, s * 0.2, a, 0.9);
-  glowDot(c, 0, -s * 0.02, s * 0.08, "#ffffff", 0.9);
+  glowDot(c, 0, -s * 0.02, s * (0.12 + rk * 0.025), a, 0.7 + rk * 0.05);
+  glowDot(c, 0, -s * 0.02, s * (0.05 + rk * 0.01), "#ffffff", 0.9);
   norm(c);
   const pts: Pt[] = [];
   const n = 110;
   for (let i = n; i >= 0; i--) {
     const q = i / n;
-    const ang = -t * 1.4 + q * TAU * 1.15;
+    const ang = -t * 1.4 + q * TAU * (0.9 + rk * 0.1);
     pts.push([
-      Math.cos(ang) * s * (0.24 + q * 0.1),
-      -s * 0.02 + Math.sin(ang) * s * (0.16 + q * 0.06) + Math.sin(q * 12 + t * 3) * s * 0.01,
-      s * (0.035 - q * 0.025),
+      Math.cos(ang) * s * (0.2 + rk * 0.015 + q * 0.1),
+      -s * 0.02 + Math.sin(ang) * s * (0.13 + rk * 0.01 + q * 0.06) + Math.sin(q * 12 + t * 3) * s * 0.01,
+      s * ((0.024 + rk * 0.003) - q * 0.02),
     ]);
   }
   tube(c, pts, "#0b1408", b, a);
@@ -604,14 +649,15 @@ function dragon(f: PF) {
     x,
     y,
     Math.atan2(y - py, x - px),
-    s * 0.035,
+    s * (0.028 + rk * 0.0025),
     "#0b1408",
     hi,
     0.5 + 0.5 * Math.sin(t * 2),
     hi,
   );
   add(c);
-  for (let i = 0; i < 18; i++) {
+  const sparks = 6 + rk * 4;
+  for (let i = 0; i < sparks; i++) {
     const q = fr(t * 0.7 + f.rnd(i));
     glowDot(
       c,
@@ -777,48 +823,52 @@ function flameStack(
 }
 function flame(f: PF) {
   const { c, t, s, r, v, p, rnd } = f;
+  const rk = rankLevel(f);
   const [mid, outer, core] = r.palette;
   const gy = s * GY;
   const cols: [string, string, string, string] = [outer, mid, core, "#ffffff"];
+  const rankH = 0.65 + rk * 0.1;
   const H =
     s *
-    (0.4 + (0.06 * p) / 8) *
-    (v === 5 ? 1.2 : 1) *
+    (0.38 + (0.06 * p) / 8) *
+    rankH *
+    (v === 5 ? 1.18 : 1) *
     (v === 1 ? 0.85 + 0.25 * Math.max(0, Math.sin(t * 3)) : 1);
   if (v !== 4)
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 4 + rk * 2; i++) {
       const q = fr(t * 0.25 + rnd(i + 500));
       smoke(
         c,
         (rnd(i + 501) - 0.5) * s * 0.2 + Math.sin(t + i) * s * 0.05,
         gy - H * 0.8 - q * s * 0.3,
-        s * (0.06 + q * 0.08),
+        s * (0.05 + q * 0.07),
         "#120806",
-        (1 - q) * 0.45,
+        (1 - q) * 0.42,
       );
     }
-  groundGlow(f, mid, 1);
+  groundGlow(f, mid, 0.5 + rk * 0.13);
   if (v === 2) {
-    for (let i = 0; i < 6; i++) {
-      const ang = (i / 6) * TAU + t * 0.55;
+    const ringCount = 3 + rk;
+    for (let i = 0; i < ringCount; i++) {
+      const ang = (i / ringCount) * TAU + t * 0.55;
       flameStack(
         f,
-        Math.cos(ang) * s * 0.24,
+        Math.cos(ang) * s * (0.18 + rk * 0.015),
         gy + Math.sin(ang) * s * 0.04,
-        s * 0.055,
+        s * (0.04 + rk * 0.004),
         H * 0.5,
         cols,
         i * 2.1,
       );
     }
   }
-  if (v === 3) runeCircle(c, s, t, outer, core, s * 0.38, 0.95);
+  if (v === 3) runeCircle(c, s, t, outer, core, s * (0.28 + rk * 0.025), 0.55 + rk * 0.1);
   add(c);
-  glowDot(c, 0, gy - H * 0.35, s * 0.38, outer, 0.55);
+  glowDot(c, 0, gy - H * 0.35, s * (0.24 + rk * 0.035), outer, 0.38 + rk * 0.06);
   norm(c);
-  if (v === 1) {
-    flameStack(f, -s * 0.14, gy, s * 0.08, H * 0.6, cols, 4);
-    flameStack(f, s * 0.14, gy, s * 0.08, H * 0.55, cols, 7);
+  if (v === 1 || rk >= 3) {
+    flameStack(f, -s * 0.14, gy, s * (0.055 + rk * 0.006), H * 0.58, cols, 4);
+    flameStack(f, s * 0.14, gy, s * (0.055 + rk * 0.006), H * 0.54, cols, 7);
   }
   if (v >= 20) {
     const wisps = 2 + (v % 4);
@@ -835,7 +885,22 @@ function flame(f: PF) {
       );
     }
   }
-  flameStack(f, 0, gy, s * 0.15, H, cols, v);
+  flameStack(f, 0, gy, s * (0.105 + rk * 0.012), H, cols, v);
+  if (rk === 5) {
+    add(c);
+    c.save();
+    c.translate(0, gy - H * 0.52);
+    c.rotate(t * 1.2);
+    c.strokeStyle = rgba(core, 0.72);
+    c.lineWidth = 2;
+    c.setLineDash([s * 0.04, s * 0.03]);
+    c.beginPath();
+    c.arc(0, 0, s * 0.26, 0, TAU);
+    c.stroke();
+    c.setLineDash([]);
+    c.restore();
+    norm(c);
+  }
   if (v === 5) {
     // draconic: a dragon head forms out of the flame column
     c.save();
@@ -866,8 +931,8 @@ function flame(f: PF) {
     c.fill();
     add(c);
     glowDot(c, s * 0.07, -s * 0.045, s * 0.03, core);
-    for (let i = 0; i < 10; i++) {
-      const q = fr(t * 1.4 + i / 10);
+    for (let i = 0; i < 4 + rk * 2; i++) {
+      const q = fr(t * 1.4 + i / (4 + rk * 2));
       teardrop(
         c,
         s * (0.16 + q * 0.25),
@@ -881,19 +946,19 @@ function flame(f: PF) {
     c.restore();
   }
   add(c);
-  const N = 28 + p * 4,
+  const N = 8 + rk * 7,
     rate = v === 4 ? 0.5 : 0.95;
   for (let i = 0; i < N; i++) {
     const life = fr(t * rate + rnd(i));
-    const x0 = (rnd(i + 99) - 0.5) * s * 0.28;
+    const x0 = (rnd(i + 99) - 0.5) * s * (0.18 + rk * 0.028);
     const x = x0 * (1 - life * 0.5) + Math.sin(t * 3 + i) * s * 0.05 * life;
     const y = gy - s * 0.02 - life * H * 1.15;
-    const rad = s * 0.045 * (1 - life) * (0.5 + rnd(i + 7));
+    const rad = s * (0.028 + rk * 0.004) * (1 - life) * (0.5 + rnd(i + 7));
     c.globalAlpha = Math.min(1, (1 - life) * 1.5);
     teardrop(c, x, y, rad, life < 0.2 ? core : life < 0.5 ? mid : outer);
   }
   c.globalAlpha = 1;
-  for (let i = 0; i < 12 + p * 2; i++) {
+  for (let i = 0; i < 4 + rk * 4; i++) {
     const life = fr(t * 0.45 + rnd(i + 300));
     const x = (rnd(i + 301) - 0.5) * s * 0.5 + Math.sin(t * 2 + i) * s * 0.04;
     glowDot(c, x, gy - life * s * 0.7, s * 0.014 * (1 - life) + 1, core, 1 - life);
@@ -1010,33 +1075,47 @@ function stormCloud(f: PF, col: string, flash: number) {
   }
 }
 function lightning(f: PF) {
-  const { c, t, s, r, v, p, rnd, step } = f;
+  const { c, t, s, r, v, rnd, step } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
   const gy = s * GY;
   const cols: BoltCols = { glow: a, mid: a, core: "#ffffff" };
   const burst = fr(t * 0.9),
-    on = burst < 0.5,
-    flick = rnd(step) > 0.35;
+    on = burst < 0.42 + rk * 0.06,
+    flick = rnd(step) > 0.28;
   switch (v) {
     case 0: {
-      stormCloud(f, a, on && flick ? 1 : 0);
-      groundGlow(f, a, on ? 1 : 0.3);
+      stormCloud(f, a, on && flick ? 0.6 + rk * 0.1 : 0);
+      groundGlow(f, a, on ? 0.5 + rk * 0.13 : 0.25);
       if (on && flick) {
-        const sx = (rnd(Math.floor(t * 0.9)) - 0.5) * s * 0.3;
-        strike(f, sx, -s * 0.38, 0, gy, 2.2, cols, step * 17, 3 + Math.floor(p / 3));
+        const boltCount = rk >= 4 ? 2 : 1;
+        for (let bIdx = 0; bIdx < boltCount; bIdx++) {
+          const sx = (rnd(Math.floor(t * 0.9) + bIdx * 13) - 0.5) * s * 0.34;
+          strike(
+            f,
+            sx,
+            -s * 0.38,
+            (bIdx - (boltCount - 1) / 2) * s * 0.1,
+            gy,
+            1.4 + rk * 0.3,
+            cols,
+            step * 17 + bIdx * 53,
+            1 + rk,
+          );
+        }
         add(c);
-        glowDot(c, 0, gy, s * 0.25, a, 0.9);
+        glowDot(c, 0, gy, s * (0.14 + rk * 0.03), a, 0.9);
         glowDot(c, 0, gy, s * 0.08, "#ffffff");
         norm(c);
-        for (let i = 0; i < 4; i++) {
-          const q = (rnd(step + i * 3) - 0.5) * s * 0.7;
+        for (let i = 0; i < 1 + rk; i++) {
+          const q = (rnd(step + i * 3) - 0.5) * s * (0.4 + rk * 0.08);
           strike(
             f,
             0,
             gy,
             q,
             gy + (rnd(i + step) - 0.5) * s * 0.05,
-            1,
+            0.9 + rk * 0.15,
             cols,
             step * 31 + i,
             0,
@@ -1047,24 +1126,24 @@ function lightning(f: PF) {
       break;
     }
     case 1: {
-      groundGlow(f, a, 0.7);
+      groundGlow(f, a, 0.4 + rk * 0.12);
       add(c);
-      glowDot(c, 0, -s * 0.05, s * 0.22, a, 0.8);
+      glowDot(c, 0, -s * 0.05, s * (0.14 + rk * 0.025), a, 0.8);
       glowDot(c, 0, -s * 0.05, s * 0.06, "#ffffff");
       norm(c);
-      const k = 4 + Math.floor(p / 2);
+      const k = 2 + rk * 2;
       for (let i = 0; i < k; i++) {
         const q = t * 2.5 + (i / k) * TAU;
         strike(
           f,
           0,
           -s * 0.05,
-          Math.cos(q) * s * 0.26,
-          -s * 0.05 + Math.sin(q) * s * 0.26 * 0.6,
-          1.6,
+          Math.cos(q) * s * (0.18 + rk * 0.028),
+          -s * 0.05 + Math.sin(q) * s * (0.18 + rk * 0.028) * 0.6,
+          1.1 + rk * 0.2,
           cols,
           step * 11 + i,
-          1,
+          rk >= 3 ? 1 : 0,
           s * 0.06,
         );
       }
@@ -1072,19 +1151,25 @@ function lightning(f: PF) {
       c.translate(0, -s * 0.05);
       c.rotate(t * 3);
       c.scale(1, 0.6);
-      c.strokeStyle = rgba(hi, 0.8);
-      c.lineWidth = 2;
+      c.strokeStyle = rgba(hi, 0.55 + rk * 0.08);
+      c.lineWidth = 1.5 + rk * 0.3;
       c.setLineDash([s * 0.06, s * 0.04]);
       c.beginPath();
-      c.arc(0, 0, s * 0.3, 0, TAU);
+      c.arc(0, 0, s * (0.22 + rk * 0.025), 0, TAU);
       c.stroke();
+      if (rk >= 4) {
+        c.rotate(-t * 5);
+        c.beginPath();
+        c.arc(0, 0, s * 0.35, 0, TAU);
+        c.stroke();
+      }
       c.setLineDash([]);
       c.restore();
       break;
     }
     case 2: {
-      groundGlow(f, a, 0.8);
-      const R = s * 0.22,
+      groundGlow(f, a, 0.45 + rk * 0.12);
+      const R = s * (0.14 + rk * 0.024),
         cy = -s * 0.06;
       const g = c.createRadialGradient(0, cy, 0, 0, cy, R);
       g.addColorStop(0, rgba(hi, 0.9));
@@ -1094,7 +1179,7 @@ function lightning(f: PF) {
       c.beginPath();
       c.arc(0, cy, R, 0, TAU);
       c.fill();
-      for (let i = 0; i < 5 + p / 2; i++) {
+      for (let i = 0; i < 2 + rk * 2; i++) {
         const q0 = rnd(step * 5 + i) * TAU,
           q1 = q0 + 0.6 + rnd(step + i) * 1.2;
         strike(
@@ -1103,14 +1188,14 @@ function lightning(f: PF) {
           cy + Math.sin(q0) * R,
           Math.cos(q1) * R,
           cy + Math.sin(q1) * R,
-          1.4,
+          1.1 + rk * 0.15,
           cols,
           step * 7 + i,
           0,
           R * 0.3,
         );
       }
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < rk; i++) {
         const q = rnd(step * 2 + i + 50) * TAU;
         strike(
           f,
@@ -1118,7 +1203,7 @@ function lightning(f: PF) {
           cy + Math.sin(q) * R,
           Math.cos(q) * R * 2,
           cy + Math.sin(q) * R * 2,
-          1.2,
+          1 + rk * 0.15,
           cols,
           step * 3 + i,
           1,
@@ -1127,55 +1212,87 @@ function lightning(f: PF) {
       break;
     }
     case 3: {
-      // Red Lightning — Dorian's apex: black core, crimson destruction
-      if (on && flick) {
-        c.fillStyle = rgba(a, 0.12);
+      // Red Lightning — black core, crimson destruction; dramatically scales from Rank 1 (restrained) to Rank 5 (apex storm)
+      if (on && flick && rk >= 3) {
+        c.fillStyle = rgba(a, 0.04 + rk * 0.03);
         c.fillRect(-s, -s, s * 2, s * 2);
       }
-      groundGlow(f, a, 1);
+      groundGlow(f, a, 0.45 + rk * 0.14);
       const cy = -s * 0.08;
+      const coreR = s * (0.055 + rk * 0.014);
       add(c);
-      glowDot(c, 0, cy, s * 0.36, a, 0.8);
+      glowDot(c, 0, cy, s * (0.18 + rk * 0.055), a, 0.45 + rk * 0.1);
       norm(c);
-      disc(c, 0, cy, s * 0.1, "#000000");
+      disc(c, 0, cy, coreR, "#000000");
       c.strokeStyle = a;
-      c.lineWidth = 3;
+      c.lineWidth = 1.6 + rk * 0.5;
       c.beginPath();
-      c.arc(0, cy, s * 0.1 + Math.sin(t * 9) * 1.5, 0, TAU);
+      c.arc(0, cy, coreR + Math.sin(t * 9) * 1.5, 0, TAU);
       c.stroke();
+      if (rk >= 4) {
+        c.save();
+        c.translate(0, cy);
+        c.rotate(t * 2.2);
+        c.strokeStyle = rgba(hi, 0.72);
+        c.lineWidth = 1.6;
+        c.setLineDash([s * 0.045, s * 0.03]);
+        c.beginPath();
+        c.arc(0, 0, coreR * (rk === 5 ? 2.5 : 2), 0, TAU);
+        c.stroke();
+        c.setLineDash([]);
+        c.restore();
+      }
       const dc: BoltCols = { glow: a, mid: a, core: "#000", darkCore: true };
-      for (let i = 0; i < 6 + Math.floor(p / 2); i++) {
+      const arcCount = 2 + rk * 2;
+      for (let i = 0; i < arcCount; i++) {
         const q = rnd(step * 9 + i) * TAU;
-        const L = s * (0.3 + rnd(step + i * 5) * 0.18);
+        const L = s * (0.18 + rk * 0.055 + rnd(step + i * 5) * 0.12);
         strike(
           f,
-          Math.cos(q) * s * 0.1,
-          cy + Math.sin(q) * s * 0.1,
+          Math.cos(q) * coreR,
+          cy + Math.sin(q) * coreR,
           Math.cos(q) * L,
           Math.max(cy + Math.sin(q) * L, -s * 0.48),
-          2.8,
+          1.4 + rk * 0.35,
           dc,
           step * 19 + i,
-          2,
+          rk >= 4 ? 3 : rk >= 2 ? 2 : 1,
         );
       }
-      for (let i = 0; i < 5; i++) {
-        const x = (rnd(i + 900) - 0.5) * s * 0.8;
-        strike(f, x * 0.3, gy, x, gy + s * 0.03, 1.2, dc, 777 + i, 0, s * 0.03);
+      const floorArcs = rk === 1 ? 1 : rk * 2 - 1;
+      for (let i = 0; i < floorArcs; i++) {
+        const x = (rnd(i + 900) - 0.5) * s * (0.45 + rk * 0.08);
+        strike(f, x * 0.28, gy, x, gy + s * 0.03, 0.9 + rk * 0.15, dc, 777 + i, 0, s * 0.03);
+      }
+      if (rk === 5) {
+        add(c);
+        for (let i = 0; i < 12; i++) {
+          const q = fr(t * 1.4 + i / 12);
+          glowDot(
+            c,
+            Math.cos(i * 2.1 + t) * s * 0.36 * q,
+            cy + Math.sin(i * 1.7 - t) * s * 0.36 * q,
+            s * 0.016 * (1 - q),
+            i % 2 ? hi : a,
+            1 - q,
+          );
+        }
+        norm(c);
       }
       break;
     }
     case 4: {
-      // Crimson Astrapo — red lightning variant: crimson spear wrapped in twin helix bolts
-      groundGlow(f, a, 0.9);
-      runeCircle(c, s, t, a, hi, s * 0.3, 0.6);
-      const top = -s * 0.44;
+      // Crimson Astrapo — crimson spear wrapped in twin helix bolts
+      groundGlow(f, a, 0.5 + rk * 0.1);
+      runeCircle(c, s, t, a, hi, s * (0.22 + rk * 0.025), 0.35 + rk * 0.1);
+      const top = -s * (0.28 + rk * 0.04);
       add(c);
       const g = c.createLinearGradient(0, gy, 0, top);
       g.addColorStop(0, rgba(a, 0.9));
       g.addColorStop(1, rgba(a, 0));
       c.fillStyle = g;
-      c.fillRect(-s * 0.025, top, s * 0.05, gy - top);
+      const bw = s * (0.016 + rk * 0.004);
+      c.fillRect(-bw, top, bw * 2, gy - top);
       c.fillStyle = rgba(hi, 0.9);
       c.fillRect(-s * 0.006, top, s * 0.012, gy - top);
       norm(c);
@@ -1185,26 +1302,26 @@ function lightning(f: PF) {
           const k = i / 40,
             y = lerp(gy, top, k);
           pts.push([
-            Math.sin(k * 14 + t * 9 * sgn) * s * 0.07 * (1 - k * 0.5) +
+            Math.sin(k * 14 + t * 9 * sgn) * s * (0.045 + rk * 0.008) * (1 - k * 0.5) +
               (rnd(step * 40 + i) - 0.5) * s * 0.015,
             y,
           ]);
         }
         add(c);
-        polyline(c, pts, 10, rgba(a, 0.15));
-        polyline(c, pts, 3.5, rgba(a, 0.85));
+        polyline(c, pts, 6 + rk * 1.2, rgba(a, 0.18));
+        polyline(c, pts, 2 + rk * 0.4, rgba(a, 0.85));
         polyline(c, pts, 1.2, hi);
         norm(c);
       }
-      for (let i = 0; i < 5; i++) {
-        const q = -Math.PI / 2 + (i - 2) * 0.5;
+      for (let i = 0; i < 1 + rk; i++) {
+        const q = -Math.PI / 2 + (i - rk / 2) * 0.45;
         strike(
           f,
           0,
           top + s * 0.04,
-          Math.cos(q) * s * 0.14,
+          Math.cos(q) * s * (0.1 + rk * 0.018),
           top + s * 0.04 + Math.sin(q) * s * 0.1,
-          1.2,
+          1.1,
           { glow: a, mid: a, core: hi },
           step * 3 + i,
           0,
@@ -1214,26 +1331,27 @@ function lightning(f: PF) {
       break;
     }
     case 5: {
-      // White Lightning Drive — Weston's speed form
-      groundGlow(f, "#e2e8f0", 0.5);
-      const q = fr(t * 0.7),
+      // White Lightning Drive — speed form
+      groundGlow(f, "#e2e8f0", 0.35 + rk * 0.06);
+      const q = fr(t * (0.55 + rk * 0.06)),
         x = lerp(-s * 0.48, s * 0.48, ease(q * 1.15));
       add(c);
-      for (let i = 0; i < 14; i++) {
-        c.fillStyle = rgba(hi, 0.5 * (1 - i / 14));
-        c.fillRect(x - s * (0.05 + i * 0.045), gy - s * (0.04 + rnd(i) * 0.3), s * 0.2, 1.5);
+      const streaks = 6 + rk * 3;
+      for (let i = 0; i < streaks; i++) {
+        c.fillStyle = rgba(hi, 0.55 * (1 - i / streaks));
+        c.fillRect(x - s * (0.05 + i * 0.038), gy - s * (0.04 + rnd(i) * 0.3), s * 0.2, 1.5);
       }
       norm(c);
-      for (let i = 5; i >= 1; i--) {
-        c.globalAlpha = (0.12 * (6 - i)) / 6;
+      for (let i = rk; i >= 1; i--) {
+        c.globalAlpha = (0.14 * (rk + 1 - i)) / (rk + 1);
         humanoid(c, x - i * s * 0.07, gy, s * 0.32, "#e2e8f0", 0.55, 0.25);
       }
       c.globalAlpha = 1;
       add(c);
-      glowDot(c, x, gy - s * 0.16, s * 0.2, "#ffffff", 0.45);
+      glowDot(c, x, gy - s * 0.16, s * (0.14 + rk * 0.025), "#ffffff", 0.45);
       norm(c);
       humanoid(c, x, gy, s * 0.32, "#1e2433", 0.55, 0.25);
-      for (let i = 0; i < 3; i++)
+      for (let i = 0; i < 1 + Math.ceil(rk / 2); i++)
         strike(
           f,
           x - s * 0.38,
@@ -1253,33 +1371,34 @@ function lightning(f: PF) {
     }
     case 6: {
       // Hyperkinesis — multi-hop erratic speed zig-zag arcs
-      groundGlow(f, a, 0.7);
+      groundGlow(f, a, 0.45 + rk * 0.08);
+      const hops = 3 + rk;
       const pts: [number, number][] = [];
-      for (let i = 0; i < 6; i++)
-        pts.push([lerp(-s * 0.4, s * 0.4, i / 5), gy - s * (0.1 + (i % 2) * 0.2)]);
-      const k = fr(t * 0.8) * 5,
+      for (let i = 0; i < hops; i++)
+        pts.push([lerp(-s * 0.4, s * 0.4, i / (hops - 1)), gy - s * (0.1 + (i % 2) * 0.2)]);
+      const k = fr(t * 0.8) * (hops - 1),
         i0 = Math.floor(k),
         [x0, y0] = pts[i0]!,
-        [x1, y1] = pts[Math.min(5, i0 + 1)]!,
+        [x1, y1] = pts[Math.min(hops - 1, i0 + 1)]!,
         x = lerp(x0, x1, k - i0),
         y = lerp(y0, y1, k - i0);
-      for (let i = 0; i < i0 + 1 && i < 5; i++) {
+      for (let i = 0; i < i0 + 1 && i < hops - 1; i++) {
         const [ax, ay] = pts[i]!,
           [bx, by] = i === i0 ? [x, y] : pts[i + 1]!;
-        strike(f, ax, ay, bx, by, 1.4, cols, step * 5 + i, 0, s * 0.04);
+        strike(f, ax, ay, bx, by, 1.2 + rk * 0.15, cols, step * 5 + i, 0, s * 0.04);
       }
       add(c);
-      glowDot(c, x, y, s * 0.12, a);
+      glowDot(c, x, y, s * (0.08 + rk * 0.015), a);
       norm(c);
       humanoid(c, x, y + s * 0.12, s * 0.2, "#141820", 0.4, 0.5);
       break;
     }
     default: {
       // Custom/fallback lightning variants (v >= 20) get seeded multi-node discharge polygons
-      groundGlow(f, a, 0.75);
-      const sides = 3 + (v % 5);
+      groundGlow(f, a, 0.45 + rk * 0.1);
+      const sides = 3 + ((v + rk) % 5);
       const tilt = (v % 11) * 0.4 + t * (1.2 + (v % 3) * 0.4);
-      const rad = s * (0.2 + (v % 4) * 0.035);
+      const rad = s * (0.15 + rk * 0.02 + (v % 4) * 0.02);
       const cy = -s * 0.06;
       const nodes: [number, number][] = [];
       for (let i = 0; i < sides; i++) {
@@ -1289,10 +1408,10 @@ function lightning(f: PF) {
       for (let i = 0; i < sides; i++) {
         const [ax, ay] = nodes[i]!;
         const [bx, by] = nodes[(i + 1) % sides]!;
-        strike(f, ax, ay, bx, by, 1.5, cols, step * 7 + v + i, i % 2, s * 0.045);
+        strike(f, ax, ay, bx, by, 1.2 + rk * 0.2, cols, step * 7 + v + i, i % 2, s * 0.045);
       }
       add(c);
-      glowDot(c, 0, cy, s * 0.16, a, 0.7);
+      glowDot(c, 0, cy, s * (0.12 + rk * 0.02), a, 0.7);
       glowDot(c, 0, cy, s * 0.05, hi, 0.9);
       norm(c);
     }
@@ -1378,33 +1497,45 @@ function tornado(f: PF, h: number, rTop: number, rBot: number, a: string, hi: st
 }
 function wind(f: PF) {
   const { c, t, s, r, v, rnd } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
   const gy = s * GY;
-  groundGlow(f, a, 0.55);
+  groundGlow(f, a, 0.35 + rk * 0.1);
   switch (v) {
     case 0:
-      tornado(f, s * 0.62, s * 0.26, s * 0.05, a, hi);
+      tornado(f, s * (0.44 + rk * 0.05), s * (0.19 + rk * 0.025), s * 0.05, a, hi);
       add(c);
-      for (let i = 0; i < 3; i++) {
-        const q = t * 2.4 + (i * TAU) / 3;
+      for (let i = 0; i < 1 + Math.ceil(rk / 2); i++) {
+        const q = t * 2.4 + (i * TAU) / (1 + Math.ceil(rk / 2));
         c.save();
         c.translate(0, gy - s * 0.25);
         c.scale(1, 0.45);
-        windBlade(c, 0, 0, s * 0.32, q, 1.1, s * 0.04, rgba(a, 0.7), rgba("#ffffff", 0.8));
+        windBlade(
+          c,
+          0,
+          0,
+          s * (0.22 + rk * 0.025),
+          q,
+          1.1,
+          s * 0.04,
+          rgba(a, 0.7),
+          rgba("#ffffff", 0.8),
+        );
         c.restore();
       }
       norm(c);
       break;
     case 1:
-      for (let i = 0; i < 3; i++) {
-        const q = fr(t * 0.9 + i / 3),
+      for (let i = 0; i < 1 + Math.min(4, rk); i++) {
+        const count = 1 + Math.min(4, rk);
+        const q = fr(t * 0.9 + i / count),
           x = lerp(-s * 0.35, s * 0.5, ease(q));
         add(c);
         windBlade(
           c,
           x - s * 0.2,
-          -s * 0.05 + (i - 1) * s * 0.14,
-          s * 0.2,
+          -s * 0.08 + (i - (count - 1) / 2) * s * 0.1,
+          s * (0.14 + rk * 0.015),
           -0.9,
           1.8,
           s * 0.045,
@@ -1415,10 +1546,10 @@ function wind(f: PF) {
         norm(c);
         c.strokeStyle = rgba(hi, 0.5 * (1 - q));
         c.lineWidth = 1.5;
-        for (let j = 0; j < 4; j++) {
+        for (let j = 0; j < 2 + Math.floor(rk / 2); j++) {
           c.beginPath();
-          c.moveTo(x - s * 0.5, -s * 0.05 + (i - 1) * s * 0.14 + (j - 1.5) * s * 0.025);
-          c.lineTo(x - s * 0.05, -s * 0.05 + (i - 1) * s * 0.14 + (j - 1.5) * s * 0.02);
+          c.moveTo(x - s * 0.5, -s * 0.05 + (i - 1) * s * 0.12 + (j - 1.5) * s * 0.025);
+          c.lineTo(x - s * 0.05, -s * 0.05 + (i - 1) * s * 0.12 + (j - 1.5) * s * 0.02);
           c.stroke();
         }
       }
@@ -1428,8 +1559,9 @@ function wind(f: PF) {
       // Sky guardian: wings of sky-current and rising spiral
       const flap = Math.sin(t * 2) * 0.15;
       add(c);
+      const feathers = 3 + rk;
       for (const sg of [1, -1])
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < feathers; i++) {
           c.save();
           c.translate(0, -s * 0.12);
           c.scale(sg, 1);
@@ -1438,7 +1570,7 @@ function wind(f: PF) {
             c,
             s * 0.08,
             0,
-            s * (0.18 + i * 0.03),
+            s * (0.15 + i * 0.025),
             -1.3,
             1.4,
             s * 0.03,
@@ -1448,41 +1580,71 @@ function wind(f: PF) {
           c.restore();
         }
       norm(c);
-      tornado(f, s * 0.5, s * 0.14, s * 0.04, a, hi);
+      tornado(f, s * (0.36 + rk * 0.04), s * 0.14, s * 0.04, a, hi);
       break;
     }
     case 2: {
-      // Wind (gentle breeze streams & drifting leaves)
+      // Wind (rebuilt): tapered smooth breeze ribbons swirling through a central vortex + tumbling leaves
       add(c);
-      for (let i = 0; i < 7; i++) {
+      const ribbons = 2 + rk * 2;
+      for (let i = 0; i < ribbons; i++) {
+        const phase = fr(t * 0.55 + i / ribbons);
+        const y0 = -s * 0.32 + (i / ribbons) * s * 0.56;
+        const xStart = lerp(-s * 0.52, s * 0.15, phase);
+        const span = s * (0.32 + rk * 0.045);
+        const grad = c.createLinearGradient(xStart, 0, xStart + span, 0);
+        grad.addColorStop(0, rgba(a, 0));
+        grad.addColorStop(0.5, rgba(i % 2 ? a : hi, 0.72 * (1 - phase * 0.3)));
+        grad.addColorStop(1, rgba("#ffffff", 0.85 * (1 - phase * 0.2)));
+        c.strokeStyle = grad;
+        c.lineWidth = 1.6 + (rk >= 4 ? 1.2 : 0.4);
+        c.lineCap = "round";
         c.beginPath();
-        const y0 = -s * 0.25 + i * s * 0.08;
-        for (let k = 0; k <= 30; k++) {
-          const x = lerp(-s * 0.5, s * 0.5, k / 30);
-          const y = y0 + Math.sin((k / 30) * 6 + t * 3 + i) * s * 0.04;
-          if (k) {
-            c.lineTo(x, y);
-          } else {
-            c.moveTo(x, y);
-          }
+        for (let k = 0; k <= 18; k++) {
+          const u = k / 18;
+          const xx = xStart + u * span;
+          const yy = y0 + Math.sin(u * 5 - t * 4 + i * 1.1) * s * (0.045 + u * 0.02);
+          if (k === 0) c.moveTo(xx, yy);
+          else c.lineTo(xx, yy);
         }
-        c.strokeStyle = rgba(i % 2 ? a : hi, 0.55);
-        c.lineWidth = 2 + (i % 3);
-        c.setLineDash([s * 0.18, s * 0.12]);
-        c.lineDashOffset = -t * 200 - i * 40;
         c.stroke();
+        // Leading wind curl at ribbon tip
+        if (rk >= 3) {
+          const tx = xStart + span;
+          const ty = y0 + Math.sin(5 - t * 4 + i * 1.1) * s * 0.065;
+          glowDot(c, tx, ty, s * 0.025, hi, 0.55 * (1 - phase));
+        }
       }
-      c.setLineDash([]);
+      if (rk >= 3) {
+        c.save();
+        c.translate(0, -s * 0.04);
+        c.scale(1, 0.55);
+        for (let j = 0; j < rk - 1; j++) {
+          windBlade(
+            c,
+            0,
+            0,
+            s * (0.16 + j * 0.06),
+            t * (2.2 + j * 0.4) + j * 1.8,
+            1.4,
+            s * 0.025,
+            rgba(a, 0.45),
+            rgba(hi, 0.7),
+          );
+        }
+        c.restore();
+      }
       norm(c);
-      for (let i = 0; i < 12; i++) {
-        const q = fr(t * 0.4 + rnd(i)),
+      const leafCount = 4 + rk * 3;
+      for (let i = 0; i < leafCount; i++) {
+        const q = fr(t * 0.42 + rnd(i)),
           x = lerp(-s * 0.5, s * 0.5, q);
         leaf(
           c,
           x,
-          -s * 0.25 + rnd(i + 5) * s * 0.5 + Math.sin(q * 9) * s * 0.04,
-          s * 0.015,
-          q * 12,
+          -s * 0.28 + rnd(i + 5) * s * 0.54 + Math.sin(q * 9 + i) * s * 0.045,
+          s * (0.01 + rk * 0.0014),
+          q * 12 + i,
           i % 2 ? hi : b,
         );
       }
@@ -1492,19 +1654,19 @@ function wind(f: PF) {
       // Wind Surge — rapid counter-rotating gale ribbons whipping outward from caster
       humanoid(c, 0, gy, s * 0.34, "#06150e", 0.18, 0.85);
       add(c);
-      const blades = 5;
+      const blades = 2 + rk;
       for (let i = 0; i < blades; i++) {
         const dir = i % 2 ? 1 : -1;
         const rot = t * 4.2 * dir + (i * TAU) / blades;
-        const rad = s * (0.14 + 0.06 * i) + Math.sin(t * 5 + i) * s * 0.025;
+        const rad = s * (0.12 + 0.045 * i) + Math.sin(t * 5 + i) * s * 0.025;
         c.save();
         c.translate(0, gy - s * 0.2);
         c.scale(1, 0.55);
         windBlade(c, 0, 0, rad, rot, 1.45, s * 0.036, rgba(a, 0.78), rgba(hi, 0.9));
         c.restore();
       }
-      for (let i = 0; i < 6; i++) {
-        const q = fr(t * 1.4 + i / 6);
+      for (let i = 0; i < 2 + rk; i++) {
+        const q = fr(t * 1.4 + i / (2 + rk));
         c.strokeStyle = rgba(hi, (1 - q) * 0.75);
         c.lineWidth = 2;
         c.beginPath();
@@ -1517,7 +1679,7 @@ function wind(f: PF) {
     default: {
       // Seeded fallback wind vortex ribbons parameterized by variant
       const tilt = ((v % 7) - 3) * 0.18;
-      const blades = 2 + (v % 4);
+      const blades = 2 + Math.min(4, (v % 3) + Math.floor(rk / 2));
       add(c);
       c.save();
       c.rotate(tilt);
@@ -1527,7 +1689,7 @@ function wind(f: PF) {
           c,
           0,
           -s * 0.06,
-          s * (0.2 + i * 0.05),
+          s * (0.16 + i * 0.045),
           rot,
           1.25,
           s * 0.03,
@@ -1537,7 +1699,7 @@ function wind(f: PF) {
       }
       c.restore();
       norm(c);
-      tornado(f, s * (0.38 + (v % 4) * 0.05), s * 0.18, s * 0.04, a, hi);
+      tornado(f, s * (0.34 + rk * 0.03 + (v % 3) * 0.03), s * 0.18, s * 0.04, a, hi);
     }
   }
 }
@@ -1545,14 +1707,15 @@ function wind(f: PF) {
 // ---------------------------------------------------------------- water
 function water(f: PF) {
   const { c, t, s, r, v, p, rnd } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
   const gy = s * GY;
-  groundGlow(f, a, 0.8);
+  groundGlow(f, a, 0.45 + rk * 0.12);
   const drops = (n: number, y0: number) => {
     for (let i = 0; i < n; i++) {
       const q = fr(t * 0.8 + rnd(i)),
-        vx = (rnd(i + 10) - 0.5) * s * 0.7,
-        vy = -s * (0.45 + rnd(i + 20) * 0.4);
+        vx = (rnd(i + 10) - 0.5) * s * (0.45 + rk * 0.07),
+        vy = -s * (0.4 + rnd(i + 20) * 0.38);
       teardrop(
         c,
         vx * q,
@@ -1564,8 +1727,8 @@ function water(f: PF) {
     }
   };
   if (v === 0) {
-    const cy = gy - s * 0.2,
-      R = s * 0.3;
+    const cy = gy - s * 0.18,
+      R = s * (0.2 + rk * 0.028);
     const g = c.createRadialGradient(0, cy - R * 0.3, 0, 0, cy, R);
     g.addColorStop(0, rgba(hi, 0.35));
     g.addColorStop(0.8, rgba(a, 0.25));
@@ -1582,7 +1745,7 @@ function water(f: PF) {
     c.lineTo(R, gy);
     c.lineTo(-R, gy);
     c.clip();
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 3 + rk; i++) {
       c.beginPath();
       for (let k = 0; k <= 30; k++) {
         const x = lerp(-R, R, k / 30);
@@ -1599,73 +1762,80 @@ function water(f: PF) {
     }
     c.restore();
     c.strokeStyle = rgba(hi, 0.9);
-    c.lineWidth = 2.5;
+    c.lineWidth = 1.6 + rk * 0.35;
     c.beginPath();
     c.arc(0, cy, R, Math.PI, 0);
     c.stroke();
-    drops(14, gy);
+    drops(6 + rk * 4, gy);
     return;
   }
   if (v === 1) {
     humanoid(c, -s * 0.36, gy, s * 0.3, "#03131c", 0, 0.6);
-    const pts: [number, number][] = [];
-    for (let k = 0; k <= 40; k++) {
-      const q = k / 40;
-      pts.push([lerp(-s * 0.3, s * 0.45, q), -s * 0.14 + Math.sin(q * 5 - t * 6) * s * 0.14 * q]);
-    }
-    for (const [w, col] of [
-      [s * 0.05, b],
-      [s * 0.035, a],
-      [s * 0.012, hi],
-    ] as const) {
-      c.beginPath();
-      pts.forEach(([x, y], i) => {
-        const ww = w * (1 - i / 50);
-        if (i) {
-          c.lineTo(x, y - ww);
-        } else {
-          c.moveTo(x, y - ww);
-        }
-      });
-      for (let i = pts.length - 1; i >= 0; i--) {
-        const [x, y] = pts[i]!;
-        c.lineTo(x, y + w * (1 - i / 50));
+    const streams = rk >= 4 ? 2 : 1;
+    for (let st = 0; st < streams; st++) {
+      const pts: [number, number][] = [];
+      for (let k = 0; k <= 40; k++) {
+        const q = k / 40;
+        pts.push([
+          lerp(-s * 0.3, s * (0.32 + rk * 0.035), q),
+          -s * (0.1 + st * 0.09) + Math.sin(q * 5 - t * 6 + st * 1.4) * s * (0.09 + rk * 0.015) * q,
+        ]);
       }
-      c.closePath();
-      c.fillStyle = col;
-      c.fill();
-    }
-    const [ex, ey] = pts[pts.length - 1]!;
-    for (let i = 0; i < 8; i++) {
-      const q = fr(t * 1.5 + i / 8);
-      disc(
-        c,
-        ex + Math.cos(i) * q * s * 0.08,
-        ey + Math.sin(i * 2) * q * s * 0.08,
-        s * 0.01 * (1 - q),
-        hi,
-      );
+      for (const [w, col] of [
+        [s * (0.032 + rk * 0.005), b],
+        [s * (0.022 + rk * 0.004), a],
+        [s * 0.01, hi],
+      ] as const) {
+        c.beginPath();
+        pts.forEach(([x, y], i) => {
+          const ww = w * (1 - i / 50);
+          if (i) {
+            c.lineTo(x, y - ww);
+          } else {
+            c.moveTo(x, y - ww);
+          }
+        });
+        for (let i = pts.length - 1; i >= 0; i--) {
+          const [x, y] = pts[i]!;
+          c.lineTo(x, y + w * (1 - i / 50));
+        }
+        c.closePath();
+        c.fillStyle = col;
+        c.fill();
+      }
+      const [ex, ey] = pts[pts.length - 1]!;
+      for (let i = 0; i < 4 + rk * 2; i++) {
+        const q = fr(t * 1.5 + i / (4 + rk * 2));
+        disc(
+          c,
+          ex + Math.cos(i) * q * s * 0.08,
+          ey + Math.sin(i * 2) * q * s * 0.08,
+          s * 0.01 * (1 - q),
+          hi,
+        );
+      }
     }
     return;
   }
   const ph = fr(t * 0.6),
-    H = s * (0.35 + p * 0.02) * Math.sin(ph * Math.PI);
+    H = s * (0.24 + rk * 0.045 + p * 0.012) * Math.sin(ph * Math.PI);
+  const baseHalf = s * (0.075 + rk * 0.009);
   c.beginPath();
-  c.moveTo(-s * 0.1, gy);
+  c.moveTo(-baseHalf, gy);
   for (let k = 0; k <= 20; k++) {
     const q = k / 20;
-    c.lineTo(-s * 0.1 * (1 - q * 0.5) + Math.sin(q * 8 + t * 6) * s * 0.015, gy - H * q);
+    c.lineTo(-baseHalf * (1 - q * 0.45) + Math.sin(q * 8 + t * 6) * s * 0.014, gy - H * q);
   }
-  for (let k = 0; k < 7; k++) {
-    const q = k / 6;
-    c.lineTo(
-      lerp(-s * 0.05, s * 0.05, q),
-      gy - H - (k % 2 ? s * 0.06 : 0) * Math.sin(ph * Math.PI),
-    );
+  // Smooth curling foam wave crown instead of jagged zigzag
+  for (let k = 0; k <= 12; k++) {
+    const q = k / 12;
+    const crownX = lerp(-baseHalf * 0.55, baseHalf * 0.55, q);
+    const curl = Math.sin(q * Math.PI) * s * (0.04 + rk * 0.006) * Math.sin(ph * Math.PI);
+    c.lineTo(crownX, gy - H - curl - Math.sin(q * Math.PI * 3 + t * 8) * s * 0.008);
   }
   for (let k = 20; k >= 0; k--) {
     const q = k / 20;
-    c.lineTo(s * 0.1 * (1 - q * 0.5) + Math.sin(q * 8 + t * 6 + 2) * s * 0.015, gy - H * q);
+    c.lineTo(baseHalf * (1 - q * 0.45) + Math.sin(q * 8 + t * 6 + 2) * s * 0.014, gy - H * q);
   }
   c.closePath();
   const g = c.createLinearGradient(0, gy, 0, gy - H);
@@ -1677,8 +1847,8 @@ function water(f: PF) {
   c.strokeStyle = rgba(hi, 0.9);
   c.lineWidth = 2;
   c.stroke();
-  for (let i = 0; i < 6; i++) {
-    const k = (i - 2.5) * s * 0.06;
+  for (let i = 0; i < 3 + rk; i++) {
+    const k = (i - (2 + rk) / 2) * s * 0.055;
     c.beginPath();
     c.moveTo(k, gy);
     c.quadraticCurveTo(k * 2, gy - s * 0.08 * Math.sin(ph * Math.PI), k * 3, gy);
@@ -1686,9 +1856,9 @@ function water(f: PF) {
     c.lineWidth = 2;
     c.stroke();
   }
-  drops(18 + p * 2, gy - H * 0.9);
-  if (v >= 20) {
-    const jets = 2 + (v % 4);
+  drops(8 + rk * 5, gy - H * 0.9);
+  if (v >= 20 || rk >= 4) {
+    const jets = v >= 20 ? 2 + (v % 4) : rk - 1;
     add(c);
     for (let i = 0; i < jets; i++) {
       const ang = t * 1.8 + (i * TAU) / jets + v * 0.3;
@@ -1705,11 +1875,27 @@ function water(f: PF) {
 
 // ---------------------------------------------------------------- earth
 function earth(f: PF) {
-  const { c, t, s, r, v, p, rnd } = f;
+  const { c, t, s, r, v, rnd } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
   const gy = s * GY;
   const ph = fr(t * 0.35);
-  groundGlow(f, a, 0.5);
+  groundGlow(f, a, 0.4 + rk * 0.08);
+  // Tectonic floor fissure cracks scaling with rank 2+
+  if (rk >= 2) {
+    c.save();
+    c.strokeStyle = rgba(hi, 0.35 + rk * 0.08);
+    c.lineWidth = 1.4;
+    for (let i = 0; i < rk + 1; i++) {
+      const dir = (i / (rk + 1) - 0.5) * 2.2;
+      c.beginPath();
+      c.moveTo(0, gy);
+      c.lineTo(dir * s * 0.15, gy + s * 0.018);
+      c.lineTo(dir * s * 0.32, gy - s * 0.008);
+      c.stroke();
+    }
+    c.restore();
+  }
   const spike = (x: number, h: number, w: number, lean: number) => {
     if (h <= 1) return;
     const px = x + lean * w;
@@ -1733,17 +1919,18 @@ function earth(f: PF) {
     c.stroke();
   };
   if (v === 0) {
-    for (let i = 0; i < 8; i++) {
-      const q = (i / 8) * TAU + t * 0.2,
+    const pillars = 4 + rk;
+    for (let i = 0; i < pillars; i++) {
+      const q = (i / pillars) * TAU + t * 0.2,
         z = Math.sin(q);
       if (z > 0) continue;
-      const h = s * 0.2 * backOut((ph - i * 0.03) * 4);
+      const h = s * (0.14 + rk * 0.025) * backOut((ph - i * 0.03) * 4);
       c.globalAlpha = 0.7;
       spike(Math.cos(q) * s * 0.34, h, s * 0.04, 0);
     }
     c.globalAlpha = 1;
-    for (let i = 0; i < 7; i++) {
-      const q = t * 0.8 + (i / 7) * TAU;
+    for (let i = 0; i < 3 + rk; i++) {
+      const q = t * 0.8 + (i / (3 + rk)) * TAU;
       c.save();
       c.translate(
         Math.cos(q) * s * 0.32,
@@ -1759,35 +1946,40 @@ function earth(f: PF) {
       c.fill();
       c.restore();
     }
-    for (let i = 0; i < 8; i++) {
-      const q = (i / 8) * TAU + t * 0.2;
+    for (let i = 0; i < pillars; i++) {
+      const q = (i / pillars) * TAU + t * 0.2;
       if (Math.sin(q) <= 0) continue;
-      spike(Math.cos(q) * s * 0.34, s * 0.22 * backOut((ph - i * 0.03) * 4), s * 0.045, 0);
+      spike(
+        Math.cos(q) * s * 0.34,
+        s * (0.15 + rk * 0.025) * backOut((ph - i * 0.03) * 4),
+        s * 0.045,
+        0,
+      );
     }
     return;
   }
-  const n = 5 + Math.floor(p / 2);
-  for (let i = 0; i < 6; i++)
+  const n = 3 + rk;
+  for (let i = 0; i < 3 + rk; i++)
     smoke(c, (rnd(i) - 0.5) * s * 0.8, gy - s * 0.03, s * (0.07 + ph * 0.1), a, 0.3 * (1 - ph));
   for (let i = 0; i < n; i++) {
     const d = i * 0.06,
       q = backOut((ph - d) * 4) * (1 - ease((ph - 0.8) * 5));
     spike(
-      (i / (n - 1) - 0.5) * s * 0.75,
-      s * (0.14 + 0.16 * rnd(i + 3)) * q,
+      (i / (n - 1) - 0.5) * s * (0.55 + rk * 0.05),
+      s * (0.1 + rk * 0.022 + 0.14 * rnd(i + 3)) * q,
       s * 0.05,
       rnd(i + 8) - 0.5,
     );
   }
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 6 + rk * 3; i++) {
     const q = clamp((ph - 0.05) * 1.6),
       vx = (rnd(i + 30) - 0.5) * s * 0.8,
       vy = -s * (0.4 + rnd(i + 31) * 0.3);
     c.fillStyle = i % 2 ? a : b;
     c.fillRect(vx * q, gy + vy * q + s * 0.9 * q * q, s * 0.018, s * 0.018);
   }
-  if (v >= 20) {
-    const orbiters = 3 + (v % 5);
+  if (v >= 20 || rk >= 4) {
+    const orbiters = v >= 20 ? 3 + (v % 5) : rk;
     for (let i = 0; i < orbiters; i++) {
       const q = t * 1.1 + (i / orbiters) * TAU;
       c.save();
@@ -1828,12 +2020,14 @@ function lotus(c: C, x: number, y: number, sz: number, open: number, a: string, 
 }
 function nature(f: PF) {
   const { c, t, s, r, v, rnd } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
   const gy = s * GY;
-  groundGlow(f, a, 0.7);
+  groundGlow(f, a, 0.45 + rk * 0.1);
   const ph = fr(t * 0.3);
-  for (let i = 0; i < 6; i++) {
-    const x0 = (i - 2.5) * s * 0.1,
+  const vines = 2 + rk;
+  for (let i = 0; i < vines; i++) {
+    const x0 = (i - (vines - 1) / 2) * s * 0.1,
       grow = ease(ph * 2.2 - i * 0.05);
     c.beginPath();
     c.moveTo(x0, gy);
@@ -1843,10 +2037,10 @@ function nature(f: PF) {
       x0 - Math.cos(i) * s * 0.2,
       gy - s * 0.35,
       x0 + Math.sin(t + i) * s * 0.1,
-      gy - s * 0.5,
+      gy - s * (0.36 + rk * 0.04),
     );
     c.strokeStyle = b;
-    c.lineWidth = 4;
+    c.lineWidth = 3 + rk * 0.4;
     c.setLineDash([s * 0.8 * grow, s * 2]);
     c.stroke();
     c.strokeStyle = a;
@@ -1855,10 +2049,19 @@ function nature(f: PF) {
     c.setLineDash([]);
   }
   add(c);
-  glowDot(c, 0, gy - s * 0.12, s * 0.3, a, 0.5);
+  glowDot(c, 0, gy - s * 0.12, s * (0.2 + rk * 0.03), a, 0.5);
   norm(c);
-  lotus(c, 0, gy - s * 0.02, s * (v === 0 ? 0.26 : 0.18), ease(ph * 2), a, hi);
-  for (let i = 0; i < 20; i++) {
+  lotus(
+    c,
+    0,
+    gy - s * 0.02,
+    s * ((v === 0 ? 0.2 : 0.14) + rk * 0.018),
+    ease(ph * 2),
+    a,
+    hi,
+  );
+  const leaves = 8 + rk * 4;
+  for (let i = 0; i < leaves; i++) {
     const q = fr(t * 0.35 + rnd(i)),
       ang = t * 1.2 + i;
     leaf(
@@ -1870,8 +2073,8 @@ function nature(f: PF) {
       i % 3 ? a : hi,
     );
   }
-  if (v === 0 || v >= 20) {
-    const arms = v >= 20 ? 2 + (v % 4) : 2;
+  if (v === 0 || v >= 20 || rk >= 4) {
+    const arms = v >= 20 ? 2 + (v % 4) : rk >= 5 ? 3 : 2;
     c.save();
     c.translate(0, gy - s * 0.25);
     c.rotate(t * (0.5 + (v % 3) * 0.15));
@@ -1893,26 +2096,27 @@ function nature(f: PF) {
 // ---------------------------------------------------------------- guardians
 export function guardianAura(f: PF, under: boolean) {
   const { c, s, t, r } = f;
+  const rk = rankLevel(f);
   const [a, , hi] = r.palette;
   const gy = s * GY;
   if (under) {
-    runeCircle(c, s, t, a, hi, s * 0.44, 0.95);
+    runeCircle(c, s, t, a, hi, s * (0.34 + rk * 0.025), 0.55 + rk * 0.1);
     add(c);
     const top = -s * 0.5,
       n = 14,
       sh = (gy - top) / n;
     for (let i = 0; i < n; i++) {
       const k = 1 - i / n,
-        w = s * (0.16 - 0.06 * (i / n));
+        w = s * (0.12 + rk * 0.012 - 0.05 * (i / n));
       const g = c.createLinearGradient(-w, 0, w, 0);
       g.addColorStop(0, rgba(a, 0));
-      g.addColorStop(0.5, rgba(a, 0.4 * k));
+      g.addColorStop(0.5, rgba(a, (0.25 + rk * 0.05) * k));
       g.addColorStop(1, rgba(a, 0));
       c.fillStyle = g;
       c.fillRect(-w, gy - (i + 1) * sh, w * 2, sh + 0.5);
     }
-    glowDot(c, 0, gy - s * 0.25, s * 0.34, a, 0.38);
-    c.globalAlpha = 0.28 + 0.06 * Math.sin(t * 2);
+    glowDot(c, 0, gy - s * 0.25, s * (0.24 + rk * 0.03), a, 0.26 + rk * 0.04);
+    c.globalAlpha = 0.22 + rk * 0.02 + 0.06 * Math.sin(t * 2);
     const bob = Math.sin(t * 1.2) * s * 0.015;
     const hd = humanoid(
       c,
@@ -1928,17 +2132,18 @@ export function guardianAura(f: PF, under: boolean) {
     c.save();
     c.translate(hd.hx, hd.hy - hd.u * 1.6);
     c.scale(1, 0.3);
-    c.strokeStyle = rgba(hi, 0.9);
-    c.lineWidth = 2;
+    c.strokeStyle = rgba(hi, 0.65 + rk * 0.07);
+    c.lineWidth = 1.4 + rk * 0.25;
     c.beginPath();
-    c.arc(0, 0, hd.u * 1.6, 0, TAU);
+    c.arc(0, 0, hd.u * (1.3 + rk * 0.1), 0, TAU);
     c.stroke();
     c.restore();
     norm(c);
   } else {
     add(c);
-    for (let i = 0; i < 18; i++) {
-      const q = (i / 18) * TAU + t * 0.5;
+    const wisps = 6 + rk * 3;
+    for (let i = 0; i < wisps; i++) {
+      const q = (i / wisps) * TAU + t * 0.5;
       glowDot(
         c,
         Math.cos(q) * s * 0.38,
@@ -1958,8 +2163,8 @@ export function guardianAura(f: PF, under: boolean) {
           gy - q * s * 0.7 + Math.sin(ang) * s * 0.05,
         );
       }
-      c.strokeStyle = rgba(hi, 0.55);
-      c.lineWidth = 2;
+      c.strokeStyle = rgba(hi, 0.3 + rk * 0.06);
+      c.lineWidth = 1.4 + rk * 0.25;
       c.stroke();
     }
     norm(c);

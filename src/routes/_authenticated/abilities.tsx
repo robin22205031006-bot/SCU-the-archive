@@ -1,16 +1,11 @@
 import { abilityFxRecipe } from "@/lib/ability-fx";
 import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { AbilityFxLauncher } from "@/components/ability-fx-showcase";
-import { Suspense, lazy, memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { EntityGridSkeleton, PanelSkeleton } from "@/components/route-skeleton";
-
-const AbilityFxPanel = lazy(() =>
-  import("@/components/ability-fx-panel").then((m) => ({ default: m.AbilityFxPanel })),
-);
-const AbilityActionPanel = lazy(() =>
-  import("@/components/ability-action-panel").then((m) => ({ default: m.AbilityActionPanel })),
-);
+import { EntityGridSkeleton } from "@/components/route-skeleton";
+import { AbilityFxPanel } from "@/components/ability-fx-panel";
+import { AbilityActionPanel } from "@/components/ability-action-panel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -72,7 +67,7 @@ import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
 import { useAppMotion } from "@/hooks/use-app-motion";
-import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
+import { MotionCard, MotionPresence, MotionSection } from "@/components/app-motion";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
 import { GenreCardFrame } from "@/components/genre-decorations";
@@ -102,8 +97,14 @@ export const Route = createFileRoute("/_authenticated/abilities")({
       },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { tab?: "fx" | "action" | undefined } =>
-    s["tab"] === "fx" || s["tab"] === "action" ? { tab: s["tab"] } : {},
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { tab?: "fx" | "action" | undefined; ability?: string | undefined } => ({
+    ...(s["tab"] === "fx" || s["tab"] === "action" ? { tab: s["tab"] } : {}),
+    ...(typeof s["ability"] === "string" && s["ability"].trim()
+      ? { ability: s["ability"].trim() }
+      : {}),
+  }),
   component: AbilitiesTabs,
 });
 
@@ -120,7 +121,7 @@ const MANGA_HUB_LABELS: Record<(typeof HUB_TABS)[number][0], string> = {
 };
 
 function AbilitiesTabs() {
-  const { tab = "catalog" } = Route.useSearch();
+  const { tab = "catalog", ability } = Route.useSearch();
   const nav = Route.useNavigate();
   const isManga = useIsManga();
   return (
@@ -153,19 +154,15 @@ function AbilitiesTabs() {
           ))}
         </div>
       </div>
-      <MotionPage key={tab}>
+      <div key={tab}>
         {tab === "fx" ? (
-          <Suspense fallback={<PanelSkeleton className="mx-auto mt-6 min-h-[55vh] max-w-6xl" />}>
-            <AbilityFxPanel />
-          </Suspense>
+          <AbilityFxPanel initialAbility={ability} />
         ) : tab === "action" ? (
-          <Suspense fallback={<PanelSkeleton className="mx-auto mt-6 min-h-[55vh] max-w-6xl" />}>
-            <AbilityActionPanel />
-          </Suspense>
+          <AbilityActionPanel initialAbility={ability} />
         ) : (
           <AbilitiesHub />
         )}
-      </MotionPage>
+      </div>
     </>
   );
 }
@@ -785,24 +782,33 @@ const AbilityCard = memo(function AbilityCard({
                 ))}
               </div>
             )}
-            {isAdmin && (
-              <div className="mt-3 flex items-center gap-3">
-                <button
-                  onClick={onEdit}
-                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-accent"
-                >
-                  <Pencil className="h-3 w-3" /> Edit ability
-                </button>
-                {isCustom && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Link
+                to="/abilities"
+                search={{ tab: "fx", ability: def.key }}
+                className="flex items-center gap-1 text-[11px] font-medium text-accent hover:underline"
+              >
+                <Flame className="h-3 w-3" /> Inspect in Ability FX →
+              </Link>
+              {isAdmin && (
+                <>
                   <button
-                    onClick={onDeleteCustom}
-                    className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive"
+                    onClick={onEdit}
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-accent"
                   >
-                    <Trash2 className="h-3 w-3" /> Remove from registry
+                    <Pencil className="h-3 w-3" /> Edit ability
                   </button>
-                )}
-              </div>
-            )}
+                  {isCustom && (
+                    <button
+                      onClick={onDeleteCustom}
+                      className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" /> Remove from registry
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </MotionSection>
         )}
       </MotionPresence>
