@@ -57,6 +57,7 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
+  hasSupabaseConfig: () => false,
   supabase: {
     from: () => {
       const chain: Record<string, unknown> = {
@@ -76,6 +77,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/hooks/use-admin", () => ({
   useIsAdmin: () => false,
   useIsStaff: () => false,
+  useSession: () => ({ data: { id: "user-1" }, isLoading: false }),
 }));
 
 vi.mock("@/components/lazy-three", () => ({

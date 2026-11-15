@@ -20,6 +20,10 @@ import {
   JadeScrollCartouche,
 } from "@/components/botanical-foliage-canopy";
 import { IvyDecoration } from "@/components/manga/fantasy/IvyDecoration";
+import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
+import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
+import { abilityRankMeta } from "@/lib/ability-rank";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
 
 export type FantasyDossierViewMode = "grimoire" | "astrolabe";
 
@@ -111,6 +115,12 @@ export function FantasyFullDossier({
     abilities.find((a) => a.name === selectedAbilityKey) ?? abilities[0] ?? null;
   const activeAbilityMeta = activeAbilityNode ? abilityDef(activeAbilityNode.name) : null;
   const ActiveAbilityIcon = activeAbilityMeta?.icon ?? Sparkles;
+  const activeCustomEmblem = activeAbilityMeta
+    ? resolveCustomAbilityEmblem(
+        `${activeAbilityMeta.key} ${activeAbilityMeta.label}`,
+        activeAbilityMeta.description,
+      )
+    : null;
 
   const resolvedPortrait = portraitSlot ?? (
     <div className="aspect-[4/5] w-full overflow-hidden rounded border border-[#c5a869]/75 shadow-inner">
@@ -168,6 +178,7 @@ export function FantasyFullDossier({
                 label={ab.label || def.label}
                 tier={ab.tier || def.tier}
                 icon={ab.name}
+                rank={ab.rank}
                 selected={activeAbilityNode?.name === ab.name}
                 onClick={() => setSelectedAbilityKey(ab.name)}
               />
@@ -191,19 +202,30 @@ export function FantasyFullDossier({
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#c5a869] bg-[#15221b] text-[#5ce1b8]">
-                  <ActiveAbilityIcon className="h-3.5 w-3.5" />
+                  {activeCustomEmblem ? (
+                    <AbilityCustomEmblem kind={activeCustomEmblem} className="h-3.5 w-3.5" />
+                  ) : (
+                    <ActiveAbilityIcon className="h-3.5 w-3.5" />
+                  )}
                 </span>
                 <div>
                   <p className="font-display text-xs font-bold uppercase tracking-wider text-[#15221b]">
                     {activeAbilityNode.label || activeAbilityMeta.label}
                   </p>
-                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-[#2e5a52]">
-                    {activeAbilityMeta.group} · {activeAbilityNode.tier || activeAbilityMeta.tier}
+                  <p className="flex flex-wrap items-center gap-1.5 font-mono text-[8px] font-bold uppercase tracking-widest text-[#2e5a52]">
+                    <span>
+                      {activeAbilityMeta.group} · {activeAbilityNode.tier || activeAbilityMeta.tier}
+                    </span>
+                    {activeAbilityNode.rank && (
+                      <AbilityRankPips rank={activeAbilityNode.rank} compact showLabel />
+                    )}
                   </p>
                 </div>
               </div>
               <span className="rounded border border-[#2e5a52]/50 bg-[#2e5a52] px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider text-[#f5ebe6]">
-                ACTIVE SEAL
+                {activeAbilityNode.rank
+                  ? `RANK ${abilityRankMeta(activeAbilityNode.rank).roman}`
+                  : "ACTIVE SEAL"}
               </span>
             </div>
             <p className="mt-1.5 text-[11px] leading-relaxed text-[#1a241e]/90">

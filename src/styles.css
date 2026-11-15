@@ -835,6 +835,9 @@ html[data-ui-switching="true"]:not([data-ui-mode="minimal"]) h3 {
   letter-spacing: var(--ui-heading-tracking, 0.02em);
   text-shadow: var(--ui-heading-shadow, 2px 2px 0 rgba(0, 0, 0, 0.6));
 }
+[data-ui-mode="manga"] .manga-chapter-tab .font-display {
+  text-shadow: none;
+}
 [data-ui-mode="manga"] .tier-vfx-mythic,
 [data-ui-mode="manga"] .tier-vfx-guardian,
 [data-ui-mode="manga"] .tier-vfx-angle {

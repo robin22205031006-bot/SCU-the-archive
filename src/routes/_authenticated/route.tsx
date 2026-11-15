@@ -58,7 +58,10 @@ function AuthenticatedLayout() {
     return <Navigate to="/auth" search={{ next: location.pathname }} replace />;
   }
 
-  return <Outlet />;
+  return (
+    // Render protected child route outlet after hooks resolve
+    <Outlet />
+  );
 }
 
 export const Route = createFileRoute("/_authenticated")({
@@ -89,7 +92,10 @@ export const Route = createFileRoute("/_authenticated")({
       }
 
       try {
-        const ban = await withTimeout(supabase.rpc("is_banned", { _uid: user.id }), AUTH_TIMEOUT_MS);
+        const ban = await withTimeout(
+          supabase.rpc("is_banned", { _uid: user.id }),
+          AUTH_TIMEOUT_MS,
+        );
         if (ban !== "__timeout__" && ban.data) {
           await supabase.auth.signOut().catch(() => {});
           throw redirect({ to: "/auth", search: { banned: "1" } });

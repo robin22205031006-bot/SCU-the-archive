@@ -17,6 +17,7 @@ import {
 } from "@/lib/entities";
 import { AbilityCardCanvas } from "@/components/ability-canvas";
 import { AbilityBadge } from "@/components/ability-badge";
+import { mergeCharacterAbilityList } from "@/lib/ability-rank";
 import {
   ElementalWallpaper,
   ELEMENT_LABEL,
@@ -847,27 +848,30 @@ function ClassicDossier() {
                   )}
                 </div>
               )}
-              {tab === "powers" && (
-                <div className="grid gap-3">
-                  {(charAbilities ?? []).length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {(charAbilities ?? []).map((ca) => (
-                        <AbilityBadge key={ca.id} name={ca.ability_key} />
-                      ))}
+              {tab === "powers" &&
+                (() => {
+                  const mergedPowers = mergeCharacterAbilityList(charAbilities ?? [], e.abilities, {
+                    seriesId: activeSeason?.series_id ?? null,
+                  });
+                  return (
+                    <div className="grid gap-3">
+                      {mergedPowers.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {mergedPowers.map((item) => (
+                            <AbilityBadge
+                              key={item.key}
+                              name={item.key}
+                              level={item.isAssigned ? item.level : undefined}
+                              showRank={item.isAssigned}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No abilities recorded.</p>
+                      )}
                     </div>
-                  )}
-                  {(e.abilities ?? []).length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {e.abilities.map((a) => (
-                        <AbilityBadge key={a} name={a} />
-                      ))}
-                    </div>
-                  )}
-                  {!e.abilities?.length && !(charAbilities ?? []).length && (
-                    <p className="text-sm text-muted-foreground">No abilities recorded.</p>
-                  )}
-                </div>
-              )}
+                  );
+                })()}
               {tab === "bonds" && (
                 <div className="grid gap-2">
                   {seasons.map((r) => (

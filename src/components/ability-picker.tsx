@@ -131,7 +131,7 @@ export function AbilityPicker({
             Preview
           </span>
           {selected.slice(0, 8).map((n) => (
-            <AbilityBadge key={n} name={n} />
+            <AbilityBadge key={n} name={n} showRank />
           ))}
           {selected.length > 8 && (
             <span className="text-[10px] text-muted-foreground">+{selected.length - 8}</span>

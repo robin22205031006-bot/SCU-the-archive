@@ -46,6 +46,15 @@ import {
 } from "@/lib/abilities";
 import { hydrateAbilityRegistry, useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityBadge } from "@/components/ability-badge";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
+import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
+import {
+  ABILITY_RANKS,
+  abilityRankMeta,
+  tierToIntrinsicRank,
+  type AbilityEmblemRank,
+} from "@/lib/ability-rank";
 import { EntityGridSkeleton } from "@/components/route-skeleton";
 import { sfx } from "@/lib/scu-audio";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
@@ -163,6 +172,7 @@ function AbilitiesHub() {
   const { data: entities, isLoading } = useQuery(entitiesQuery([...ALL_KINDS]));
   const [q, setQ] = useState("");
   const [tier, setTier] = useState<AbilityTier | "all">("all");
+  const [rankFilter, setRankFilter] = useState<AbilityEmblemRank | 0>(0);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingDef, setEditingDef] = useState<AbilityDef | null>(null);
@@ -222,6 +232,7 @@ function AbilitiesHub() {
     () =>
       defs.filter((d) => {
         if (tier !== "all" && d.tier !== tier) return false;
+        if (rankFilter !== 0 && tierToIntrinsicRank(d.tier) !== rankFilter) return false;
         if (!needle) return true;
         return (
           d.label.toLowerCase().includes(needle) ||
@@ -231,7 +242,7 @@ function AbilitiesHub() {
             (holders.get(d.key) ?? []).some((e) => e.name.toLowerCase().includes(needle)))
         );
       }),
-    [defs, tier, needle, holders, holdersMasked],
+    [defs, tier, rankFilter, needle, holders, holdersMasked],
   );
 
   const byTier = useMemo(() => {
@@ -377,6 +388,7 @@ function AbilitiesHub() {
                 name={def.key}
                 label={def.label}
                 description={def.description}
+                rank={tierToIntrinsicRank(def.tier)}
                 className="h-10 w-10"
               />
             ),
@@ -449,6 +461,57 @@ function AbilitiesHub() {
                 {TIER_LABELS[t]}
               </button>
             ))}
+            <div className="flex basis-full flex-wrap items-center gap-1.5 pt-1">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Emblem Rank:
+              </span>
+              <button
+                type="button"
+                onClick={() => setRankFilter(0)}
+                className={
+                  isManga
+                    ? `border border-foreground px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                        rankFilter === 0
+                          ? "bg-foreground text-background"
+                          : "bg-background text-foreground hover:bg-secondary"
+                      }`
+                    : `rounded-full px-2.5 py-0.5 text-[11px] ${
+                        rankFilter === 0
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`
+                }
+              >
+                All I–V
+              </button>
+              {ABILITY_RANKS.map((rk) => {
+                const meta = abilityRankMeta(rk);
+                const active = rankFilter === rk;
+                return (
+                  <button
+                    key={rk}
+                    type="button"
+                    onClick={() => setRankFilter(active ? 0 : rk)}
+                    className={
+                      isManga
+                        ? `border border-foreground px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                            active
+                              ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                              : "bg-background text-foreground hover:bg-secondary"
+                          }`
+                        : `rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition ${
+                            active
+                              ? "border-accent bg-accent/15 text-foreground"
+                              : "border-border/60 text-muted-foreground hover:text-foreground"
+                          }`
+                    }
+                    style={!isManga && active ? { borderColor: meta.ringColor } : undefined}
+                  >
+                    {meta.roman} · {meta.shortTitle}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {isLoading ? (
@@ -569,6 +632,10 @@ function AbilityCard({
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
   const Icon = def.icon;
+  const intrinsicRank = tierToIntrinsicRank(def.tier);
+  const customEmblem = !nexus
+    ? resolveCustomAbilityEmblem(`${def.key} ${def.label}`, def.description)
+    : null;
   const holdersMasked = useSpoilerMask("abilities");
   return (
     <MotionCard
@@ -614,8 +681,11 @@ function AbilityCard({
               name={def.key}
               label={def.label}
               description={def.description}
+              rank={intrinsicRank}
               className="h-10 w-10"
             />
+          ) : customEmblem ? (
+            <AbilityCustomEmblem kind={customEmblem} className="h-5 w-5" />
           ) : (
             <Icon className="h-5 w-5" />
           )}
@@ -662,6 +732,7 @@ function AbilityCard({
             <span>
               {holders.length} {holders.length === 1 ? "holder" : "holders"}
             </span>
+            <AbilityRankPips rank={intrinsicRank} showLabel compact className="ml-auto" />
           </span>
         </span>
       </button>
@@ -831,6 +902,17 @@ function AddAbilityForm({ onSaved }: { onSaved: (addedTier?: AbilityTier) => voi
           className="h-9"
         />
       </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-2 sm:col-span-2">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Emblem Preview:
+        </span>
+        <AbilityBadge
+          name={label.trim() || "New Ability"}
+          level={tierToIntrinsicRank(tier)}
+          showRank
+        />
+        <AbilityRankPips rank={tierToIntrinsicRank(tier)} showLabel className="ml-auto" />
+      </div>
       <div className="flex gap-2 sm:col-span-2">
         <Button size="sm" onClick={() => void submit()} disabled={busy || !label.trim()}>
           {busy ? "Saving…" : "Add to registry"}
@@ -945,6 +1027,13 @@ function EditAbilityForm({
           className="h-9"
         />
       </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-2 sm:col-span-2">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Emblem Preview:
+        </span>
+        <AbilityBadge name={label.trim() || def.label} level={tierToIntrinsicRank(tier)} showRank />
+        <AbilityRankPips rank={tierToIntrinsicRank(tier)} showLabel className="ml-auto" />
+      </div>
       <div className="flex flex-wrap gap-2 sm:col-span-2">
         <Button size="sm" onClick={() => void submit(false)} disabled={busy}>
           {busy ? "Saving…" : "Save changes"}
@@ -983,6 +1072,7 @@ function NexusAbilityHero({
           name={def.key}
           label={def.label}
           description={def.description}
+          rank={tierToIntrinsicRank(def.tier)}
           className="relative h-10 w-10 opacity-90"
         />
       </span>

@@ -2,11 +2,13 @@ import { useId, useMemo, useState, type ReactNode } from "react";
 import { Compass, Sparkles } from "lucide-react";
 import { useAnimationsEnabled } from "@/lib/animations";
 import type { DossierTabDescriptor } from "@/components/dossier-component";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
 
 export interface AstrolabeAbilityNode {
   name: string;
   label: string;
-  tier?: string;
+  tier?: string | undefined;
+  rank?: number | undefined;
 }
 
 export interface AstralClockworkAstrolabeProps {
@@ -548,6 +550,7 @@ export function AstralClockworkAstrolabe({
                 {abilities.slice(0, 4).map((ab) => (
                   <span
                     key={ab.name}
+                    data-ability-rank={ab.rank}
                     className="inline-flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[10px] font-semibold"
                     style={{
                       borderColor: isFantasy ? "rgba(92,225,184,0.45)" : "var(--border)",
@@ -559,6 +562,7 @@ export function AstralClockworkAstrolabe({
                     />
                     <span>{ab.label}</span>
                     {ab.tier && <span className="opacity-70">· {ab.tier}</span>}
+                    {ab.rank && <AbilityRankPips rank={ab.rank} compact />}
                   </span>
                 ))}
               </div>

@@ -212,9 +212,13 @@ export function MangaShell({ children }: { children: ReactNode }) {
               isFantasy ? "border-b border-[#c5a869]/45" : "border-b border-border/50"
             }`}
           >
-            <Link to="/" onClick={(e) => playClick(e)} className="group flex items-center gap-2">
+            <Link
+              to="/"
+              onClick={(e) => playClick(e)}
+              className="group flex min-w-0 items-center gap-2"
+            >
               <span
-                className={`border-2 px-1.5 py-0.5 font-display text-sm tracking-wider transition-transform group-hover:-rotate-1 ${
+                className={`shrink-0 border-2 px-1.5 py-0.5 font-display text-sm tracking-wider transition-transform group-hover:-rotate-1 ${
                   !themeCtx?.isMinimal ? "studio-bloom-border " : ""
                 }${
                   isFantasy
@@ -224,9 +228,10 @@ export function MangaShell({ children }: { children: ReactNode }) {
               >
                 SCU
               </span>
-              <div className="leading-none">
-                <span className="block font-display text-sm uppercase tracking-wider sm:text-base">
-                  WEEKLY SCU // ISSUE INDEX
+              <div className="min-w-0 leading-none">
+                <span className="block truncate font-display text-xs uppercase tracking-wider sm:text-base">
+                  <span className="sm:hidden">SCU // INDEX</span>
+                  <span className="hidden sm:inline">WEEKLY SCU // ISSUE INDEX</span>
                 </span>
                 <span
                   className={`hidden font-mono text-[9px] uppercase tracking-[0.2em] sm:block ${
@@ -241,7 +246,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
             </Link>
 
             {/* Compact utility stamps */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
               <HeaderThemeSelect variant="manga" />
               <button
                 type="button"
@@ -306,13 +311,13 @@ export function MangaShell({ children }: { children: ReactNode }) {
                   onClick={(e) => playClick(e)}
                   aria-label="Sign in"
                   title="Sign in"
-                  className={`manga-ink-btn inline-flex items-center gap-1 border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  className={`manga-ink-btn inline-flex shrink-0 items-center gap-1 whitespace-nowrap border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider sm:px-2.5 ${
                     isFantasy
                       ? "border-[#c5a869] bg-[#15221b] text-[#5ce1b8] hover:bg-[#2e5a52]"
                       : "border-primary bg-primary text-primary-foreground hover:opacity-90"
                   }`}
                 >
-                  <LogIn className="h-3 w-3" />
+                  <LogIn className="h-3 w-3 shrink-0" />
                   <span>Sign in</span>
                 </Link>
               )}
@@ -325,7 +330,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
                   triggerInteractionSfx("click", ev);
                   setTocOpen((v) => !v);
                 }}
-                className={`manga-ink-btn inline-flex items-center gap-1 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                className={`manga-ink-btn inline-flex shrink-0 items-center gap-1 whitespace-nowrap border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
                   isFantasy
                     ? "fantasy-discover-btn border-[#c5a869]"
                     : tocOpen
@@ -333,7 +338,11 @@ export function MangaShell({ children }: { children: ReactNode }) {
                       : "border-border bg-foreground text-background hover:bg-primary hover:text-primary-foreground"
                 }`}
               >
-                {tocOpen ? <X className="h-3 w-3" /> : <Menu className="h-3 w-3" />}
+                {tocOpen ? (
+                  <X className="h-3 w-3 shrink-0" />
+                ) : (
+                  <Menu className="h-3 w-3 shrink-0" />
+                )}
                 <span>TOC</span>
               </button>
             </div>

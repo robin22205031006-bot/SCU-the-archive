@@ -29,6 +29,12 @@ import { getCombatStats, COMBAT_STATS } from "@/lib/combat-stats";
 import { stripMerged } from "@/lib/sanitize-lore";
 import { tierDef } from "@/lib/character-tier";
 import { abilityDef } from "@/lib/abilities";
+import {
+  buildAbilityRankMap,
+  mergeCharacterAbilityList,
+  resolveAssignedAbilityRank,
+} from "@/lib/ability-rank";
+import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
 import { readCharacter3dAvatars } from "@/lib/models-3d";
 import { AbilityBadge } from "@/components/ability-badge";
 import { StatRadar } from "@/components/stat-radar";
@@ -878,9 +884,13 @@ export function MangaCharacterSpread({
   const cleanNotes = (notes ?? []).filter(
     (n) => !/^\[(conflict|merge|Auto-Merged|Auto-Stub|scope|resolved|Merged Info)/i.test(n.text),
   );
-  const mergedAbilities = [
-    ...new Set([...(charAbilities ?? []).map((ca) => ca.ability_key), ...(e.abilities ?? [])]),
-  ];
+  const mergedEntries = mergeCharacterAbilityList(charAbilities ?? [], e.abilities, {
+    seriesId: activeSeason?.series_id ?? null,
+  });
+  const abilityRankMap = buildAbilityRankMap(charAbilities ?? [], {
+    seriesId: activeSeason?.series_id ?? null,
+  });
+  const mergedAbilities = mergedEntries.map((item) => item.key);
 
   const handleExportPdf = async (ev?: React.MouseEvent<HTMLElement>) => {
     try {
@@ -1140,7 +1150,10 @@ export function MangaCharacterSpread({
                     <GenreCardFrame theme={activeGenre} compact />
                     {isFantasyGenre && <IvyDecoration variant="compact" />}
                     <div className="relative flex items-center justify-between gap-2">
-                      <AbilityBadge name={ab} />
+                      <AbilityBadge
+                        name={ab}
+                        level={resolveAssignedAbilityRank(ab, abilityRankMap)}
+                      />
                       <span
                         className={`font-mono text-[9px] font-bold uppercase ${
                           isFantasyGenre ? "text-[#5ce1b8]" : "text-muted-foreground"
@@ -1294,6 +1307,8 @@ export function MangaCharacterSpread({
               label={def.label}
               tier={def.tier}
               icon={def.icon}
+              rank={resolveAssignedAbilityRank(ab, abilityRankMap)}
+              customEmblem={resolveCustomAbilityEmblem(`${def.key} ${def.label}`, def.description)}
               title={`${def.label} — ${def.tier}`}
               variant="medallion"
             />
@@ -1490,6 +1505,11 @@ export function MangaCharacterSpread({
                     label={def.label}
                     tier={def.tier}
                     icon={def.icon}
+                    rank={resolveAssignedAbilityRank(ab, abilityRankMap)}
+                    customEmblem={resolveCustomAbilityEmblem(
+                      `${def.key} ${def.label}`,
+                      def.description,
+                    )}
                     title={`${def.label} — ${def.tier}`}
                     variant="medallion"
                     className="[&>div:last-child]:hidden"
@@ -1508,6 +1528,11 @@ export function MangaCharacterSpread({
                     label={def.label}
                     tier={def.tier}
                     icon={def.icon}
+                    rank={resolveAssignedAbilityRank(ab, abilityRankMap)}
+                    customEmblem={resolveCustomAbilityEmblem(
+                      `${def.key} ${def.label}`,
+                      def.description,
+                    )}
                     variant="medallion"
                   />
                 );
@@ -1528,6 +1553,11 @@ export function MangaCharacterSpread({
                   label={def.label}
                   tier={def.tier}
                   icon={def.icon}
+                  rank={resolveAssignedAbilityRank(ab, abilityRankMap)}
+                  customEmblem={resolveCustomAbilityEmblem(
+                    `${def.key} ${def.label}`,
+                    def.description,
+                  )}
                   variant="medallion"
                 />
               );
@@ -1539,7 +1569,12 @@ export function MangaCharacterSpread({
         actionsSlot={renderActionButtons("manga-ink-btn rounded-sm")}
         abilities={mergedAbilities.map((ab) => {
           const def = abilityDef(ab);
-          return { name: ab, label: def.label, tier: def.tier };
+          return {
+            name: ab,
+            label: def.label,
+            tier: def.tier,
+            rank: resolveAssignedAbilityRank(ab, abilityRankMap),
+          };
         })}
       />
 

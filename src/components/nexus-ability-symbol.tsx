@@ -14,31 +14,36 @@ import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
 import { resolveSymbolStyle, tintMatrix } from "@/lib/nexus-symbol-settings";
 import { abilityDef } from "@/lib/abilities";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
+import { ABILITY_RANKS, abilityRankMeta, parseAbilityRank } from "@/lib/ability-rank";
 
-/** Nexus-only illustrated artwork; renders bespoke crests and elemental/skill atlas emblems. */
+/** Nexus-only illustrated artwork; renders bespoke crests and elemental/skill atlas emblems with optional Rank 1-5 constellation ring. */
 export function NexusAbilitySymbol({
   name,
   label,
   iconName = "",
   description,
+  rank,
   className = "h-8 w-8",
   masked = false,
   previewColor,
   previewAnime,
 }: {
   name: string;
-  label?: string;
-  iconName?: string;
+  label?: string | undefined;
+  iconName?: string | undefined;
   description?: string | undefined;
-  className?: string;
-  masked?: boolean;
-  previewColor?: string;
-  previewAnime?: boolean;
+  rank?: number | undefined;
+  className?: string | undefined;
+  masked?: boolean | undefined;
+  previewColor?: string | undefined;
+  previewAnime?: boolean | undefined;
 }) {
   const id = useId();
   useAbilityRegistryVersion();
   const settings = useNexusSymbolSettings();
   const appearance = resolveSymbolStyle(settings, name);
+  const resolvedRank = parseAbilityRank(rank);
+  const rankMeta = resolvedRank ? abilityRankMeta(resolvedRank) : null;
   if (masked) return <span aria-hidden className={`nexus-mark ${className}`} />;
   const def = abilityDef(name);
   const effectiveDescription = description ?? def.description ?? "";
@@ -73,7 +78,16 @@ export function NexusAbilitySymbol({
       anime={previewAnime ?? appearance.anime}
       className={`nexus-ability-symbol ${className}`}
     >
-      <svg viewBox="0 0 100 100" data-ability-art={art} className="h-full w-full" aria-hidden>
+      <svg
+        viewBox="0 0 100 100"
+        data-ability-art={art}
+        data-ability-rank={resolvedRank}
+        aria-label={
+          rankMeta ? `${label ?? def.label} (${rankMeta.label})` : label ? label : undefined
+        }
+        className="h-full w-full"
+        aria-hidden={!rankMeta && !label}
+      >
         <defs>
           <clipPath id={id}>
             <circle cx="50" cy="50" r="43" />
@@ -115,6 +129,39 @@ export function NexusAbilitySymbol({
           className="nexus-emblem-glint"
           d="M50 8 L52 15 L59 17 L52 19 L50 26 L48 19 L41 17 L48 15Z"
         />
+        {resolvedRank && rankMeta && (
+          <g data-nexus-rank-arc={resolvedRank}>
+            <circle
+              cx="50"
+              cy="50"
+              r="46"
+              fill="none"
+              stroke={rankMeta.ringColor}
+              strokeOpacity={0.35 + resolvedRank * 0.11}
+              strokeWidth={resolvedRank >= 4 ? "2.4" : "1.6"}
+            />
+            {ABILITY_RANKS.map((n, idx) => {
+              const deg = 54 + idx * 18;
+              const rad = (deg * Math.PI) / 180;
+              const cx = 50 + Math.cos(rad) * 46;
+              const cy = 50 + Math.sin(rad) * 46;
+              const filled = n <= resolvedRank;
+              return (
+                <circle
+                  key={n}
+                  cx={cx}
+                  cy={cy}
+                  r={filled ? "3.4" : "2.1"}
+                  fill={filled ? rankMeta.ringColor : "#0f172a"}
+                  fillOpacity={filled ? 1 : 0.7}
+                  stroke={filled ? "#ffffff" : rankMeta.ringColor}
+                  strokeOpacity={filled ? 0.85 : 0.45}
+                  strokeWidth="0.9"
+                />
+              );
+            })}
+          </g>
+        )}
       </svg>
     </NexusSign>
   );

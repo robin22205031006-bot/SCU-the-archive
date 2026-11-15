@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { Shield, Sparkles, Swords, Wind, Flame, Droplets, Zap, Eye } from "lucide-react";
 import { useAnimationsEnabled } from "@/lib/animations";
+import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
+import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
+import { parseAbilityRank } from "@/lib/ability-rank";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
 
 export type BotanicalCanopyVariant = "dossier" | "map" | "card";
 
@@ -449,22 +453,27 @@ export function AlchemicalAbilityOrb({
   label,
   tier,
   icon,
+  rank,
   selected = false,
   onClick,
 }: {
   label: string;
-  tier?: string;
-  icon?: string;
-  selected?: boolean;
-  onClick?: () => void;
+  tier?: string | undefined;
+  icon?: string | undefined;
+  rank?: number | undefined;
+  selected?: boolean | undefined;
+  onClick?: (() => void) | undefined;
 }) {
   const Icon = resolveOrbIcon(icon || label);
+  const customEmblem = resolveCustomAbilityEmblem(`${icon ?? ""} ${label}`);
+  const resolvedRank = parseAbilityRank(rank);
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={selected}
       data-ability-orb="true"
+      data-ability-rank={resolvedRank}
       className="group flex flex-col items-center gap-1.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5ce1b8]"
     >
       <span
@@ -495,7 +504,14 @@ export function AlchemicalAbilityOrb({
             strokeWidth="0.9"
           />
         </svg>
-        <Icon className="relative h-5 w-5 text-[#eafff7] drop-shadow-[0_0_8px_rgba(92,225,184,0.85)]" />
+        {customEmblem ? (
+          <AbilityCustomEmblem
+            kind={customEmblem}
+            className="relative h-5 w-5 text-[#eafff7] drop-shadow-[0_0_8px_rgba(92,225,184,0.85)]"
+          />
+        ) : (
+          <Icon className="relative h-5 w-5 text-[#eafff7] drop-shadow-[0_0_8px_rgba(92,225,184,0.85)]" />
+        )}
       </span>
       <span className="max-w-[84px] truncate font-mono text-[9px] font-bold uppercase tracking-wider text-[#f5ebe6]">
         {label}
@@ -505,6 +521,7 @@ export function AlchemicalAbilityOrb({
           {tier}
         </span>
       )}
+      {resolvedRank && <AbilityRankPips rank={resolvedRank} compact />}
     </button>
   );
 }

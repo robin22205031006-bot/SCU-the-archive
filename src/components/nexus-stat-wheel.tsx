@@ -26,14 +26,24 @@ export function NexusStatWheel({
   onSelect,
 }: {
   stats: Array<{ key: string; label: string; value: number }>;
-  abilities: Array<{ name: string; def: ReturnType<typeof abilityDef> }>;
+  abilities: Array<{
+    name: string;
+    level?: number | undefined;
+    def: ReturnType<typeof abilityDef>;
+  }>;
   selected: string | null;
   onSelect: (name: string | null) => void;
 }) {
   const options = [
-    { name: null, label: "Character", icon: Fingerprint },
-    ...abilities.map((a) => ({ name: a.name, label: a.def.label, icon: a.def.icon })),
+    { name: null, level: undefined as number | undefined, label: "Character", icon: Fingerprint },
+    ...abilities.map((a) => ({
+      name: a.name,
+      level: a.level,
+      label: a.def.label,
+      icon: a.def.icon,
+    })),
   ];
+  const selectedRank = options.find((o) => o.name === selected)?.level;
   const active = Math.max(
     0,
     options.findIndex((a) => a.name === selected),
@@ -179,7 +189,7 @@ export function NexusStatWheel({
         }}
       >
         {selected ? (
-          <NexusAbilitySymbol name={selected} className="h-5 w-5" />
+          <NexusAbilitySymbol name={selected} rank={selectedRank} className="h-5 w-5" />
         ) : (
           <Icon aria-hidden className="h-3 w-3" />
         )}
@@ -194,7 +204,7 @@ export function NexusStatWheel({
             size="icon"
             aria-label={`Show ${a.label} stats`}
             aria-pressed={selected === a.name}
-            title={a.label}
+            title={a.level ? `${a.label} (Rank ${a.level})` : a.label}
             onClick={() => onSelect(a.name)}
             className="nexus-wheel-option absolute h-9 w-9 rounded-full"
             style={{
@@ -204,7 +214,7 @@ export function NexusStatWheel({
             }}
           >
             {a.name ? (
-              <NexusAbilitySymbol name={a.name} className="h-7 w-7" />
+              <NexusAbilitySymbol name={a.name} rank={a.level} className="h-7 w-7" />
             ) : (
               <AbilityIcon className="h-4 w-4" />
             )}

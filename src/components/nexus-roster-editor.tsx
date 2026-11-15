@@ -9,6 +9,8 @@ import { SEASON_STATUSES } from "@/lib/series";
 import { useServerFn } from "@tanstack/react-start";
 import { draftSeasonStory } from "@/lib/season-story.functions";
 import { allAbilityDefs, abilityDef } from "@/lib/abilities";
+import { ABILITY_RANKS, abilityRankMeta, clampDbAbilityLevel } from "@/lib/ability-rank";
+import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,7 +142,11 @@ function RosterFields({
       .filter((a) => a.season_number == null || a.season_number === season)
       .sort((a, b) => Number(a.season_number != null) - Number(b.season_number != null))
       .forEach((a) =>
-        m.set(a.ability_key, { name: a.ability_key, level: a.level, note: a.note ?? "" }),
+        m.set(a.ability_key, {
+          name: a.ability_key,
+          level: clampDbAbilityLevel(a.level),
+          note: a.note ?? "",
+        }),
       );
     const keys = abilityKeysRef.current;
     setAbilities([...m.values()].filter((a) => keys === undefined || keys.includes(a.name)));
@@ -206,7 +212,7 @@ function RosterFields({
             series_id: seriesId,
             season_number: season,
             ability_key: a.name,
-            level: a.level,
+            level: clampDbAbilityLevel(a.level),
             note: a.note || null,
           })),
         );
@@ -408,8 +414,21 @@ function RosterFields({
       {abilities.map((a, i) => (
         <div
           key={i}
-          className="grid grid-cols-[minmax(0,1fr)_64px_36px] gap-2 border-b border-border pb-3"
+          className="grid grid-cols-[auto_minmax(0,1fr)_132px_36px] items-center gap-2 border-b border-border pb-3"
         >
+          <div className="grid h-8 w-8 shrink-0 place-items-center">
+            {a.name.trim() ? (
+              <NexusAbilitySymbol
+                name={abilityDef(a.name).key}
+                label={abilityDef(a.name).label}
+                description={abilityDef(a.name).description}
+                rank={a.level}
+                className="h-8 w-8"
+              />
+            ) : (
+              <span className="h-7 w-7 rounded-full border border-dashed border-border" />
+            )}
+          </div>
           <Input
             aria-label={`Ability ${i + 1}`}
             list="nexus-ability-options"
@@ -418,22 +437,24 @@ function RosterFields({
               setAbilities(abilities.map((v, j) => (j === i ? { ...v, name: ev.target.value } : v)))
             }
           />
-          <Input
-            type="number"
-            aria-label={`Ability ${i + 1} level`}
-            min={1}
-            max={100}
-            value={a.level}
+          <select
+            aria-label={`Ability ${i + 1} rank`}
+            className="h-9 rounded-md border border-input bg-background px-2 text-xs"
+            value={clampDbAbilityLevel(a.level)}
             onChange={(ev) =>
               setAbilities(
                 abilities.map((v, j) =>
-                  j === i
-                    ? { ...v, level: Math.max(1, Math.min(100, Number(ev.target.value) || 1)) }
-                    : v,
+                  j === i ? { ...v, level: clampDbAbilityLevel(Number(ev.target.value)) } : v,
                 ),
               )
             }
-          />
+          >
+            {ABILITY_RANKS.map((n) => (
+              <option key={n} value={n}>
+                {abilityRankMeta(n).roman} · {abilityRankMeta(n).shortTitle} ({n})
+              </option>
+            ))}
+          </select>
           <Button
             variant="ghost"
             size="icon"
@@ -443,7 +464,7 @@ function RosterFields({
             <Trash2 className="h-4 w-4" />
           </Button>
           <Input
-            className="col-span-3"
+            className="col-span-4"
             aria-label={`Ability ${i + 1} changes`}
             placeholder="Acquired / upgraded / lost · notes"
             value={a.note}

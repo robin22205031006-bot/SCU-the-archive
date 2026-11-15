@@ -70,6 +70,16 @@ import { useUiToggles } from "@/lib/ui-toggles";
 import { isFavorite, toggleFavorite } from "@/lib/favorites";
 import { Heart } from "lucide-react";
 import { AbilityBadge, AbilityBadgeRow } from "./ability-badge";
+import { AbilityCustomEmblem } from "./ability-custom-emblem";
+import { AbilityRankPips } from "./ability-rank-pips";
+import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
+import {
+  abilityRankMeta,
+  buildAbilityRankMap,
+  parseAbilityRank,
+  resolveAssignedAbilityRank,
+  tierToIntrinsicRank,
+} from "@/lib/ability-rank";
 import {
   ABILITY_GROUP_LABELS,
   abilityDef,
@@ -352,6 +362,7 @@ function DetailOverlay({
       return data ?? [];
     },
   });
+  const abilityRankMap = useMemo(() => buildAbilityRankMap(charAbilities ?? []), [charAbilities]);
   const { data: allChars } = useQuery({
     ...entitiesQuery(["character"]),
     enabled: e.kind === "character" && dossierTab === "progress",
@@ -873,7 +884,7 @@ function DetailOverlay({
                   {seasonAbilities.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {seasonAbilities.map((ca) => (
-                        <AbilityBadge key={ca.id} name={ca.ability_key} />
+                        <AbilityBadge key={ca.id} name={ca.ability_key} level={ca.level} showRank />
                       ))}
                     </div>
                   )}
@@ -954,7 +965,10 @@ function DetailOverlay({
                             className="cursor-pointer"
                             title="Ability details"
                           >
-                            <AbilityBadge name={a} />
+                            <AbilityBadge
+                              name={a}
+                              level={resolveAssignedAbilityRank(a, abilityRankMap)}
+                            />
                           </button>
                         ))}
                       </div>
@@ -1087,24 +1101,27 @@ function DetailOverlay({
                           ))}
                         </div>
                       )}
-                      {/* Per-season ability progression has no dedicated table yet. */}
-                      {charAbilities && charAbilities.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {charAbilities.map((ca) => (
-                            <span
-                              key={ca.id}
-                              className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px]"
-                            >
-                              {abilityDef(ca.ability_key).label}
-                              {ca.level ? ` · Lv${ca.level}` : ""}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs italic text-muted-foreground">
-                          No database for this season.
-                        </p>
-                      )}
+                      {(() => {
+                        const rowAbilities = (charAbilities ?? []).filter(
+                          (ca) => !ca.series_id || ca.series_id === r.series_id,
+                        );
+                        return rowAbilities.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {rowAbilities.map((ca) => (
+                              <AbilityBadge
+                                key={ca.id}
+                                name={ca.ability_key}
+                                level={ca.level}
+                                showRank
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs italic text-muted-foreground">
+                            No seasonal ability changes recorded.
+                          </p>
+                        );
+                      })()}
                     </div>
                   );
                 })
@@ -1251,23 +1268,36 @@ function DetailOverlay({
           </nav>
         </div>
       </div>
-      <AbilityInfoDialog name={abilityInfo} wielder={e.name} onClose={() => setAbilityInfo(null)} />
+      <AbilityInfoDialog
+        name={abilityInfo}
+        level={abilityInfo ? resolveAssignedAbilityRank(abilityInfo, abilityRankMap) : undefined}
+        wielder={e.name}
+        onClose={() => setAbilityInfo(null)}
+      />
     </motion.div>
   );
 }
 
-/** Dossier ability detail modal — description, assigned tier glow, usage context. */
+/** Dossier ability detail modal — description, assigned tier glow, Rank 1-5 crest, usage context. */
 function AbilityInfoDialog({
   name,
+  level,
   wielder,
   onClose,
 }: {
   name: string | null;
+  level?: number | undefined;
   wielder: string;
   onClose: () => void;
 }) {
   useAbilityRegistryVersion();
   const def = name ? abilityDef(name) : null;
+  const customEmblem = def
+    ? resolveCustomAbilityEmblem(`${def.key} ${def.label}`, def.description)
+    : null;
+  const resolvedRank = def ? (parseAbilityRank(level) ?? tierToIntrinsicRank(def.tier)) : undefined;
+  const rankMeta = resolvedRank ? abilityRankMeta(resolvedRank) : null;
+
   return (
     <Dialog open={!!name} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -1275,13 +1305,17 @@ function AbilityInfoDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-display text-2xl">
-                <def.icon className="h-6 w-6" style={{ color: def.color }} />
-                {def.label}
+                {customEmblem ? (
+                  <AbilityCustomEmblem kind={customEmblem} className="h-6 w-6" />
+                ) : (
+                  <def.icon className="h-6 w-6" style={{ color: def.color }} />
+                )}
+                <span style={customEmblem ? { color: def.color } : undefined}>{def.label}</span>
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-3 text-sm">
-              <div className="flex flex-wrap gap-2">
-                <AbilityBadge name={name!} />
+              <div className="flex flex-wrap items-center gap-2">
+                <AbilityBadge name={name!} level={resolvedRank} showRank />
                 <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                   {ABILITY_GROUP_LABELS[def.group]}
                 </span>
@@ -1295,6 +1329,19 @@ function AbilityInfoDialog({
                 >
                   {def.tier} tier
                 </span>
+                {resolvedRank && rankMeta && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                    style={{
+                      color: rankMeta.ringColor,
+                      borderColor: `${rankMeta.ringColor}66`,
+                      background: `${rankMeta.ringColor}14`,
+                    }}
+                  >
+                    <AbilityRankPips rank={resolvedRank} compact />
+                    <span>{rankMeta.shortTitle}</span>
+                  </span>
+                )}
               </div>
               {def.description && <p className="text-foreground/85">{def.description}</p>}
               <p className="text-xs text-muted-foreground">

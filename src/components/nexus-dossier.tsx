@@ -28,6 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { abilityRankMeta } from "@/lib/ability-rank";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { tierDef } from "@/lib/character-tier";
@@ -616,9 +618,15 @@ export function NexusDossier({
                 </p>
                 <ul className="mt-1 space-y-1 text-xs">
                   {abilities.slice(0, 6).map((a) => (
-                    <li key={a.name} className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full" style={{ background: a.def.color }} />
-                      {a.def.label}
+                    <li key={a.name} className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ background: a.def.color }}
+                        />
+                        <span className="truncate">{a.def.label}</span>
+                      </span>
+                      <AbilityRankPips rank={a.level} compact />
                     </li>
                   ))}
                   {!abilities.length && <li className="text-muted-foreground">None this season</li>}
@@ -660,10 +668,10 @@ export function NexusDossier({
               {abilities.map((a) => (
                 <div
                   key={a.name}
-                  className="flex items-center justify-between border-b border-border/60 py-1"
+                  className="flex items-center justify-between gap-2 border-b border-border/60 py-1"
                 >
-                  <span>{a.def.label}</span>
-                  <span style={{ color: a.def.color }}>Lv.{a.level}</span>
+                  <span className="min-w-0 truncate">{a.def.label}</span>
+                  <AbilityRankPips rank={a.level} compact showLabel />
                 </div>
               ))}
             </div>
@@ -693,14 +701,16 @@ export function NexusDossier({
 
 function AbilityGlyph({
   def,
+  rank,
   masked,
   className = "",
 }: {
   def: ReturnType<typeof abilityDef>;
+  rank?: number | undefined;
   masked: boolean;
-  className?: string;
+  className?: string | undefined;
 }) {
-  return <NexusAbilitySymbol name={def.key} masked={masked} className={className} />;
+  return <NexusAbilitySymbol name={def.key} rank={rank} masked={masked} className={className} />;
 }
 
 function AbilityOrbit({
@@ -755,9 +765,9 @@ function AbilityOrbit({
             className="absolute left-1/2 top-1/2 grid h-28 w-28 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-2 bg-background"
             style={{ borderColor: core.def.color, boxShadow: `0 0 60px -6px ${core.def.color}` }}
           >
-            <AbilityGlyph def={core.def} masked={masked} className="h-12 w-12" />
+            <AbilityGlyph def={core.def} rank={core.level} masked={masked} className="h-12 w-12" />
             <span className="absolute -bottom-6 whitespace-nowrap text-[10px] uppercase tracking-widest">
-              {masked ? "Core" : core.def.label}
+              {masked ? "Core" : `${core.def.label} · ${abilityRankMeta(core.level).roman}`}
             </span>
           </motion.div>
           {rest.slice(0, 8).map((a, i, arr) => {
@@ -778,12 +788,12 @@ function AbilityOrbit({
                 role="button"
                 tabIndex={0}
                 aria-pressed={selected === a.name}
-                aria-label={`Select ${a.def.label} stats`}
+                aria-label={`Select ${a.def.label} (${abilityRankMeta(a.level).label}) stats`}
                 onClick={() => onSelect(a.name)}
                 onKeyDown={(ev) => (ev.key === "Enter" || ev.key === " ") && onSelect(a.name)}
-                title={a.def.label}
+                title={`${a.def.label} — ${abilityRankMeta(a.level).label}`}
               >
-                <AbilityGlyph def={a.def} masked={masked} className="h-5 w-5" />
+                <AbilityGlyph def={a.def} rank={a.level} masked={masked} className="h-6 w-6" />
               </motion.div>
             );
           })}
