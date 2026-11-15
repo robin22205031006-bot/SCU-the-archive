@@ -3,8 +3,9 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
-import { Compass, Palette, X, User, Sparkles } from "lucide-react";
+import { Compass, LogIn, Palette, X, User, Sparkles } from "lucide-react";
 import { useIsStaff } from "@/hooks/use-admin";
+import { useOptionalAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { TABS, STAFF_TAB } from "@/lib/nav";
 import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
@@ -21,6 +22,8 @@ import { useUIFeedback } from "@/hooks/use-ui-feedback";
 export function NexusShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const hud = useNavMode() === "hud";
+  const auth = useOptionalAuth();
+  const user = auth?.user ?? null;
   const isStaff = useIsStaff();
   const enabled = useAnimationsEnabled();
   const moving = useNexusMotion();
@@ -71,8 +74,8 @@ export function NexusShell({ children }: { children: ReactNode }) {
       transition={{ duration: moving ? 0.55 : 0 }}
     >
       <div className="nexus-shell relative min-h-dvh">
-        <NexusFxLayer>
-          {!hud && (
+        <NexusFxLayer>{null}</NexusFxLayer>
+        {!hud && (
             <header
               className={`nexus-command fixed z-40 flex items-center gap-2 rounded-2xl border border-cyan-400/35 bg-slate-950/75 p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.55),0_0_24px_rgba(56,189,248,0.14)] backdrop-blur-xl ${pathname === "/character" ? "bottom-4 right-4" : "left-4 right-4 top-4"}`}
             >
@@ -131,21 +134,40 @@ export function NexusShell({ children }: { children: ReactNode }) {
               >
                 <Sparkles className={enabled ? "text-nexus-glow" : ""} />
               </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
-              >
-                <Link
-                  to="/profile"
-                  aria-label="Profile"
-                  title="Profile"
-                  onClick={(e) => playClick(e)}
+              {user ? (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-nexus-glow/20 hover:text-nexus-fg transition-all"
                 >
-                  <User />
-                </Link>
-              </Button>
+                  <Link
+                    to="/profile"
+                    aria-label="Profile"
+                    title="Profile"
+                    onClick={(e) => playClick(e)}
+                  >
+                    <User />
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="border-cyan-400/45 bg-cyan-500/10 text-xs font-medium text-cyan-200 hover:bg-cyan-500/20 hover:text-white"
+                >
+                  <Link
+                    to="/auth"
+                    aria-label="Sign in"
+                    title="Sign in"
+                    onClick={(e) => playClick(e)}
+                  >
+                    <LogIn className="h-3.5 w-3.5" />
+                    <span>Sign in</span>
+                  </Link>
+                </Button>
+              )}
             </header>
           )}
           <AnimatePresence>
@@ -210,7 +232,6 @@ export function NexusShell({ children }: { children: ReactNode }) {
               children
             )}
           </motion.div>
-        </NexusFxLayer>
       </div>
     </MotionConfig>
   );

@@ -354,6 +354,8 @@ function DetailOverlay({
   const [style, setStyle] = useState<CSSProperties>({});
   useEffect(() => {
     sfx.tierReveal(e.character_tier);
+  }, [e.id, e.character_tier]);
+  useEffect(() => {
     const k = (ev: KeyboardEvent) => ev.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -361,11 +363,17 @@ function DetailOverlay({
   useEffect(() => {
     if (!from) return;
     const target = { x: window.innerWidth < 640 ? 16 : 24, y: window.innerWidth < 640 ? 96 : 104 };
-    setStyle({
-      "--from-x": `${from.left - target.x}px`,
-      "--from-y": `${from.top - target.y}px`,
-      "--from-s": "1",
-    } as CSSProperties);
+    const fromX = `${from.left - target.x}px`;
+    const fromY = `${from.top - target.y}px`;
+    setStyle((prev) => {
+      const p = prev as Record<string, string>;
+      if (p["--from-x"] === fromX && p["--from-y"] === fromY) return prev;
+      return {
+        "--from-x": fromX,
+        "--from-y": fromY,
+        "--from-s": "1",
+      } as CSSProperties;
+    });
   }, [from]);
 
   const exportPdf = async () => {
@@ -1466,7 +1474,7 @@ export function EntitySection({
     }
   });
   const [q, setQ] = useState(initialQuery);
-  useEffect(() => setQ(initialQuery), [initialQuery]);
+  useEffect(() => setQ((prev) => (prev === initialQuery ? prev : initialQuery)), [initialQuery]);
 
   const list = useMemo(
     () => (data ?? []).filter((e) => (cat === "all" || e.category === cat) && matchesSearch(e, q)),

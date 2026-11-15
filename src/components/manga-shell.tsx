@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpenText, Palette, Sparkles, User, Menu, X } from "lucide-react";
+import { BookOpenText, LogIn, Palette, Sparkles, User, Menu, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsStaff } from "@/hooks/use-admin";
+import { useOptionalAuth } from "@/context/AuthContext";
 import { TABS, STAFF_TAB, tabIndex } from "@/lib/nav";
 import { useNavMode } from "@/lib/nav-mode";
 import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
@@ -57,6 +58,8 @@ const SHORT_TAB_NAMES: Record<string, string> = {
 export function MangaShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const hud = useNavMode() === "hud";
+  const auth = useOptionalAuth();
+  const user = auth?.user ?? null;
   const isStaff = useIsStaff();
   const enabled = useAnimationsEnabled();
   const activeGenre = useActiveGenre() ?? "manga-ink";
@@ -276,22 +279,39 @@ export function MangaShell({ children }: { children: ReactNode }) {
                 <Sparkles className="h-3 w-3" />
                 <span>FX:{enabled ? "ON" : "OFF"}</span>
               </button>
-              <Link
-                to="/profile"
-                onClick={(e) => playClick(e)}
-                aria-label="Profile"
-                title="Reader Profile"
-                className={`manga-ink-btn inline-flex items-center gap-1 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
-                  pathname === "/profile"
-                    ? "border-[#c5a869] bg-foreground text-background"
-                    : isFantasy
-                      ? "border-[#c5a869]/80 bg-[#f5ebe6] text-[#15221b] hover:bg-[#15221b] hover:text-[#5ce1b8]"
-                      : "border-border bg-background text-foreground hover:bg-foreground hover:text-background"
-                }`}
-              >
-                <User className="h-3 w-3" />
-                <span className="hidden md:inline">ID</span>
-              </Link>
+              {user ? (
+                <Link
+                  to="/profile"
+                  onClick={(e) => playClick(e)}
+                  aria-label="Profile"
+                  title="Reader Profile"
+                  className={`manga-ink-btn inline-flex items-center gap-1 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                    pathname === "/profile"
+                      ? "border-[#c5a869] bg-foreground text-background"
+                      : isFantasy
+                        ? "border-[#c5a869]/80 bg-[#f5ebe6] text-[#15221b] hover:bg-[#15221b] hover:text-[#5ce1b8]"
+                        : "border-border bg-background text-foreground hover:bg-foreground hover:text-background"
+                  }`}
+                >
+                  <User className="h-3 w-3" />
+                  <span className="hidden md:inline">ID</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={(e) => playClick(e)}
+                  aria-label="Sign in"
+                  title="Sign in"
+                  className={`manga-ink-btn inline-flex items-center gap-1 border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                    isFantasy
+                      ? "border-[#c5a869] bg-[#15221b] text-[#5ce1b8] hover:bg-[#2e5a52]"
+                      : "border-primary bg-primary text-primary-foreground hover:opacity-90"
+                  }`}
+                >
+                  <LogIn className="h-3 w-3" />
+                  <span>Sign in</span>
+                </Link>
+              )}
               <button
                 type="button"
                 aria-label={tocOpen ? "Close full chapter index" : "Open full chapter index"}
@@ -516,31 +536,14 @@ export function MangaShell({ children }: { children: ReactNode }) {
 
       <ThemeDrawer open={themeOpen} onOpenChange={setThemeOpen} />
 
-      {motionActive ? (
-        <AnimatePresence mode="wait">
-          <motion.div
-            ref={pageRef}
-            key={pathname}
-            data-manga-page={pathname.slice(1) || "home"}
-            variants={motionSpec.pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="manga-page relative z-[1]"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
-      ) : (
-        <div
-          ref={pageRef}
-          key={pathname}
-          data-manga-page={pathname.slice(1) || "home"}
-          className="manga-page relative z-[1]"
-        >
-          {children}
-        </div>
-      )}
+      <div
+        ref={pageRef}
+        key={pathname}
+        data-manga-page={pathname.slice(1) || "home"}
+        className="manga-page relative z-[1]"
+      >
+        {children}
+      </div>
     </div>
   );
 }

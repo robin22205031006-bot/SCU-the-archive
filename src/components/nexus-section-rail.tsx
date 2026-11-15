@@ -52,7 +52,7 @@ export function NexusSectionRail({ children }: { children: ReactNode }) {
               onClick={() => {
                 if (section.element.getAttribute("aria-expanded") === "false")
                   section.element.click();
-                section.element.scrollIntoView({
+                section.element.scrollIntoView?.({
                   behavior: moving ? "smooth" : "instant",
                   block: "center",
                 });

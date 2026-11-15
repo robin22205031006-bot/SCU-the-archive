@@ -49,13 +49,15 @@ export function useDocumentGenreTheme(themeOverride?: GenreThemeId | null): Genr
   const [domTheme, setDomTheme] = useState<GenreThemeId | null>(() => readHtmlGenreTheme());
 
   useEffect(() => {
-    setDomTheme(readHtmlGenreTheme());
+    const sync = () => {
+      const next = readHtmlGenreTheme();
+      setDomTheme((prev) => (prev === next ? prev : next));
+    };
+    sync();
     if (typeof document === "undefined" || typeof MutationObserver === "undefined") {
       return;
     }
-    const observer = new MutationObserver(() => {
-      setDomTheme(readHtmlGenreTheme());
-    });
+    const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["data-genre-theme"],

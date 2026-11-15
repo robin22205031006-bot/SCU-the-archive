@@ -579,11 +579,12 @@ function LocationView({
   const [compareSplit, setCompareSplit] = useState(50);
   const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
 
+  const defaultEraId = loc.eras[loc.eras.length - 1]!.id;
   useEffect(() => {
-    setEraId(loc.eras[loc.eras.length - 1]!.id);
+    setEraId(defaultEraId);
     setPin(null);
     setCompareMode(false);
-  }, [loc]);
+  }, [loc.id, defaultEraId]);
 
   useEffect(() => {
     setPin(null);

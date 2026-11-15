@@ -1,7 +1,7 @@
 import { createLovableAuth } from "@lovable.dev/cloud-auth-js";
 import type { OAuthProvider } from "@lovable.dev/cloud-auth-js";
 import { supabase } from "../supabase/client";
-import { ARCHIVE_BACKEND } from "../../../archive-backend";
+import { resolveArchiveBackend } from "../../../archive-backend";
 
 const lovableAuth = createLovableAuth();
 
@@ -67,18 +67,11 @@ export function isEmbeddedInIframe(): boolean {
 }
 
 export function getSupabaseBaseUrl(): string {
-  const envUrl =
-    typeof import.meta !== "undefined"
-      ? (import.meta.env["VITE_SUPABASE_URL"] as string | undefined)
-      : undefined;
-  if (
-    envUrl &&
-    !envUrl.includes("placeholder") &&
-    !envUrl.includes("2c3743b4-a0ff-4079-b412-eba03e4ddcc7")
-  ) {
-    return envUrl.replace(/\/+$/, "");
-  }
-  return ARCHIVE_BACKEND.url;
+  const metaEnv =
+    typeof import.meta !== "undefined" && import.meta.env
+      ? (import.meta.env as Record<string, string | undefined>)
+      : {};
+  return resolveArchiveBackend(metaEnv).url;
 }
 
 export function parseOAuthCallbackPayload(payload: OAuthCallbackPayload): ParsedOAuthCallback {

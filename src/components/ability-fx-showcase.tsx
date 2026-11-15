@@ -38,7 +38,10 @@ export function AbilityFxShowcase({
   const lineages = useAbilityLineages();
   const lineage = useMemo(() => lineageFor(lineages, current), [lineages, current]);
   const def = abilityDef(current);
-  const recipe = useMemo(() => abilityFxRecipe(current), [current, abilityVersion]);
+  const recipe = useMemo(() => {
+    void abilityVersion;
+    return abilityFxRecipe(current);
+  }, [current, abilityVersion]);
   useEffect(() => {
     if (!ascending || !lineage) return;
     const i = lineage.steps.indexOf(def.key);

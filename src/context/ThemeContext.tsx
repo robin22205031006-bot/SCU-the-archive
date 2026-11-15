@@ -283,10 +283,14 @@ export function applyPrimaryAndSubThemeAttributes(
   subTheme: MangaSubTheme,
   root: HTMLElement = document.documentElement,
 ): void {
-  root.dataset["primarySystem"] = primary;
+  if (root.dataset["primarySystem"] !== primary) {
+    root.dataset["primarySystem"] = primary;
+  }
   if (primary === "manga") {
-    root.dataset["mangaSubtheme"] = subTheme;
-  } else {
+    if (root.dataset["mangaSubtheme"] !== subTheme) {
+      root.dataset["mangaSubtheme"] = subTheme;
+    }
+  } else if ("mangaSubtheme" in root.dataset) {
     delete root.dataset["mangaSubtheme"];
   }
 }
@@ -315,6 +319,12 @@ export function ThemeProvider({
 
   const primarySystem: PrimarySystem = initialSystem ?? uiModeCtx?.mode ?? fallbackSystem;
 
+  const setUiMode = uiModeCtx?.setMode;
+  const mangaSubThemeRef = useRef(mangaSubThemeState);
+  useEffect(() => {
+    mangaSubThemeRef.current = mangaSubThemeState;
+  }, [mangaSubThemeState]);
+
   // Keep sub-theme synced when external GenreTheme changes (e.g. quick ribbon / ThemeDrawer)
   const prevStoredGenreRef = useRef(storedGenre);
   useEffect(() => {
@@ -324,18 +334,23 @@ export function ThemeProvider({
     setMangaSubThemeState((prev) => {
       // Preserve explicit "manhwa" when its backing genre ("cyber-anime") is unchanged
       if (prev === "manhwa" && storedGenre === "cyber-anime") return prev;
-      return genreThemeToMangaSubTheme(storedGenre);
+      const next = genreThemeToMangaSubTheme(storedGenre);
+      return prev === next ? prev : next;
     });
   }, [storedGenre]);
 
   useEffect(() => {
     const onSubEvent = (e: Event) => {
       const next = (e as CustomEvent<MangaSubTheme>).detail;
-      if (next) setMangaSubThemeState(normalizeMangaSubTheme(next));
+      if (next) {
+        const normalized = normalizeMangaSubTheme(next);
+        setMangaSubThemeState((prev) => (prev === normalized ? prev : normalized));
+      }
     };
     const onStorage = (e: StorageEvent) => {
       if (e.key === MANGA_SUBTHEME_STORAGE_KEY && e.newValue) {
-        setMangaSubThemeState(normalizeMangaSubTheme(e.newValue));
+        const normalized = normalizeMangaSubTheme(e.newValue);
+        setMangaSubThemeState((prev) => (prev === normalized ? prev : normalized));
       }
     };
     window.addEventListener("scu:manga-subtheme-change", onSubEvent);
@@ -369,19 +384,23 @@ export function ThemeProvider({
       } catch {
         /* storage optional */
       }
-      if (uiModeCtx) {
-        uiModeCtx.setMode(next as VisualUiMode);
+      if (setUiMode) {
+        setUiMode(next as VisualUiMode);
       } else {
-        setFallbackSystem(next);
+        setFallbackSystem((prev) => (prev === next ? prev : next));
         if (typeof document !== "undefined") {
           document.documentElement.dataset["uiMode"] = next;
           if (next === "classic") delete document.documentElement.dataset["ui"];
           else document.documentElement.dataset["ui"] = next;
-          applyPrimaryAndSubThemeAttributes(next, mangaSubThemeState, document.documentElement);
+          applyPrimaryAndSubThemeAttributes(
+            next,
+            mangaSubThemeRef.current,
+            document.documentElement,
+          );
         }
       }
     },
-    [uiModeCtx, mangaSubThemeState],
+    [setUiMode],
   );
 
   const setMangaSubTheme = useCallback((next: MangaSubTheme) => {

@@ -28,10 +28,14 @@ export function AbilityPicker({
   const [custom, setCustom] = useState("");
   const registryVersion = useAbilityRegistryVersion();
 
-  const selected = useMemo(() => sortAbilities(value), [value, registryVersion]);
+  const selected = useMemo(() => {
+    void registryVersion;
+    return sortAbilities(value);
+  }, [value, registryVersion]);
   const needle = q.trim().toLowerCase();
 
   const suggestions = useMemo(() => {
+    void registryVersion;
     const chosen = new Set(value.map(normalizeAbilityKey));
     return allAbilityDefs().filter(
       (a) =>

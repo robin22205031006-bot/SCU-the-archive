@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -130,7 +130,10 @@ function RosterFields({
       return data;
     },
   });
-  if (data && !loaded) {
+  const abilityKeysRef = useRef(form.abilityKeys);
+  abilityKeysRef.current = form.abilityKeys;
+  useEffect(() => {
+    if (!data || loaded) return;
     setLoaded(true);
     const m = new Map<string, Ability>();
     data
@@ -139,9 +142,9 @@ function RosterFields({
       .forEach((a) =>
         m.set(a.ability_key, { name: a.ability_key, level: a.level, note: a.note ?? "" }),
       );
-    const keys = form.abilityKeys;
+    const keys = abilityKeysRef.current;
     setAbilities([...m.values()].filter((a) => keys === undefined || keys.includes(a.name)));
-  }
+  }, [data, loaded, season]);
   const values = profile ? (form.abilityStats?.[profile] ?? {}) : (form.stats ?? {});
   const setStat = (stat: string, value: number) =>
     setForm((f) =>

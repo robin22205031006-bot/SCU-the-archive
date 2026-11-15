@@ -31,6 +31,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
+import { useOptionalAuth } from "@/context/AuthContext";
 import { useScuMute } from "@/hooks/use-scu-audio";
 import { setAnimationsEnabled, useAnimationsEnabled } from "@/lib/animations";
 import { useAppearance } from "@/hooks/use-appearance";
@@ -76,7 +77,9 @@ const ICONS = {
 
 export function SiteNav() {
   const isStaff = useIsStaff();
-  const { data: user } = useSession();
+  const auth = useOptionalAuth();
+  const { data: queryUser } = useSession();
+  const user = auth?.user ?? queryUser ?? null;
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user?.id,
@@ -150,7 +153,9 @@ export function SiteNav() {
     const el = refs.current[active];
     if (el) {
       setPill({ left: el.offsetLeft, width: el.offsetWidth });
-      el.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+      }
     }
   }, [active, tabs.length]);
 

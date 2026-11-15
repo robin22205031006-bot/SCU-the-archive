@@ -13,11 +13,13 @@ import { useIsStaff } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
+const EMPTY_SERIES: never[] = [];
+
 /** Staff: set release and story-chronology order; the active one drives every Journey timeline. */
 export function SeriesOrderEditor() {
   const isStaff = useIsStaff();
   const qc = useQueryClient();
-  const { data: series = [] } = useQuery(seriesQuery);
+  const { data: series = EMPTY_SERIES } = useQuery(seriesQuery);
   const { data: saved } = useSeriesOrders();
   const [draft, setDraft] = useState<Required<SeriesOrders>>({
     release: [],

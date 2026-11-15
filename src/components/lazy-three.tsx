@@ -25,7 +25,7 @@ export function GlbModelViewer(p: ComponentProps<typeof GlbLazy>) {
 }
 export function NexusFxLayer(p: ComponentProps<typeof FxLazy>) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<>{p.children}</>}>
       <FxLazy {...p} />
     </Suspense>
   );

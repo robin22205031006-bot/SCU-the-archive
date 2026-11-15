@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { mergeCharacterCards } from "../lib/character-card-merge";
 
 export const scuCache = {

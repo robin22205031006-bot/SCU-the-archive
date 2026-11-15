@@ -126,7 +126,7 @@ function AbilitiesTabs() {
           ))}
         </div>
       </div>
-      <MotionPresence mode="wait">
+      <MotionPresence initial={false}>
         <MotionPage key={tab}>
           {tab === "fx" ? (
             <AbilityFxPanel />

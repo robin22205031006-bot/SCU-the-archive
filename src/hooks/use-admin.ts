@@ -7,7 +7,7 @@ const SESSION_TIMEOUT_MS = 5_000;
 
 function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | "__timeout__"> {
   return Promise.race([
-    p,
+    Promise.resolve(p),
     new Promise<"__timeout__">((r) => setTimeout(() => r("__timeout__"), ms)),
   ]);
 }
@@ -16,11 +16,27 @@ export function useSession() {
   return useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      // Never let a slow Supabase round-trip pin the app in a loading state:
-      // on timeout we resolve with no session and let RLS/public UI render.
-      const res = await withTimeout(supabase.auth.getUser(), SESSION_TIMEOUT_MS);
-      if (res === "__timeout__") return null;
-      return res.data.user ?? null;
+      // Never let a slow or failing Supabase round-trip pin the app or throw an unhandled error.
+      try {
+        const res = await withTimeout(supabase.auth.getUser(), SESSION_TIMEOUT_MS);
+        if (res !== "__timeout__") {
+          if (!res.error) return res.data.user ?? null;
+          const isAuthFailure =
+            res.error.status === 401 ||
+            res.error.status === 403 ||
+            /invalid|expired|jwt|session/i.test(res.error.message);
+          if (isAuthFailure) return null;
+        }
+        if (typeof supabase.auth.getSession === "function") {
+          const fallback = await withTimeout(supabase.auth.getSession(), 2_000);
+          if (fallback !== "__timeout__" && !fallback.error) {
+            return fallback.data.session?.user ?? null;
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
     },
     staleTime: 60_000,
   });

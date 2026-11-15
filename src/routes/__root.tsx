@@ -21,19 +21,17 @@ import { ScrollProgress } from "@/components/scroll-progress";
 import { AppearanceProvider } from "@/hooks/use-appearance";
 import { TypographyProvider } from "@/hooks/use-typography";
 import { UiModeProvider, useUiMode } from "@/hooks/use-ui-mode";
+import { AuthProvider } from "@/context/AuthContext";
 import { UIStateProvider } from "@/context/UIStateContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AppVersionChecker } from "@/components/AppVersionChecker";
-import { supabase } from "@/integrations/supabase/client";
-import { syncSessionCache } from "@/lib/session-cache";
 import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
 import { usePreloadUIFeedback } from "@/hooks/use-ui-feedback";
 import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
-import { playWelcome } from "@/lib/scu-audio";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NexusShell } from "@/components/nexus-shell";
 import { MangaShell } from "@/components/manga-shell";
-import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { AmbientStudioParticles } from "@/components/ambient-studio-particles";
 import { AnimeActionOverlay } from "@/components/anime-action-overlay";
@@ -225,19 +223,9 @@ function RootContent({ offline }: { offline: boolean }) {
             <Outlet />
           </div>
         ) : (
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={pathname}
-              data-classic-page={pathname.slice(1) || "home"}
-              variants={spec.pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="relative"
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <div key={pathname} data-classic-page={pathname.slice(1) || "home"} className="relative">
+            <Outlet />
+          </div>
         )}
       </div>
     </MotionConfig>
@@ -277,73 +265,27 @@ function RootComponent() {
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, [queryClient, router]);
-  useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (
-        event !== "INITIAL_SESSION" &&
-        event !== "SIGNED_IN" &&
-        event !== "SIGNED_OUT" &&
-        event !== "USER_UPDATED" &&
-        event !== "TOKEN_REFRESHED"
-      )
-        return;
-      const identityChanged = syncSessionCache(
-        queryClient,
-        session?.user ?? null,
-        event === "USER_UPDATED",
-      );
-      if (event === "SIGNED_OUT") {
-        // Strict sign-out: purge persisted offline cache so re-entry requires online auth.
-        try {
-          localStorage.removeItem("scu-rq-cache-v2");
-        } catch {
-          /* storage unavailable */
-        }
-      }
-      if (identityChanged)
-        queueMicrotask(() => {
-          void router.invalidate();
-          if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
-        });
-      if (event === "SIGNED_IN" && session) {
-        setTimeout(() => playWelcome(), 400);
-        const key = `scu-logged-${session.user.id}-${new Date().toDateString()}`;
-        try {
-          if (!sessionStorage.getItem(key)) {
-            sessionStorage.setItem(key, "1");
-            setTimeout(() => {
-              void supabase
-                .from("activity_log")
-                .insert({ user_id: session.user.id, action: "Signed in" });
-            }, 0);
-          }
-        } catch {
-          /* Logging must not block sign-in when storage is unavailable. */
-        }
-      }
-    });
-    return () => data.subscription.unsubscribe();
-  }, [router, queryClient]);
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <AppearanceProvider>
-          <TypographyProvider>
-            <UiModeProvider>
-              <ThemeProvider>
-                <UIStateProvider applyAttributesToHtml={false}>
-                  <ErrorBoundary>
-                    <RootContent offline={offline} />
-                    <AppVersionChecker />
-                  </ErrorBoundary>
-                  <Toaster />
-                </UIStateProvider>
-              </ThemeProvider>
-            </UiModeProvider>
-          </TypographyProvider>
-        </AppearanceProvider>
+        <AuthProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <AppearanceProvider>
+            <TypographyProvider>
+              <UiModeProvider>
+                <ThemeProvider>
+                  <UIStateProvider applyAttributesToHtml={false}>
+                    <ErrorBoundary>
+                      <RootContent offline={offline} />
+                      <AppVersionChecker />
+                    </ErrorBoundary>
+                    <Toaster />
+                  </UIStateProvider>
+                </ThemeProvider>
+              </UiModeProvider>
+            </TypographyProvider>
+          </AppearanceProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

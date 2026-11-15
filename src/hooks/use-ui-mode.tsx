@@ -289,23 +289,29 @@ export function applyUiModeCss(
   // 4. For Manga non-ink genre themes, clear manga-ink inline palette/font/border/radius overrides
   //    so the CSS-based [data-genre-theme="..."] selectors in src/styles.css control colors, patterns & borders.
   if (activeGenre) {
-    root.dataset["genreTheme"] = activeGenre;
+    if (root.dataset["genreTheme"] !== activeGenre) {
+      root.dataset["genreTheme"] = activeGenre;
+    }
     if (activeGenre !== "manga-ink") {
       for (const prop of MANAGED_MODE_CSS_PROPS) {
         if (prop === "--ui-mode" || prop === "--ui-transition") continue;
         root.style.removeProperty(prop);
       }
     }
-  } else {
+  } else if ("genreTheme" in root.dataset) {
     delete root.dataset["genreTheme"];
   }
 
   // 5. Sync root data attributes used by CSS selectors across the app.
-  root.dataset["uiMode"] = mode;
-  root.dataset["primarySystem"] = mode;
+  if (root.dataset["uiMode"] !== mode) {
+    root.dataset["uiMode"] = mode;
+  }
+  if (root.dataset["primarySystem"] !== mode) {
+    root.dataset["primarySystem"] = mode;
+  }
   if (mode === "classic") {
-    delete root.dataset["ui"];
-  } else {
+    if ("ui" in root.dataset) delete root.dataset["ui"];
+  } else if (root.dataset["ui"] !== mode) {
     root.dataset["ui"] = mode;
   }
 
@@ -329,8 +335,11 @@ export function applyUiModeCss(
       };
       sub = genreMap[activeGenre] ?? "manga-ink";
     }
-    root.dataset["mangaSubtheme"] = sub || "manga-ink";
-  } else {
+    const nextSub = sub || "manga-ink";
+    if (root.dataset["mangaSubtheme"] !== nextSub) {
+      root.dataset["mangaSubtheme"] = nextSub;
+    }
+  } else if ("mangaSubtheme" in root.dataset) {
     delete root.dataset["mangaSubtheme"];
   }
 }
@@ -357,7 +366,7 @@ export function UiModeProvider({
   children: ReactNode;
   initialMode?: VisualUiMode;
 }) {
-  const { theme, dark, loaded: appearanceLoaded } = useAppearance();
+  const { theme, dark } = useAppearance();
   const { settings } = useTypography();
   const externalStyle = useUiStyle();
   const storedGenre = useStoredGenreTheme();
@@ -497,7 +506,7 @@ export function UiModeProvider({
       window.removeEventListener("scu:theme-applied", applyCurrentMode);
       window.removeEventListener("scu:genre-theme-change", applyCurrentMode);
     };
-  }, [applyCurrentMode, appearanceLoaded]);
+  }, [applyCurrentMode]);
 
   useEffect(() => {
     return () => {

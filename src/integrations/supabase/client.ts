@@ -2,7 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { brokeredPreviewStorage } from "./previewAuthStorage";
-import { ARCHIVE_BACKEND } from "../../../archive-backend";
+import { resolveArchiveBackend } from "../../../archive-backend";
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
@@ -24,8 +24,30 @@ function serverSupabaseUrl(publicUrl: string, supabaseKey: string): string | und
   return serverUrl;
 }
 
-const DEFAULT_SUPABASE_URL = ARCHIVE_BACKEND.url;
-const DEFAULT_SUPABASE_KEY = ARCHIVE_BACKEND.key;
+export function getSupabaseConfig() {
+  const procEnv = typeof process !== "undefined" ? process.env : undefined;
+  const metaEnv =
+    typeof import.meta !== "undefined" && import.meta.env
+      ? (import.meta.env as Record<string, string | undefined>)
+      : undefined;
+
+  return resolveArchiveBackend({
+    VITE_SUPABASE_URL: metaEnv?.["VITE_SUPABASE_URL"] || procEnv?.["SUPABASE_URL"],
+    VITE_SUPABASE_PUBLISHABLE_KEY:
+      metaEnv?.["VITE_SUPABASE_PUBLISHABLE_KEY"] || procEnv?.["SUPABASE_PUBLISHABLE_KEY"],
+    VITE_SUPABASE_PROJECT_ID:
+      metaEnv?.["VITE_SUPABASE_PROJECT_ID"] || procEnv?.["VITE_SUPABASE_PROJECT_ID"],
+  });
+}
+
+export function hasSupabaseConfig(): boolean {
+  const procEnv = typeof process !== "undefined" ? process.env : undefined;
+  const metaEnv =
+    typeof import.meta !== "undefined" && import.meta.env
+      ? (import.meta.env as Record<string, string | undefined>)
+      : undefined;
+  return Boolean(metaEnv?.["VITE_SUPABASE_URL"] || procEnv?.["SUPABASE_URL"]);
+}
 
 let _prefersProxy = false;
 
@@ -90,25 +112,8 @@ function createSupabaseFetch(supabaseUrl: string, supabaseKey: string): typeof f
   };
 }
 
-function sanitizeUrl(raw?: string): string {
-  if (!raw || raw.includes("placeholder.supabase.co")) return DEFAULT_SUPABASE_URL;
-  return raw.replace(/\/+$/, "");
-}
-
-function sanitizeKey(raw?: string): string {
-  if (!raw || raw.includes("placeholder")) return DEFAULT_SUPABASE_KEY;
-  return raw;
-}
-
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = sanitizeUrl(
-    import.meta.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"],
-  );
-  const SUPABASE_PUBLISHABLE_KEY = sanitizeKey(
-    import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || process.env["SUPABASE_PUBLISHABLE_KEY"],
-  );
+  const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = getSupabaseConfig();
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {

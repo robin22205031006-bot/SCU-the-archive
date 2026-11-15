@@ -102,7 +102,7 @@ function Reader() {
   }, [entity, notes, linked]);
 
   const scrollTo = (id: string) =>
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById(id)?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 
   if (isLoading)
     return (

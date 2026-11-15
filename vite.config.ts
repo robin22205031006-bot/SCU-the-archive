@@ -80,6 +80,9 @@ export default defineConfig({
       },
     },
     plugins: [supabaseProxyPlugin(url)],
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(url),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(key),

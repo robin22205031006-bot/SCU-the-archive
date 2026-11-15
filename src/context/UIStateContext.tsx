@@ -148,6 +148,8 @@ export function UIStateProvider({
   applyAttributesToHtml?: boolean;
 }) {
   const parentUiMode = useOptionalUiMode();
+  const hasParentUiMode = Boolean(parentUiMode);
+  const parentSetMode = parentUiMode?.setMode;
   const [localMode, setLocalModeState] = useState<UIMode>(() =>
     readInitialUIMode(initialMode, parentUiMode?.mode),
   );
@@ -155,13 +157,21 @@ export function UIStateProvider({
   const [hapticIntensity, setHapticIntensityState] = useState<HapticIntensity>(() =>
     readInitialHapticIntensity(initialHapticIntensity),
   );
-  const [navOpen, setNavOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState(initialNav);
+  const [navOpen, setNavOpenState] = useState(false);
+  const [activeNav, setActiveNavState] = useState(initialNav);
   const currentNavMode = useNavMode();
+
+  const setNavOpen = useCallback((open: boolean) => {
+    setNavOpenState((prev) => (prev === open ? prev : open));
+  }, []);
+
+  const setActiveNav = useCallback((path: string) => {
+    setActiveNavState((prev) => (prev === path ? prev : path));
+  }, []);
 
   const setHapticIntensity = useCallback((next: HapticIntensity) => {
     const resolved = resolveHapticIntensity(next);
-    setHapticIntensityState(resolved);
+    setHapticIntensityState((prev) => (prev === resolved ? prev : resolved));
     try {
       localStorage.setItem(HAPTIC_INTENSITY_STORAGE_KEY, resolved);
     } catch {
@@ -175,11 +185,11 @@ export function UIStateProvider({
   const setMode = useCallback(
     (next: UIMode) => {
       const resolved = resolveUIMode(next);
-      if (parentUiMode) {
-        parentUiMode.setMode(resolved);
+      if (parentSetMode) {
+        parentSetMode(resolved);
         return;
       }
-      setLocalModeState(resolved);
+      setLocalModeState((prev) => (prev === resolved ? prev : resolved));
 
       try {
         localStorage.setItem(UI_STATE_STORAGE_KEY, resolved);
@@ -195,7 +205,7 @@ export function UIStateProvider({
         window.dispatchEvent(new CustomEvent("scu:ui-mode-change", { detail: resolved }));
       }
     },
-    [parentUiMode],
+    [parentSetMode],
   );
 
   const cycleMode = useCallback(() => {
@@ -206,7 +216,7 @@ export function UIStateProvider({
   }, [mode, setMode]);
 
   const toggleNav = useCallback(() => {
-    setNavOpen((prev) => !prev);
+    setNavOpenState((prev) => !prev);
   }, []);
 
   // Sync haptic intensity across tabs / custom events
@@ -214,12 +224,14 @@ export function UIStateProvider({
     const onHapticEvent = (e: Event) => {
       const next = (e as CustomEvent<HapticIntensity>).detail;
       if (next) {
-        setHapticIntensityState((prev) => (prev === next ? prev : resolveHapticIntensity(next)));
+        const resolved = resolveHapticIntensity(next);
+        setHapticIntensityState((prev) => (prev === resolved ? prev : resolved));
       }
     };
     const onStorage = (e: StorageEvent) => {
       if (e.key === HAPTIC_INTENSITY_STORAGE_KEY && e.newValue) {
-        setHapticIntensityState(resolveHapticIntensity(e.newValue));
+        const resolved = resolveHapticIntensity(e.newValue);
+        setHapticIntensityState((prev) => (prev === resolved ? prev : resolved));
       }
     };
     window.addEventListener("scu:haptic-intensity-change", onHapticEvent);
@@ -232,11 +244,12 @@ export function UIStateProvider({
 
   // Sync standalone provider with external setUiStyle / mode events / cross-tab storage changes
   useEffect(() => {
-    if (parentUiMode) return;
+    if (hasParentUiMode) return;
     const onModeEvent = (e: Event) => {
       const next = (e as CustomEvent<UIMode>).detail;
       if (next) {
-        setLocalModeState((prev) => (prev === next ? prev : resolveUIMode(next)));
+        const resolved = resolveUIMode(next);
+        setLocalModeState((prev) => (prev === resolved ? prev : resolved));
       }
     };
     const onStyleEvent = (e: Event) => {
@@ -244,18 +257,20 @@ export function UIStateProvider({
       if (!next) return;
       setLocalModeState((prev) => {
         if (next === "classic" && (prev === "manga" || prev === "classic")) return prev;
-        return resolveUIMode(next);
+        const resolved = resolveUIMode(next);
+        return prev === resolved ? prev : resolved;
       });
     };
     const onStorage = (e: StorageEvent) => {
       if (e.key === UI_STATE_STORAGE_KEY && e.newValue) {
-        setLocalModeState(resolveUIMode(e.newValue));
+        const resolved = resolveUIMode(e.newValue);
+        setLocalModeState((prev) => (prev === resolved ? prev : resolved));
       } else if (e.key === "scu-ui-style" && e.newValue) {
-        setLocalModeState((prev) =>
-          e.newValue === "classic" && (prev === "manga" || prev === "classic")
-            ? prev
-            : resolveUIMode(e.newValue),
-        );
+        setLocalModeState((prev) => {
+          if (e.newValue === "classic" && (prev === "manga" || prev === "classic")) return prev;
+          const resolved = resolveUIMode(e.newValue);
+          return prev === resolved ? prev : resolved;
+        });
       }
     };
     window.addEventListener("scu:ui-mode-change", onModeEvent);
@@ -266,7 +281,7 @@ export function UIStateProvider({
       window.removeEventListener("scu:ui-style-change", onStyleEvent);
       window.removeEventListener("storage", onStorage);
     };
-  }, [parentUiMode]);
+  }, [hasParentUiMode]);
 
   useEffect(() => {
     if (!applyAttributesToHtml || typeof document === "undefined") return;
@@ -297,8 +312,10 @@ export function UIStateProvider({
       setMode,
       cycleMode,
       navOpen,
+      setNavOpen,
       toggleNav,
       activeNav,
+      setActiveNav,
       currentNavMode,
       hapticIntensity,
       setHapticIntensity,

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { BookOpen, Compass, Sparkles } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { GenreThemeId } from "@/lib/genre-themes";
 import { MANGA_SCALE } from "@/lib/manga-scale";
 import { abilityDef } from "@/lib/abilities";
@@ -52,6 +52,7 @@ export interface FantasyFullDossierProps {
 }
 
 const SECTOR_DEGREES = ["306°", "342°", "018°", "054°"] as const;
+const EMPTY_ABILITIES: AstrolabeAbilityNode[] = [];
 
 export function FantasyFullDossier({
   activeGenre,
@@ -76,7 +77,7 @@ export function FantasyFullDossier({
   abilityMedallionsRightSlot,
   tabContentSlot,
   actionsSlot,
-  abilities = [],
+  abilities = EMPTY_ABILITIES,
   initialViewMode = "grimoire",
   className = "",
 }: FantasyFullDossierProps) {
@@ -91,12 +92,14 @@ export function FantasyFullDossier({
     ? themeCtx.primarySystem === "manga" && themeCtx.mangaSubTheme === "fantasy"
     : isMangaMode && activeGenre === "fantasy";
 
+  const abilitiesKey = abilities.map((a) => a.name).join("\0");
   useEffect(() => {
+    const names = abilitiesKey ? abilitiesKey.split("\0") : [];
     setSelectedAbilityKey((prev) => {
-      if (prev && abilities.some((a) => a.name === prev)) return prev;
-      return abilities[0]?.name ?? "";
+      if (prev && names.includes(prev)) return prev;
+      return names[0] ?? "";
     });
-  }, [abilities]);
+  }, [abilitiesKey]);
 
   const activeIdx = Math.max(
     0,
@@ -266,240 +269,235 @@ export function FantasyFullDossier({
       />
 
       {/* Main Fantasy Dossier Stage */}
-      <AnimatePresence mode="wait" initial={false}>
-        {viewMode === "astrolabe" ? (
-          <motion.section
-            key="astrolabe"
-            initial={animOn ? { opacity: 0, scale: 0.98 } : false}
-            animate={{ opacity: 1, scale: 1 }}
-            {...(animOn ? { exit: { opacity: 0, scale: 0.98 } } : {})}
-            transition={animOn ? spec.transition : { duration: 0 }}
-            className={`manga-panel ${MANGA_SCALE.banner} relative overflow-hidden rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] shadow-[0_18px_42px_rgba(0,0,0,0.55)]`}
-          >
-            <GenreCardFrame theme={activeGenre} />
-            <BotanicalCanopyOverlay variant="dossier" />
-            <IvyDecoration variant="card" />
-            <div className="relative mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#c5a869]/35 pb-3 pt-2">
-              <div>
-                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.26em] text-[#5ce1b8]">
-                  {resolvedKicker}
-                </p>
-                <h1
-                  className={`manga-display-title ${MANGA_SCALE.heroTitle} mt-0.5 uppercase text-[#f5ebe6]`}
-                >
-                  {name}
-                </h1>
+      {viewMode === "astrolabe" ? (
+        <motion.section
+          key="astrolabe"
+          initial={animOn ? { opacity: 0, scale: 0.98 } : false}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={animOn ? spec.transition : { duration: 0 }}
+          className={`manga-panel ${MANGA_SCALE.banner} relative overflow-hidden rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] shadow-[0_18px_42px_rgba(0,0,0,0.55)]`}
+        >
+          <GenreCardFrame theme={activeGenre} />
+          <BotanicalCanopyOverlay variant="dossier" />
+          <IvyDecoration variant="card" />
+          <div className="relative mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#c5a869]/35 pb-3 pt-2">
+            <div>
+              <p className="font-mono text-[9px] font-bold uppercase tracking-[0.26em] text-[#5ce1b8]">
+                {resolvedKicker}
+              </p>
+              <h1
+                className={`manga-display-title ${MANGA_SCALE.heroTitle} mt-0.5 uppercase text-[#f5ebe6]`}
+              >
+                {name}
+              </h1>
+            </div>
+            {actionsSlot && <div className="flex flex-wrap items-center gap-2">{actionsSlot}</div>}
+          </div>
+
+          <AstralClockworkAstrolabe
+            name={name}
+            subtitle={resolvedKicker}
+            seriesTitle={seriesTitle}
+            status={status}
+            tabs={tabs}
+            activeTab={activeTab}
+            onSelectTab={onSelectTab}
+            portraitSlot={resolvedPortrait}
+            badgesSlot={badgesSlot}
+            abilities={abilities}
+            variant="fantasy"
+          />
+
+          {(abilities.length > 0 ||
+            abilityMedallionsLeftSlot ||
+            abilityMedallionsRightSlot ||
+            radarSlot ||
+            seasonSlot) && (
+            <div className="relative mt-4 grid gap-4 lg:grid-cols-[1fr_295px]">
+              <div className="flex flex-col gap-3">
+                {renderAbilityShowcase()}
+                {(abilityMedallionsLeftSlot || abilityMedallionsRightSlot || seasonSlot) && (
+                  <div className="flex flex-col gap-3 rounded border border-[#c5a869]/45 bg-[#111915]/75 p-3">
+                    {(abilityMedallionsLeftSlot || abilityMedallionsRightSlot) && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {abilityMedallionsLeftSlot}
+                        {abilityMedallionsRightSlot}
+                      </div>
+                    )}
+                    {seasonSlot}
+                  </div>
+                )}
               </div>
-              {actionsSlot && (
-                <div className="flex flex-wrap items-center gap-2">{actionsSlot}</div>
+              {radarSlot && (
+                <div className="parchment-dot-grid h-fit rounded border border-[#c5a869]/80 p-2.5 text-[#15221b]">
+                  {radarSlot}
+                </div>
               )}
             </div>
+          )}
 
-            <AstralClockworkAstrolabe
-              name={name}
-              subtitle={resolvedKicker}
-              seriesTitle={seriesTitle}
-              status={status}
-              tabs={tabs}
-              activeTab={activeTab}
-              onSelectTab={onSelectTab}
-              portraitSlot={resolvedPortrait}
-              badgesSlot={badgesSlot}
-              abilities={abilities}
-              variant="fantasy"
-            />
+          <GenreDivider theme={activeGenre} label={metaJpLabel} />
+          <div className="parchment-dot-grid relative rounded border border-[#c5a869]/70 p-2 text-[#15221b]">
+            {resolvedProfile}
+          </div>
+        </motion.section>
+      ) : (
+        <motion.section
+          key="grimoire"
+          initial={animOn ? { opacity: 0, scale: 0.98 } : false}
+          animate={{ opacity: 1, scale: 1 }}
+          {...(animOn ? { exit: { opacity: 0, scale: 0.98 } } : {})}
+          transition={animOn ? spec.transition : { duration: 0 }}
+          className={`manga-panel ${MANGA_SCALE.banner} relative overflow-hidden rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] shadow-[0_18px_42px_rgba(0,0,0,0.55)]`}
+        >
+          <GenreCardFrame theme={activeGenre} />
+          <BotanicalCanopyOverlay variant="dossier" />
+          <IvyDecoration variant="card" />
+          <div className="relative grid items-center gap-5 pt-2 lg:grid-cols-[220px_minmax(0,1fr)_305px]">
+            {/* Left Folio Chapter Tabs + Mini Astrolabe Calibrator */}
+            <div
+              role="tablist"
+              aria-label="Dossier tabs"
+              className="flex flex-col gap-2 border-[#c5a869]/35 lg:border-r lg:pr-4"
+            >
+              {tabs.map((t, idx) => {
+                const active = activeTab === t.id;
+                const deg = SECTOR_DEGREES[idx % SECTOR_DEGREES.length] ?? "306°";
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={(ev) => onSelectTab?.(t.id, ev)}
+                    className={`group flex min-h-[44px] items-center justify-between gap-2 rounded border px-2.5 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5ce1b8] ${
+                      active
+                        ? "fantasy-discover-btn border-[#5ce1b8] text-[#f5ebe6]"
+                        : "border-[#c5a869]/35 bg-[#111915]/80 text-[#e6dcc5]/85 hover:border-[#c5a869] hover:text-[#f5ebe6]"
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        className={`grid h-7 w-7 shrink-0 rotate-45 place-items-center border text-[10px] font-bold transition ${
+                          active
+                            ? "border-[#5ce1b8] bg-[#15221b] text-[#5ce1b8]"
+                            : "border-[#c5a869]/60 bg-[#1a241e] text-[#c5a869]"
+                        }`}
+                      >
+                        <span className="-rotate-45 font-mono tabular-nums">0{idx + 1}</span>
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-display text-xs font-bold uppercase tracking-wider">
+                          {t.short}
+                        </span>
+                        <span className="block font-mono text-[9px] opacity-80">{t.jp}</span>
+                      </span>
+                    </span>
+                    <span className="font-mono text-[9px] tabular-nums text-[#c5a869]/80">
+                      {deg}
+                    </span>
+                  </button>
+                );
+              })}
 
-            {(abilities.length > 0 ||
-              abilityMedallionsLeftSlot ||
-              abilityMedallionsRightSlot ||
-              radarSlot ||
-              seasonSlot) && (
-              <div className="relative mt-4 grid gap-4 lg:grid-cols-[1fr_295px]">
-                <div className="flex flex-col gap-3">
-                  {renderAbilityShowcase()}
-                  {(abilityMedallionsLeftSlot || abilityMedallionsRightSlot || seasonSlot) && (
-                    <div className="flex flex-col gap-3 rounded border border-[#c5a869]/45 bg-[#111915]/75 p-3">
-                      {(abilityMedallionsLeftSlot || abilityMedallionsRightSlot) && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          {abilityMedallionsLeftSlot}
-                          {abilityMedallionsRightSlot}
-                        </div>
-                      )}
-                      {seasonSlot}
-                    </div>
-                  )}
-                </div>
-                {radarSlot && (
-                  <div className="parchment-dot-grid h-fit rounded border border-[#c5a869]/80 p-2.5 text-[#15221b]">
-                    {radarSlot}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <GenreDivider theme={activeGenre} label={metaJpLabel} />
-            <div className="parchment-dot-grid relative rounded border border-[#c5a869]/70 p-2 text-[#15221b]">
-              {resolvedProfile}
-            </div>
-          </motion.section>
-        ) : (
-          <motion.section
-            key="grimoire"
-            initial={animOn ? { opacity: 0, scale: 0.98 } : false}
-            animate={{ opacity: 1, scale: 1 }}
-            {...(animOn ? { exit: { opacity: 0, scale: 0.98 } } : {})}
-            transition={animOn ? spec.transition : { duration: 0 }}
-            className={`manga-panel ${MANGA_SCALE.banner} relative overflow-hidden rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] shadow-[0_18px_42px_rgba(0,0,0,0.55)]`}
-          >
-            <GenreCardFrame theme={activeGenre} />
-            <BotanicalCanopyOverlay variant="dossier" />
-            <IvyDecoration variant="card" />
-            <div className="relative grid items-center gap-5 pt-2 lg:grid-cols-[220px_minmax(0,1fr)_305px]">
-              {/* Left Folio Chapter Tabs + Mini Astrolabe Calibrator */}
-              <div
-                role="tablist"
-                aria-label="Dossier tabs"
-                className="flex flex-col gap-2 border-[#c5a869]/35 lg:border-r lg:pr-4"
+              <button
+                type="button"
+                onClick={() => setViewMode("astrolabe")}
+                className="mt-1 inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded border border-[#c5a869]/55 bg-[#111915]/90 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#5ce1b8] transition hover:border-[#5ce1b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5ce1b8]"
               >
-                {tabs.map((t, idx) => {
-                  const active = activeTab === t.id;
-                  const deg = SECTOR_DEGREES[idx % SECTOR_DEGREES.length] ?? "306°";
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      onClick={(ev) => onSelectTab?.(t.id, ev)}
-                      className={`group flex min-h-[44px] items-center justify-between gap-2 rounded border px-2.5 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5ce1b8] ${
-                        active
-                          ? "fantasy-discover-btn border-[#5ce1b8] text-[#f5ebe6]"
-                          : "border-[#c5a869]/35 bg-[#111915]/80 text-[#e6dcc5]/85 hover:border-[#c5a869] hover:text-[#f5ebe6]"
-                      }`}
-                    >
-                      <span className="flex min-w-0 items-center gap-2.5">
-                        <span
-                          className={`grid h-7 w-7 shrink-0 rotate-45 place-items-center border text-[10px] font-bold transition ${
-                            active
-                              ? "border-[#5ce1b8] bg-[#15221b] text-[#5ce1b8]"
-                              : "border-[#c5a869]/60 bg-[#1a241e] text-[#c5a869]"
-                          }`}
-                        >
-                          <span className="-rotate-45 font-mono tabular-nums">0{idx + 1}</span>
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-display text-xs font-bold uppercase tracking-wider">
-                            {t.short}
-                          </span>
-                          <span className="block font-mono text-[9px] opacity-80">{t.jp}</span>
-                        </span>
-                      </span>
-                      <span className="font-mono text-[9px] tabular-nums text-[#c5a869]/80">
-                        {deg}
-                      </span>
-                    </button>
-                  );
-                })}
+                <Compass className="h-3.5 w-3.5 text-[#c5a869]" aria-hidden="true" />
+                <span>Open Astrolabe Dial</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setViewMode("astrolabe")}
-                  className="mt-1 inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded border border-[#c5a869]/55 bg-[#111915]/90 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#5ce1b8] transition hover:border-[#5ce1b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5ce1b8]"
-                >
-                  <Compass className="h-3.5 w-3.5 text-[#c5a869]" aria-hidden="true" />
-                  <span>Open Astrolabe Dial</span>
-                </button>
+              {seasonSlot}
+            </div>
 
-                {seasonSlot}
-              </div>
-
-              {/* Center Sovereign Portrait with Celestial Astrolabe Reticle */}
-              <div className="relative flex flex-col items-center justify-center py-2 text-center">
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-2 rounded-full bg-[radial-gradient(circle,rgba(92,225,184,0.22)_0%,transparent_68%)]"
+            {/* Center Sovereign Portrait with Celestial Astrolabe Reticle */}
+            <div className="relative flex flex-col items-center justify-center py-2 text-center">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-2 rounded-full bg-[radial-gradient(circle,rgba(92,225,184,0.22)_0%,transparent_68%)]"
+              />
+              <svg
+                viewBox="0 0 240 240"
+                aria-hidden="true"
+                className={`pointer-events-none absolute h-[290px] w-[290px] opacity-40 ${
+                  animOn ? "astrolabe-ring-cw" : ""
+                }`}
+                fill="none"
+              >
+                <circle
+                  cx="120"
+                  cy="120"
+                  r="112"
+                  stroke="#c5a869"
+                  strokeWidth="0.9"
+                  strokeDasharray="4 4"
                 />
-                <svg
-                  viewBox="0 0 240 240"
-                  aria-hidden="true"
-                  className={`pointer-events-none absolute h-[290px] w-[290px] opacity-40 ${
-                    animOn ? "astrolabe-ring-cw" : ""
-                  }`}
-                  fill="none"
-                >
-                  <circle
-                    cx="120"
-                    cy="120"
-                    r="112"
-                    stroke="#c5a869"
-                    strokeWidth="0.9"
-                    strokeDasharray="4 4"
-                  />
-                  <circle cx="120" cy="120" r="98" stroke="#5ce1b8" strokeWidth="0.7" />
-                  <polygon
-                    points="120,10 230,120 120,230 10,120"
-                    stroke="#c5a869"
-                    strokeOpacity="0.65"
-                    strokeWidth="0.8"
-                  />
-                </svg>
-                {badgesSlot && (
-                  <div className="relative mb-2 flex flex-wrap items-center justify-center gap-1.5">
-                    {badgesSlot}
-                  </div>
-                )}
-                <div className="relative w-full max-w-[280px]">{resolvedPortrait}</div>
-              </div>
-
-              {/* Right Illuminated Parchment & Alchemical Ability Ledger */}
-              <div className="flex flex-col gap-3">
-                <div className="parchment-dot-grid flex flex-col gap-3 rounded border border-[#c5a869]/85 p-3.5 text-[#15221b] shadow-inner">
-                  <div className="text-center lg:text-left">
-                    <p className="font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-[#2e5a52]">
-                      {resolvedKicker}
-                    </p>
-                    <h1
-                      className={`manga-display-title ${MANGA_SCALE.heroTitle} mt-0.5 uppercase text-[#15221b]`}
-                    >
-                      {name}
-                    </h1>
-                    <div className="mt-1.5 flex items-center justify-center gap-1.5 lg:justify-start">
-                      <span className="font-mono text-[9px] font-bold uppercase text-[#2e5a52]">
-                        RANK:
-                      </span>
-                      {[1, 2, 3, 4].map((pip) => (
-                        <span
-                          key={pip}
-                          className={`h-2 w-2 rotate-45 border ${
-                            pip <= tierPipCount
-                              ? "border-[#2e5a52] bg-[#5ce1b8] shadow-[0_0_6px_rgba(92,225,184,0.65)]"
-                              : "border-[#2e5a52]/40 bg-transparent"
-                          }`}
-                        />
-                      ))}
-                      <span className="ml-auto font-mono text-[9px] font-bold uppercase tabular-nums text-[#2e5a52]">
-                        {tierPipCount}/4
-                      </span>
-                    </div>
-                  </div>
-                  {abilityMedallionsLeftSlot}
-                  {abilityMedallionsRightSlot}
-                  {radarSlot}
-                  {actionsSlot && (
-                    <div className="border-t border-[#c5a869]/50 pt-2">{actionsSlot}</div>
-                  )}
+                <circle cx="120" cy="120" r="98" stroke="#5ce1b8" strokeWidth="0.7" />
+                <polygon
+                  points="120,10 230,120 120,230 10,120"
+                  stroke="#c5a869"
+                  strokeOpacity="0.65"
+                  strokeWidth="0.8"
+                />
+              </svg>
+              {badgesSlot && (
+                <div className="relative mb-2 flex flex-wrap items-center justify-center gap-1.5">
+                  {badgesSlot}
                 </div>
+              )}
+              <div className="relative w-full max-w-[280px]">{resolvedPortrait}</div>
+            </div>
 
-                {renderAbilityShowcase()}
+            {/* Right Illuminated Parchment & Alchemical Ability Ledger */}
+            <div className="flex flex-col gap-3">
+              <div className="parchment-dot-grid flex flex-col gap-3 rounded border border-[#c5a869]/85 p-3.5 text-[#15221b] shadow-inner">
+                <div className="text-center lg:text-left">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-[0.24em] text-[#2e5a52]">
+                    {resolvedKicker}
+                  </p>
+                  <h1
+                    className={`manga-display-title ${MANGA_SCALE.heroTitle} mt-0.5 uppercase text-[#15221b]`}
+                  >
+                    {name}
+                  </h1>
+                  <div className="mt-1.5 flex items-center justify-center gap-1.5 lg:justify-start">
+                    <span className="font-mono text-[9px] font-bold uppercase text-[#2e5a52]">
+                      RANK:
+                    </span>
+                    {[1, 2, 3, 4].map((pip) => (
+                      <span
+                        key={pip}
+                        className={`h-2 w-2 rotate-45 border ${
+                          pip <= tierPipCount
+                            ? "border-[#2e5a52] bg-[#5ce1b8] shadow-[0_0_6px_rgba(92,225,184,0.65)]"
+                            : "border-[#2e5a52]/40 bg-transparent"
+                        }`}
+                      />
+                    ))}
+                    <span className="ml-auto font-mono text-[9px] font-bold uppercase tabular-nums text-[#2e5a52]">
+                      {tierPipCount}/4
+                    </span>
+                  </div>
+                </div>
+                {abilityMedallionsLeftSlot}
+                {abilityMedallionsRightSlot}
+                {radarSlot}
+                {actionsSlot && (
+                  <div className="border-t border-[#c5a869]/50 pt-2">{actionsSlot}</div>
+                )}
               </div>
+
+              {renderAbilityShowcase()}
             </div>
-            <GenreDivider theme={activeGenre} label={metaJpLabel} />
-            <div className="parchment-dot-grid relative rounded border border-[#c5a869]/70 p-2 text-[#15221b]">
-              {resolvedProfile}
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
+          </div>
+          <GenreDivider theme={activeGenre} label={metaJpLabel} />
+          <div className="parchment-dot-grid relative rounded border border-[#c5a869]/70 p-2 text-[#15221b]">
+            {resolvedProfile}
+          </div>
+        </motion.section>
+      )}
 
       {/* Lower Chronicle Content & Combat Matrix */}
       {(tabContentSlot || combatMatrixSlot) && (

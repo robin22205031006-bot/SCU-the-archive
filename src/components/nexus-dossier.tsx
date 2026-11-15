@@ -1,6 +1,6 @@
 import { JourneyLine } from "@/components/journey-line";
 import { seasonJourneyRows } from "@/lib/journey";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
@@ -99,9 +99,10 @@ export function NexusDossier({
   const baseBloodline =
     typeof stats["bloodline"] === "string" ? (stats["bloodline"] as string) : null;
   const realName = typeof stats["real_name"] === "string" ? (stats["real_name"] as string) : null;
-  const dossier = readDossier(e.stats);
+  const dossier = useMemo(() => readDossier(e.stats), [e.stats]);
+  const dossierMap = dossier;
   const seasonKey = season ? `${season.seriesId}:${season.n}` : null;
-  const sd: SeasonDossier = dossier[seasonKey ?? "all"] ?? {};
+  const sd: SeasonDossier = useMemo(() => dossier[seasonKey ?? "all"] ?? {}, [dossier, seasonKey]);
   const bloodline = sd.bloodline ?? baseBloodline;
   const status =
     sd.status ??
@@ -116,7 +117,7 @@ export function NexusDossier({
         .filter(
           (full) =>
             (memberships ?? []).some((m) => m.series_id === full.id) ||
-            Object.keys(dossier).some((key) => key.startsWith(`${full.id}:`)),
+            Object.keys(dossierMap).some((key) => key.startsWith(`${full.id}:`)),
         )
         .map((full) => {
           const names = full?.season_names ?? [];
@@ -128,7 +129,7 @@ export function NexusDossier({
             seasons: Array.from({ length: count }, (_, i) => names[i] || `Season ${i + 1}`),
           };
         }),
-    [memberships, allSeries, e.stats],
+    [memberships, allSeries, dossierMap],
   );
 
   // The editor can target any season of any series, so staff are not blocked by a missing link.
@@ -161,8 +162,10 @@ export function NexusDossier({
     return (links ?? []).map((l) => byId.get(l.group_id)).filter(Boolean) as Entity[];
   }, [links, groups]);
 
+  const allowedAbilityKeys = sd.abilityKeys;
   // Season-scoped abilities: rows for this series/season; whole-series rows apply to every season.
   const abilities = useMemo(() => {
+    void abilityVersion;
     const rows = charAbilities ?? [];
     const scoped = season
       ? rows.filter(
@@ -173,13 +176,13 @@ export function NexusDossier({
       : rows;
     const m = new Map<string, number>();
     scoped
-      .filter((r) => sd.abilityKeys === undefined || sd.abilityKeys.includes(r.ability_key))
+      .filter((r) => allowedAbilityKeys === undefined || allowedAbilityKeys.includes(r.ability_key))
       .forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
     if (!season) (e.abilities ?? []).forEach((a) => !m.has(a) && m.set(a, 1));
     return [...m.entries()]
       .map(([name, level]) => ({ name, level, def: abilityDef(name) }))
       .sort((a, b) => b.level - a.level);
-  }, [charAbilities, season, e.abilities, e.stats, abilityVersion]);
+  }, [charAbilities, season, e.abilities, allowedAbilityKeys, abilityVersion]);
 
   const core = abilities[0];
   const coreColor = core?.def.color ?? "var(--accent)";
@@ -813,13 +816,19 @@ function SeasonEditor({
 }) {
   useAbilityRegistryVersion();
   const key = seasonKey ?? "all";
-  const current = readDossier(entity.stats)[key] ?? {};
   const [form, setForm] = useState<SeasonDossier>({});
   const [ability, setAbility] = useState("");
   const [busy, setBusy] = useState(false);
-  const [loadedFor, setLoadedFor] = useState<string | null>(null);
-  if (open && loadedFor !== key) {
-    setLoadedFor(key);
+  const loadedForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open) {
+      loadedForRef.current = null;
+      return;
+    }
+    const targetKey = `${entity.id}:${key}`;
+    if (loadedForRef.current === targetKey) return;
+    loadedForRef.current = targetKey;
+    const current = readDossier(entity.stats)[key] ?? {};
     setAbility("");
     setForm({
       ...current,
@@ -827,8 +836,7 @@ function SeasonEditor({
         resolveNexusStats(entity.stats, seasonKey, null).map((s) => [s.key, s.value]),
       ),
     });
-  }
-  if (!open && loadedFor) setLoadedFor(null);
+  }, [open, key, seasonKey, entity.id, entity.stats]);
   const vals = ability ? (form.abilityStats?.[ability] ?? {}) : (form.stats ?? {});
   const setValue = (k: string, value: number) =>
     setForm((f) =>

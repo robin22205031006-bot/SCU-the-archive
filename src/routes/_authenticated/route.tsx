@@ -1,65 +1,106 @@
-import { useCallback, useEffect, useRef } from "react";
-import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
-import { MotionPage } from "@/components/app-motion";
-import { useAppMotion } from "@/hooks/use-app-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
+import {
+  createFileRoute,
+  isRedirect,
+  Navigate,
+  Outlet,
+  redirect,
+  useLocation,
+} from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useOptionalAuth } from "@/context/AuthContext";
+import { useSession } from "@/hooks/use-admin";
+import { hasSupabaseConfig, supabase } from "@/integrations/supabase/client";
 
 const AUTH_TIMEOUT_MS = 5_000;
 
 function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | "__timeout__"> {
   return Promise.race([
-    p,
+    Promise.resolve(p),
     new Promise<"__timeout__">((r) => setTimeout(() => r("__timeout__"), ms)),
   ]);
 }
 
+function AuthLoadingFallback({ message = "Checking your session…" }: { message?: string }) {
+  return (
+    <main
+      role="status"
+      aria-live="polite"
+      className="mx-auto flex min-h-[70dvh] w-full max-w-md flex-col items-center justify-center gap-3 px-5 py-16 text-center"
+    >
+      <Loader2 className="h-7 w-7 animate-spin text-accent" aria-hidden="true" />
+      <p className="text-sm font-medium text-muted-foreground">{message}</p>
+    </main>
+  );
+}
+
 function AuthenticatedLayout() {
-  // All React hooks called unconditionally at the very top before any conditional checks or returns
+  // Call all React hooks unconditionally at the top before any conditional returns.
   const location = useLocation();
-  const { isMinimal, motionActive } = useAppMotion();
-  const mountedRef = useRef(true);
-  const stablePathname = useCallback(() => location.pathname, [location.pathname]);
+  const auth = useOptionalAuth();
+  const sessionQuery = useSession();
+
+  const user = auth ? (auth.user ?? sessionQuery.data ?? null) : (sessionQuery.data ?? null);
+  const isLoading = auth ? auth.isLoading && !user : sessionQuery.isLoading && !user;
+  const backendConfigured = hasSupabaseConfig();
 
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    if (auth && !auth.isLoading && !auth.user && backendConfigured) {
+      void auth.refreshAuth();
+    }
+  }, [auth, backendConfigured, location.pathname]);
 
-  void stablePathname;
-  void isMinimal;
-  void motionActive;
+  if (isLoading) {
+    return <AuthLoadingFallback />;
+  }
 
-  return (
-    <MotionPage>
-      <Outlet />
-    </MotionPage>
-  );
+  if (backendConfigured && !user) {
+    return <Navigate to="/auth" search={{ next: location.pathname }} replace />;
+  }
+
+  return <Outlet />;
 }
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
+  pendingComponent: AuthLoadingFallback,
   beforeLoad: async ({ location }) => {
-    // In offline mode (no real Supabase), skip auth checks so the app renders
-    // instead of crashing. RLS still guards every query when a real backend exists.
-    const hasSupabase = !!(
-      import.meta.env["VITE_SUPABASE_URL"] ||
-      (typeof process !== "undefined" && process.env?.["SUPABASE_URL"])
-    );
-    if (!hasSupabase) return;
+    // In offline/unconfigured test mode without VITE_SUPABASE_URL/SUPABASE_URL,
+    // allow rendering while component-level guards still verify active mocks.
+    if (!hasSupabaseConfig()) return;
 
-    // Never hang navigation on a slow Supabase round-trip: on timeout we let the
-    // page render anyway — RLS still guards every query, and the session cache
-    // resolves the real user a moment later.
-    const auth = await withTimeout(supabase.auth.getUser(), AUTH_TIMEOUT_MS);
-    if (auth === "__timeout__") return;
-    const user = auth.data.user;
-    if (!user) throw redirect({ to: "/auth", search: { next: location.pathname } });
-    const ban = await withTimeout(supabase.rpc("is_banned", { _uid: user.id }), AUTH_TIMEOUT_MS);
-    if (ban !== "__timeout__" && ban.data) {
-      await supabase.auth.signOut();
-      throw redirect({ to: "/auth", search: { banned: "1" } });
+    try {
+      const auth = await withTimeout(supabase.auth.getUser(), AUTH_TIMEOUT_MS);
+      let user = auth !== "__timeout__" ? (auth.data?.user ?? null) : null;
+
+      if (auth === "__timeout__") {
+        const fallback =
+          typeof supabase.auth.getSession === "function"
+            ? await withTimeout(supabase.auth.getSession(), 2_000)
+            : "__timeout__";
+        if (fallback !== "__timeout__" && fallback.data?.session?.user) {
+          user = fallback.data.session.user;
+          return;
+        }
+      }
+
+      if (!user) {
+        throw redirect({ to: "/auth", search: { next: location.pathname } });
+      }
+
+      try {
+        const ban = await withTimeout(supabase.rpc("is_banned", { _uid: user.id }), AUTH_TIMEOUT_MS);
+        if (ban !== "__timeout__" && ban.data) {
+          await supabase.auth.signOut().catch(() => {});
+          throw redirect({ to: "/auth", search: { banned: "1" } });
+        }
+      } catch (banErr) {
+        if (isRedirect(banErr)) throw banErr;
+        // Transient RPC errors should not falsely lock out valid sessions.
+      }
+    } catch (err) {
+      if (isRedirect(err)) throw err;
+      throw redirect({ to: "/auth", search: { next: location.pathname } });
     }
   },
   component: AuthenticatedLayout,

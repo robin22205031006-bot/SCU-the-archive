@@ -37,6 +37,11 @@ function stat(e: Entity, k: string): string | null {
   return typeof v === "string" && v.trim() ? v : null;
 }
 
+const EMPTY_SERIES: never[] = [];
+const EMPTY_ENTITIES: Entity[] = [];
+const EMPTY_MEMBERSHIPS: never[] = [];
+const EMPTY_ABILITIES: never[] = [];
+
 /** Second interface: characters as a living constellation sphere with camera zoom. */
 export function NexusView({
   data: originalData,
@@ -55,13 +60,13 @@ export function NexusView({
   const seriesId = search.series ?? "";
   const seasonNumber = search.season ?? null;
   const [rosterOpen, setRosterOpen] = useState(false);
-  const { data: series = [] } = useQuery(seriesQuery);
-  const { data: groups = [] } = useQuery(
+  const { data: series = EMPTY_SERIES } = useQuery(seriesQuery);
+  const { data: groups = EMPTY_ENTITIES } = useQuery(
     entitiesQuery(["organization", "clan", "bloodline", "faction"]),
   );
   const seasonGroups = seriesId ? projectSeasonRoster(groups, seriesId, seasonNumber, []) : [];
-  const { data: memberships = [] } = useQuery(seriesCharactersQuery(seriesId));
-  const { data: abilityRows = [] } = useQuery({
+  const { data: memberships = EMPTY_MEMBERSHIPS } = useQuery(seriesCharactersQuery(seriesId));
+  const { data: abilityRows = EMPTY_ABILITIES } = useQuery({
     queryKey: ["nexus-series-abilities", seriesId],
     enabled: !!seriesId,
     queryFn: async () => {

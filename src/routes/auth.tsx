@@ -19,6 +19,7 @@ import {
   parseOAuthCallbackPayload,
 } from "@/integrations/lovable";
 import { useSession } from "@/hooks/use-admin";
+import { useOptionalAuth } from "@/context/AuthContext";
 import { syncSessionCache } from "@/lib/session-cache";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
@@ -93,13 +94,19 @@ function AuthPage() {
   const [magicBusy, setMagicBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [isPopupBridge, setIsPopupBridge] = useState(false);
+  const [formFeedback, setFormFeedback] = useState<{
+    type: "error" | "success";
+    message: string;
+  } | null>(null);
   const [oauthNotice, setOauthNotice] = useState<{
     message: string;
     missingSecret?: boolean | undefined;
     fallbackUrl?: string | undefined;
   } | null>(null);
 
-  const { data: signedInUser } = useSession();
+  const auth = useOptionalAuth();
+  const { data: queryUser } = useSession();
+  const signedInUser = auth?.user ?? queryUser ?? null;
 
   // Handle OAuth callbacks:
   // 1) If loaded inside an OAuth popup, forward tokens/code/errors back to the iframe opener and close.
@@ -163,11 +170,19 @@ function AuthPage() {
       }
 
       if (applied.signedIn) {
-        const { data: userData } = await supabase.auth.getUser();
-        syncSessionCache(queryClient, userData.user ?? null);
-        await queryClient.invalidateQueries({ queryKey: ["session"] });
-        const destination = readStoredOAuthDestination(defaultDestination);
-        window.location.assign(destination);
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          syncSessionCache(queryClient, userData.user ?? null);
+          await auth?.refreshAuth();
+          await queryClient.invalidateQueries({ queryKey: ["session"] });
+          const destination = readStoredOAuthDestination(defaultDestination);
+          window.location.assign(destination);
+        } catch {
+          const msg = "Signed in, but could not load your session. Please try refreshing.";
+          setOauthNotice({ message: msg });
+          setFormFeedback({ type: "error", message: msg });
+          toast.error(msg);
+        }
       }
     })();
 
@@ -210,6 +225,7 @@ function AuthPage() {
       return;
     }
     setGoogleBusy(true);
+    setFormFeedback(null);
     setOauthNotice(null);
     try {
       try {
@@ -234,6 +250,7 @@ function AuthPage() {
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
         syncSessionCache(queryClient, userData.user);
+        await auth?.refreshAuth();
         await queryClient.invalidateQueries({ queryKey: ["session"] });
         const destination = readStoredOAuthDestination(defaultDestination);
         window.location.assign(destination);
@@ -249,9 +266,12 @@ function AuthPage() {
 
   const sendMagicLink = async () => {
     if (magicBusy || busy) return;
+    setFormFeedback(null);
     const raw = (mode === "in" ? identifier : email).trim();
     if (!raw) {
-      toast.error("Enter your Gmail or email address first.");
+      const msg = "Enter your Gmail or email address first.";
+      setFormFeedback({ type: "error", message: msg });
+      toast.error(msg);
       return;
     }
     setMagicBusy(true);
@@ -262,7 +282,9 @@ function AuthPage() {
         targetEmail = (data as string | null) ?? "";
       }
       if (!targetEmail || !targetEmail.includes("@")) {
-        toast.error("Enter a valid email address (or an existing username).");
+        const msg = "Enter a valid email address (or an existing username).";
+        setFormFeedback({ type: "error", message: msg });
+        toast.error(msg);
         return;
       }
       try {
@@ -278,12 +300,17 @@ function AuthPage() {
         options: { emailRedirectTo: redirectTo },
       });
       if (error) {
+        setFormFeedback({ type: "error", message: error.message });
         toast.error(error.message);
         return;
       }
-      toast.success(`Sign-in link sent to ${targetEmail}. Check your Gmail inbox.`);
+      const okMsg = `Sign-in link sent to ${targetEmail}. Check your Gmail inbox.`;
+      setFormFeedback({ type: "success", message: okMsg });
+      toast.success(okMsg);
     } catch {
-      toast.error("Unable to send sign-in link right now.");
+      const msg = "Unable to send sign-in link right now.";
+      setFormFeedback({ type: "error", message: msg });
+      toast.error(msg);
     } finally {
       setMagicBusy(false);
     }
@@ -292,6 +319,7 @@ function AuthPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
+    setFormFeedback(null);
     setBusy(true);
     try {
       // Never leave the form spinning forever on a stalled network.
@@ -299,7 +327,7 @@ function AuthPage() {
         setTimeout(() => rej(new Error("timeout")), 10_000),
       );
       if (mode === "in") {
-        // Username-first: resolve username → email via the lookup RPC; "@" means email.
+        // Username-first: resolve username -> email via the lookup RPC; "@" means email.
         let loginEmail = identifier.trim();
         if (!loginEmail.includes("@")) {
           const { data: resolved, error: lookupErr } = await Promise.race([
@@ -307,12 +335,11 @@ function AuthPage() {
             deadline,
           ]);
           if (lookupErr || !resolved) {
-            setBusy(false);
-            toast.error(
-              lookupErr
-                ? "Username lookup unavailable — sign in with your email."
-                : "No account found for that username.",
-            );
+            const msg = lookupErr
+              ? "Username lookup unavailable — sign in with your email."
+              : "No account found for that username.";
+            setFormFeedback({ type: "error", message: msg });
+            toast.error(msg);
             return;
           }
           loginEmail = resolved as string;
@@ -321,15 +348,16 @@ function AuthPage() {
           supabase.auth.signInWithPassword({ email: loginEmail, password }),
           deadline,
         ]);
-        setBusy(false);
         if (error) {
+          setFormFeedback({ type: "error", message: error.message });
           toast.error(error.message);
           return;
         }
         syncSessionCache(queryClient, signInData.user ?? null);
+        await auth?.refreshAuth();
         await queryClient.invalidateQueries({ queryKey: ["session"] });
         if (hasNext) window.location.assign(next);
-        else nav({ to: "/characters" });
+        else void nav({ to: "/characters" });
       } else {
         const { data: signUpData, error } = await Promise.race([
           supabase.auth.signUp({
@@ -343,8 +371,8 @@ function AuthPage() {
           }),
           deadline,
         ]);
-        setBusy(false);
         if (error) {
+          setFormFeedback({ type: "error", message: error.message });
           toast.error(error.message);
           return;
         }
@@ -358,13 +386,30 @@ function AuthPage() {
             .eq("id", uid);
           if (profErr) toast.message("Account created — set your username later in Profile.");
         }
-        toast.success("Check your email to confirm your account.");
+        if (signUpData.session?.user) {
+          syncSessionCache(queryClient, signUpData.session.user);
+          await auth?.refreshAuth();
+          await queryClient.invalidateQueries({ queryKey: ["session"] });
+          void nav({ to: defaultDestination as never });
+          return;
+        }
+        const okMsg = "Check your email to confirm your account.";
+        setFormFeedback({ type: "success", message: okMsg });
+        toast.success(okMsg);
       }
     } catch {
-      toast.error("Unable to connect. Please try again.");
+      const msg = "Unable to connect. Please try again.";
+      setFormFeedback({ type: "error", message: msg });
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
+  };
+
+  const toggleMode = () => {
+    setMode((prev) => (prev === "in" ? "up" : "in"));
+    setFormFeedback(null);
+    setPassword("");
   };
 
   if (isPopupBridge) {
@@ -521,7 +566,21 @@ function AuthPage() {
               autoComplete={mode === "in" ? "current-password" : "new-password"}
             />
           </div>
-          <Button disabled={busy}>{busy ? "…" : mode === "in" ? "Sign in" : "Sign up"}</Button>
+          {formFeedback && (
+            <div
+              role="alert"
+              className={
+                formFeedback.type === "error"
+                  ? "rounded-lg border border-destructive/50 bg-destructive/10 px-3.5 py-2.5 text-xs text-destructive"
+                  : "rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2.5 text-xs text-emerald-300"
+              }
+            >
+              {formFeedback.message}
+            </div>
+          )}
+          <Button type="submit" disabled={busy}>
+            {busy ? "…" : mode === "in" ? "Sign in" : "Sign up"}
+          </Button>
           {mode === "in" && (
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <button
@@ -537,25 +596,42 @@ function AuthPage() {
                 type="button"
                 className="text-xs text-muted-foreground hover:text-foreground"
                 onClick={async () => {
+                  setFormFeedback(null);
                   const id = identifier.trim();
                   if (!id) {
-                    toast.error("Enter your username or email first.");
+                    const msg = "Enter your username or email first.";
+                    setFormFeedback({ type: "error", message: msg });
+                    toast.error(msg);
                     return;
                   }
-                  let targetEmail = id.includes("@") ? id : "";
-                  if (!targetEmail) {
-                    const { data } = await supabase.rpc("lookup_login_email", { p_username: id });
-                    targetEmail = data ?? "";
+                  try {
+                    let targetEmail = id.includes("@") ? id : "";
+                    if (!targetEmail) {
+                      const { data } = await supabase.rpc("lookup_login_email", { p_username: id });
+                      targetEmail = data ?? "";
+                    }
+                    if (!targetEmail) {
+                      const msg = "Account not found.";
+                      setFormFeedback({ type: "error", message: msg });
+                      toast.error(msg);
+                      return;
+                    }
+                    const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+                      redirectTo: new URL("/auth", window.location.origin).href,
+                    });
+                    if (error) {
+                      setFormFeedback({ type: "error", message: error.message });
+                      toast.error(error.message);
+                    } else {
+                      const okMsg = "Password reset link sent — check your email.";
+                      setFormFeedback({ type: "success", message: okMsg });
+                      toast.success(okMsg);
+                    }
+                  } catch {
+                    const msg = "Unable to send password reset right now.";
+                    setFormFeedback({ type: "error", message: msg });
+                    toast.error(msg);
                   }
-                  if (!targetEmail) {
-                    toast.error("Account not found.");
-                    return;
-                  }
-                  const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-                    redirectTo: new URL("/auth", window.location.origin).href,
-                  });
-                  if (error) toast.error(error.message);
-                  else toast.success("Password reset link sent — check your email.");
                 }}
               >
                 Forgot password?
@@ -565,7 +641,8 @@ function AuthPage() {
         </form>
       </MotionSection>
       <button
-        onClick={() => setMode(mode === "in" ? "up" : "in")}
+        type="button"
+        onClick={toggleMode}
         className="mt-4 text-sm text-muted-foreground hover:text-foreground"
       >
         {mode === "in" ? "First time? Create your account" : "Have an account? Sign in"}
@@ -573,3 +650,6 @@ function AuthPage() {
     </MotionPage>
   );
 }
+
+export { AuthPage };
+export default AuthPage;

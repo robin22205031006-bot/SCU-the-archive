@@ -70,7 +70,7 @@ export function LoreChat() {
   roleRef.current = role;
 
   useEffect(() => {
-    end.current?.scrollIntoView({ behavior: "smooth" });
+    end.current?.scrollIntoView?.({ behavior: "smooth" });
   }, [msgs.length, busy]);
 
   const send = useCallback(

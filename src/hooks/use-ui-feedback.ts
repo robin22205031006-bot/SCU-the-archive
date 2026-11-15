@@ -426,9 +426,11 @@ export async function preloadUIFeedbackAudio(
  * Convenience hook that runs `preloadUIFeedbackAudio` once on app initialization.
  */
 export function usePreloadUIFeedback(sources?: Record<string, string>): void {
+  const sourcesKey = sources ? JSON.stringify(sources) : "";
   useEffect(() => {
     void preloadUIFeedbackAudio(sources);
-  }, [sources]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourcesKey]);
 }
 
 function resolveSpatialPanForTrigger(
@@ -572,16 +574,22 @@ export function useUIFeedback(options?: UseUIFeedbackOptions) {
     readStoredHapticIntensity(),
   );
 
+  const hasUIState = Boolean(uiStateCtx);
+  const setContextHapticIntensity = uiStateCtx?.setHapticIntensity;
+
   useEffect(() => {
-    if (uiStateCtx || typeof window === "undefined") return;
-    const sync = () => setFallbackIntensity(readStoredHapticIntensity());
+    if (hasUIState || typeof window === "undefined") return;
+    const sync = () => {
+      const next = readStoredHapticIntensity();
+      setFallbackIntensity((prev) => (prev === next ? prev : next));
+    };
     window.addEventListener("scu:haptic-intensity-change", sync);
     window.addEventListener("storage", sync);
     return () => {
       window.removeEventListener("scu:haptic-intensity-change", sync);
       window.removeEventListener("storage", sync);
     };
-  }, [uiStateCtx]);
+  }, [hasUIState]);
 
   const enabled = options?.enabled ?? true;
   const rawMode = options?.mode ?? themeCtx?.primarySystem ?? uiStateCtx?.mode ?? modeFallback;
@@ -597,11 +605,11 @@ export function useUIFeedback(options?: UseUIFeedbackOptions) {
   const setHapticIntensity = useCallback(
     (next: HapticIntensity) => {
       const normalized = resolveHapticIntensity(next);
-      if (uiStateCtx) {
-        uiStateCtx.setHapticIntensity(normalized);
+      if (setContextHapticIntensity) {
+        setContextHapticIntensity(normalized);
         return;
       }
-      setFallbackIntensity(normalized);
+      setFallbackIntensity((prev) => (prev === normalized ? prev : normalized));
       if (typeof window !== "undefined") {
         try {
           window.localStorage.setItem(HAPTIC_INTENSITY_STORAGE_KEY, normalized);
@@ -613,7 +621,7 @@ export function useUIFeedback(options?: UseUIFeedbackOptions) {
         }
       }
     },
-    [uiStateCtx],
+    [setContextHapticIntensity],
   );
 
   const style = useMemo(

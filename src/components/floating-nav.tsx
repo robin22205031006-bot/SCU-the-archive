@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -30,6 +30,7 @@ import {
 import { TABS, STAFF_TAB } from "@/lib/nav";
 import { useNavMode } from "@/lib/nav-mode";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
+import { useOptionalAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -77,7 +78,9 @@ const extraTabs = [
 export function FloatingNav() {
   const mode = useNavMode();
   const { pathname } = useLocation();
-  const { data: user } = useSession();
+  const auth = useOptionalAuth();
+  const { data: queryUser } = useSession();
+  const user = auth?.user ?? queryUser ?? null;
   const staff = useIsStaff();
   const hidden = useNavHidden();
   const deviceReduced = useReducedMotion();
@@ -87,14 +90,19 @@ export function FloatingNav() {
   const uiState = useOptionalUIState();
   const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback();
   const [localOpen, setLocalOpen] = useState(false);
+  const setUiNavOpen = uiState?.setNavOpen;
+  const setUiActiveNav = uiState?.setActiveNav;
   const open = uiState ? uiState.navOpen : localOpen;
-  const setOpen = (next: boolean) => {
-    if (uiState) {
-      uiState.setNavOpen(next);
-    } else {
-      setLocalOpen(next);
-    }
-  };
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (setUiNavOpen) {
+        setUiNavOpen(next);
+      } else {
+        setLocalOpen((prev) => (prev === next ? prev : next));
+      }
+    },
+    [setUiNavOpen],
+  );
   const [themeOpen, setThemeOpen] = useState(false);
   const [start, setStart] = useState(0);
   const touch = useRef<number | null>(null);
@@ -112,15 +120,22 @@ export function FloatingNav() {
       return (data?.value ?? {}) as Record<string, boolean>;
     },
   });
-  const items = [
-    ...TABS,
-    ...extraTabs,
-    ...(staff ? [STAFF_TAB] : []),
-    { to: "/profile", label: "Profile", icon: "profile" },
-    { to: "#theme", label: "Theme", icon: "theme" },
-  ].filter((t) => visibility?.[t.to] ?? true);
+  const items = useMemo(
+    () =>
+      [
+        ...TABS,
+        ...extraTabs,
+        ...(staff ? [STAFF_TAB] : []),
+        user
+          ? { to: "/profile", label: "Profile", icon: "profile" }
+          : { to: "/auth", label: "Sign in", icon: "profile" },
+        { to: "#theme", label: "Theme", icon: "theme" },
+      ].filter((t) => visibility?.[t.to] ?? true),
+    [staff, user, visibility],
+  );
   const max = Math.max(0, items.length - 5);
   const first = Math.min(start, max);
+  const activeIndex = items.findIndex((t) => t.to === pathname);
   const slide = (delta: number) => {
     setStart((v) => {
       const next = Math.max(0, Math.min(max, v + delta));
@@ -129,19 +144,21 @@ export function FloatingNav() {
     });
   };
   useEffect(() => {
-    if (uiState) {
-      uiState.setActiveNav(pathname);
-      uiState.setNavOpen(false);
-    } else {
-      setLocalOpen(false);
+    setUiActiveNav?.(pathname);
+    setOpen(false);
+  }, [pathname, setUiActiveNav, setOpen]);
+  useEffect(() => {
+    if (activeIndex >= 0) {
+      setStart((prev) => {
+        const next = Math.max(0, Math.min(max, activeIndex - 2));
+        return prev === next ? prev : next;
+      });
     }
-    const index = items.findIndex((t) => t.to === pathname);
-    if (index >= 0) setStart(Math.max(0, Math.min(max, index - 2)));
-  }, [pathname, max]);
+  }, [activeIndex, max]);
   useEffect(() => {
     if (mode !== "hud" || hidden) setOpen(false);
-  }, [mode, hidden]);
-  if (mode !== "hud" || !user || pathname === "/auth" || pathname === "/install") return null;
+  }, [mode, hidden, setOpen]);
+  if (mode !== "hud" || pathname === "/auth" || pathname === "/install") return null;
   const expanded = open && !hidden;
   return (
     <>

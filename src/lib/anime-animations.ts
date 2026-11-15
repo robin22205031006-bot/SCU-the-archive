@@ -127,7 +127,9 @@ export function animateSvgRuneDraw(
 /**
  * Smooth spring-physics pop transition on a target panel when switching to or inside Manga UI.
  */
-export function animateMangaSpringPanel(target: HTMLElement | null | undefined): AnimeAnimationHandle {
+export function animateMangaSpringPanel(
+  target: HTMLElement | null | undefined,
+): AnimeAnimationHandle {
   if (!target || !isAnimeMotionAllowed()) {
     return { cancel: () => {} };
   }

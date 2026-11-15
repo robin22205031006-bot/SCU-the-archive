@@ -108,6 +108,7 @@ function Story() {
   if (ep && story) {
     return (
       <MotionPage
+        as="main"
         className={`min-h-screen select-none ${
           isManga
             ? eyeCare
@@ -232,7 +233,7 @@ function Story() {
   }
 
   return (
-    <MotionPage className={`mx-auto max-w-3xl px-4 pb-24 ${isManga ? "pt-6" : "pt-28"}`}>
+    <MotionPage as="main" className={`mx-auto max-w-3xl px-4 pb-24 ${isManga ? "pt-6" : "pt-28"}`}>
       <MotionSection as="header">
         {isManga ? (
           <MangaChapterBanner
