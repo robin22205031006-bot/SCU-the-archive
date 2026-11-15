@@ -215,7 +215,7 @@ export function ArsenalFx({
     const ctx = c.getContext("2d");
     if (!ctx) return;
     let raf = 0,
-      visible = true,
+      visible = false,
       last = 0;
     const size = () => {
       const r = c.getBoundingClientRect();
@@ -230,8 +230,10 @@ export function ArsenalFx({
       paint(ctx, box.width, box.height, layers, ms / 1000, density);
     };
     const loop = (ms: number) => {
+      raf = 0;
+      if (!animate || !visible || document.hidden) return;
       raf = requestAnimationFrame(loop);
-      if (!visible || ms - last < 1000 / fps) return;
+      if (ms - last < 1000 / fps) return;
       last = ms;
       draw(ms);
     };
@@ -240,16 +242,26 @@ export function ArsenalFx({
       if (!animate) draw(1200);
     });
     ro.observe(c);
+    const syncPlayback = () => {
+      if (animate && visible && !document.hidden) {
+        if (!raf) raf = requestAnimationFrame(loop);
+      } else {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    };
     const io = new IntersectionObserver((es) => {
-      visible = es[0]?.isIntersecting ?? true;
+      visible = es[0]?.isIntersecting ?? false;
+      syncPlayback();
     });
     io.observe(c);
-    if (animate) raf = requestAnimationFrame(loop);
-    else draw(1200);
+    document.addEventListener("visibilitychange", syncPlayback);
+    if (!animate) draw(1200);
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
+      document.removeEventListener("visibilitychange", syncPlayback);
     };
   }, [layers, animate, density, fps]);
   return (

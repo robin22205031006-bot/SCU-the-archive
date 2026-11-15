@@ -6,6 +6,7 @@ import { useAnimationsEnabled } from "@/lib/animations";
 function useCanvasLoop(
   draw: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number, dpr: number) => void,
   deps: unknown[] = [],
+  enabled = true,
 ) {
   const ref = useRef<HTMLCanvasElement>(null);
   const drawRef = useRef(draw);
@@ -16,10 +17,14 @@ function useCanvasLoop(
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let raf = 0;
-    let visible = true;
+    let visible = false;
+    let width = 0;
+    let height = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const resize = () => {
       const r = canvas.getBoundingClientRect();
+      width = r.width;
+      height = r.height;
       canvas.width = Math.max(1, r.width * dpr);
       canvas.height = Math.max(1, r.height * dpr);
     };
@@ -28,26 +33,33 @@ function useCanvasLoop(
     ro.observe(canvas);
     const tick = (now: number) => {
       raf = 0;
-      if (!visible || document.hidden) return;
+      if (!enabled || !visible || document.hidden) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const r = canvas.getBoundingClientRect();
-      drawRef.current(ctx, r.width, r.height, now / 1000, dpr);
+      drawRef.current(ctx, width, height, now / 1000, dpr);
       raf = requestAnimationFrame(tick);
     };
     const kick = () => {
-      if (!raf) raf = requestAnimationFrame(tick);
+      if (enabled && visible && !document.hidden) {
+        if (!raf) raf = requestAnimationFrame(tick);
+      } else {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
     };
     const io = new IntersectionObserver((entries) => {
       const e = entries[0];
       visible = !!e?.isIntersecting;
-      if (visible) kick();
+      kick();
     });
     io.observe(canvas);
     const onVis = () => {
-      if (!document.hidden) kick();
+      kick();
     };
     document.addEventListener("visibilitychange", onVis);
-    kick();
+    if (!enabled) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawRef.current(ctx, width, height, 0, dpr);
+    }
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
@@ -55,7 +67,7 @@ function useCanvasLoop(
       document.removeEventListener("visibilitychange", onVis);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [...deps, enabled]);
   return ref;
 }
 
@@ -235,6 +247,7 @@ export function AbilityCardCanvas({
       ctx.globalCompositeOperation = "source-over";
     },
     [theme, density],
+    animOn,
   );
 
   return (
@@ -357,7 +370,7 @@ export function CrimsonBloodlineTheme({ className }: { className?: string }) {
       ctx.stroke();
     }
     ctx.globalCompositeOperation = "source-over";
-  });
+  }, [], animOn);
 
   const onMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -472,7 +485,7 @@ export function CyanNeuralPlexusTheme({ className }: { className?: string }) {
       ctx.fill();
     }
     ctx.globalCompositeOperation = "source-over";
-  });
+  }, [], animOn);
 
   return (
     <canvas

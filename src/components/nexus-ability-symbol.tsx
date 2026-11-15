@@ -1,11 +1,11 @@
 import { useId } from "react";
-import elementalAtlas from "@/assets/nexus-ability-symbols.png";
-import skillAtlas from "@/assets/nexus-skill-symbols.png";
-import vampire from "@/assets/nexus-vampire.png";
-import dominion from "@/assets/nexus-aether-dominion.png";
-import omni from "@/assets/nexus-omni-ergon.png";
-import combatCrests from "@/assets/nexus-combat-crests.png";
-import techniqueCrests from "@/assets/nexus-technique-crests.png";
+import elementalAtlas from "@/assets/nexus-ability-symbols.webp";
+import skillAtlas from "@/assets/nexus-skill-symbols.webp";
+import vampire from "@/assets/nexus-vampire.webp";
+import dominion from "@/assets/nexus-aether-dominion.webp";
+import omni from "@/assets/nexus-omni-ergon.webp";
+import combatCrests from "@/assets/nexus-combat-crests.webp";
+import techniqueCrests from "@/assets/nexus-technique-crests.webp";
 const powerCrests = elementalAtlas;
 import { nexusDistinctTile } from "@/lib/nexus-distinct-art";
 import { NEXUS_ABILITY_ART, nexusAbilityArt } from "@/lib/nexus-ability-art";

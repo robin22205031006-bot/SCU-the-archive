@@ -1,5 +1,11 @@
 # Nilanjona and Valeria combat
 
+# App-wide performance (all styles, desktop and mobile)
+
+- [ ] Measure real visitor timings and identify unnecessary loading/rendering work.
+- [ ] Optimize shared caching, invisible effects and artwork delivery without changing appearance or data rules.
+- [ ] Run regression tests and signed-in desktop/mobile navigation checks.
+
 # Published character persistence
 
 - [ ] Correct the imported archive connection used by publishing; verify saved character records, fresh loads and merge protection.

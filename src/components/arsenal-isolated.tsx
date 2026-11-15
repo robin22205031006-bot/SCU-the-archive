@@ -111,6 +111,7 @@ function ElementalBoosterCanvas({
     let raf = 0;
     let last = 0;
     let running = true;
+    let visible = false;
     const cfg = BOOSTER_CONFIGS[element];
     const hue = hueOverride ?? cfg.hue;
 
@@ -262,19 +263,35 @@ function ElementalBoosterCanvas({
     };
 
     const loop = (ms: number) => {
-      if (!running) return;
+      raf = 0;
+      if (!running || !visible || document.hidden) return;
       raf = requestAnimationFrame(loop);
       if (ms - last < 1000 / fps) return;
       last = ms;
       draw(ms);
     };
 
-    raf = requestAnimationFrame(loop);
+    const syncPlayback = () => {
+      if (running && visible && !document.hidden) {
+        if (!raf) raf = requestAnimationFrame(loop);
+      } else {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    };
+    const io = new IntersectionObserver((entries) => {
+      visible = entries[0]?.isIntersecting ?? false;
+      syncPlayback();
+    });
+    io.observe(c);
+    document.addEventListener("visibilitychange", syncPlayback);
 
     return () => {
       running = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
+      io.disconnect();
+      document.removeEventListener("visibilitychange", syncPlayback);
     };
   }, [element, intensity, fps, boostActive, hueOverride]);
 

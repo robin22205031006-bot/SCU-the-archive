@@ -53,9 +53,22 @@ export function restoreQueries(qc: QueryClient) {
 export function persistQueries(qc: QueryClient) {
   restoreQueries(qc);
   let timer: ReturnType<typeof setTimeout> | undefined;
-  qc.getQueryCache().subscribe(() => {
+  let dirty = false;
+  const flush = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => snapshot(qc), 2000);
+    timer = undefined;
+    if (!dirty) return;
+    dirty = false;
+    snapshot(qc);
+  };
+  qc.getQueryCache().subscribe((event) => {
+    // Observer mounts, fetch starts and stale notifications do not change lore.
+    // Avoid serializing the entire archive for these high-frequency events.
+    if (event.type !== "removed" &&
+      !(event.type === "updated" && event.action.type === "success")) return;
+    dirty = true;
+    clearTimeout(timer);
+    timer = setTimeout(flush, 2000);
   });
-  window.addEventListener("pagehide", () => snapshot(qc));
+  window.addEventListener("pagehide", flush);
 }
