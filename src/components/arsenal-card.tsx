@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Box, Image as ImageIcon, Pencil, Trash2, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -180,7 +180,7 @@ function Details({ a, form }: { a: Artifact; form: ArsenalForm }) {
   );
 }
 
-export function ArtifactCard({
+export const ArtifactCard = memo(function ArtifactCard({
   a,
   style,
   motion,
@@ -214,9 +214,9 @@ export function ArtifactCard({
       className={
         isManga
           ? "manga-panel manga-panel-hover grid content-start gap-2.5 border-[3px] border-foreground bg-card p-3.5"
-          : `grid content-start gap-2 border p-3 ${nexus ? "rounded-2xl border-accent/30 bg-card/60 backdrop-blur" : style === "minimal" ? "rounded-lg border-border bg-card" : "rounded-2xl border-border bg-card/70"}`
+          : `grid content-start gap-2 border p-3 ${nexus ? "rounded-2xl border-accent/30 bg-card/90" : style === "minimal" ? "rounded-lg border-border bg-card" : "rounded-2xl border-border bg-card/85"}`
       }
-      style={nexus ? { boxShadow: `0 0 24px hsl(${art.hue} 80% 50% / .18)` } : undefined}
+      style={nexus ? { boxShadow: `0 0 18px hsl(${art.hue} 80% 50% / .16)` } : undefined}
     >
       <div className="relative">
         {showing3d && modelUrl ? (
@@ -375,7 +375,7 @@ export function ArtifactCard({
       {nexus && <p className="line-clamp-2 text-sm text-muted-foreground">{a.how_it_works}</p>}
     </MotionCard>
   );
-}
+});
 
 /** Full-screen Nexus inspector: big art, 3D model toggle, dense FX and animated form transformations. */
 export function NexusArtifactViewer({
@@ -408,7 +408,7 @@ export function NexusArtifactViewer({
       role="dialog"
       aria-modal
       aria-label={a.name}
-      className="fixed inset-0 z-[300] flex items-stretch justify-center bg-background/95 backdrop-blur-md"
+      className="fixed inset-0 z-[300] flex items-stretch justify-center bg-background/96"
       onClick={onClose}
     >
       <MotionModalPanel className="grid h-full w-full md:grid-cols-[1.4fr_1fr]">

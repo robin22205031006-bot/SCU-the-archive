@@ -370,14 +370,14 @@ export function LoreLocations() {
         >
           {!isManga &&
             (motionActive ? (
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync" initial={false}>
                 <motion.div
                   key={`bg-${loc.id}-${era.id}`}
                   className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${TONE[era.tone]}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.6 }}
+                  transition={{ duration: 0.3 }}
                 />
               </AnimatePresence>
             ) : (
@@ -502,13 +502,13 @@ export function LoreLocations() {
             </div>
 
             {motionActive ? (
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync" initial={false}>
                 <motion.div
                   key={`${loc.id}-${era.id}`}
-                  initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -12, filter: "blur(6px)" }}
-                  transition={{ duration: 0.35 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.22 }}
                   className="mt-6 grid gap-4 md:grid-cols-3"
                 >
                   <div

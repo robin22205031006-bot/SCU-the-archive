@@ -71,3 +71,35 @@ describe("ability chains and simulator", () => {
     );
   });
 });
+
+import { CANON_CHARACTER_ABILITIES, abilityDef, normalizeAbilityKey } from "@/lib/abilities";
+import { ALL_PAINT } from "@/components/fx-brush";
+
+describe("ability FX complete coverage", () => {
+  it("every motif in abilityFxRecipe has a dedicated painter in ALL_PAINT", () => {
+    const allCanonKeys = Object.values(CANON_CHARACTER_ABILITIES).flat();
+    const allKeys = new Set<string>([
+      ...ABILITIES.map((a) => a.key),
+      ...FX_TABLE_KEYS,
+      ...allCanonKeys,
+    ]);
+    for (const k of allKeys) {
+      const recipe = abilityFxRecipe(k);
+      expect(typeof ALL_PAINT[recipe.motif]).toBe("function");
+    }
+  });
+
+  it("all canon character abilities and custom entity abilities produce unique FX signatures", () => {
+    const canonKeys = Array.from(
+      new Set(
+        Object.values(CANON_CHARACTER_ABILITIES)
+          .flat()
+          .map((n) => normalizeAbilityKey(abilityDef(n).key)),
+      ),
+    );
+    const customSamples = ["Solar Flare", "Gravity Warp", "Chrono Tether", "Soundwave Burst"];
+    const combined = Array.from(new Set([...ABILITIES.map((a) => a.key), ...canonKeys, ...customSamples]));
+    const sigs = combined.map((k) => fxSignature(abilityFxRecipe(k)));
+    expect(new Set(sigs).size).toBe(sigs.length);
+  });
+});

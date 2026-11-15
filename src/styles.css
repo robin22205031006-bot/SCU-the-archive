@@ -5610,13 +5610,15 @@ html[data-motion="off"] .nexus-page {
 
 /* ===== UX Fluidity & Performance Enhancement Pass ===== */
 
-/* 1. Manga Spread Grid Containment, Viewport Culling & Hover-Gated VFX */
+/* 1. Card Grid Containment, Viewport Culling & Hover-Gated VFX */
+.scu-card-grid > *,
 .manga-spread-grid > * {
   content-visibility: auto;
   contain-intrinsic-size: auto 240px;
   contain: layout style;
 }
 
+.scu-card-grid .glass,
 html[data-genre-theme] .manga-spread-grid .manga-panel,
 html[data-manga-subtheme] .manga-spread-grid .manga-panel {
   backdrop-filter: none !important;

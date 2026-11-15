@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Link, getRouteApi } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Minus, Plus, Repeat, Search, X } from "lucide-react";
-import { entitiesQuery, matchesSearch, type Entity } from "@/lib/entities";
+import { entitiesQuery, entityByIdQuery, matchesSearch, type Entity } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { sfx } from "@/lib/scu-audio";
 import { seriesQuery, seriesCharactersQuery } from "@/lib/series";
@@ -158,8 +158,7 @@ export function NexusView({
             "radial-gradient(ellipse at 50% 100%, color-mix(in oklab, var(--nexus-glow) 22%, transparent), transparent 70%)",
         }}
       />
-      <LayoutGroup>
-        <div className="relative mb-5 flex flex-wrap items-end gap-3">
+      <div className="relative mb-5 flex flex-wrap items-end gap-3">
           <label className="grid min-w-0 flex-1 gap-1 text-xs">
             Series
             <select
@@ -223,14 +222,14 @@ export function NexusView({
             </Button>
           )}
         </div>
-        <AnimatePresence mode="popLayout" initial={false}>
+        <AnimatePresence mode="sync" initial={false}>
           {cluster === null ? (
             <motion.div
               key="clusters"
-              initial={{ opacity: 0, scale: 1.08, filter: "blur(8px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 0.9, filter: "blur(6px)" }}
-              transition={{ duration: 0.55, ease: EASE }}
+              initial={{ opacity: 0, scale: 1.02 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.22, ease: EASE }}
               className="relative"
             >
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -240,11 +239,14 @@ export function NexusView({
                   return (
                     <motion.div
                       key={c}
-                      layoutId={`cluster-${c}`}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0, transition: { delay: i * 0.05, ease: EASE } }}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                        transition: { delay: Math.min(i * 0.03, 0.2), ease: EASE },
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       className="group relative overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-fg/[0.03] text-left"
                     >
                       <Button
@@ -277,8 +279,8 @@ export function NexusView({
               key="sphere"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.92, filter: "blur(6px)" }}
-              transition={{ duration: 0.4, ease: EASE }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.22, ease: EASE }}
             >
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <button
@@ -317,7 +319,6 @@ export function NexusView({
             </motion.div>
           )}
         </AnimatePresence>
-      </LayoutGroup>
       {!data.length && (
         <p className="relative py-8 text-center text-sm text-muted-foreground">
           No characters recorded for this selection.
@@ -544,7 +545,6 @@ function Sphere({
         }}
       >
         <motion.div
-          layoutId={`cluster-${cluster}`}
           className="relative mx-auto overflow-hidden rounded-full"
           style={{
             width: size,
@@ -690,7 +690,7 @@ function Sphere({
         </div>
       </motion.div>
 
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence mode="sync" initial={false}>
         {selected && (
           <DossierPanel
             key={selected.id}
@@ -719,12 +719,12 @@ function hexPts(r: number) {
 }
 
 const item = {
-  hidden: { opacity: 0, y: 10, filter: "blur(4px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.45, ease: EASE } },
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: EASE } },
 };
 
-function DossierPanel({
-  e,
+const DossierPanel = memo(function DossierPanel({
+  e: summary,
   color,
   all,
   masked,
@@ -746,6 +746,8 @@ function DossierPanel({
   seriesId: string;
   seasonNumber: number | null;
 }) {
+  const { data: full } = useQuery(entityByIdQuery(summary.id));
+  const e = full ?? summary;
   const alterName = ALTER_EGOS[e.name.trim().toLowerCase()];
   const alter = alterName
     ? all.find((x) => x.name.toLowerCase() === alterName.toLowerCase())
@@ -760,12 +762,11 @@ function DossierPanel({
   ];
   return (
     <motion.aside
-      layout
-      initial={{ opacity: 0, x: 60, scale: 0.96 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 60, scale: 0.96, transition: { duration: 0.25 } }}
-      transition={{ duration: 0.6, ease: EASE }}
-      className="nexus-card-holo relative w-full shrink-0 overflow-hidden rounded-2xl border border-nexus-glow/30 bg-nexus-bg/95 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md lg:w-80"
+      initial={{ opacity: 0, x: 32 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 32, transition: { duration: 0.18 } }}
+      transition={{ duration: 0.25, ease: EASE }}
+      className="nexus-card-holo relative w-full shrink-0 overflow-hidden rounded-2xl border border-nexus-glow/30 bg-nexus-bg/96 p-4 shadow-[0_12px_32px_rgba(0,0,0,0.6)] lg:w-80"
     >
       <motion.div
         variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } } }}
@@ -802,9 +803,11 @@ function DossierPanel({
                   <motion.img
                     src={e.image_url}
                     alt={e.name}
-                    initial={{ scale: 1.15 }}
+                    loading="lazy"
+                    decoding="async"
+                    initial={{ scale: 1.06 }}
                     animate={{ scale: 1 }}
-                    transition={{ duration: 1.2, ease: EASE }}
+                    transition={{ duration: 0.45, ease: EASE }}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -904,4 +907,4 @@ function DossierPanel({
       </motion.div>
     </motion.aside>
   );
-}
+});

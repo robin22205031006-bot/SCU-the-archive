@@ -266,15 +266,15 @@ export function NexusExplorer<T extends NexusRecord>({
                     </motion.div>
                   ))}
                 </div>
-                <AnimatePresence mode="wait" initial={false}>
+                <AnimatePresence mode="sync" initial={false}>
                   {selected && (
                     <motion.article
                       key={selected.id}
-                      initial={{ opacity: 0, x: moving ? 20 : 0, scale: moving ? 0.98 : 1 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      exit={{ opacity: 0, x: moving ? -12 : 0 }}
+                      initial={{ opacity: 0, x: moving ? 16 : 0 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: moving ? -10 : 0 }}
                       transition={transition}
-                      className="min-w-0 scroll-mt-24 rounded-lg border border-cyan-400/35 bg-slate-950/65 p-4 shadow-[0_0_26px_rgba(56,189,248,0.12)] backdrop-blur-md sm:p-6"
+                      className="min-w-0 scroll-mt-24 rounded-lg border border-cyan-400/35 bg-slate-950/90 p-4 shadow-[0_0_24px_rgba(56,189,248,0.12)] sm:p-6"
                       aria-label={`${selected.title} details`}
                     >
                       <div className="mb-5 flex items-center justify-between gap-2 border-b border-border pb-3">
@@ -345,16 +345,16 @@ export function NexusWorkspace({
           </Button>
         ))}
       </div>
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="sync" initial={false}>
         <motion.div
           key={view.id}
           id={`nexus-panel-${view.id}`}
           role="tabpanel"
           aria-labelledby={`nexus-tab-${view.id}`}
-          initial={{ opacity: 0, scale: moving ? 0.97 : 1 }}
+          initial={{ opacity: 0, scale: moving ? 0.98 : 1 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: moving ? 0.35 : 0 }}
+          transition={{ duration: moving ? 0.2 : 0 }}
           className="min-w-0"
         >
           {view.content}
@@ -385,14 +385,14 @@ export function NexusSpotlight({
     <span className="nexus-spotlight absolute inset-0" aria-hidden>
       <span className="nexus-spotlight-ring" />
       <span className="nexus-spotlight-halo" />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="sync" initial={false}>
         <motion.span
           key={r.id}
           className="relative flex flex-col items-center gap-1"
-          initial={{ opacity: 0, scale: 0.6, filter: "blur(6px)", y: 8 }}
-          animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }}
-          exit={{ opacity: 0, scale: 1.25, filter: "blur(8px)", y: -6 }}
-          transition={{ duration: moving ? 0.55 : 0, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, scale: 0.9, y: 6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 1.06, y: -4 }}
+          transition={{ duration: moving ? 0.3 : 0, ease: [0.22, 1, 0.36, 1] }}
         >
           <span className="grid h-14 w-14 place-items-center text-accent">
             {r.image ? (

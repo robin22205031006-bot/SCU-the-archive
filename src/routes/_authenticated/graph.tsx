@@ -1,13 +1,22 @@
+import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { RelationshipGraph } from "@/components/relationship-graph";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
-import { NexusConstellation } from "@/components/nexus-constellation";
-import { NexusLineage } from "@/components/nexus-lineage";
 import { Network, Castle } from "lucide-react";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 import { MotionPage, MotionSection } from "@/components/app-motion";
+import { PanelSkeleton } from "@/components/route-skeleton";
+
+const RelationshipGraph = lazy(() =>
+  import("@/components/relationship-graph").then((m) => ({ default: m.RelationshipGraph })),
+);
+const NexusConstellation = lazy(() =>
+  import("@/components/nexus-constellation").then((m) => ({ default: m.NexusConstellation })),
+);
+const NexusLineage = lazy(() =>
+  import("@/components/nexus-lineage").then((m) => ({ default: m.NexusLineage })),
+);
 
 export const Route = createFileRoute("/_authenticated/graph")({
   head: () => ({
@@ -59,30 +68,32 @@ function Graph() {
         )}
       </MotionSection>
       <MotionSection delay={0.05}>
-        {nexus ? (
-          <NexusWorkspace
-            views={[
-              {
-                id: "relationships",
-                title: "Relationships",
-                icon: <Network className="h-4 w-4" />,
-                content: <NexusConstellation />,
-              },
-              {
-                id: "lineages",
-                title: "Lineages",
-                icon: <Castle className="h-4 w-4" />,
-                content: <NexusLineage />,
-              },
-            ]}
-          />
-        ) : isManga ? (
-          <MangaPanel caption="CORRELATION WEB // 連関網" badge="GRAPH PLATE">
+        <Suspense fallback={<PanelSkeleton className="min-h-[60vh]" />}>
+          {nexus ? (
+            <NexusWorkspace
+              views={[
+                {
+                  id: "relationships",
+                  title: "Relationships",
+                  icon: <Network className="h-4 w-4" />,
+                  content: <NexusConstellation />,
+                },
+                {
+                  id: "lineages",
+                  title: "Lineages",
+                  icon: <Castle className="h-4 w-4" />,
+                  content: <NexusLineage />,
+                },
+              ]}
+            />
+          ) : isManga ? (
+            <MangaPanel caption="CORRELATION WEB // 連関網" badge="GRAPH PLATE">
+              <RelationshipGraph />
+            </MangaPanel>
+          ) : (
             <RelationshipGraph />
-          </MangaPanel>
-        ) : (
-          <RelationshipGraph />
-        )}
+          )}
+        </Suspense>
       </MotionSection>
     </MotionPage>
   );

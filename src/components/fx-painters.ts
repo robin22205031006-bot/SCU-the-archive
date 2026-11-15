@@ -440,12 +440,12 @@ function transformation(f: PF, sp: Species) {
   }
   if (manA > 0) {
     c.globalAlpha = manA;
-    c.shadowColor = a;
-    c.shadowBlur = 12;
+    add(c);
+    glowDot(c, 0, gy - s * 0.22, s * 0.24, a, 0.35 * manA);
+    norm(c);
     const hd = humanoid(c, 0, gy, s * 0.44, "#110e18", ease((ph - 0.12) / 0.15) * 0.9, 0);
     glowDot(c, hd.hx + hd.u * 0.35, hd.hy, s * 0.03, a);
     glowDot(c, hd.hx - hd.u * 0.35, hd.hy, s * 0.03, a);
-    c.shadowBlur = 0;
     c.globalAlpha = 1;
   }
   if (beastA > 0) {
@@ -454,13 +454,10 @@ function transformation(f: PF, sp: Species) {
       roar = clamp((ph - 0.78) / 0.05) * (1 - clamp((ph - 0.95) / 0.05));
     const x = lerp(s * 0.04, s * 0.1, clamp((ph - 0.45) / 0.33));
     add(c);
-    glowDot(c, x, gy - L * 0.3, L * 0.75, a, 0.35 * beastA);
+    glowDot(c, x, gy - L * 0.3, L * 0.8, a, 0.45 * beastA);
     norm(c);
     c.globalAlpha = beastA;
-    c.shadowColor = a;
-    c.shadowBlur = 14;
     const m = quadruped(c, sp, x, gy, L, walk, roar, "#15111c", a, hi, a);
-    c.shadowBlur = 0;
     c.globalAlpha = 1;
     if (roar > 0) {
       roarWaves(c, m.mx, m.my, s, t, hi, roar);
@@ -639,11 +636,42 @@ function beastCommand(f: PF) {
   sp.forEach((k, i) => {
     const off = (i - 1) * s * 0.26;
     const roar = clamp(Math.sin(t * 1.2 + i * 2) * 3 - 2);
-    c.shadowColor = a;
-    c.shadowBlur = 10;
+    add(c);
+    glowDot(c, off + s * 0.03, gy - s * 0.08, s * 0.18, a, 0.3);
+    norm(c);
     quadruped(c, k, off + s * 0.03, gy + s * 0.02, s * 0.28, t * 6 + i, roar, "#15111c", a, hi, a);
-    c.shadowBlur = 0;
   });
+}
+function mimicForm(f: PF) {
+  const { c, s, t, r } = f;
+  const [a, b, hi] = r.palette;
+  const gy = s * GY;
+  groundGlow(f, a, 0.9);
+  const forms: Species[] = ["wolf", "tiger", "lion", "hyena"];
+  const idx = Math.floor(t * 1.8);
+  const cur = forms[idx % 4]!;
+  const next = forms[(idx + 1) % 4]!;
+  const blend = ease(fr(t * 1.8));
+  add(c);
+  glowDot(c, 0, gy - s * 0.18, s * 0.34, a, 0.45);
+  norm(c);
+  c.globalAlpha = (1 - blend) * 0.55;
+  quadruped(c, cur, s * 0.06, gy, s * 0.54, t * 7, 0.4, "#15111c", a, hi, b);
+  c.globalAlpha = 0.45 + 0.55 * blend;
+  quadruped(c, next, s * 0.08, gy, s * 0.58, t * 7.5, 0.75 * blend, "#1c1208", hi, hi, a);
+  c.globalAlpha = 1;
+  // Morphing adaptive claw-rake streaks
+  add(c);
+  const k = fr(t * 1.8);
+  for (let i = 0; i < 3; i++) {
+    const off = (i - 1) * s * 0.08;
+    c.strokeStyle = rgba(i % 2 ? hi : a, 1 - k * 0.7);
+    c.lineWidth = 4 - i * 0.6;
+    c.beginPath();
+    c.arc(s * 0.04, gy - s * 0.24 + off, s * 0.24, -0.7, -0.7 + Math.min(1, k * 2) * 1.5);
+    c.stroke();
+  }
+  norm(c);
 }
 function beast(f: PF) {
   switch (f.v) {
@@ -665,8 +693,25 @@ function beast(f: PF) {
       return transformation(f, "hyena");
     case 7:
       return snakes(f);
-    default:
-      return transformation(f, (["wolf", "tiger", "lion", "hyena"] as Species[])[f.v % 4]!);
+    case 8:
+      return mimicForm(f);
+    default: {
+      const sp = (["wolf", "tiger", "lion", "hyena"] as Species[])[f.v % 4]!;
+      transformation(f, sp);
+      const { c, s, t, r, v } = f;
+      const ringCount = 1 + (v % 3);
+      add(c);
+      for (let i = 0; i < ringCount; i++) {
+        const ang = t * (1.2 + i * 0.4) + (v % 7);
+        c.strokeStyle = rgba(i % 2 ? r.palette[2] : r.palette[0], 0.6);
+        c.lineWidth = 2;
+        c.beginPath();
+        c.arc(0, s * GY - s * (0.14 + i * 0.06), s * (0.24 + (v % 5) * 0.02), ang, ang + 1.4);
+        c.stroke();
+      }
+      norm(c);
+      return;
+    }
   }
 }
 
@@ -753,6 +798,20 @@ function flame(f: PF) {
       );
     }
   groundGlow(f, mid, 1);
+  if (v === 2) {
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * TAU + t * 0.55;
+      flameStack(
+        f,
+        Math.cos(ang) * s * 0.24,
+        gy + Math.sin(ang) * s * 0.04,
+        s * 0.055,
+        H * 0.5,
+        cols,
+        i * 2.1,
+      );
+    }
+  }
   if (v === 3) runeCircle(c, s, t, outer, core, s * 0.38, 0.95);
   add(c);
   glowDot(c, 0, gy - H * 0.35, s * 0.38, outer, 0.55);
@@ -761,7 +820,22 @@ function flame(f: PF) {
     flameStack(f, -s * 0.14, gy, s * 0.08, H * 0.6, cols, 4);
     flameStack(f, s * 0.14, gy, s * 0.08, H * 0.55, cols, 7);
   }
-  flameStack(f, 0, gy, s * 0.15, H, cols);
+  if (v >= 20) {
+    const wisps = 2 + (v % 4);
+    for (let i = 0; i < wisps; i++) {
+      const ang = t * 1.4 + (i / wisps) * TAU;
+      flameStack(
+        f,
+        Math.cos(ang) * s * 0.19,
+        gy - Math.abs(Math.sin(ang)) * s * 0.04,
+        s * 0.06,
+        H * (0.45 + 0.15 * ((v + i) % 3)),
+        cols,
+        v + i * 1.7,
+      );
+    }
+  }
+  flameStack(f, 0, gy, s * 0.15, H, cols, v);
   if (v === 5) {
     // draconic: a dragon head forms out of the flame column
     c.save();
@@ -1155,10 +1229,10 @@ function lightning(f: PF) {
         humanoid(c, x - i * s * 0.07, gy, s * 0.32, "#e2e8f0", 0.55, 0.25);
       }
       c.globalAlpha = 1;
-      c.shadowColor = "#ffffff";
-      c.shadowBlur = 16;
+      add(c);
+      glowDot(c, x, gy - s * 0.16, s * 0.2, "#ffffff", 0.45);
+      norm(c);
       humanoid(c, x, gy, s * 0.32, "#1e2433", 0.55, 0.25);
-      c.shadowBlur = 0;
       for (let i = 0; i < 3; i++)
         strike(
           f,
@@ -1177,8 +1251,8 @@ function lightning(f: PF) {
       norm(c);
       break;
     }
-    default: {
-      // hyperkinesis and unknown lightning
+    case 6: {
+      // Hyperkinesis — multi-hop erratic speed zig-zag arcs
       groundGlow(f, a, 0.7);
       const pts: [number, number][] = [];
       for (let i = 0; i < 6; i++)
@@ -1195,12 +1269,32 @@ function lightning(f: PF) {
         strike(f, ax, ay, bx, by, 1.4, cols, step * 5 + i, 0, s * 0.04);
       }
       add(c);
-      glowDot(c, x, y, s * 0.1, a);
+      glowDot(c, x, y, s * 0.12, a);
       norm(c);
-      c.shadowColor = a;
-      c.shadowBlur = 12;
       humanoid(c, x, y + s * 0.12, s * 0.2, "#141820", 0.4, 0.5);
-      c.shadowBlur = 0;
+      break;
+    }
+    default: {
+      // Custom/fallback lightning variants (v >= 20) get seeded multi-node discharge polygons
+      groundGlow(f, a, 0.75);
+      const sides = 3 + (v % 5);
+      const tilt = (v % 11) * 0.4 + t * (1.2 + (v % 3) * 0.4);
+      const rad = s * (0.2 + (v % 4) * 0.035);
+      const cy = -s * 0.06;
+      const nodes: [number, number][] = [];
+      for (let i = 0; i < sides; i++) {
+        const ang = tilt + (i / sides) * TAU;
+        nodes.push([Math.cos(ang) * rad, cy + Math.sin(ang) * rad * 0.7]);
+      }
+      for (let i = 0; i < sides; i++) {
+        const [ax, ay] = nodes[i]!;
+        const [bx, by] = nodes[(i + 1) % sides]!;
+        strike(f, ax, ay, bx, by, 1.5, cols, step * 7 + v + i, i % 2, s * 0.045);
+      }
+      add(c);
+      glowDot(c, 0, cy, s * 0.16, a, 0.7);
+      glowDot(c, 0, cy, s * 0.05, hi, 0.9);
+      norm(c);
     }
   }
 }
@@ -1357,8 +1451,8 @@ function wind(f: PF) {
       tornado(f, s * 0.5, s * 0.14, s * 0.04, a, hi);
       break;
     }
-    default: {
-      // gentle wind streams
+    case 2: {
+      // Wind (gentle breeze streams & drifting leaves)
       add(c);
       for (let i = 0; i < 7; i++) {
         c.beginPath();
@@ -1392,6 +1486,58 @@ function wind(f: PF) {
           i % 2 ? hi : b,
         );
       }
+      break;
+    }
+    case 4: {
+      // Wind Surge — rapid counter-rotating gale ribbons whipping outward from caster
+      humanoid(c, 0, gy, s * 0.34, "#06150e", 0.18, 0.85);
+      add(c);
+      const blades = 5;
+      for (let i = 0; i < blades; i++) {
+        const dir = i % 2 ? 1 : -1;
+        const rot = t * 4.2 * dir + (i * TAU) / blades;
+        const rad = s * (0.14 + 0.06 * i) + Math.sin(t * 5 + i) * s * 0.025;
+        c.save();
+        c.translate(0, gy - s * 0.2);
+        c.scale(1, 0.55);
+        windBlade(c, 0, 0, rad, rot, 1.45, s * 0.036, rgba(a, 0.78), rgba(hi, 0.9));
+        c.restore();
+      }
+      for (let i = 0; i < 6; i++) {
+        const q = fr(t * 1.4 + i / 6);
+        c.strokeStyle = rgba(hi, (1 - q) * 0.75);
+        c.lineWidth = 2;
+        c.beginPath();
+        c.ellipse(0, gy - s * 0.08, s * (0.08 + q * 0.34), s * (0.02 + q * 0.07), 0, 0, TAU);
+        c.stroke();
+      }
+      norm(c);
+      break;
+    }
+    default: {
+      // Seeded fallback wind vortex ribbons parameterized by variant
+      const tilt = ((v % 7) - 3) * 0.18;
+      const blades = 2 + (v % 4);
+      add(c);
+      c.save();
+      c.rotate(tilt);
+      for (let i = 0; i < blades; i++) {
+        const rot = t * (2.5 + (v % 3) * 0.6) * (i % 2 ? -1 : 1) + (i * TAU) / blades;
+        windBlade(
+          c,
+          0,
+          -s * 0.06,
+          s * (0.2 + i * 0.05),
+          rot,
+          1.25,
+          s * 0.03,
+          rgba(i % 2 ? a : hi, 0.7),
+          rgba("#ffffff", 0.8),
+        );
+      }
+      c.restore();
+      norm(c);
+      tornado(f, s * (0.38 + (v % 4) * 0.05), s * 0.18, s * 0.04, a, hi);
     }
   }
 }
@@ -1541,6 +1687,20 @@ function water(f: PF) {
     c.stroke();
   }
   drops(18 + p * 2, gy - H * 0.9);
+  if (v >= 20) {
+    const jets = 2 + (v % 4);
+    add(c);
+    for (let i = 0; i < jets; i++) {
+      const ang = t * 1.8 + (i * TAU) / jets + v * 0.3;
+      const rad = s * (0.14 + (i % 3) * 0.05);
+      c.strokeStyle = rgba(i % 2 ? hi : a, 0.65);
+      c.lineWidth = 2.5;
+      c.beginPath();
+      c.arc(0, gy - s * 0.18, rad, ang, ang + 1.1);
+      c.stroke();
+    }
+    norm(c);
+  }
 }
 
 // ---------------------------------------------------------------- earth
@@ -1626,6 +1786,18 @@ function earth(f: PF) {
     c.fillStyle = i % 2 ? a : b;
     c.fillRect(vx * q, gy + vy * q + s * 0.9 * q * q, s * 0.018, s * 0.018);
   }
+  if (v >= 20) {
+    const orbiters = 3 + (v % 5);
+    for (let i = 0; i < orbiters; i++) {
+      const q = t * 1.1 + (i / orbiters) * TAU;
+      c.save();
+      c.translate(Math.cos(q) * s * 0.28, gy - s * 0.24 + Math.sin(q) * s * 0.07);
+      c.rotate(q + v);
+      c.fillStyle = i % 2 ? a : hi;
+      c.fillRect(-s * 0.02, -s * 0.02, s * 0.04, s * 0.04);
+      c.restore();
+    }
+  }
 }
 
 // ---------------------------------------------------------------- nature
@@ -1698,12 +1870,13 @@ function nature(f: PF) {
       i % 3 ? a : hi,
     );
   }
-  if (v === 0) {
+  if (v === 0 || v >= 20) {
+    const arms = v >= 20 ? 2 + (v % 4) : 2;
     c.save();
     c.translate(0, gy - s * 0.25);
-    c.rotate(t * 0.5);
-    for (let i = 0; i < 2; i++) {
-      c.rotate(Math.PI);
+    c.rotate(t * (0.5 + (v % 3) * 0.15));
+    for (let i = 0; i < arms; i++) {
+      c.rotate(TAU / arms);
       c.beginPath();
       for (let k = 0; k <= 30; k++) {
         const q = (k / 30) * Math.PI * 1.6;
@@ -1738,9 +1911,8 @@ export function guardianAura(f: PF, under: boolean) {
       c.fillStyle = g;
       c.fillRect(-w, gy - (i + 1) * sh, w * 2, sh + 0.5);
     }
-    c.shadowColor = a;
-    c.shadowBlur = 24;
-    c.globalAlpha = 0.22 + 0.06 * Math.sin(t * 2);
+    glowDot(c, 0, gy - s * 0.25, s * 0.34, a, 0.38);
+    c.globalAlpha = 0.28 + 0.06 * Math.sin(t * 2);
     const bob = Math.sin(t * 1.2) * s * 0.015;
     const hd = humanoid(
       c,
@@ -1762,7 +1934,6 @@ export function guardianAura(f: PF, under: boolean) {
     c.arc(0, 0, hd.u * 1.6, 0, TAU);
     c.stroke();
     c.restore();
-    c.shadowBlur = 0;
     norm(c);
   } else {
     add(c);

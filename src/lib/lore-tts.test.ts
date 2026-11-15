@@ -45,7 +45,7 @@ test("speakLoreNarration cancels prior speech, configures utterance, and handles
     pitch = 1;
     onstart: (() => void) | null = null;
     onend: (() => void) | null = null;
-    onerror: ((event: { error?: string }) => void) | null = null;
+    onerror: ((event: { error?: string | undefined }) => void) | null = null;
     constructor(text = "") {
       this.text = text;
     }

@@ -39,6 +39,7 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
+  defaultSsr: false,
   functionMiddleware: [attachFreshAuth],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));

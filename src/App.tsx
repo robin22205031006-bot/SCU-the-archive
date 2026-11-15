@@ -3,7 +3,7 @@ import { MotionConfig } from "framer-motion";
 import { LoreExplorer } from "@/components/LoreExplorer";
 import { ArchivistChat } from "@/components/ArchivistChat";
 import { NexusNavigation, type NexusNavLink } from "@/components/NexusNavigation";
-import { MotionPage, MotionPresence } from "@/components/app-motion";
+import { MotionPage } from "@/components/app-motion";
 import {
   UIStateProvider,
   applyHtmlUIStateAttributes,
@@ -126,11 +126,9 @@ function AppContent() {
 
         {/* Main View Area */}
         <main className="flex-1 overflow-hidden">
-          <MotionPresence mode="wait" initial={false}>
-            <MotionPage key={activeView} className="h-full">
-              {activeView === "chat" ? <ArchivistChat /> : <LoreExplorer />}
-            </MotionPage>
-          </MotionPresence>
+          <MotionPage className="h-full">
+            {activeView === "chat" ? <ArchivistChat /> : <LoreExplorer />}
+          </MotionPage>
         </main>
 
         <NexusNavigation links={APP_NAV_LINKS} onNavigate={(link) => setActiveNav(link.to)} />

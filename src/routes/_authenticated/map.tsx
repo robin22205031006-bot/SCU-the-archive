@@ -1,16 +1,27 @@
+import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { LoreLocations } from "@/components/lore-locations";
-import { TacticalMap } from "@/components/tactical-map";
 import { useSectionStyle } from "@/hooks/use-typography";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { Map, Radio, Globe2 } from "lucide-react";
-import { NexusAtlas } from "@/components/nexus-atlas";
 import { useIsManga, useActiveGenre } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 import { GenreDiamondMediaFrame } from "@/components/genre-decorations";
-import { FantasyMapSpread } from "@/components/fantasy-map-spread";
 import { MotionPage, MotionSection } from "@/components/app-motion";
+import { PanelSkeleton } from "@/components/route-skeleton";
+
+const LoreLocations = lazy(() =>
+  import("@/components/lore-locations").then((m) => ({ default: m.LoreLocations })),
+);
+const TacticalMap = lazy(() =>
+  import("@/components/tactical-map").then((m) => ({ default: m.TacticalMap })),
+);
+const NexusAtlas = lazy(() =>
+  import("@/components/nexus-atlas").then((m) => ({ default: m.NexusAtlas })),
+);
+const FantasyMapSpread = lazy(() =>
+  import("@/components/fantasy-map-spread").then((m) => ({ default: m.FantasyMapSpread })),
+);
 
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
@@ -69,53 +80,55 @@ function MapPage() {
         )}
       </MotionSection>
       <MotionSection delay={0.05}>
-        {nexus ? (
-          <NexusWorkspace
-            views={[
-              {
-                id: "atlas",
-                title: "Atlas",
-                icon: <Globe2 className="h-4 w-4" />,
-                content: <NexusAtlas />,
-              },
-              {
-                id: "world",
-                title: "World & Eras",
-                icon: <Map className="h-4 w-4" />,
-                content: <LoreLocations />,
-              },
-              {
-                id: "deployments",
-                title: "Deployments",
-                icon: <Radio className="h-4 w-4" />,
-                content: <TacticalMap />,
-              },
-            ]}
-          />
-        ) : isFantasy ? (
-          <FantasyMapSpread />
-        ) : isManga ? (
-          <div className="grid gap-8">
-            <GenreDiamondMediaFrame
-              theme={activeGenre}
-              variant="diamond"
-              leftEmblemLabel="ATLAS"
-              rightEmblemLabel="ERA"
-            >
-              <MangaPanel caption="THEATER ATLAS & ERAS // 勢力圏" badge="LOCATIONS">
-                <LoreLocations />
+        <Suspense fallback={<PanelSkeleton className="min-h-[60vh]" />}>
+          {nexus ? (
+            <NexusWorkspace
+              views={[
+                {
+                  id: "atlas",
+                  title: "Atlas",
+                  icon: <Globe2 className="h-4 w-4" />,
+                  content: <NexusAtlas />,
+                },
+                {
+                  id: "world",
+                  title: "World & Eras",
+                  icon: <Map className="h-4 w-4" />,
+                  content: <LoreLocations />,
+                },
+                {
+                  id: "deployments",
+                  title: "Deployments",
+                  icon: <Radio className="h-4 w-4" />,
+                  content: <TacticalMap />,
+                },
+              ]}
+            />
+          ) : isFantasy ? (
+            <FantasyMapSpread />
+          ) : isManga ? (
+            <div className="grid gap-8">
+              <GenreDiamondMediaFrame
+                theme={activeGenre}
+                variant="diamond"
+                leftEmblemLabel="ATLAS"
+                rightEmblemLabel="ERA"
+              >
+                <MangaPanel caption="THEATER ATLAS & ERAS // 勢力圏" badge="LOCATIONS">
+                  <LoreLocations />
+                </MangaPanel>
+              </GenreDiamondMediaFrame>
+              <MangaPanel caption="DEPLOYMENT BOARD // 配備一覧" badge="FIELD LOGS">
+                <TacticalMap />
               </MangaPanel>
-            </GenreDiamondMediaFrame>
-            <MangaPanel caption="DEPLOYMENT BOARD // 配備一覧" badge="FIELD LOGS">
+            </div>
+          ) : (
+            <>
+              <LoreLocations />
               <TacticalMap />
-            </MangaPanel>
-          </div>
-        ) : (
-          <>
-            <LoreLocations />
-            <TacticalMap />
-          </>
-        )}
+            </>
+          )}
+        </Suspense>
       </MotionSection>
     </MotionPage>
   );

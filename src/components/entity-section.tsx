@@ -476,13 +476,9 @@ function DetailOverlay({
     <motion.div
       ref={scrollRef}
       initial={motionActive ? { opacity: 0 } : false}
-      animate={{ opacity: 1, transition: motionActive ? { duration: 0.2 } : { duration: 0 } }}
-      {...(motionActive ? { exit: { opacity: 0, transition: { duration: 0.18 } } } : {})}
+      animate={{ opacity: 1, transition: motionActive ? { duration: 0.18 } : { duration: 0 } }}
+      {...(motionActive ? { exit: { opacity: 0, transition: { duration: 0.15 } } } : {})}
       className="fixed inset-0 z-30 overflow-hidden bg-[#020408]"
-      {...(motionActive ? { layoutId: `card-${e.id}` } : {})}
-      transition={
-        motionActive ? { type: "spring", stiffness: 300, damping: 30, mass: 0.8 } : { duration: 0 }
-      }
       onClick={onClose}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
@@ -802,7 +798,7 @@ function DetailOverlay({
             ))}
           </div>
           {e.kind === "character" && (e.alias || bloodline || realName || alterEntity) && (
-            <div className="relative grid gap-2 rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm sm:grid-cols-3">
+            <div className="relative grid gap-2 rounded-xl border border-white/10 bg-black/75 p-4 sm:grid-cols-3">
               {e.alias && (
                 <div>
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -855,7 +851,7 @@ function DetailOverlay({
               return (
                 <div
                   data-spoiler="char"
-                  className="rounded-xl border border-white/10 bg-black/50 p-4 backdrop-blur-sm"
+                  className="rounded-xl border border-white/10 bg-black/75 p-4"
                 >
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span
@@ -925,7 +921,7 @@ function DetailOverlay({
               <AbilityCardCanvas
                 abilities={e.abilities}
                 theme={e.card_theme}
-                className="pointer-events-none absolute inset-0 h-full w-full opacity-20 mix-blend-screen"
+                className="pointer-events-none absolute inset-0 h-full w-full opacity-20"
               />
               <div className="relative">
                 <h4 className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -1553,12 +1549,12 @@ export function EntitySection({
     [data, cat, q],
   );
   const openedInList = (data ?? []).find((e) => e.id === open?.id);
-  // Linked/deep-linked entities may belong to a different kind set — fetch by id as fallback.
+  // Load full entity details (description, sketches, theme audio) lazily when opened.
   const { data: openedFetched } = useQuery({
     ...entityByIdQuery(open?.id ?? ""),
-    enabled: !!open && !openedInList,
+    enabled: !!open?.id,
   });
-  const opened = openedInList ?? openedFetched ?? null;
+  const opened = openedFetched ?? openedInList ?? null;
 
   // Deep link (?open=<id>): open that entity's dossier once it resolves.
   const resolvedOpenId = resolveEntityId(openId) || openId;
@@ -1783,36 +1779,12 @@ export function EntitySection({
                     entity: e,
                   }))}
                   renderDetail={({ entity: e }) => (
-                    <div className="grid gap-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h2 className="break-words text-2xl">{e.name}</h2>
-                        <GroupGenreEmblem entity={e} variant="badge" size="sm" />
-                      </div>
-                      {e.image_url ? (
-                        <img
-                          src={e.image_url}
-                          alt={e.name}
-                          className="h-52 w-full rounded-lg object-contain"
-                        />
-                      ) : (
-                        <div className="grid h-36 place-items-center rounded-lg border border-border/60 bg-background/40">
-                          <GroupGenreEmblem entity={e} variant="crest" size="lg" />
-                        </div>
-                      )}
-                      <p className="whitespace-pre-line text-sm leading-relaxed">
-                        {e.description || "No description recorded."}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => setOpen({ id: e.id, rect: null })}>
-                          <BookOpen className="h-4 w-4" /> Full dossier
-                        </Button>
-                        {isAdmin && (
-                          <Button variant="outline" onClick={() => setEditing(e)}>
-                            <Pencil className="h-4 w-4" /> Edit
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                    <NexusEntityDetail
+                      summary={e}
+                      isAdmin={isAdmin}
+                      onOpen={(id) => setOpen({ id, rect: null })}
+                      onEdit={setEditing}
+                    />
                   )}
                 />
               </div>
@@ -1879,107 +1851,26 @@ export function EntitySection({
               ) : (
                 <div
                   className={
-                    viewMode === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3"
+                    viewMode === "grid"
+                      ? "scu-card-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                      : "scu-card-grid grid gap-3"
                   }
                 >
-                  <AnimatePresence initial={false}>
-                    {list.map((e, i) => {
-                      if (open?.id === e.id) return null; // unmount → shared-element morph into dossier
-                      const cardClass = `glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 ${
-                        motionActive
-                          ? `transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`
-                          : ""
-                      }`;
-                      const cardStyle = {
-                        "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
-                      } as unknown as MotionStyle;
-                      const cardInner = (
-                        <>
-                          <AbilityCardCanvas
-                            abilities={e.abilities}
-                            theme={e.card_theme}
-                            className="pointer-events-none absolute inset-0 h-full w-full opacity-30 transition-opacity group-hover:opacity-60"
-                          />
-                          <Link
-                            to="/character"
-                            search={{ e: e.id }}
-                            className="relative flex min-w-0 flex-1 gap-4"
-                          >
-                            <Avatar e={e} size="h-16 w-16" />
-                            <CardBody e={e} showKind={kinds.length > 1} />
-                          </Link>
-                          {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
-                          {isAdmin && (
-                            <div className="flex shrink-0 flex-col gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 active:scale-90"
-                                aria-label="Edit"
-                                onClick={() => setEditing(e)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 active:scale-90"
-                                aria-label="Merge into another entry"
-                                onClick={() => setMerging(e)}
-                              >
-                                <GitMerge className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-destructive active:scale-90"
-                                aria-label="Delete"
-                                onClick={() => setDeleting(e)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          )}
-                        </>
-                      );
-                      if (!motionActive) {
-                        return (
-                          <article
-                            key={e.id}
-                            className={cardClass}
-                            style={cardStyle as CSSProperties}
-                          >
-                            {cardInner}
-                          </article>
-                        );
-                      }
-                      return (
-                        <motion.article
-                          key={e.id}
-                          layout
-                          layoutId={`card-${e.id}`}
-                          variants={spec.cardVariants}
-                          initial="initial"
-                          animate="animate"
-                          exit={{
-                            opacity: 0,
-                            scale: 0.95,
-                            transition: { duration: 0.18, ease: "easeIn" },
-                          }}
-                          whileHover="hover"
-                          whileTap="tap"
-                          transition={{
-                            ...spec.transition,
-                            delay: Math.min(i * 0.03, 0.36),
-                          }}
-                          className={cardClass}
-                          style={cardStyle}
-                        >
-                          {cardInner}
-                        </motion.article>
-                      );
-                    })}
-                  </AnimatePresence>
+                  {list.map((e, i) => (
+                    <EntityGridCard
+                      key={e.id}
+                      e={e}
+                      index={i}
+                      showKind={kinds.length > 1}
+                      motionActive={motionActive}
+                      specTransition={spec.transition}
+                      cardVariants={spec.cardVariants}
+                      isAdmin={isAdmin}
+                      onEdit={setEditing}
+                      onMerge={setMerging}
+                      onDelete={setDeleting}
+                    />
+                  ))}
                 </div>
               )}
             </>
@@ -2043,5 +1934,158 @@ export function EntitySection({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+const EntityGridCard = memo(function EntityGridCard({
+  e,
+  index,
+  showKind,
+  motionActive,
+  specTransition,
+  cardVariants,
+  isAdmin,
+  onEdit,
+  onMerge,
+  onDelete,
+}: {
+  e: Entity;
+  index: number;
+  showKind: boolean;
+  motionActive: boolean;
+  specTransition: ReturnType<typeof useAppMotion>["spec"]["transition"];
+  cardVariants: ReturnType<typeof useAppMotion>["spec"]["cardVariants"];
+  isAdmin: boolean;
+  onEdit: (e: Entity) => void;
+  onMerge: (e: Entity) => void;
+  onDelete: (e: Entity) => void;
+}) {
+  const cardClass = `glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 ${
+    motionActive
+      ? `transition-transform duration-200 hover:-translate-y-0.5 hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`
+      : ""
+  }`;
+  const cardStyle = {
+    "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
+  } as CSSProperties;
+  const inner = (
+    <>
+      <AbilityCardCanvas
+        abilities={e.abilities}
+        theme={e.card_theme}
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-30 transition-opacity group-hover:opacity-60"
+      />
+      <Link to="/character" search={{ e: e.id }} className="relative flex min-w-0 flex-1 gap-4">
+        <Avatar e={e} size="h-16 w-16" />
+        <CardBody e={e} showKind={showKind} />
+      </Link>
+      {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
+      {isAdmin && (
+        <div className="flex shrink-0 flex-col gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 active:scale-90"
+            aria-label="Edit"
+            onClick={() => onEdit(e)}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 active:scale-90"
+            aria-label="Merge into another entry"
+            onClick={() => onMerge(e)}
+          >
+            <GitMerge className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-destructive active:scale-90"
+            aria-label="Delete"
+            onClick={() => onDelete(e)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  if (!motionActive) {
+    return (
+      <article className={cardClass} style={cardStyle}>
+        {inner}
+      </article>
+    );
+  }
+
+  return (
+    <motion.article
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      whileHover="hover"
+      whileTap="tap"
+      transition={{
+        ...specTransition,
+        delay: Math.min(index * 0.02, 0.2),
+      }}
+      className={cardClass}
+      style={cardStyle as MotionStyle}
+    >
+      {inner}
+    </motion.article>
+  );
+});
+
+function NexusEntityDetail({
+  summary,
+  isAdmin,
+  onOpen,
+  onEdit,
+}: {
+  summary: Entity;
+  isAdmin: boolean;
+  onOpen: (id: string) => void;
+  onEdit: (e: Entity) => void;
+}) {
+  const { data: full } = useQuery(entityByIdQuery(summary.id));
+  const e = full ?? summary;
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="break-words text-2xl">{e.name}</h2>
+        <GroupGenreEmblem entity={e} variant="badge" size="sm" />
+      </div>
+      {e.image_url ? (
+        <img
+          src={e.image_url}
+          alt={e.name}
+          loading="lazy"
+          decoding="async"
+          className="h-52 w-full rounded-lg object-contain"
+        />
+      ) : (
+        <div className="grid h-36 place-items-center rounded-lg border border-border/60 bg-background/40">
+          <GroupGenreEmblem entity={e} variant="crest" size="lg" />
+        </div>
+      )}
+      <p className="whitespace-pre-line text-sm leading-relaxed">
+        {e.description || "No description recorded."}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => onOpen(e.id)}>
+          <BookOpen className="h-4 w-4" /> Full dossier
+        </Button>
+        {isAdmin && (
+          <Button variant="outline" onClick={() => onEdit(e)}>
+            <Pencil className="h-4 w-4" /> Edit
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

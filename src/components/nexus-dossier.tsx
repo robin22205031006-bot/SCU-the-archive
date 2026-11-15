@@ -324,7 +324,13 @@ export function NexusDossier({
                 accentColor={coreColor}
                 fallback={
                   e.image_url ? (
-                    <img src={e.image_url} alt={e.name} className="h-full w-full object-cover" />
+                    <img
+                      src={e.image_url}
+                      alt={e.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="grid h-full w-full place-items-center bg-card [font-family:var(--font-display)] text-6xl text-muted-foreground">
                       {e.name[0]}
@@ -376,8 +382,7 @@ export function NexusDossier({
               {seriesCards.map((s) => (
                 <motion.button
                   key={s.id}
-                  layout
-                  whileHover={{ y: -4 }}
+                  whileHover={{ y: -3 }}
                   onClick={() => setOpenSeries(openSeries === s.id ? null : s.id)}
                   className={`relative h-24 w-40 shrink-0 overflow-hidden rounded-lg border text-left transition ${
                     openSeries === s.id || season?.seriesId === s.id
@@ -450,7 +455,7 @@ export function NexusDossier({
 
         {/* ═════ MIDDLE: arc menu · content · identity ═════ */}
         <section className="relative mx-auto mt-10 max-w-6xl px-4">
-          <div className="grid gap-6 rounded-2xl border border-cyan-400/35 bg-slate-950/60 p-5 shadow-[0_0_28px_rgba(56,189,248,0.12)] backdrop-blur-md md:grid-cols-[180px_1fr_240px]">
+          <div className="grid gap-6 rounded-2xl border border-cyan-400/35 bg-slate-950/85 p-5 shadow-[0_0_24px_rgba(56,189,248,0.12)] md:grid-cols-[180px_1fr_240px]">
             <nav className="relative flex flex-row gap-3 md:flex-col md:gap-6 md:py-6">
               <span
                 aria-hidden
@@ -491,13 +496,13 @@ export function NexusDossier({
             </nav>
 
             <div className="min-h-[220px]">
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync" initial={false}>
                 <motion.div
                   key={menu + (seasonKey ?? "all")}
-                  initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -12, filter: "blur(6px)" }}
-                  transition={{ duration: 0.4, ease: EASE }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22, ease: EASE }}
                 >
                   <p className="mb-2 text-[10px] uppercase tracking-[0.4em] text-accent">
                     {MENU.find((m) => m.key === menu)?.label} · {seasonLabel}
@@ -576,7 +581,7 @@ export function NexusDossier({
                 <p className="pt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
                   Title / Codename
                 </p>
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="sync" initial={false}>
                   <motion.p
                     key={codename || "none"}
                     data-spoiler="char"
@@ -641,7 +646,7 @@ export function NexusDossier({
           <p className="mb-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
             Ability core · {seasonLabel}
           </p>
-          <div className="grid gap-6 rounded-2xl border border-cyan-400/35 bg-slate-950/60 p-5 shadow-[0_0_28px_rgba(56,189,248,0.12)] backdrop-blur-md md:grid-cols-[1fr_240px]">
+          <div className="grid gap-6 rounded-2xl border border-cyan-400/35 bg-slate-950/85 p-5 shadow-[0_0_24px_rgba(56,189,248,0.12)] md:grid-cols-[1fr_240px]">
             <AbilityOrbit
               abilities={abilities}
               masked={masked}
@@ -749,7 +754,7 @@ function AbilityOrbit({
           transition={{ duration: 40 + i * 15, repeat: Infinity, ease: "linear" }}
         />
       ))}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync" initial={false}>
         <motion.div key={seasonKey} className="absolute inset-0">
           <motion.div
             initial={{ scale: 0.4, opacity: 0 }}

@@ -84,7 +84,8 @@ export function SiteNav() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user?.id,
-    staleTime: 60_000,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
@@ -97,7 +98,8 @@ export function SiteNav() {
   // Load admin-uploaded audio clips once for the session.
   useQuery({
     queryKey: ["app-settings", "audio_settings"],
-    staleTime: 300_000,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("app_settings")
@@ -131,7 +133,8 @@ export function SiteNav() {
   const { pathname } = useLocation();
   const { data: navHidden } = useQuery({
     queryKey: ["app-settings", "nav_visibility"],
-    staleTime: 60_000,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("app_settings")
@@ -271,16 +274,9 @@ export function SiteNav() {
               >
                 <Icon className={`h-3.5 w-3.5 ${on ? "text-accent" : ""}`} />
                 <span className={on ? "" : "hidden md:inline"}>{t.label}</span>
-                {on &&
-                  (motionActive ? (
-                    <motion.span
-                      layoutId="site-nav-active-dot"
-                      transition={spec.tabIndicatorTransition}
-                      className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent glow-ring"
-                    />
-                  ) : (
-                    <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent glow-ring" />
-                  ))}
+                {on && (
+                  <span className="absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent glow-ring" />
+                )}
               </Link>
             );
           })}

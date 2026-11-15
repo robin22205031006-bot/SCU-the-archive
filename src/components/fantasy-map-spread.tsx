@@ -574,7 +574,7 @@ export function FantasyMapSpread() {
 
               {/* Large Sharp Filigree Diamond Viewport */}
               <div className="relative h-[300px] w-[300px] sm:h-[360px] sm:w-[360px]">
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="sync" initial={false}>
                   <motion.div
                     key={`${realm.id}-${activeEra.id}`}
                     initial={animOn ? { opacity: 0, scale: 0.96 } : false}
@@ -676,7 +676,7 @@ export function FantasyMapSpread() {
 
           {/* RIGHT COLUMN: Double-Hairline Grimoire Description Frame + Telemetry + Luminous DISCOVER CTA */}
           <div className="relative flex flex-col items-center">
-            <div className="relative w-full border border-[#e6dcc5]/55 bg-[#121c18]/88 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:p-7">
+            <div className="relative w-full border border-[#e6dcc5]/55 bg-[#121c18]/94 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.45)] sm:p-7">
               {/* Double-hairline offset inner border + corner filigree curls */}
               <div
                 aria-hidden="true"
@@ -733,7 +733,7 @@ export function FantasyMapSpread() {
               </div>
 
               {/* Lore Chronicle Copy */}
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync" initial={false}>
                 <motion.div
                   key={`${realm.id}-${activeEra.id}-desc`}
                   initial={animOn ? { opacity: 0, y: 6 } : false}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -59,7 +59,7 @@ const SHORT_TAB_NAMES: Record<string, string> = {
  * Supports unrolled parchment Scroll Header + jade-teal cloud scrolls in Arcane Botanical Fantasy,
  * GPU-accelerated motion/react page & tab transitions, dynamic Manga SFX pop-ups, and sensory feedback.
  */
-export function MangaShell({ children }: { children: ReactNode }) {
+export function MangaChrome({ pageRef }: { pageRef?: RefObject<HTMLDivElement | null> }) {
   const { pathname } = useLocation();
   const hud = useNavMode() === "hud";
   const auth = useOptionalAuth();
@@ -81,11 +81,11 @@ export function MangaShell({ children }: { children: ReactNode }) {
     triggerFeedback("switch", target);
   const [tocOpen, setTocOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
-  const pageRef = useRef<HTMLDivElement>(null);
 
   const { data: visibility } = useQuery({
     queryKey: ["app-settings", "nav_visibility"],
-    staleTime: 60_000,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("app_settings")
@@ -109,8 +109,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
   }, [enabled]);
 
   useEffect(() => {
-    if (!motionActive) return;
-    const node = pageRef.current;
+    if (!enabled || themeCtx?.isMinimal) return;
+    const node = pageRef?.current;
     if (!node) return;
     let staggerHandle: ReturnType<typeof animateMangaStagger> | null = null;
     let runeHandle: ReturnType<typeof animateSvgRuneDraw> | null = null;
@@ -123,7 +123,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
       staggerHandle?.cancel();
       runeHandle?.cancel();
     };
-  }, [pathname, activeGenre, activeSubTheme, motionActive]);
+  }, [pathname, activeGenre, activeSubTheme, enabled, themeCtx?.isMinimal, pageRef]);
 
   const primaryTabs = [...TABS, ...(isStaff ? [STAFF_TAB] : [])].filter(
     (t) => visibility?.[t.to] ?? true,
@@ -133,10 +133,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
   const hideHeader = pathname === "/auth" || pathname === "/install";
 
   return (
-    <div
-      data-motion={enabled ? "on" : "off"}
-      className="manga-shell relative min-h-dvh text-foreground selection:bg-foreground selection:text-background"
-    >
+    <>
       <GenreBackdrop />
       <MangaSfxLayer />
       <GenreThemeOverlay />
@@ -454,11 +451,9 @@ export function MangaShell({ children }: { children: ReactNode }) {
                     {short}
                   </span>
                   {active && (
-                    <motion.span
-                      {...(motionActive ? { layoutId: "manga-tab-indicator" } : {})}
-                      transition={motionSpec.tabIndicatorTransition}
+                    <span
                       aria-hidden="true"
-                      className={`manga-brush-underline absolute inset-x-0 bottom-0 h-[3px] ${
+                      className={`manga-brush-underline absolute inset-x-0 bottom-0 h-[3px] transition-opacity ${
                         isFantasy ? "bg-[#5ce1b8] shadow-[0_0_10px_#5ce1b8]" : "bg-primary"
                       }`}
                     />
@@ -561,10 +556,23 @@ export function MangaShell({ children }: { children: ReactNode }) {
       )}
 
       <ThemeDrawer open={themeOpen} onOpenChange={setThemeOpen} />
+    </>
+  );
+}
 
+export function MangaShell({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  const enabled = useAnimationsEnabled();
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div
+      data-motion={enabled ? "on" : "off"}
+      className="manga-shell relative min-h-dvh text-foreground selection:bg-foreground selection:text-background"
+    >
+      <MangaChrome pageRef={pageRef} />
       <div
         ref={pageRef}
-        key={pathname}
         data-manga-page={pathname.slice(1) || "home"}
         className="manga-page relative z-[1]"
       >

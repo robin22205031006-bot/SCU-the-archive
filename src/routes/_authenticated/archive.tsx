@@ -10,7 +10,7 @@ import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
-import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
+import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 
 const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
 const Clans = lazy(() => import("./clans").then((m) => ({ default: m.Clans })));
@@ -194,22 +194,20 @@ function Archive() {
           </div>
 
           <section aria-label={active.t} data-spoiler="archive">
-            <MotionPresence mode="wait">
-              <MotionSection key={`manga-${module}`}>
-                <MangaPanel caption={`FOLIO // ${active.t.toUpperCase()}`} badge="CANON RECORD">
-                  <SectionBoundary key={module} label={active.t}>
-                    <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
-                      {module === "series" && <ArchiveSeasons />}
-                      {module === "orgs" && <Orgs />}
-                      {module === "clans" && <Clans />}
-                      {module === "graph" && <RelationshipGraph />}
-                      {module === "timeline" && <Timeline />}
-                      {module === "explorer" && <LoreExplorer />}
-                    </Suspense>
-                  </SectionBoundary>
-                </MangaPanel>
-              </MotionSection>
-            </MotionPresence>
+            <MotionSection key={`manga-${module}`}>
+              <MangaPanel caption={`FOLIO // ${active.t.toUpperCase()}`} badge="CANON RECORD">
+                <SectionBoundary key={module} label={active.t}>
+                  <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+                    {module === "series" && <ArchiveSeasons />}
+                    {module === "orgs" && <Orgs />}
+                    {module === "clans" && <Clans />}
+                    {module === "graph" && <RelationshipGraph />}
+                    {module === "timeline" && <Timeline />}
+                    {module === "explorer" && <LoreExplorer />}
+                  </Suspense>
+                </SectionBoundary>
+              </MangaPanel>
+            </MotionSection>
           </section>
         </>
       ) : (
@@ -232,24 +230,22 @@ function Archive() {
           </div>
 
           <section aria-label={active.t} data-spoiler="archive">
-            <MotionPresence mode="wait">
-              <MotionSection key={`classic-${module}`}>
-                <SectionBoundary key={module} label={active.t}>
-                  <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
-                    {module === "series" && <ArchiveSeasons />}
-                    {module === "orgs" && <Orgs />}
-                    {module === "clans" && <Clans />}
-                    {module === "graph" && (
-                      <div className="glass rounded-2xl p-4">
-                        <RelationshipGraph />
-                      </div>
-                    )}
-                    {module === "timeline" && <Timeline />}
-                    {module === "explorer" && <LoreExplorer />}
-                  </Suspense>
-                </SectionBoundary>
-              </MotionSection>
-            </MotionPresence>
+            <MotionSection key={`classic-${module}`}>
+              <SectionBoundary key={module} label={active.t}>
+                <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+                  {module === "series" && <ArchiveSeasons />}
+                  {module === "orgs" && <Orgs />}
+                  {module === "clans" && <Clans />}
+                  {module === "graph" && (
+                    <div className="glass rounded-2xl p-4">
+                      <RelationshipGraph />
+                    </div>
+                  )}
+                  {module === "timeline" && <Timeline />}
+                  {module === "explorer" && <LoreExplorer />}
+                </Suspense>
+              </SectionBoundary>
+            </MotionSection>
           </section>
         </>
       )}

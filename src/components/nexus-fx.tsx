@@ -7,9 +7,18 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { AdditiveBlending, Color, Group, Mesh, ShaderMaterial } from "three";
+import {
+  AdditiveBlending,
+  Color,
+  Group,
+  Material,
+  Mesh,
+  Points,
+  ShaderMaterial,
+  Texture,
+} from "three";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useNexus3dFxEnabled, useNexusTheme } from "@/hooks/use-nexus-theme";
 import { useActiveNexusWallpaper } from "@/hooks/use-nexus-wallpaper";
@@ -205,6 +214,36 @@ function Ready({ container }: { container: React.RefObject<HTMLDivElement | null
   });
   return null;
 }
+
+function CanvasDisposal() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    return () => {
+      scene.traverse((obj) => {
+        if (obj instanceof Mesh || obj instanceof Points) {
+          obj.geometry?.dispose();
+          const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+          for (const mat of mats) {
+            if (!mat) continue;
+            for (const val of Object.values(mat)) {
+              if (val instanceof Texture) val.dispose();
+            }
+            if (mat instanceof Material) mat.dispose();
+          }
+        }
+      });
+      scene.environment?.dispose?.();
+      gl.dispose();
+      try {
+        const ctx = gl.getContext();
+        ctx?.getExtension("WEBGL_lose_context")?.loseContext();
+      } catch {
+        // Ignore if context already lost
+      }
+    };
+  }, [gl, scene]);
+  return null;
+}
 export function NexusFxLayer({ children }: { children: ReactNode }) {
   const moving = useNexusMotion();
   const theme = useNexusTheme();
@@ -275,6 +314,7 @@ export function NexusFxLayer({ children }: { children: ReactNode }) {
                   background
                 />
                 <Ready container={background} />
+                <CanvasDisposal />
               </Canvas>
             </FxBoundary>
           </div>

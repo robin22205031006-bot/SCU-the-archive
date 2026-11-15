@@ -1,7 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { getMergedSecondaryIds, type Entity } from "@/lib/entities";
+import {
+  ENTITY_SUMMARY_COLUMNS,
+  getMergedSecondaryIds,
+  withEntitySummaryDefaults,
+  type Entity,
+} from "@/lib/entities";
 import { canonicalCharacterName } from "@/lib/adminLoreSync";
 
 export type Series = Tables<"series">;
@@ -687,9 +692,12 @@ CANON_SERIES_ROSTERS["Standalone Epics"] =
 
 const norm = (s: string) => s.trim().toLowerCase();
 
+const SERIES_STALE_MS = 1000 * 60 * 15;
+
 export const seriesQuery = queryOptions({
   queryKey: ["series"],
-  staleTime: 60_000,
+  staleTime: SERIES_STALE_MS,
+  refetchOnWindowFocus: false,
   queryFn: async () => {
     const { data, error } = await supabase.from("series").select("*").order("title");
     if (error) {
@@ -704,7 +712,8 @@ export const seriesByIdQuery = (id: string) =>
   queryOptions({
     queryKey: ["series", id],
     enabled: !!id,
-    staleTime: 60_000,
+    staleTime: SERIES_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase.from("series").select("*").eq("id", id).maybeSingle();
       if (error && !missingTable(error)) throw error;
@@ -717,7 +726,8 @@ export const seriesCharactersQuery = (seriesId: string) =>
   queryOptions({
     queryKey: ["series-characters", seriesId],
     enabled: !!seriesId,
-    staleTime: 30_000,
+    staleTime: SERIES_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("series_characters")
@@ -776,7 +786,8 @@ export const characterSeriesQuery = (characterId: string) =>
   queryOptions({
     queryKey: ["character-series", characterId],
     enabled: !!characterId,
-    staleTime: 30_000,
+    staleTime: SERIES_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const allIds = [characterId, ...getMergedSecondaryIds(characterId)];
       const { data, error } = await supabase
@@ -839,11 +850,15 @@ export function seriesMembersQuery(rows: SeriesCharacter[] | undefined) {
   return queryOptions({
     queryKey: ["series-member-entities", ids.join(",")],
     enabled: ids.length > 0,
-    staleTime: 60_000,
+    staleTime: SERIES_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entities").select("*").in("id", ids);
+      const { data, error } = await supabase
+        .from("entities")
+        .select(ENTITY_SUMMARY_COLUMNS)
+        .in("id", ids);
       if (error) throw error;
-      return (data ?? []) as Entity[];
+      return ((data ?? []) as Partial<Entity>[]).map(withEntitySummaryDefaults);
     },
   });
 }

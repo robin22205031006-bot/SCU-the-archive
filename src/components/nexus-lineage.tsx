@@ -69,7 +69,13 @@ export function NexusLineage() {
         style={{ borderColor: col, boxShadow: `0 0 18px ${col}` }}
       >
         {c.image_url ? (
-          <img src={c.image_url} alt="" className="h-full w-full object-cover" />
+          <img
+            src={c.image_url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <span className="text-lg font-medium">{c.name[0]}</span>
         )}

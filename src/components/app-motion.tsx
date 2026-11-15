@@ -193,17 +193,16 @@ export function MotionCard({
   const useScrollReveal = scrollReveal && !prefersReducedMotion && supportsIntersectionObserver;
   const resolvedVariants = useScrollReveal
     ? {
-        ...(spec.cardVariants.hover ? { hover: spec.cardVariants.hover } : {}),
-        ...(spec.cardVariants.tap ? { tap: spec.cardVariants.tap } : {}),
-        scrollHidden: { opacity: 0, y: 18, scale: 0.98 },
+        ...(spec.cardVariants["hover"] ? { hover: spec.cardVariants["hover"] } : {}),
+        ...(spec.cardVariants["tap"] ? { tap: spec.cardVariants["tap"] } : {}),
+        scrollHidden: { opacity: 0.92, y: 8 },
         scrollVisible: {
           opacity: 1,
           y: 0,
-          scale: 1,
           transition: {
-            duration: 0.36,
+            duration: 0.22,
             ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-            delay: Math.min((index % 6) * 0.05, 0.25),
+            delay: Math.min((index % 4) * 0.03, 0.12),
           },
         },
       }
@@ -216,15 +215,15 @@ export function MotionCard({
       {...(useScrollReveal ? { "data-scroll-reveal": "true" } : {})}
       variants={resolvedVariants}
       initial={useScrollReveal ? "scrollHidden" : "initial"}
-      {...(useScrollReveal
-        ? { whileInView: "scrollVisible", viewport: { once: true, amount: "some" } }
-        : {
-            animate: "animate",
+      animate={useScrollReveal ? "scrollVisible" : "animate"}
+      {...(!useScrollReveal
+        ? {
             transition: {
               ...spec.transition,
-              delay: Math.min(index * 0.03, 0.36),
+              delay: Math.min(index * 0.02, 0.2),
             },
-          })}
+          }
+        : {})}
       {...(interactive ? { whileHover: "hover", whileTap: "tap" } : {})}
       className={className}
       {...(id ? { id } : {})}

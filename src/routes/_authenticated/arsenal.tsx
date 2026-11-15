@@ -1,7 +1,7 @@
-import { Component, useMemo, useState, type ReactNode } from "react";
+import { Component, Suspense, lazy, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Pencil, Plus, Search, Trash2, Upload, X, Sparkles, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsStaff } from "@/hooks/use-admin";
@@ -11,14 +11,20 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Tables } from "@/integrations/supabase/types";
 import { useUiStyle } from "@/lib/ui-style";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
-import { ArtifactCard, NexusArtifactViewer } from "@/components/arsenal-card";
-import { ArsenalIsolatedView } from "@/components/arsenal-isolated";
-import { DEFAULT_ARTIFACTS } from "@/lib/arsenal-art";
+import { ArtifactCard } from "@/components/arsenal-card";
+import { artifactsQuery } from "@/lib/artifacts";
 import { uploadModel3d } from "@/lib/models-3d";
-import { Sparkles, Layers } from "lucide-react";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
+import { PanelSkeleton } from "@/components/route-skeleton";
+
+const ArsenalIsolatedView = lazy(() =>
+  import("@/components/arsenal-isolated").then((m) => ({ default: m.ArsenalIsolatedView })),
+);
+const NexusArtifactViewer = lazy(() =>
+  import("@/components/arsenal-card").then((m) => ({ default: m.NexusArtifactViewer })),
+);
 
 type Artifact = Tables<"artifacts">;
 export const ARTIFACT_CATEGORIES = {
@@ -30,23 +36,6 @@ export const ARTIFACT_CATEGORIES = {
   other: "Other",
 } as const;
 type Cat = keyof typeof ARTIFACT_CATEGORIES;
-
-const isMissingTable = (error: { message?: string; code?: string } | null, table: string) =>
-  !!error &&
-  (error.code === "PGRST205" ||
-    new RegExp(`${table}|schema cache|does not exist`, "i").test(error.message ?? ""));
-
-const artifactsQuery = queryOptions({
-  queryKey: ["artifacts"],
-  queryFn: async () => {
-    const { data, error } = await supabase.from("artifacts").select("*").order("name");
-    if (error) {
-      if (isMissingTable(error, "artifacts")) return DEFAULT_ARTIFACTS;
-      throw error;
-    }
-    return data && data.length > 0 ? data : DEFAULT_ARTIFACTS;
-  },
-});
 
 export const Route = createFileRoute("/_authenticated/arsenal")({
   head: () => ({
@@ -320,16 +309,17 @@ function ArsenalPage() {
         </button>
       </MotionSection>
 
-      <MotionPresence mode="wait">
-        {subTab === "isolated" ? (
-          <MotionSection key="isolated">
+      {subTab === "isolated" ? (
+        <MotionSection key="isolated">
+          <Suspense fallback={<PanelSkeleton className="min-h-[520px]" />}>
             <ArsenalIsolatedView
               artifacts={data ?? []}
               onSelectArtifact={(a) => setFocusId(a.id)}
             />
-          </MotionSection>
-        ) : (
-          <MotionSection key="catalog" className="grid gap-5">
+          </Suspense>
+        </MotionSection>
+      ) : (
+        <MotionSection key="catalog" className="grid gap-5">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -467,7 +457,7 @@ function ArsenalPage() {
               )}
             </MotionPresence>
             <div
-              className={`grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+              className={`scu-card-grid grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
             >
               {list.map((a) => (
                 <CardGuard key={a.id} name={a.name}>
@@ -491,14 +481,13 @@ function ArsenalPage() {
             </div>
           </MotionSection>
         )}
-      </MotionPresence>
-      <MotionPresence>
-        {focus && nexus && (
-          <CardGuard key={"v" + focus.id} name={focus.name}>
+      {focus && nexus && (
+        <CardGuard key={"v" + focus.id} name={focus.name}>
+          <Suspense fallback={null}>
             <NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocusId(null)} />
-          </CardGuard>
-        )}
-      </MotionPresence>
+          </Suspense>
+        </CardGuard>
+      )}
     </MotionPage>
   );
 }

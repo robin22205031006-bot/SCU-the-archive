@@ -177,13 +177,16 @@ function AtlasFxLayer({ fx, active }: { fx: AtlasFx[]; active: boolean }) {
             q.kind === "fireflies" || q.kind === "spores" || q.kind === "lanterns"
               ? 0.35 + 0.5 * Math.abs(Math.sin(q.p * 2))
               : 0.68;
+          if (q.kind !== "snow" && q.kind !== "ash") {
+            ctx.fillStyle = `rgba(${col},${a * 0.22})`;
+            ctx.beginPath();
+            ctx.arc(px, py, q.r * dpr * 2.2, 0, 6.28);
+            ctx.fill();
+          }
           ctx.fillStyle = `rgba(${col},${a})`;
-          ctx.shadowColor = `rgba(${col},1)`;
-          ctx.shadowBlur = q.kind === "snow" || q.kind === "ash" ? 0 : 8 * dpr;
           ctx.beginPath();
           ctx.arc(px, py, q.r * dpr, 0, 6.28);
           ctx.fill();
-          ctx.shadowBlur = 0;
         }
       }
       raf = requestAnimationFrame(tick);
@@ -348,10 +351,10 @@ function MapSurface({
           width={mediaWidth}
           height={mediaHeight}
           draggable={false}
-          initial={moving ? { opacity: 0, scale: 1.03, filter: "blur(6px) saturate(.7)" } : false}
-          animate={{ opacity: 1, scale: 1, filter: "blur(0px) saturate(1)" }}
+          initial={moving ? { opacity: 0, scale: 1.02 } : false}
+          animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="absolute inset-0 h-full w-full select-none object-contain"
         />
       </AnimatePresence>
@@ -1106,14 +1109,14 @@ export function AtlasOverlay({
       className="fixed inset-0 z-[200] overflow-hidden bg-background"
       style={{ maxWidth: "none", maxHeight: "none" }}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync" initial={false}>
         <motion.div
           key={view}
           className="absolute inset-0"
-          initial={{ opacity: 0, scale: 1.06, filter: "blur(8px)" }}
-          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-          exit={{ opacity: 0, scale: 0.96, filter: "blur(6px)" }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, scale: 1.02 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
         >
           {loc ? (
             <LocationView

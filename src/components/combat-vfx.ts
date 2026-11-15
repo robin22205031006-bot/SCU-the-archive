@@ -63,10 +63,11 @@ function bolt(
     pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)));
     c.stroke();
   };
-  c.shadowColor = cols[0];
-  c.shadowBlur = w * 4;
+  c.save();
+  c.globalAlpha = 0.25;
+  stroke(cols[0], w * 4.2);
+  c.restore();
   stroke(cols[0], w * 2.2);
-  c.shadowBlur = 0;
   stroke(cols[1], w);
   stroke(cols[2], w * 0.35);
   if (depth < 1)

@@ -793,7 +793,7 @@ export function abilityFxRecipe(name: string): FxRecipe {
   return {
     key: def.key,
     motif,
-    variant: 20 + (h % 40),
+    variant: 20 + (h % 99991),
     palette: P(def.color, "#0b0b12", "#ffffff"),
     tempo: 1.4 + (h % 15) / 10,
     power,

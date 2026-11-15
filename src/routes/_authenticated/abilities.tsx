@@ -1,10 +1,16 @@
 import { abilityFxRecipe } from "@/lib/ability-fx";
 import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { AbilityFxLauncher } from "@/components/ability-fx-showcase";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, memo, useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AbilityFxPanel } from "@/components/ability-fx-panel";
-import { AbilityActionPanel } from "@/components/ability-action-panel";
+import { EntityGridSkeleton, PanelSkeleton } from "@/components/route-skeleton";
+
+const AbilityFxPanel = lazy(() =>
+  import("@/components/ability-fx-panel").then((m) => ({ default: m.AbilityFxPanel })),
+);
+const AbilityActionPanel = lazy(() =>
+  import("@/components/ability-action-panel").then((m) => ({ default: m.AbilityActionPanel })),
+);
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -55,7 +61,7 @@ import {
   tierToIntrinsicRank,
   type AbilityEmblemRank,
 } from "@/lib/ability-rank";
-import { EntityGridSkeleton } from "@/components/route-skeleton";
+// Route skeletons imported at top for lazy Suspense fallback
 import { sfx } from "@/lib/scu-audio";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
 import { NexusExplorer, NexusSpotlight } from "@/components/nexus-explorer";
@@ -147,17 +153,19 @@ function AbilitiesTabs() {
           ))}
         </div>
       </div>
-      <MotionPresence initial={false}>
-        <MotionPage key={tab}>
-          {tab === "fx" ? (
+      <MotionPage key={tab}>
+        {tab === "fx" ? (
+          <Suspense fallback={<PanelSkeleton className="mx-auto mt-6 min-h-[55vh] max-w-6xl" />}>
             <AbilityFxPanel />
-          ) : tab === "action" ? (
+          </Suspense>
+        ) : tab === "action" ? (
+          <Suspense fallback={<PanelSkeleton className="mx-auto mt-6 min-h-[55vh] max-w-6xl" />}>
             <AbilityActionPanel />
-          ) : (
-            <AbilitiesHub />
-          )}
-        </MotionPage>
-      </MotionPresence>
+          </Suspense>
+        ) : (
+          <AbilitiesHub />
+        )}
+      </MotionPage>
     </>
   );
 }
@@ -552,7 +560,7 @@ function AbilitiesHub() {
                     <span className="text-muted-foreground/60">({byTier.get(t)?.length ?? 0})</span>
                   </h2>
                 )}
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="scu-card-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {(byTier.get(t) ?? []).map((d, idx) => (
                     <AbilityCard
                       key={d.key}
@@ -599,7 +607,7 @@ function tierColor(t: AbilityTier): string {
   }
 }
 
-function AbilityCard({
+const AbilityCard = memo(function AbilityCard({
   index = 0,
   def,
   holders,
@@ -800,7 +808,7 @@ function AbilityCard({
       </MotionPresence>
     </MotionCard>
   );
-}
+});
 
 function AddAbilityForm({ onSaved }: { onSaved: (addedTier?: AbilityTier) => void }) {
   const [label, setLabel] = useState("");

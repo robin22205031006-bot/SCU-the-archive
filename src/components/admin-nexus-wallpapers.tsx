@@ -426,7 +426,13 @@ export function AdminNexusWallpapers() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <img src={thumb} alt={wp.label} className="h-full w-full object-cover" />
+                    <img
+                      src={thumb}
+                      alt={wp.label}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
                   )}
                   <span className="absolute left-1.5 top-1.5 rounded bg-background/85 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider">
                     {wp.kind}

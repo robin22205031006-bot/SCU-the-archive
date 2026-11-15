@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Flame, Gauge, GitBranch, Sparkles } from "lucide-react";
 import { FxChains, FxLibrary, FxSimulator } from "@/components/ability-fx-library";
-import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
+import { MotionPage, MotionSection } from "@/components/app-motion";
 
 const TABS = [
   { id: "library", label: "Library", icon: Sparkles },
@@ -40,11 +40,9 @@ export function AbilityFxPanel() {
           ))}
         </div>
       </MotionSection>
-      <MotionPresence mode="wait">
-        <MotionSection key={tab}>
-          {tab === "library" ? <FxLibrary /> : tab === "chains" ? <FxChains /> : <FxSimulator />}
-        </MotionSection>
-      </MotionPresence>
+      <MotionSection key={tab}>
+        {tab === "library" ? <FxLibrary /> : tab === "chains" ? <FxChains /> : <FxSimulator />}
+      </MotionSection>
     </MotionPage>
   );
 }

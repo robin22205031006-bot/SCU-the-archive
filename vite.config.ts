@@ -88,6 +88,49 @@ export default defineConfig({
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(key),
       "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(pid),
     },
+    build: {
+      target: "esnext",
+      chunkSizeWarningLimit: 1200,
+    },
+    environments: {
+      client: {
+        build: {
+          target: "esnext",
+          rollupOptions: {
+            output: {
+              manualChunks(id: string) {
+                if (id.includes("/lore-export/") || id.includes("\\lore-export\\")) {
+                  return "lore-export";
+                }
+                if (
+                  id.includes("/node_modules/three/") ||
+                  id.includes("\\node_modules\\three\\") ||
+                  id.includes("/node_modules/@react-three/") ||
+                  id.includes("\\node_modules\\@react-three\\")
+                ) {
+                  return "vendor-three";
+                }
+                if (
+                  id.includes("/node_modules/framer-motion/") ||
+                  id.includes("\\node_modules\\framer-motion\\")
+                ) {
+                  return "vendor-motion";
+                }
+                if (
+                  id.includes("/node_modules/recharts/") ||
+                  id.includes("\\node_modules\\recharts\\") ||
+                  id.includes("/node_modules/d3-") ||
+                  id.includes("\\node_modules\\d3-")
+                ) {
+                  return "vendor-charts";
+                }
+                return undefined;
+              },
+            },
+          },
+        },
+      },
+    },
   },
   nitro: {
     preset: "node-server",

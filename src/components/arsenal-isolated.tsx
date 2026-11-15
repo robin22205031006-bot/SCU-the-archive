@@ -761,6 +761,8 @@ export function ArsenalIsolatedView({
                     <img
                       src={imgUrl}
                       alt={current.name}
+                      loading="lazy"
+                      decoding="async"
                       className={`h-full w-full object-contain ${
                         isManga
                           ? "manga-portrait-ink"
@@ -937,6 +939,8 @@ export function ArsenalIsolatedView({
                     <img
                       src={thumbUrl}
                       alt={item.name}
+                      loading="lazy"
+                      decoding="async"
                       className={`size-full object-contain transition duration-300 group-hover:scale-110 ${
                         isManga ? "manga-portrait-ink" : "arsenal-isolated-weapon-img"
                       }`}

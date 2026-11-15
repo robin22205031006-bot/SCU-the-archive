@@ -69,10 +69,6 @@ function paint(
           let a = rnd(step * 13 + i + seed) * 6.283,
             x = cx,
             y = cy;
-          ctx.strokeStyle = col(l, 0.85, 20);
-          ctx.lineWidth = 1.6;
-          ctx.shadowColor = col(l, 1);
-          ctx.shadowBlur = 12;
           ctx.beginPath();
           ctx.moveTo(x, y);
           for (let s = 0; s < 9; s++) {
@@ -81,8 +77,12 @@ function paint(
             y += (Math.sin(a) * r) / 7;
             ctx.lineTo(x, y);
           }
+          ctx.strokeStyle = col(l, 0.28, 10);
+          ctx.lineWidth = 4.6;
           ctx.stroke();
-          ctx.shadowBlur = 0;
+          ctx.strokeStyle = col(l, 0.85, 20);
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
         }
         break;
       }

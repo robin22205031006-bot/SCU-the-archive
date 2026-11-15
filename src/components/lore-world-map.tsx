@@ -307,13 +307,13 @@ export function LoreWorldMap({ activeId, eras, onSelect }: Props) {
                 transition={{ duration: 0.6 }}
                 strokeWidth={active ? 2 : 1}
               />
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync" initial={false}>
                 <motion.g
                   key={era}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.45 }}
+                  transition={{ duration: 0.25 }}
                   style={{ transformOrigin: `${r.cx}px ${r.cy}px` }}
                 >
                   <RegionDetail id={r.id} era={era} />

@@ -109,7 +109,8 @@ export function FloatingNav() {
   const wheelAt = useRef(0);
   const { data: visibility } = useQuery({
     queryKey: ["app-settings", "nav_visibility"],
-    staleTime: 60_000,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("app_settings")
@@ -241,7 +242,7 @@ export function FloatingNav() {
                       <ChevronUp />
                     </Button>
                     <div className="hud-arc-items">
-                      <AnimatePresence mode="popLayout" initial={false}>
+                      <AnimatePresence mode="sync" initial={false}>
                         {items.slice(first, first + 5).map((item, slot) => {
                           const Icon = icons[item.icon as keyof typeof icons] ?? Compass;
                           const active = item.to === pathname;
@@ -249,11 +250,10 @@ export function FloatingNav() {
                             <motion.div
                               key={item.to}
                               className={`hud-entry hud-slot-${slot}`}
-                              layout={!reduce}
-                              initial={{ opacity: 0, y: reduce ? 0 : 24 }}
+                              initial={{ opacity: 0, y: reduce ? 0 : 12 }}
                               animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: reduce ? 0 : -24 }}
-                              transition={{ duration: reduce ? 0 : 0.25 }}
+                              exit={{ opacity: 0, y: reduce ? 0 : -12 }}
+                              transition={{ duration: reduce ? 0 : 0.18 }}
                             >
                               <Button
                                 asChild={item.to !== "#theme"}

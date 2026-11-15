@@ -1,13 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { mergeCharacterCards } from "../lib/character-card-merge";
+import { ENTITY_SUMMARY_COLUMNS, withEntitySummaryDefaults, type Entity } from "@/lib/entities";
 
 export const scuCache = {
   async getCharacters() {
     if (navigator.onLine) {
       try {
-        const { data, error } = await supabase.from("entities").select("*").eq("kind", "character");
+        const { data, error } = await supabase
+          .from("entities")
+          .select(ENTITY_SUMMARY_COLUMNS)
+          .eq("kind", "character");
         if (!error && data) {
-          const merged = mergeCharacterCards(data);
+          const raw = (data as Partial<Entity>[]).map(withEntitySummaryDefaults);
+          const merged = mergeCharacterCards(raw);
           localStorage.setItem("scu_characters_cache", JSON.stringify(merged));
           return merged;
         }
@@ -25,11 +30,12 @@ export const scuCache = {
       try {
         const { data, error } = await supabase
           .from("entities")
-          .select("*")
+          .select(ENTITY_SUMMARY_COLUMNS)
           .eq("kind", "organization");
         if (!error && data) {
-          localStorage.setItem("scu_organizations_cache", JSON.stringify(data));
-          return data;
+          const raw = (data as Partial<Entity>[]).map(withEntitySummaryDefaults);
+          localStorage.setItem("scu_organizations_cache", JSON.stringify(raw));
+          return raw;
         }
       } catch (err) {
         console.warn("Network query failed, reading offline cache:", err);
@@ -53,5 +59,14 @@ export const scuCache = {
     }
     const cached = localStorage.getItem("scu_timeline_cache");
     return cached ? JSON.parse(cached) : [];
+  },
+
+  async preloadAllParallel() {
+    const [characters, organizations, timeline] = await Promise.all([
+      this.getCharacters(),
+      this.getOrganizations(),
+      this.getTimeline(),
+    ]);
+    return { characters, organizations, timeline };
   },
 };

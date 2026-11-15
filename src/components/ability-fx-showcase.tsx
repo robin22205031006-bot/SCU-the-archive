@@ -70,14 +70,14 @@ export function AbilityFxShowcase({
         </div>
         <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-card/40">
           {motionActive ? (
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="sync" initial={false}>
               <motion.div
                 key={def.key}
                 className="absolute inset-0"
-                initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 1.15, filter: "blur(6px)" }}
-                transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.04 }}
+                transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
               >
                 <AbilityFxCanvas
                   recipe={recipe}

@@ -29,12 +29,14 @@ import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
 import { usePreloadUIFeedback } from "@/hooks/use-ui-feedback";
 import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { NexusShell } from "@/components/nexus-shell";
-import { MangaShell } from "@/components/manga-shell";
+import { NexusChrome } from "@/components/nexus-shell";
+import { MangaChrome } from "@/components/manga-shell";
+import { NexusSectionRailAside } from "@/components/nexus-section-rail";
 import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { AmbientStudioParticles } from "@/components/ambient-studio-particles";
 import { AnimeActionOverlay } from "@/components/anime-action-overlay";
+import { useRef } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -177,24 +179,34 @@ function RootContent({ offline }: { offline: boolean }) {
   const { mode } = useUiMode();
   const { pathname } = useLocation();
   const { isMinimal, motionActive, spec } = useAppMotion();
+  const pageContainerRef = useRef<HTMLDivElement>(null);
+  const outletContainerRef = useRef<HTMLDivElement>(null);
+  const pageSlug = pathname.slice(1) || "home";
+  const showNexusRail =
+    mode === "nexus" && ["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname);
+
   return (
     <MotionConfig
       reducedMotion={isMinimal || !motionActive ? "always" : "user"}
       transition={motionActive ? spec.transition : { duration: 0 }}
     >
       <div
+        data-ui-mode={mode}
+        data-motion={motionActive ? "on" : "off"}
         className={`relative min-h-screen ${
           mode === "minimal"
             ? "minimal-shell"
             : mode === "nexus"
-              ? ""
+              ? "nexus-shell min-h-dvh"
               : mode === "manga"
-                ? "manga-root"
+                ? "manga-root manga-shell min-h-dvh text-foreground selection:bg-foreground selection:text-background"
                 : "ambient-bg"
         }`}
       >
         {mode === "classic" && <AmbientField />}
         {mode === "classic" && <PlexusWallpaper />}
+        {mode === "nexus" && <NexusChrome />}
+        {mode === "manga" && <MangaChrome pageRef={pageContainerRef} />}
         {mode !== "minimal" && <AmbientStudioParticles />}
         {mode !== "minimal" && <AnimeActionOverlay />}
         <ScrollProgress />
@@ -202,31 +214,30 @@ function RootContent({ offline }: { offline: boolean }) {
         <FloatingNav />
         {mode === "classic" && <WelcomeVfx />}
         {offline && (
-          <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/90 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm">
+          <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/95 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg">
             <WifiOff className="h-3.5 w-3.5" />
             Offline — showing cached archive data
           </div>
         )}
-        {mode === "nexus" ? (
-          <NexusShell>
-            <Outlet />
-          </NexusShell>
-        ) : mode === "manga" ? (
-          <MangaShell>
-            <Outlet />
-          </MangaShell>
-        ) : isMinimal || !motionActive ? (
-          <div
-            key={pathname}
-            data-minimal-page={isMinimal ? pathname.slice(1) || "home" : undefined}
-          >
+        <div
+          ref={pageContainerRef}
+          data-classic-page={mode === "classic" ? pageSlug : undefined}
+          data-minimal-page={isMinimal ? pageSlug : undefined}
+          data-nexus-page={mode === "nexus" ? pageSlug : undefined}
+          data-manga-page={mode === "manga" ? pageSlug : undefined}
+          className={
+            mode === "nexus"
+              ? `nexus-page relative z-[1] ${showNexusRail ? "nexus-tool-layout mx-auto max-w-7xl lg:grid lg:grid-cols-[180px_minmax(0,1fr)]" : ""}`
+              : mode === "manga"
+                ? "manga-page relative z-[1]"
+                : "relative"
+          }
+        >
+          {showNexusRail ? <NexusSectionRailAside containerRef={outletContainerRef} /> : null}
+          <div ref={outletContainerRef} className={showNexusRail ? "min-w-0" : undefined}>
             <Outlet />
           </div>
-        ) : (
-          <div key={pathname} data-classic-page={pathname.slice(1) || "home"} className="relative">
-            <Outlet />
-          </div>
-        )}
+        </div>
       </div>
     </MotionConfig>
   );

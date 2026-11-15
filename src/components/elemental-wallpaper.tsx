@@ -169,12 +169,12 @@ export function ElementalWallpaper({ element, enabled }: { element: Element; ena
               if (i) ctx.lineTo(x, y);
               else ctx.moveTo(x, y);
             });
-            ctx.strokeStyle = `rgba(${c2},0.5)`;
-            ctx.lineWidth = 1.5;
-            ctx.shadowBlur = 16;
-            ctx.shadowColor = `rgb(${c1})`;
+            ctx.strokeStyle = `rgba(${c1},0.22)`;
+            ctx.lineWidth = 5;
             ctx.stroke();
-            ctx.shadowBlur = 0;
+            ctx.strokeStyle = `rgba(${c2},0.55)`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
           }
         }
       }

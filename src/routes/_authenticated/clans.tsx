@@ -1,15 +1,28 @@
+import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ClanGraph } from "@/components/clan-graph";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
-import { NexusConstellation } from "@/components/nexus-constellation";
-import { NexusLineage } from "@/components/nexus-lineage";
 import { Network, Castle, GitBranch } from "lucide-react";
-import { FamilyTree } from "@/components/family-tree";
-import { NexusFamilyTree } from "@/components/nexus-family-tree";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 import { MotionPage, MotionSection } from "@/components/app-motion";
+import { PanelSkeleton } from "@/components/route-skeleton";
+
+const ClanGraph = lazy(() =>
+  import("@/components/clan-graph").then((m) => ({ default: m.ClanGraph })),
+);
+const NexusConstellation = lazy(() =>
+  import("@/components/nexus-constellation").then((m) => ({ default: m.NexusConstellation })),
+);
+const NexusLineage = lazy(() =>
+  import("@/components/nexus-lineage").then((m) => ({ default: m.NexusLineage })),
+);
+const FamilyTree = lazy(() =>
+  import("@/components/family-tree").then((m) => ({ default: m.FamilyTree })),
+);
+const NexusFamilyTree = lazy(() =>
+  import("@/components/nexus-family-tree").then((m) => ({ default: m.NexusFamilyTree })),
+);
 
 export const Route = createFileRoute("/_authenticated/clans")({
   head: () => ({
@@ -62,53 +75,55 @@ export function Clans() {
         )}
       </MotionSection>
       <MotionSection delay={0.05}>
-        {nexus ? (
-          <NexusWorkspace
-            views={[
-              {
-                id: "clans",
-                title: "Clan structures",
-                icon: <Castle className="h-4 w-4" />,
-                content: <NexusLineage />,
-              },
-              {
-                id: "family",
-                title: "Family tree",
-                icon: <GitBranch className="h-4 w-4" />,
-                content: <NexusFamilyTree />,
-              },
-              {
-                id: "bonds",
-                title: "Connections",
-                icon: <Network className="h-4 w-4" />,
-                content: <NexusConstellation />,
-              },
-              {
-                id: "editor",
-                title: "Hierarchy editor",
-                icon: <Castle className="h-4 w-4" />,
-                content: <ClanGraph />,
-              },
-            ]}
-          />
-        ) : isManga ? (
-          <div className="grid gap-8">
-            <MangaPanel caption="CLAN & SQUAD HIERARCHY // 組織図" badge="COMMAND">
+        <Suspense fallback={<PanelSkeleton className="min-h-[60vh]" />}>
+          {nexus ? (
+            <NexusWorkspace
+              views={[
+                {
+                  id: "clans",
+                  title: "Clan structures",
+                  icon: <Castle className="h-4 w-4" />,
+                  content: <NexusLineage />,
+                },
+                {
+                  id: "family",
+                  title: "Family tree",
+                  icon: <GitBranch className="h-4 w-4" />,
+                  content: <NexusFamilyTree />,
+                },
+                {
+                  id: "bonds",
+                  title: "Connections",
+                  icon: <Network className="h-4 w-4" />,
+                  content: <NexusConstellation />,
+                },
+                {
+                  id: "editor",
+                  title: "Hierarchy editor",
+                  icon: <Castle className="h-4 w-4" />,
+                  content: <ClanGraph />,
+                },
+              ]}
+            />
+          ) : isManga ? (
+            <div className="grid gap-8">
+              <MangaPanel caption="CLAN & SQUAD HIERARCHY // 組織図" badge="COMMAND">
+                <ClanGraph />
+              </MangaPanel>
+              <MangaPanel caption="ANCESTRAL FAMILY TREE // 家系図" badge="LINEAGE">
+                <FamilyTree />
+              </MangaPanel>
+            </div>
+          ) : (
+            <div className="grid gap-10">
               <ClanGraph />
-            </MangaPanel>
-            <MangaPanel caption="ANCESTRAL FAMILY TREE // 家系図" badge="LINEAGE">
-              <FamilyTree />
-            </MangaPanel>
-          </div>
-        ) : (
-          <div className="grid gap-10">
-            <ClanGraph />
-            <section aria-label="Family tree">
-              <h2 className="mb-3 text-2xl font-medium">Family tree</h2>
-              <FamilyTree />
-            </section>
-          </div>
-        )}
+              <section aria-label="Family tree">
+                <h2 className="mb-3 text-2xl font-medium">Family tree</h2>
+                <FamilyTree />
+              </section>
+            </div>
+          )}
+        </Suspense>
       </MotionSection>
     </MotionPage>
   );

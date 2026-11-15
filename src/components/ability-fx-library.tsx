@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Plus, Save, Trash2, X } from "lucide-react";
@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useIsAdmin } from "@/hooks/use-admin";
-import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
+import { useAllHubAbilities } from "@/hooks/use-ability-registry";
 import { abilityLineagesQuery, useAbilityLineages } from "@/hooks/use-ability-lineages";
-import { TIER_ORDER, abilityDef, allAbilityDefs, type AbilityTier } from "@/lib/abilities";
+import { TIER_ORDER, abilityDef, type AbilityTier } from "@/lib/abilities";
 import {
   ABILITY_FX_LINEAGES_KEY,
   TIER_POWER,
@@ -24,7 +24,7 @@ import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
-function FxCard({ k, onOpen }: { k: string; onOpen: (k: string) => void }) {
+const FxCard = memo(function FxCard({ k, onOpen }: { k: string; onOpen: (k: string) => void }) {
   const [hot, setHot] = useState(false);
   const d = abilityDef(k);
   const recipe = useMemo(() => abilityFxRecipe(k), [k]);
@@ -59,23 +59,27 @@ function FxCard({ k, onOpen }: { k: string; onOpen: (k: string) => void }) {
       </div>
     </button>
   );
-}
+});
 
 export function FxLibrary() {
-  useAbilityRegistryVersion();
+  const allDefs = useAllHubAbilities();
   const [q, setQ] = useState("");
   const [tier, setTier] = useState<"all" | AbilityTier>("all");
   const [open, setOpen] = useState<string | null>(null);
-  const defs = allAbilityDefs()
-    .filter(
-      (d) =>
-        (tier === "all" || d.tier === tier) &&
-        d.label.toLowerCase().includes(q.trim().toLowerCase()),
-    )
-    .sort(
-      (a, b) =>
-        TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || a.label.localeCompare(b.label),
-    );
+  const defs = useMemo(
+    () =>
+      allDefs
+        .filter(
+          (d) =>
+            (tier === "all" || d.tier === tier) &&
+            d.label.toLowerCase().includes(q.trim().toLowerCase()),
+        )
+        .sort(
+          (a, b) =>
+            TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || a.label.localeCompare(b.label),
+        ),
+    [allDefs, tier, q],
+  );
   return (
     <section className="grid gap-4">
       <div className="flex flex-wrap gap-2">
@@ -118,14 +122,13 @@ export function FxLibrary() {
 }
 
 export function FxChains() {
-  useAbilityRegistryVersion();
+  const defs = useAllHubAbilities();
   const lineages = useAbilityLineages();
   const admin = useIsAdmin();
   const qc = useQueryClient();
   const [draft, setDraft] = useState<FxLineage[] | null>(null);
   const [saving, setSaving] = useState(false);
   const list = draft ?? lineages;
-  const defs = allAbilityDefs();
   const chained = new Set(list.flatMap((l) => l.steps));
   const unchained = defs.filter((d) => !chained.has(d.key) && d.tier !== "Role");
   const edit = (fn: (l: FxLineage[]) => FxLineage[]) => setDraft(fn(structuredClone(list)));
@@ -176,8 +179,7 @@ export function FxChains() {
         </div>
       )}
       {list.map((l, li) => (
-        <motion.div
-          layout
+        <div
           key={l.id}
           className="grid gap-2 rounded-2xl border border-border bg-card/50 p-3"
         >
@@ -294,7 +296,7 @@ export function FxChains() {
               </li>
             )}
           </ol>
-        </motion.div>
+        </div>
       ))}
       <div className="rounded-2xl border border-dashed border-border p-3">
         <h3 className="mb-2 text-sm font-semibold text-foreground">
@@ -336,8 +338,11 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
 }
 
 export function FxSimulator() {
-  useAbilityRegistryVersion();
-  const defs = allAbilityDefs().sort((a, b) => a.label.localeCompare(b.label));
+  const hubAbilities = useAllHubAbilities();
+  const defs = useMemo(
+    () => [...hubAbilities].sort((a, b) => a.label.localeCompare(b.label)),
+    [hubAbilities],
+  );
   const [k, setK] = useState("red_lightning");
   const [tier, setTier] = useState<AbilityTier>(abilityDef("red_lightning").tier);
   const lineages = useAbilityLineages();

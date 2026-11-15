@@ -75,6 +75,22 @@ import { CANON_CHARACTER_ABILITIES } from "./abilities";
 
 export { mergeCharacterCards, resolveEntityId, getMergedSecondaryIds };
 
+/** Summary columns for card/list grids — omits heavy description, sketches, and theme_song_url until opened. */
+export const ENTITY_SUMMARY_COLUMNS =
+  "id,kind,name,alias,role,status,category,image_url,abilities,beast_traits,character_tier,animation_style,theme_color,accent_glow,card_theme,stats,parent_id,locked_fields,created_at,updated_at";
+
+const CACHE_STALE_MS = 1000 * 60 * 15; // 15 minutes
+const CACHE_GC_MS = 1000 * 60 * 60 * 24; // 24 hours
+
+export function withEntitySummaryDefaults(row: Partial<Entity>): Entity {
+  return {
+    description: "",
+    sketches: null,
+    theme_song_url: null,
+    ...row,
+  } as Entity;
+}
+
 function hydrateCanonAbilities<T extends Entity>(entity: T): T {
   if (entity.kind !== "character") return entity;
   if ((entity.abilities?.length ?? 0) > 0) return entity;
@@ -86,16 +102,17 @@ function hydrateCanonAbilities<T extends Entity>(entity: T): T {
 export const entitiesQuery = (kinds: string[]) =>
   queryOptions({
     queryKey: ["entities", kinds],
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: CACHE_STALE_MS,
+    gcTime: CACHE_GC_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entities")
-        .select("*")
+        .select(ENTITY_SUMMARY_COLUMNS)
         .in("kind", kinds as Entity["kind"][])
         .order("name");
       if (error) throw error;
-      const raw = (data ?? []) as Entity[];
+      const raw = ((data ?? []) as Partial<Entity>[]).map(withEntitySummaryDefaults);
       const merged = kinds.includes("character") ? mergeCharacterCards(raw) : raw;
       return merged.map((e) => hydrateCanonAbilities(e));
     },
@@ -106,7 +123,9 @@ export const entityByIdQuery = (id: string) => {
   return queryOptions({
     queryKey: ["entity", targetId],
     enabled: !!targetId,
-    staleTime: 300_000,
+    staleTime: CACHE_STALE_MS,
+    gcTime: CACHE_GC_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entities")
@@ -132,7 +151,8 @@ export const characterLinksQuery = (characterId: string) =>
   queryOptions({
     queryKey: ["entity-links", "character", characterId],
     enabled: !!characterId,
-    staleTime: 120_000,
+    staleTime: CACHE_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entity_memberships")
@@ -156,7 +176,8 @@ export const groupLinksQuery = (groupId: string) =>
   queryOptions({
     queryKey: ["entity-links", "group", groupId],
     enabled: !!groupId,
-    staleTime: 120_000,
+    staleTime: CACHE_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entity_memberships")
@@ -176,7 +197,8 @@ export const groupLinksQuery = (groupId: string) =>
 
 export const entityRelationsQuery = queryOptions({
   queryKey: ["entity-relations"],
-  staleTime: 120_000,
+  staleTime: CACHE_STALE_MS,
+  refetchOnWindowFocus: false,
   queryFn: async () => {
     const { data, error } = await supabase.from("entity_relations").select("*");
     if (error) {
@@ -196,7 +218,8 @@ export const characterRelationshipsQuery = (entityId: string) =>
   queryOptions({
     queryKey: ["char-relationships", entityId],
     enabled: !!entityId,
-    staleTime: 120_000,
+    staleTime: CACHE_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("character_relationships")
@@ -219,11 +242,12 @@ export const childEntitiesQuery = (parentId: string) =>
   queryOptions({
     queryKey: ["entity-children", parentId],
     enabled: !!parentId,
-    staleTime: 300_000,
+    staleTime: CACHE_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entities")
-        .select("*")
+        .select(ENTITY_SUMMARY_COLUMNS)
         .eq("parent_id", parentId)
         .order("name");
       if (error) {
@@ -234,14 +258,15 @@ export const childEntitiesQuery = (parentId: string) =>
           return [] as Entity[];
         throw error;
       }
-      return data;
+      return ((data ?? []) as Partial<Entity>[]).map(withEntitySummaryDefaults);
     },
   });
 
 export const notesQuery = (entityId: string) =>
   queryOptions({
     queryKey: ["notes", entityId],
-    staleTime: 300_000,
+    staleTime: CACHE_STALE_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const allIds = [entityId, ...getMergedSecondaryIds(entityId)];
       const { data, error } = await supabase
@@ -263,7 +288,9 @@ export const notesQuery = (entityId: string) =>
 
 export const timelineQuery = queryOptions({
   queryKey: ["timeline"],
-  staleTime: 300_000,
+  staleTime: CACHE_STALE_MS,
+  gcTime: CACHE_GC_MS,
+  refetchOnWindowFocus: false,
   queryFn: async () => {
     const { data, error } = await supabase.from("timeline_events").select("*").order("sort_order");
     if (error) {

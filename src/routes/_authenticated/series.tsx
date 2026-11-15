@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookMarked, FileText, Search, Users, X } from "lucide-react";
@@ -168,7 +168,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
 
   return (
     <div
-      className="fixed inset-0 z-30 overflow-y-auto bg-background/80 backdrop-blur-sm"
+      className="fixed inset-0 z-30 overflow-y-auto bg-background/94"
       onClick={onClose}
     >
       <div
@@ -359,10 +359,10 @@ function SeriesHero({
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/10" />
             <div className="relative flex h-full min-h-[16rem] flex-col justify-end p-6">
               <div className="mb-2 flex flex-wrap gap-1.5">
-                <span className="rounded-full border border-white/25 bg-black/50 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-white/90 backdrop-blur">
+                <span className="rounded-full border border-white/25 bg-black/75 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-white/90">
                   SCU Canon
                 </span>
-                <span className="rounded-full border border-white/25 bg-black/50 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-white/90 backdrop-blur">
+                <span className="rounded-full border border-white/25 bg-black/75 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-white/90">
                   {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
                 </span>
               </div>
@@ -372,7 +372,7 @@ function SeriesHero({
               {s.description && (
                 <p className="mt-2 line-clamp-2 max-w-md text-sm text-white/80">{s.description}</p>
               )}
-              <span className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
+              <span className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
                 ▶ Open saga
               </span>
             </div>
@@ -401,6 +401,76 @@ function StaffSeriesManager() {
   );
 }
 
+const SeriesCard = memo(function SeriesCard({
+  s,
+  idx,
+  isManga,
+  count,
+  onOpen,
+}: {
+  s: Series;
+  idx: number;
+  isManga: boolean;
+  count: number;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <MotionCard
+      index={idx}
+      interactive
+      className={
+        isManga
+          ? "manga-panel manga-panel-hover border-[3px] border-foreground bg-card"
+          : "glass rounded-2xl"
+      }
+    >
+      <button
+        onClick={() => onOpen(s.id)}
+        className="group flex w-full gap-4 p-4 text-left"
+      >
+        {s.cover_image_url ? (
+          <img
+            src={s.cover_image_url}
+            alt={s.title}
+            loading="lazy"
+            decoding="async"
+            className={`h-16 w-16 shrink-0 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
+          />
+        ) : (
+          <div
+            className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
+          >
+            {isManga ? (
+              `#${String(idx + 1).padStart(2, "0")}`
+            ) : (
+              <BookMarked className="h-6 w-6" />
+            )}
+          </div>
+        )}
+        <span className="min-w-0 flex-1">
+          <SeriesTitle
+            series={s}
+            className={
+              isManga
+                ? "block truncate font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]"
+                : "block truncate text-xl font-medium"
+            }
+          />
+          <span className="mt-1 flex items-center gap-1.5 font-mono text-[11px] uppercase text-muted-foreground">
+            <Users className="h-3.5 w-3.5" />
+            {count} character{count === 1 ? "" : "s"}
+          </span>
+          {s.description && (
+            <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
+              {s.description}
+            </span>
+          )}
+        </span>
+      </button>
+    </MotionCard>
+  );
+});
+
 export function SeriesPage() {
   const isManga = useIsManga();
   const uiStyle = useUiStyle();
@@ -415,7 +485,8 @@ export function SeriesPage() {
   const { data: allRows } = useQuery({
     queryKey: ["series-characters", "all"],
     enabled: !!series?.length,
-    staleTime: 30_000,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase.from("series_characters").select("series_id");
       if (error) return [] as { series_id: string }[];
@@ -544,63 +615,17 @@ export function SeriesPage() {
             )
           ) : (
             <div
-              className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${isManga ? "manga-spread-grid" : ""}`}
+              className={`scu-card-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${isManga ? "manga-spread-grid" : ""}`}
             >
               {list.map((s, idx) => (
-                <MotionCard
+                <SeriesCard
                   key={s.id}
-                  index={idx}
-                  interactive
-                  className={
-                    isManga
-                      ? "manga-panel manga-panel-hover border-[3px] border-foreground bg-card"
-                      : "glass rounded-2xl"
-                  }
-                >
-                  <button
-                    onClick={() => navigate({ search: { s: s.id } })}
-                    className="group flex w-full gap-4 p-4 text-left"
-                  >
-                    {s.cover_image_url ? (
-                      <img
-                        src={s.cover_image_url}
-                        alt={s.title}
-                        loading="lazy"
-                        decoding="async"
-                        className={`h-16 w-16 shrink-0 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
-                      />
-                    ) : (
-                      <div
-                        className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
-                      >
-                        {isManga ? (
-                          `#${String(idx + 1).padStart(2, "0")}`
-                        ) : (
-                          <BookMarked className="h-6 w-6" />
-                        )}
-                      </div>
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <SeriesTitle
-                        series={s}
-                        className={
-                          isManga
-                            ? "block truncate font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]"
-                            : "block truncate text-xl font-medium"
-                        }
-                      />
-                      <span className="mt-1 flex items-center gap-1.5 font-mono text-[11px] uppercase text-muted-foreground">
-                        <Users className="h-3.5 w-3.5" />
-                        {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
-                      </span>
-                      {s.description && (
-                        <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
-                          {s.description}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </MotionCard>
+                  s={s}
+                  idx={idx}
+                  isManga={isManga}
+                  count={counts.get(s.id) ?? 0}
+                  onOpen={(id) => navigate({ search: { s: id } })}
+                />
               ))}
             </div>
           )}
