@@ -289,7 +289,7 @@ describe("Contextual Org/Bloodline/Ability Emblems, Header Theme Dropdown & Flui
       ).toBe("umbra");
     });
 
-    it("renders contextual custom emblem inside AbilityBadge", () => {
+    it("renders registry Lucide icon inside AbilityBadge in Classic mode without custom SVG overrides", () => {
       localStorage.setItem(UI_MODE_STORAGE_KEY, "classic");
       setUiStyle("classic");
       const { container } = render(
@@ -297,7 +297,41 @@ describe("Contextual Org/Bloodline/Ability Emblems, Header Theme Dropdown & Flui
           <AbilityBadge name="shishjutsu" />
         </TestShell>,
       );
-      expect(container.querySelector('[data-custom-emblem="ofuda"]')).toBeTruthy();
+      expect(container.querySelector("[data-custom-emblem]")).toBeNull();
+      expect(container.querySelector("svg.lucide")).toBeTruthy();
+    });
+
+    it("renders painted Nexus crests and standalone emblems (not custom vector overrides) in Nexus mode", () => {
+      localStorage.setItem(UI_MODE_STORAGE_KEY, "nexus");
+      setUiStyle("nexus");
+
+      const cases: Array<[string, string, string]> = [
+        ["sky_guardian", "sky-guardian", "nexus-power-crests"],
+        ["wind_guardian", "wind-guardian", "nexus-power-crests"],
+        ["reality_bend", "reality-bend", "nexus-power-crests"],
+        ["aether_dominion", "aether-dominion", "nexus-aether-dominion"],
+        ["omni_ergon", "omni-ergon", "nexus-omni-ergon"],
+        ["vampire", "vampire", "nexus-vampire"],
+        ["shishjutsu", "spirit", "nexus-skill-symbols"],
+      ];
+
+      for (const [abilityKey, expectedArt, expectedAssetFragment] of cases) {
+        const { container, unmount } = render(
+          <TestShell>
+            <AbilityBadge name={abilityKey} />
+          </TestShell>,
+        );
+        expect(container.querySelector("[data-custom-emblem]")).toBeNull();
+        const svg = container.querySelector(`svg[data-ability-art="${expectedArt}"]`);
+        expect(svg, `${abilityKey} should render data-ability-art=${expectedArt}`).toBeTruthy();
+        const img = svg?.querySelector("image");
+        const href = img?.getAttribute("href") ?? img?.getAttribute("xlink:href") ?? "";
+        expect(
+          href.includes(expectedAssetFragment),
+          `${abilityKey} should use asset matching ${expectedAssetFragment}, got ${href}`,
+        ).toBe(true);
+        unmount();
+      }
     });
   });
 

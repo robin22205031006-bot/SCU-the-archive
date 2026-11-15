@@ -63,3 +63,7 @@ it("individual anime can override whole Nexus anime", () => {
 it("names and keys resolve the same settings", () => {
   expect(symbolKey("Aether Dominion")).toBe("aether_dominion");
 });
+it("generic manipulation does not steal domain-expansion shrine and ghost_01_armament uses armored ghost crest", () => {
+  expect(nexusAbilityArt("manipulation", "WandSparkles")).toBe("aether");
+  expect(nexusAbilityArt("ghost_01_armament", "Bot")).toBe("ghost");
+});

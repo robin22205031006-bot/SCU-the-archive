@@ -8,8 +8,6 @@ import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
-import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
-import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 
 const TIER_RANK: Record<AbilityTier, number> = {
   Mythic: 7,
@@ -32,12 +30,6 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
   useAbilityRegistryVersion();
   const def = abilityDef(name);
   const Icon = def.icon;
-  const customEmblem = resolveCustomAbilityEmblem(`${def.key} ${def.label}`, def.description ?? "");
-  const EffectiveIcon = customEmblem
-    ? ({ className: icClass }: { className?: string }) => (
-        <AbilityCustomEmblem kind={customEmblem} className={icClass ?? "h-3.5 w-3.5"} />
-      )
-    : Icon;
   const mythic = def.tier === "Mythic";
   const legendary = def.tier === "Legendary";
   const rarePlus = def.tier === "Rare" || def.tier === "Exceptional" || def.tier === "Unique";
@@ -49,7 +41,7 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
         theme={activeGenre}
         label={def.label}
         tier={def.tier}
-        icon={EffectiveIcon}
+        icon={Icon}
         title={title}
         className={className}
       />
@@ -125,13 +117,7 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
                 : undefined,
       }}
     >
-      {customEmblem ? (
-        <span style={{ color: def.color }} className="inline-flex">
-          <AbilityCustomEmblem kind={customEmblem} className="h-3.5 w-3.5" />
-        </span>
-      ) : (
-        <Icon className="h-3 w-3" style={{ color: def.color }} />
-      )}
+      <Icon className="h-3 w-3" style={{ color: def.color }} />
       {def.label}
     </span>
   );

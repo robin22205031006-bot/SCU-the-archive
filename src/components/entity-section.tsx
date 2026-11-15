@@ -93,8 +93,6 @@ import { Character3dFrame } from "@/components/character-3d-frame";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaEntitySpread, MangaPanel } from "./manga-view";
 import { GroupGenreEmblem } from "@/components/group-emblem";
-import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
-import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
@@ -1277,19 +1275,7 @@ function AbilityInfoDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-display text-2xl">
-                {(() => {
-                  const customKind = resolveCustomAbilityEmblem(
-                    `${def.key} ${def.label}`,
-                    def.description ?? "",
-                  );
-                  return customKind ? (
-                    <span style={{ color: def.color }} className="inline-flex">
-                      <AbilityCustomEmblem kind={customKind} className="h-6 w-6" />
-                    </span>
-                  ) : (
-                    <def.icon className="h-6 w-6" style={{ color: def.color }} />
-                  );
-                })()}
+                <def.icon className="h-6 w-6" style={{ color: def.color }} />
                 {def.label}
               </DialogTitle>
             </DialogHeader>

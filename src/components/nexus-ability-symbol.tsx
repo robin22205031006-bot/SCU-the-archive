@@ -6,7 +6,7 @@ import dominion from "@/assets/nexus-aether-dominion.webp";
 import omni from "@/assets/nexus-omni-ergon.webp";
 import combatCrests from "@/assets/nexus-combat-crests.webp";
 import techniqueCrests from "@/assets/nexus-technique-crests.webp";
-const powerCrests = elementalAtlas;
+import powerCrests from "@/assets/nexus-power-crests.png";
 import { nexusDistinctTile } from "@/lib/nexus-distinct-art";
 import { NEXUS_ABILITY_ART, nexusAbilityArt } from "@/lib/nexus-ability-art";
 import { NexusSign } from "@/components/nexus-sign";
@@ -14,10 +14,8 @@ import { useNexusSymbolSettings } from "@/hooks/use-nexus-symbol-settings";
 import { resolveSymbolStyle, tintMatrix } from "@/lib/nexus-symbol-settings";
 import { abilityDef } from "@/lib/abilities";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
-import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
-import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 
-/** Nexus-only illustrated artwork; renders bespoke vector crests when abilities match by name or description. */
+/** Nexus-only illustrated artwork; renders bespoke crests and elemental/skill atlas emblems. */
 export function NexusAbilitySymbol({
   name,
   label,
@@ -46,18 +44,10 @@ export function NexusAbilitySymbol({
   const effectiveDescription = description ?? def.description ?? "";
   const art = nexusAbilityArt(name, iconName, effectiveDescription);
   const distinct = nexusDistinctTile(art);
-  const customEmblem = !distinct
-    ? resolveCustomAbilityEmblem(
-        [name, label ?? def.label].filter(Boolean).join(" "),
-        effectiveDescription,
-      )
-    : null;
   const color =
     previewColor ??
     appearance.color ??
-    (art === "lightning" ||
-    customEmblem !== null ||
-    /(?:red|blue|white|purple)[_ -](?:flame|fire)/i.test(name)
+    (art === "lightning" || /(?:red|blue|white|purple)[_ -](?:flame|fire)/i.test(name)
       ? def.color
       : undefined);
   const index = NEXUS_ABILITY_ART.indexOf(art);
@@ -98,43 +88,21 @@ export function NexusAbilitySymbol({
             />
           </filter>
         </defs>
-        {customEmblem ? (
-          <g clipPath={`url(#${id})`} className="nexus-emblem-art">
-            <circle
-              cx="50"
-              cy="50"
-              r="41"
-              fill={color ? `${color}1f` : "rgba(56, 189, 248, 0.14)"}
-              stroke={color ?? "#38bdf8"}
-              strokeWidth="2.2"
-              strokeOpacity="0.85"
-            />
-            <foreignObject x="18" y="18" width="64" height="64">
-              <div
-                style={{ color: color ?? "#38bdf8" }}
-                className="flex h-full w-full items-center justify-center"
-              >
-                <AbilityCustomEmblem kind={customEmblem} className="h-12 w-12" />
-              </div>
-            </foreignObject>
+        <g filter={color ? `url(#${id}-tint)` : undefined}>
+          <g clipPath={`url(#${id}-tile)`} className="nexus-emblem-art">
+            {special ? (
+              <image href={special} x="6" y="6" width="88" height="88" />
+            ) : (
+              <image
+                href={atlas}
+                x={6 - (x * 88) / 384}
+                y={6 - (y * 88) / 384}
+                width="352"
+                height="352"
+              />
+            )}
           </g>
-        ) : (
-          <g filter={color ? `url(#${id}-tint)` : undefined}>
-            <g clipPath={`url(#${id}-tile)`} className="nexus-emblem-art">
-              {special ? (
-                <image href={special} x="6" y="6" width="88" height="88" />
-              ) : (
-                <image
-                  href={atlas}
-                  x={6 - (x * 88) / 384}
-                  y={6 - (y * 88) / 384}
-                  width="352"
-                  height="352"
-                />
-              )}
-            </g>
-          </g>
-        )}
+        </g>
         <g clipPath={`url(#${id})`} className="nexus-emblem-cel">
           <path
             className="nexus-emblem-current"

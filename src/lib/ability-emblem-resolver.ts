@@ -125,7 +125,7 @@ const DESCRIPTION_AND_NAME_RULES: readonly SemanticRule[] = [
     nexusArt: "shapeshift",
   },
   {
-    pattern: /domain[\s_-]*expansion|reality[\s_-]*bend|manipulation/i,
+    pattern: /domain[\s_-]*expansion|reality[\s_-]*bend/i,
     custom: "domain-mandala",
     nexusArt: "domain-expansion",
   },

@@ -21,8 +21,6 @@ import {
 } from "@/lib/ability-fx";
 import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
-import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
-import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
@@ -30,7 +28,6 @@ function FxCard({ k, onOpen }: { k: string; onOpen: (k: string) => void }) {
   const [hot, setHot] = useState(false);
   const d = abilityDef(k);
   const recipe = useMemo(() => abilityFxRecipe(k), [k]);
-  const customKind = resolveCustomAbilityEmblem(`${d.key} ${d.label}`, d.description ?? "");
   const Icon = d.icon;
   return (
     <button
@@ -48,11 +45,7 @@ function FxCard({ k, onOpen }: { k: string; onOpen: (k: string) => void }) {
           className="pointer-events-none absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg border border-border/70 bg-background/80"
           style={{ color: d.color }}
         >
-          {customKind ? (
-            <AbilityCustomEmblem kind={customKind} className="h-4 w-4" />
-          ) : (
-            <Icon className="h-4 w-4" />
-          )}
+          <Icon className="h-4 w-4" />
         </span>
       </div>
       <div className="grid gap-0.5 p-2.5">

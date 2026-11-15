@@ -92,9 +92,6 @@ export const Route = createFileRoute("/_authenticated/abilities")({
   component: AbilitiesTabs,
 });
 
-import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
-import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
-
 const HUB_TABS = [
   ["catalog", "Catalog", WandSparkles],
   ["fx", "Ability FX & Lineages", Flame],
@@ -620,17 +617,7 @@ function AbilityCard({
               className="h-10 w-10"
             />
           ) : (
-            (() => {
-              const customKind = resolveCustomAbilityEmblem(
-                `${def.key} ${def.label}`,
-                def.description ?? "",
-              );
-              return customKind ? (
-                <AbilityCustomEmblem kind={customKind} className="h-5 w-5" />
-              ) : (
-                <Icon className="h-5 w-5" />
-              );
-            })()
+            <Icon className="h-5 w-5" />
           )}
         </span>
         <span className="min-w-0 flex-1">
