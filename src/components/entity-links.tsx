@@ -17,6 +17,7 @@ import {
   type EntityMembership,
 } from "@/lib/entities";
 import { sfx } from "@/lib/scu-audio";
+import { GroupGenreEmblem } from "@/components/group-emblem";
 
 const MEMBERSHIP_STATUSES = ["Current", "Former"];
 
@@ -133,10 +134,15 @@ function LinkEntityDialog({
                   onClick={() => link(c)}
                   className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left hover:bg-secondary/60"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">{c.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {[c.kind, c.category, c.status].filter(Boolean).join(" · ")}
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {c.kind !== "character" && (
+                      <GroupGenreEmblem entity={c} variant="seal" size="sm" showLabel={false} />
+                    )}
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{c.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {[c.kind, c.category, c.status].filter(Boolean).join(" · ")}
+                      </span>
                     </span>
                   </span>
                   <Plus className="h-4 w-4 shrink-0 text-accent" />
@@ -232,6 +238,9 @@ export function EntityLinks({
               key={m.id}
               className="flex items-center gap-3 rounded-xl bg-secondary/40 px-3 py-2"
             >
+              {linked.kind !== "character" && (
+                <GroupGenreEmblem entity={linked} variant="seal" size="sm" showLabel={false} />
+              )}
               <button
                 onClick={() => onOpen(linked)}
                 className="min-w-0 flex-1 text-left hover:text-accent"

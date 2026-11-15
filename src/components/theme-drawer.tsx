@@ -10,6 +10,7 @@ import { useUiStyle } from "@/lib/ui-style";
 import { useActiveGenre, useVisualMode } from "@/hooks/use-ui-mode";
 import { MANGA_SUBTHEMES, useOptionalThemeContext } from "@/context/ThemeContext";
 import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
+import { triggerTierSwitchHitstop } from "@/lib/tier-hitstop";
 import { HAPTIC_INTENSITY_OPTIONS, useUIFeedback } from "@/hooks/use-ui-feedback";
 import { GENRE_THEMES, setGenreTheme } from "@/lib/genre-themes";
 import { NEXUS_THEMES } from "@/lib/nexus-fx";
@@ -125,8 +126,9 @@ export function ThemeDrawer({
                     onClick={() => {
                       setGenreTheme(g.id);
                       playSwitch();
+                      triggerTierSwitchHitstop("manga", g.id);
                     }}
-                    className={`flex flex-col justify-between rounded-xl border p-3 text-left text-xs transition ${
+                    className={`scu-tactile flex flex-col justify-between rounded-xl border p-3 text-left text-xs transition ${
                       selected
                         ? "border-accent bg-accent/10 glow-ring"
                         : "border-border hover:border-foreground/30"
@@ -172,8 +174,9 @@ export function ThemeDrawer({
                       onClick={() => {
                         themeCtx.setMangaSubTheme(sub.id);
                         playSwitch();
+                        triggerTierSwitchHitstop("manga", sub.id);
                       }}
-                      className={`rounded-md border px-2 py-1 font-mono text-[10px] font-bold uppercase transition ${
+                      className={`scu-tactile rounded-md border px-2 py-1 font-mono text-[10px] font-bold uppercase transition ${
                         selected
                           ? "border-accent bg-accent/15 text-foreground"
                           : "border-border text-muted-foreground hover:text-foreground"

@@ -67,6 +67,7 @@ import { useMangaSfx } from "@/hooks/use-manga-sfx";
 import { MANGA_SCALE } from "@/lib/manga-scale";
 import { animateMangaStagger, animateSvgRuneDraw } from "@/lib/anime-animations";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
+import { GroupGenreEmblem } from "@/components/group-emblem";
 
 export type DossierLayoutMode =
   | "royal-class-showcase"
@@ -659,13 +660,20 @@ export function MangaEntitySpread({
                     src={e.image_url}
                     alt={e.name}
                     fallback={e.name[0] ?? "?"}
+                    fallbackNode={
+                      e.kind !== "character" ? (
+                        <GroupGenreEmblem entity={e} variant="seal" size="md" />
+                      ) : undefined
+                    }
                     size="card"
                   />
 
                   <div className="min-w-0 flex-1">
-                    {!spoilerMasked && e.category && (
+                    {!spoilerMasked && e.kind !== "character" ? (
+                      <GroupGenreEmblem entity={e} variant="badge" size="xs" />
+                    ) : !spoilerMasked && e.category ? (
                       <MangaCategorySeal label={e.category} size="xs" />
-                    )}
+                    ) : null}
                     <h2
                       className={`mt-1 truncate font-display ${MANGA_SCALE.cardTitle} uppercase ${
                         isFantasy

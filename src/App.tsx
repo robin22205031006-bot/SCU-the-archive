@@ -14,6 +14,8 @@ import { applyUiModeCss } from "@/hooks/use-ui-mode";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { usePreloadUIFeedback, useUIFeedback } from "@/hooks/use-ui-feedback";
 import { MangaSfxLayer } from "@/components/manga-sfx";
+import { HeaderThemeSelect } from "@/components/header-theme-select";
+import { triggerTierSwitchHitstop } from "@/lib/tier-hitstop";
 
 const APP_NAV_LINKS: readonly NexusNavLink[] = [
   { to: "/archive", label: "Lore Explorer", icon: "archive" },
@@ -67,7 +69,7 @@ function AppContent() {
                   setActiveNav("/archive");
                 }}
                 aria-current={activeView === "explorer" ? "page" : undefined}
-                className={`px-4 py-2 rounded text-sm font-semibold transition-colors ${
+                className={`scu-tactile px-4 py-2 rounded text-sm font-semibold transition-colors ${
                   activeView === "explorer"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -82,7 +84,7 @@ function AppContent() {
                   setActiveNav("/ai");
                 }}
                 aria-current={activeView === "chat" ? "page" : undefined}
-                className={`px-4 py-2 rounded text-sm font-semibold transition-colors ${
+                className={`scu-tactile px-4 py-2 rounded text-sm font-semibold transition-colors ${
                   activeView === "chat"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -91,6 +93,8 @@ function AppContent() {
                 Archivist AI
               </button>
             </div>
+
+            <HeaderThemeSelect />
 
             <div className="flex items-center gap-1" role="group" aria-label="Application UI Mode">
               {modes.map((opt) => {
@@ -101,11 +105,12 @@ function AppContent() {
                     type="button"
                     onClick={(e) => {
                       const nextMode = opt.id as UIMode;
-                      triggerFeedback("click", nextMode, e);
+                      triggerFeedback("switch", nextMode, e);
+                      triggerTierSwitchHitstop(nextMode);
                       setMode(nextMode);
                     }}
                     aria-pressed={selected}
-                    className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    className={`scu-tactile rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
                       selected
                         ? "border-primary bg-primary/15 text-foreground"
                         : "border-border text-muted-foreground hover:text-foreground"

@@ -23,6 +23,7 @@ import {
   createSafeWebGLRenderer,
   detectWebGLContext,
   disposeObjectTree,
+  disposeThreeRenderer,
   normalizeThreeColor,
 } from "@/lib/three-stage-utils";
 import { isAnimeMotionAllowed } from "@/lib/anime-animations";
@@ -595,8 +596,7 @@ export function GlbModelViewer({
       sunMat.dispose();
       sunTex?.dispose();
       envTex?.dispose();
-      renderer.dispose();
-      container.innerHTML = "";
+      disposeThreeRenderer(renderer, scene, container);
     };
   }, [url, accentColor]);
 
@@ -662,6 +662,8 @@ export function GlbModelViewer({
             <img
               src={fallbackImageUrl}
               alt={alt}
+              decoding="async"
+              referrerPolicy="no-referrer"
               className="h-full w-full object-contain opacity-85"
             />
           ) : (

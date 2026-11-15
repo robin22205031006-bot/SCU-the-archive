@@ -559,6 +559,10 @@ export function useIsManga(): boolean {
   return useVisualMode() === "manga";
 }
 
+export function useIsMinimal(): boolean {
+  return useVisualMode() === "minimal";
+}
+
 export function useActiveGenre(): GenreThemeId | null {
   const mode = useVisualMode();
   const stored = useStoredGenreTheme();

@@ -6,6 +6,7 @@ import { entitiesQuery, type Entity } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { membershipsQuery } from "@/components/nexus-constellation";
 import { PanelSkeleton } from "@/components/route-skeleton";
+import { GroupGenreEmblem } from "@/components/group-emblem";
 
 const KINDS: Entity["kind"][] = ["character", "organization", "clan", "bloodline", "faction"];
 const COLOR: Record<string, string> = {
@@ -117,12 +118,9 @@ export function NexusLineage() {
       <div className="relative flex flex-col-reverse items-center gap-8">
         {/* root crest */}
         <div className="flex flex-col items-center">
-          <span
-            className="nx-lin-crest grid h-24 w-24 place-items-center rounded-full border-2 text-3xl font-medium"
-            style={{ borderColor: col, color: col, ["--c" as string]: col }}
-          >
-            {g.name[0]}
-          </span>
+          <div className="nx-lin-crest" style={{ ["--c" as string]: col }}>
+            <GroupGenreEmblem entity={g} variant="crest" size="lg" />
+          </div>
           <p className="mt-2 text-lg font-medium">{g.name}</p>
           <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             {g.kind} · root
@@ -167,8 +165,9 @@ export function NexusLineage() {
                     })
                   }
                 >
-                  <span>
-                    <span style={{ color: COLOR[s.kind] }}>{s.name}</span>{" "}
+                  <span className="flex items-center gap-2">
+                    <GroupGenreEmblem entity={s} variant="seal" size="sm" />
+                    <span style={{ color: COLOR[s.kind] }}>{s.name}</span>
                     <span className="text-xs text-muted-foreground">· {m.length} members</span>
                   </span>
                   <ChevronDown

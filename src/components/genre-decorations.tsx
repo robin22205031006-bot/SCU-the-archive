@@ -723,12 +723,14 @@ export function GenrePortraitFrame({
   src,
   alt,
   fallback,
+  fallbackNode,
   size = "card",
 }: {
   theme: GenreThemeId | null;
   src?: string | null;
   alt: string;
   fallback: string;
+  fallbackNode?: ReactNode;
   size?: "card" | "dossier";
 }) {
   const uid = useId().replace(/:/g, "");
@@ -746,6 +748,8 @@ export function GenrePortraitFrame({
         onError={() => setFailedSrc(src)}
         className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
       />
+    ) : fallbackNode ? (
+      <div className="grid h-full w-full place-items-center p-1">{fallbackNode}</div>
     ) : theme === "fantasy" || theme === "isekai" ? (
       <PortraitSvgFallback
         name={alt || fallback}

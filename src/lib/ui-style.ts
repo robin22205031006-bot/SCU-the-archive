@@ -10,7 +10,8 @@ export const UI_STYLES = [
 export function resolveUiStyle(value: string | null): UiStyle {
   return value === "nexus" || value === "minimal" ? value : "classic";
 }
-const KEY = "scu-ui-style";
+export const UI_STYLE_KEY = "scu-ui-style";
+const KEY = UI_STYLE_KEY;
 const listeners = new Set<() => void>();
 
 function read(): UiStyle {

@@ -14,6 +14,7 @@ import {
   type EntityMembership,
 } from "@/lib/entities";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
+import { GroupGenreEmblem } from "@/components/group-emblem";
 
 export const Route = createFileRoute("/_authenticated/reader")({
   validateSearch: (s: Record<string, unknown>): { e?: string } =>
@@ -80,7 +81,7 @@ function Reader() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entities")
-        .select("id, name, kind, status")
+        .select("id, name, kind, status, category, description")
         .in("id", otherIds);
       if (error) throw error;
       return data ?? [];
@@ -175,6 +176,9 @@ function Reader() {
             <h1 className="mt-3 font-display text-5xl font-medium glow-text sm:text-6xl">
               {entity.name}
             </h1>
+            {entity.kind !== "character" && (
+              <GroupGenreEmblem entity={entity} variant="badge" size="md" className="mt-3" />
+            )}
             {(entity.alias || entity.role || entity.category) && (
               <p className="mt-3 text-sm text-muted-foreground">
                 {[entity.alias, entity.role, entity.category].filter(Boolean).join(" · ")}
@@ -218,10 +222,20 @@ function Reader() {
                     key={m.id}
                     to={other.kind === "character" ? "/characters" : "/orgs"}
                     search={{ q: other.name, open: other.id }}
-                    className="flex items-center justify-between rounded-xl bg-secondary/40 px-4 py-2.5 text-sm hover:bg-secondary/70"
+                    className="flex items-center justify-between gap-3 rounded-xl bg-secondary/40 px-4 py-2.5 text-sm hover:bg-secondary/70"
                   >
-                    <span>{other.name}</span>
-                    <span className="text-xs capitalize text-muted-foreground">
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      {other.kind !== "character" && (
+                        <GroupGenreEmblem
+                          entity={other}
+                          variant="seal"
+                          size="sm"
+                          showLabel={false}
+                        />
+                      )}
+                      <span className="truncate">{other.name}</span>
+                    </span>
+                    <span className="shrink-0 text-xs capitalize text-muted-foreground">
                       {other.kind} · {m.status}
                     </span>
                   </Link>

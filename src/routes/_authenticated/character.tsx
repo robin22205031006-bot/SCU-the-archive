@@ -940,7 +940,11 @@ function ClassicDossier() {
                 initial={animOn ? { opacity: 0, x: 30 } : false}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
+                loading="eager"
                 decoding="async"
+                referrerPolicy="no-referrer"
+                width={480}
+                height={640}
                 src={e.image_url}
                 alt={e.name}
                 className="relative h-[92%] w-auto max-w-full object-contain object-bottom [mask-image:linear-gradient(to_top,black_55%,transparent_98%)]"

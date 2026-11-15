@@ -160,11 +160,36 @@ const G: Record<string, ReactElement> = {
       <circle className="g-spark" cx="24" cy="24" r="2" fill="currentColor" />
     </>
   ),
+  arsenal: (
+    <>
+      <circle className="g-spin-r" cx="24" cy="24" r="20" strokeDasharray="3 5" />
+      <path className="g-clash-l" d="M12 36 33 13l3 3L15 39ZM10 29l7 7" />
+      <path className="g-clash-r" d="M36 36 15 13l-3 3L33 39ZM38 29l-7 7" />
+      <circle className="g-pulse" cx="24" cy="18" r="2.2" fill="currentColor" />
+    </>
+  ),
+  install: (
+    <>
+      <circle className="g-spin" cx="24" cy="24" r="19" strokeDasharray="4 4" />
+      <path className="g-bob" d="M24 11v17M17 22l7 7 7-7" />
+      <path className="g-draw" d="M14 35h20" />
+    </>
+  ),
+  reader: (
+    <>
+      <rect x="11" y="8" width="26" height="32" rx="2" />
+      <path className="g-draw" d="M16 16h16M16 22h16M16 28h11" />
+      <circle className="g-pulse" cx="34" cy="34" r="4" fill="currentColor" fillOpacity=".25" />
+    </>
+  ),
 };
 const BY_PATH: Record<string, string> = {
   "/": "home",
   "/characters": "characters",
+  "/character": "reader",
+  "/reader": "reader",
   "/abilities": "abilities",
+  "/arsenal": "arsenal",
   "/ability-fx": "fx",
   "/ability-action": "action",
   "/archive": "archive",
@@ -181,6 +206,7 @@ const BY_PATH: Record<string, string> = {
   "/vault": "vault",
   "/admin": "admin",
   "/profile": "profile",
+  "/install": "install",
   "#theme": "theme",
 };
 export function nexusGlyphKey(to: string) {

@@ -19,6 +19,7 @@ import {
 import { getCombatStats } from "@/lib/combat-stats";
 import { invalidateArchive } from "@/lib/archive-sync";
 import { useIsManga } from "@/hooks/use-ui-mode";
+import { GroupGenreEmblem } from "@/components/group-emblem";
 
 const ALL_KINDS: Entity["kind"][] = ["character", "organization", "clan", "bloodline", "faction"];
 const GROUP_KINDS = new Set(["organization", "clan", "bloodline", "faction"]);
@@ -678,6 +679,8 @@ export function ClanGraph() {
                   decoding="async"
                   className={`h-12 w-12 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
                 />
+              ) : GROUP_KINDS.has(quickEntity.kind) ? (
+                <GroupGenreEmblem entity={quickEntity} variant="seal" size="md" />
               ) : (
                 <div
                   className={`grid h-12 w-12 place-items-center bg-secondary font-display text-xl ${
@@ -693,6 +696,14 @@ export function ClanGraph() {
                 <p className="text-xs capitalize text-muted-foreground">
                   {quickEntity.kind} · {quickEntity.role ?? quickEntity.category ?? ""}
                 </p>
+                {GROUP_KINDS.has(quickEntity.kind) && (
+                  <GroupGenreEmblem
+                    entity={quickEntity}
+                    variant="badge"
+                    size="xs"
+                    className="mt-1.5"
+                  />
+                )}
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs">

@@ -10,6 +10,8 @@ import { TABS, STAFF_TAB, tabIndex } from "@/lib/nav";
 import { useNavMode } from "@/lib/nav-mode";
 import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { ThemeDrawer } from "@/components/theme-drawer";
+import { HeaderThemeSelect } from "@/components/header-theme-select";
+import { NexusNavGlyph } from "@/components/nexus-nav-glyph";
 import { HankoStamp, MangaCornerMarks } from "@/components/manga-emblem";
 import { useActiveGenre } from "@/hooks/use-ui-mode";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
@@ -22,6 +24,7 @@ import { GenreBackdrop } from "@/components/genre-backdrop";
 import { GenreCardFrame } from "@/components/genre-decorations";
 import { GenreThemeOverlay } from "@/components/genre-theme-overlay";
 import { animateMangaStagger, animateSvgRuneDraw } from "@/lib/anime-animations";
+import { triggerTierSwitchHitstop } from "@/lib/tier-hitstop";
 
 const EXTRA_CHAPTERS = [
   { to: "/series", ch: "CH. 11", label: "Sagas" },
@@ -239,6 +242,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
 
             {/* Compact utility stamps */}
             <div className="flex items-center gap-1.5">
+              <HeaderThemeSelect variant="manga" />
               <button
                 type="button"
                 aria-label="Theme & Visual Style"
@@ -247,7 +251,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
                   playClick(e);
                   setThemeOpen(true);
                 }}
-                className={`manga-ink-btn inline-flex items-center gap-1.5 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                className={`scu-tactile manga-ink-btn inline-flex items-center gap-1.5 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
                   isFantasy
                     ? "border-[#c5a869] bg-[#15221b] text-[#f5ebe6] hover:border-[#5ce1b8] hover:text-[#5ce1b8]"
                     : "border-border bg-background text-foreground hover:bg-primary hover:text-primary-foreground"
@@ -361,9 +365,10 @@ export function MangaShell({ children }: { children: ReactNode }) {
                   onClick={(ev) => {
                     setGenreTheme(g.id);
                     playSwitch(ev);
+                    triggerTierSwitchHitstop("manga", g.id);
                     triggerInteractionSfx("switch-mode", ev);
                   }}
-                  className={`inline-flex shrink-0 items-center gap-1.5 border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                  className={`scu-tactile inline-flex shrink-0 items-center gap-1.5 border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
                     selected
                       ? isFantasy
                         ? "studio-bloom-border border-[#5ce1b8] bg-[#2e5a52] text-[#f5ebe6] shadow-[0_0_10px_rgba(92,225,184,0.35)]"
@@ -484,16 +489,19 @@ export function MangaShell({ children }: { children: ReactNode }) {
                             playSnap(e);
                             setTocOpen(false);
                           }}
-                          className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
+                          className={`scu-tactile relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
                             active
                               ? "bg-foreground text-background"
                               : "bg-background text-foreground"
                           }`}
                         >
                           <GenreCardFrame theme={activeGenre} compact />
-                          <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
-                            {chapterCode(idx)}
-                          </span>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
+                              {chapterCode(idx)}
+                            </span>
+                            <NexusNavGlyph to={t.to} className="h-4 w-4 opacity-80" />
+                          </div>
                           <span className="mt-0.5 font-display text-sm uppercase leading-tight">
                             {t.label}
                           </span>
@@ -510,16 +518,19 @@ export function MangaShell({ children }: { children: ReactNode }) {
                             playSnap(e);
                             setTocOpen(false);
                           }}
-                          className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
+                          className={`scu-tactile relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
                             active
                               ? "bg-primary text-primary-foreground"
                               : "bg-secondary/60 text-foreground"
                           }`}
                         >
                           <GenreCardFrame theme={activeGenre} compact />
-                          <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
-                            {t.ch}
-                          </span>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
+                              {t.ch}
+                            </span>
+                            <NexusNavGlyph to={t.to} className="h-4 w-4 opacity-80" />
+                          </div>
                           <span className="mt-0.5 font-display text-sm uppercase leading-tight">
                             {t.label}
                           </span>

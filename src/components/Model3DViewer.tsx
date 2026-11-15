@@ -14,6 +14,7 @@ import {
   createAfterDrawScheduler,
   createSafeWebGLRenderer,
   detectWebGLContext,
+  disposeThreeRenderer,
   normalizeThreeColor,
 } from "@/lib/three-stage-utils";
 import { isAnimeMotionAllowed } from "@/lib/anime-animations";
@@ -497,8 +498,7 @@ function ProceduralVfxStage({
       sunMat.dispose();
       sunTex?.dispose();
       envTex?.dispose();
-      renderer.dispose();
-      container.innerHTML = "";
+      disposeThreeRenderer(renderer, scene, container);
     };
   }, [accentColor]);
 
@@ -558,6 +558,8 @@ function ProceduralVfxStage({
             <img
               src={fallbackImageUrl}
               alt={alt}
+              decoding="async"
+              referrerPolicy="no-referrer"
               className="h-full w-full object-contain opacity-85"
             />
           ) : (

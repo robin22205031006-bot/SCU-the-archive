@@ -19,6 +19,7 @@ import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { Button } from "@/components/ui/button";
+import { GroupGenreEmblem } from "@/components/group-emblem";
 const charactersRoute = getRouteApi("/_authenticated/characters");
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -328,8 +329,11 @@ export function NexusView({
           <div className="grid gap-3 sm:grid-cols-3">
             {seasonGroups.map((g) => (
               <div key={g.id} className="rounded-lg border border-border p-3">
-                <p className="text-sm">{g.name}</p>
-                <p className="text-xs text-muted-foreground">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium">{g.name}</p>
+                  <GroupGenreEmblem entity={g} variant="badge" size="xs" showLabel={false} />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
                   {g.role || g.category} · {g.status}
                 </p>
                 {readDossier(g.stats)[`${seriesId}:${seasonNumber ?? "all"}`]?.impact && (

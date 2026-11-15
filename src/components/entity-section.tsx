@@ -92,6 +92,9 @@ import { StatusTooltip } from "@/components/status-tooltip";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaEntitySpread, MangaPanel } from "./manga-view";
+import { GroupGenreEmblem } from "@/components/group-emblem";
+import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
+import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
@@ -162,17 +165,31 @@ export function ThemeSongButton({ url }: { url: string }) {
 }
 
 const Avatar = memo(function Avatar({ e, size }: { e: Entity; size: string }) {
-  return e.image_url ? (
-    <img
-      src={e.image_url}
-      alt={e.name}
-      loading="lazy"
-      decoding="async"
-      className={`${size} shrink-0 rounded-xl object-cover`}
-    />
-  ) : (
+  if (e.image_url) {
+    return (
+      <div className={`${size} aspect-square shrink-0 overflow-hidden rounded-xl bg-secondary`}>
+        <img
+          src={e.image_url}
+          alt={e.name}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+  if (e.kind !== "character") {
+    const sealSize = size.includes("10") ? "sm" : "md";
+    return (
+      <div className={`${size} grid aspect-square shrink-0 place-items-center`}>
+        <GroupGenreEmblem entity={e} variant="seal" size={sealSize} className="h-full w-full" />
+      </div>
+    );
+  }
+  return (
     <div
-      className={`${size} grid shrink-0 place-items-center rounded-xl bg-secondary font-display text-2xl text-muted-foreground`}
+      className={`${size} grid aspect-square shrink-0 place-items-center rounded-xl bg-secondary font-display text-2xl text-muted-foreground`}
     >
       {e.name[0]}
     </div>
@@ -205,14 +222,16 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
             </span>
           </StatusTooltip>
         )}
-        {!hideSpoilers && (e.category || showKind) && (
+        {!hideSpoilers && e.kind !== "character" ? (
+          <GroupGenreEmblem entity={e} variant="badge" size="xs" />
+        ) : !hideSpoilers && (e.category || showKind) ? (
           <span
             data-spoiler="char"
             className="text-[11px] uppercase tracking-widest text-muted-foreground"
           >
             {e.category ?? e.kind}
           </span>
-        )}
+        ) : null}
         {hideSpoilers && (
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
             Role hidden
@@ -683,6 +702,7 @@ function DetailOverlay({
                 text={e.name}
                 className="relative font-display text-5xl font-bold uppercase tracking-wide text-white drop-shadow-[0_0_24px_rgba(168,85,247,0.45)] sm:text-6xl"
               />
+              {e.kind !== "character" && <GroupGenreEmblem entity={e} variant="badge" size="md" />}
               {tierDef(e.character_tier) && (
                 <StatusTooltip label={tierDef(e.character_tier)!.label}>
                   <span
@@ -1169,6 +1189,10 @@ function DetailOverlay({
                       className="relative h-[92%] w-auto max-w-full object-contain object-bottom [mask-image:linear-gradient(to_top,black_55%,transparent_98%)]"
                     />
                   </div>
+                ) : e.kind !== "character" ? (
+                  <div className="grid h-full w-full place-items-center bg-black/30">
+                    <GroupGenreEmblem entity={e} variant="crest" size="lg" />
+                  </div>
                 ) : (
                   <div className="grid h-full w-full place-items-center bg-black/30 font-display text-7xl text-muted-foreground/40">
                     {e.name[0]}
@@ -1253,7 +1277,19 @@ function AbilityInfoDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-display text-2xl">
-                <def.icon className="h-6 w-6" style={{ color: def.color }} />
+                {(() => {
+                  const customKind = resolveCustomAbilityEmblem(
+                    `${def.key} ${def.label}`,
+                    def.description ?? "",
+                  );
+                  return customKind ? (
+                    <span style={{ color: def.color }} className="inline-flex">
+                      <AbilityCustomEmblem kind={customKind} className="h-6 w-6" />
+                    </span>
+                  ) : (
+                    <def.icon className="h-6 w-6" style={{ color: def.color }} />
+                  );
+                })()}
                 {def.label}
               </DialogTitle>
             </DialogHeader>
@@ -1389,7 +1425,9 @@ function ShowcaseView({
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-secondary via-background to-accent/20" />
+              <div className="grid h-full w-full place-items-center bg-gradient-to-br from-secondary via-background to-accent/20">
+                <GroupGenreEmblem entity={e} variant="crest" size="lg" />
+              </div>
             )}
             <AbilityCardCanvas
               abilities={e.abilities}
@@ -1398,7 +1436,8 @@ function ShowcaseView({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
             <div className="relative flex h-full min-h-[22rem] flex-col justify-between p-5">
-              <div className="flex justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <GroupGenreEmblem entity={e} variant="badge" size="xs" />
                 {tierDef(e.character_tier) && (
                   <span
                     className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
@@ -1706,18 +1745,26 @@ export function EntitySection({
                     title: e.name,
                     group: e.category || e.kind,
                     image: e.image_url,
+                    icon: <GroupGenreEmblem entity={e} variant="seal" size="md" />,
                     subtitle: e.alias || e.kind,
                     entity: e,
                   }))}
                   renderDetail={({ entity: e }) => (
                     <div className="grid gap-4">
-                      <h2 className="break-words text-2xl">{e.name}</h2>
-                      {e.image_url && (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h2 className="break-words text-2xl">{e.name}</h2>
+                        <GroupGenreEmblem entity={e} variant="badge" size="sm" />
+                      </div>
+                      {e.image_url ? (
                         <img
                           src={e.image_url}
                           alt={e.name}
                           className="h-52 w-full rounded-lg object-contain"
                         />
+                      ) : (
+                        <div className="grid h-36 place-items-center rounded-lg border border-border/60 bg-background/40">
+                          <GroupGenreEmblem entity={e} variant="crest" size="lg" />
+                        </div>
                       )}
                       <p className="whitespace-pre-line text-sm leading-relaxed">
                         {e.description || "No description recorded."}

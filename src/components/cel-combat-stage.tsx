@@ -25,6 +25,7 @@ import {
   createSafeWebGLRenderer,
   detectWebGLContext,
   disposeObjectTree,
+  disposeThreeRenderer,
   normalizeThreeColor,
 } from "@/lib/three-stage-utils";
 
@@ -850,8 +851,7 @@ export function CelCombatStage({
       sparkGeo.dispose();
       sparkMat.dispose();
       gradMap.dispose();
-      renderer.dispose();
-      container.innerHTML = "";
+      disposeThreeRenderer(renderer, scene, container);
     };
   }, [name, gender, style, activeBackdrop, activeWeapon, recipe]);
 

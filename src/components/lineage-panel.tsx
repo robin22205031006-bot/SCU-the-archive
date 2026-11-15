@@ -13,6 +13,7 @@ import {
   type Entity,
 } from "@/lib/entities";
 import { sfx } from "@/lib/scu-audio";
+import { GroupGenreEmblem } from "@/components/group-emblem";
 
 function useRelatedEntities(rels: CharacterRelationship[] | undefined, selfId: string) {
   const ids = useMemo(
@@ -146,10 +147,13 @@ export function OrgHierarchy({ entity, onOpen }: { entity: Entity; onOpen: (e: E
           </p>
           <button
             onClick={() => onOpen(parent)}
-            className="rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent"
+            className="flex w-full items-center gap-2.5 rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent"
           >
-            <span className="block truncate font-medium">{parent.name}</span>
-            <span className="block truncate text-xs text-muted-foreground">{parent.kind}</span>
+            <GroupGenreEmblem entity={parent} variant="seal" size="sm" showLabel={false} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{parent.name}</span>
+              <span className="block truncate text-xs text-muted-foreground">{parent.kind}</span>
+            </span>
           </button>
         </div>
       )}
@@ -163,11 +167,14 @@ export function OrgHierarchy({ entity, onOpen }: { entity: Entity; onOpen: (e: E
               <button
                 key={c.id}
                 onClick={() => onOpen(c)}
-                className="rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent"
+                className="flex items-center gap-2.5 rounded-xl bg-secondary/40 px-3 py-2 text-left hover:text-accent"
               >
-                <span className="block truncate font-medium">{c.name}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {[c.kind, c.status].filter(Boolean).join(" · ")}
+                <GroupGenreEmblem entity={c} variant="seal" size="sm" showLabel={false} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{c.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {[c.kind, c.status].filter(Boolean).join(" · ")}
+                  </span>
                 </span>
               </button>
             ))}

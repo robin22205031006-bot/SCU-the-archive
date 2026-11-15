@@ -79,6 +79,10 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   );
 }
 
+export function useOptionalAppearance() {
+  return useContext(Ctx);
+}
+
 export function useAppearance() {
   const v = useContext(Ctx);
   if (!v) throw new Error("useAppearance outside provider");

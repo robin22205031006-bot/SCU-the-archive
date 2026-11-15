@@ -57,3 +57,25 @@ export function PanelSkeleton({ className }: { className?: string }) {
     </div>
   );
 }
+
+/** Exact aspect-ratio placeholder for 3D blueprints and character portraits to prevent CLS. */
+export function CanvasStageSkeleton({
+  aspectClass = "aspect-[4/5]",
+  className,
+}: {
+  aspectClass?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative w-full overflow-hidden rounded-2xl border border-border/50 bg-[#060a14]/70",
+        aspectClass,
+        className,
+      )}
+      aria-label="Loading stage preview"
+    >
+      <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-secondary/35 via-transparent to-secondary/20" />
+    </div>
+  );
+}

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useOptionalUiMode, VISUAL_UI_MODES, type VisualUiMode } from "@/hooks/use-ui-mode";
 import { useOptionalThemeContext, type PrimarySystem } from "@/context/ThemeContext";
 import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
+import { triggerTierSwitchHitstop } from "@/lib/tier-hitstop";
 import { setUiStyle, useUiStyle } from "@/lib/ui-style";
 
 export function UiStylePicker() {
@@ -13,6 +14,7 @@ export function UiStylePicker() {
 
   const handleSelect = (modeId: VisualUiMode) => {
     playSwitch();
+    triggerTierSwitchHitstop(modeId);
     if (themeCtx) {
       themeCtx.setPrimarySystem(modeId as PrimarySystem);
     } else if (ctx) {

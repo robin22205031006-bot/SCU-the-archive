@@ -17,7 +17,18 @@ export function isAnimeMotionAllowed(): boolean {
   return true;
 }
 
-function safeRevert(anim: JSAnimation | null | undefined): void {
+function setGpuHint(nodes: HTMLElement[], active: boolean): void {
+  for (const el of nodes) {
+    try {
+      el.style.willChange = active ? "transform, opacity" : "";
+    } catch {
+      /* ignore detached nodes */
+    }
+  }
+}
+
+function safeRevert(anim: JSAnimation | null | undefined, nodes: HTMLElement[] = []): void {
+  setGpuHint(nodes, false);
   if (!anim) return;
   try {
     anim.pause();
@@ -43,6 +54,7 @@ export function animateMangaStagger(
     return { cancel: () => {} };
   }
 
+  setGpuHint(nodes, true);
   let anim: JSAnimation | null = null;
   try {
     anim = animate(nodes, {
@@ -52,13 +64,15 @@ export function animateMangaStagger(
       delay: stagger(32, { start: 10 }),
       ease: spring({ stiffness: 420, damping: 24, mass: 0.72 }),
       duration: 420,
+      onComplete: () => setGpuHint(nodes, false),
     });
   } catch {
+    setGpuHint(nodes, false);
     anim = null;
   }
 
   return {
-    cancel: () => safeRevert(anim),
+    cancel: () => safeRevert(anim, nodes),
   };
 }
 
@@ -97,7 +111,7 @@ export function animateSvgRuneDraw(
       });
       animations.push(a);
       return {
-        cancel: () => animations.forEach(safeRevert),
+        cancel: () => animations.forEach((anim) => safeRevert(anim)),
       };
     } catch {
       /* fall through to dashoffset fallback */
@@ -120,7 +134,7 @@ export function animateSvgRuneDraw(
   }
 
   return {
-    cancel: () => animations.forEach(safeRevert),
+    cancel: () => animations.forEach((anim) => safeRevert(anim)),
   };
 }
 
@@ -133,6 +147,8 @@ export function animateMangaSpringPanel(
   if (!target || !isAnimeMotionAllowed()) {
     return { cancel: () => {} };
   }
+  const targets = [target];
+  setGpuHint(targets, true);
   let anim: JSAnimation | null = null;
   try {
     anim = animate(target, {
@@ -141,11 +157,13 @@ export function animateMangaSpringPanel(
       translateY: [10, 0],
       ease: spring({ stiffness: 460, damping: 24, mass: 0.7 }),
       duration: 380,
+      onComplete: () => setGpuHint(targets, false),
     });
   } catch {
+    setGpuHint(targets, false);
     anim = null;
   }
   return {
-    cancel: () => safeRevert(anim),
+    cancel: () => safeRevert(anim, targets),
   };
 }

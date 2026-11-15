@@ -1,4 +1,6 @@
 import { NEXUS_DISTINCT_ART, nexusDistinctArt } from "@/lib/nexus-distinct-art";
+import { abilityDef } from "@/lib/abilities";
+import { resolveNexusArtFromDescription } from "@/lib/ability-emblem-resolver";
 
 export const NEXUS_ABILITY_ART = [
   "fire",
@@ -40,8 +42,8 @@ export const NEXUS_ABILITY_ART = [
 ] as const;
 export type NexusAbilityArt = (typeof NEXUS_ABILITY_ART)[number];
 
-/** Presentation classification only: never changes ability membership or lore. */
-export function nexusAbilityArt(name: string, iconName = ""): NexusAbilityArt {
+/** Presentation classification only: inspects name, description, and icon before fallback. */
+export function nexusAbilityArt(name: string, iconName = "", description = ""): NexusAbilityArt {
   const distinct = nexusDistinctArt(name);
   if (distinct) return distinct;
   const s = name.toLowerCase().replace(/[_-]/g, " ");
@@ -82,8 +84,12 @@ export function nexusAbilityArt(name: string, iconName = ""): NexusAbilityArt {
     [/light\b|solar|sun/, "light"],
     [/ancient art|blood art|book|scroll/, "art"],
   ];
-  return (
-    rules.find(([pattern]) => pattern.test(s))?.[1] ??
-    (iconName ? nexusAbilityArt(iconName) : "aether")
-  );
+  const byName = rules.find(([pattern]) => pattern.test(s))?.[1];
+  if (byName) return byName;
+
+  const resolvedDesc = description || abilityDef(name).description || "";
+  const byDescription = resolveNexusArtFromDescription(name, resolvedDesc);
+  if (byDescription) return byDescription;
+
+  return iconName ? nexusAbilityArt(iconName) : "aether";
 }

@@ -6,7 +6,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AbilityFxPanel } from "@/components/ability-fx-panel";
 import { AbilityActionPanel } from "@/components/ability-action-panel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Pencil, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
+import {
+  ChevronDown,
+  Flame,
+  Pencil,
+  Plus,
+  Search,
+  Sparkles,
+  Swords,
+  Trash2,
+  WandSparkles,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,10 +92,13 @@ export const Route = createFileRoute("/_authenticated/abilities")({
   component: AbilitiesTabs,
 });
 
+import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
+import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
+
 const HUB_TABS = [
-  ["catalog", "Catalog"],
-  ["fx", "Ability FX & Lineages"],
-  ["action", "Ability in Action"],
+  ["catalog", "Catalog", WandSparkles],
+  ["fx", "Ability FX & Lineages", Flame],
+  ["action", "Ability in Action", Swords],
 ] as const;
 
 const MANGA_HUB_LABELS: Record<(typeof HUB_TABS)[number][0], string> = {
@@ -105,7 +119,7 @@ function AbilitiesTabs() {
           aria-label="Abilities sections"
           className={`flex flex-wrap gap-2 ${isManga ? "border-b-[3px] border-foreground pb-3" : "gap-1.5"}`}
         >
-          {HUB_TABS.map(([id, label]) => (
+          {HUB_TABS.map(([id, label, TabIcon]) => (
             <button
               key={id}
               role="tab"
@@ -113,15 +127,16 @@ function AbilitiesTabs() {
               onClick={() => nav({ search: id === "catalog" ? {} : { tab: id }, replace: true })}
               className={
                 isManga
-                  ? `border-2 border-foreground px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition ${
+                  ? `scu-tactile inline-flex items-center gap-1.5 border-2 border-foreground px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition ${
                       tab === id
                         ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
                         : "bg-card text-foreground hover:bg-secondary"
                     }`
-                  : `rounded-full border px-3.5 py-1.5 text-sm transition ${tab === id ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`
+                  : `scu-tactile inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition ${tab === id ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`
               }
             >
-              {isManga ? MANGA_HUB_LABELS[id] : label}
+              <TabIcon className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+              <span>{isManga ? MANGA_HUB_LABELS[id] : label}</span>
             </button>
           ))}
         </div>
@@ -360,7 +375,14 @@ function AbilitiesHub() {
             title: def.label,
             group: TIER_LABELS[def.tier],
             subtitle: ABILITY_GROUP_LABELS[def.group],
-            icon: <NexusAbilitySymbol name={def.key} className="h-10 w-10" />,
+            icon: (
+              <NexusAbilitySymbol
+                name={def.key}
+                label={def.label}
+                description={def.description}
+                className="h-10 w-10"
+              />
+            ),
             def,
           }))}
           renderDetail={({ def }) => (
@@ -591,9 +613,24 @@ function AbilityCard({
           }
         >
           {nexus ? (
-            <NexusAbilitySymbol name={def.key} className="h-10 w-10" />
+            <NexusAbilitySymbol
+              name={def.key}
+              label={def.label}
+              description={def.description}
+              className="h-10 w-10"
+            />
           ) : (
-            <Icon className="h-5 w-5" />
+            (() => {
+              const customKind = resolveCustomAbilityEmblem(
+                `${def.key} ${def.label}`,
+                def.description ?? "",
+              );
+              return customKind ? (
+                <AbilityCustomEmblem kind={customKind} className="h-5 w-5" />
+              ) : (
+                <Icon className="h-5 w-5" />
+              );
+            })()
           )}
         </span>
         <span className="min-w-0 flex-1">
@@ -942,6 +979,7 @@ function NexusAbilityHero({
   defs: {
     key: string;
     label: string;
+    description?: string;
     tier: keyof typeof TIER_LABELS;
     group: keyof typeof ABILITY_GROUP_LABELS;
   }[];
@@ -954,7 +992,12 @@ function NexusAbilityHero({
     icon: (
       <span className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-border">
         <AbilityFxCanvas recipe={abilityFxRecipe(def.key)} label={`${def.label} animation`} />
-        <NexusAbilitySymbol name={def.key} className="relative h-10 w-10 opacity-90" />
+        <NexusAbilitySymbol
+          name={def.key}
+          label={def.label}
+          description={def.description}
+          className="relative h-10 w-10 opacity-90"
+        />
       </span>
     ),
   }));

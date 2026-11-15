@@ -6,6 +6,7 @@ import {
   createAfterDrawScheduler,
   createSafeWebGLRenderer,
   detectWebGLContext,
+  disposeThreeRenderer,
 } from "@/lib/three-stage-utils";
 
 interface BackdropPalette {
@@ -452,8 +453,7 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
       foliageMat.dispose();
       moteGeo.dispose();
       moteMat.dispose();
-      renderer.dispose();
-      container.innerHTML = "";
+      disposeThreeRenderer(renderer, scene, container);
     };
   }, []);
 

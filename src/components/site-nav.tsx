@@ -52,6 +52,7 @@ import { DayNightToggle } from "./day-night-toggle";
 import { ThemeDrawer } from "./theme-drawer";
 import { UniversalSearch } from "./universal-search";
 import { MobileMenu } from "./mobile-menu";
+import { HeaderThemeSelect } from "./header-theme-select";
 import { Download } from "lucide-react";
 import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
@@ -243,14 +244,14 @@ export function SiteNav() {
       <div className="glass glow-ring flex w-full max-w-full md:w-auto items-center gap-0.5 rounded-full px-1.5 py-1.5">
         <div className="relative flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none]">
           <span
-            className={`absolute inset-y-0 left-0 rounded-full bg-secondary will-change-transform ${
+            className={`absolute inset-y-0 left-0 origin-left rounded-full bg-secondary will-change-transform ${
               motionActive
-                ? "transition-[transform,opacity,width] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]"
+                ? "transition-[transform,opacity] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]"
                 : ""
             }`}
             style={{
-              transform: `translateX(${pill.left}px)`,
-              width: pill.width,
+              width: "1px",
+              transform: `translate3d(${pill.left}px, 0, 0) scaleX(${Math.max(pill.width, 1)})`,
               opacity: active >= 0 ? 1 : 0,
             }}
           />
@@ -266,7 +267,7 @@ export function SiteNav() {
                 ref={(el) => {
                   refs.current[i] = el;
                 }}
-                className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${on ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`scu-tactile relative flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${on ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <Icon className={`h-3.5 w-3.5 ${on ? "text-accent" : ""}`} />
                 <span className={on ? "" : "hidden md:inline"}>{t.label}</span>
@@ -330,6 +331,7 @@ export function SiteNav() {
           <Download className="h-3.5 w-3.5" />
         </Link>
         <UniversalSearch />
+        <HeaderThemeSelect className="hidden sm:inline-flex" />
         <ThemeDrawer />
         <button
           aria-label="Zoom out text"

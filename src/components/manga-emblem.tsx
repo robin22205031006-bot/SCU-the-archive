@@ -1,4 +1,6 @@
 import { useId } from "react";
+import { GroupEmblemVector } from "@/components/group-emblem";
+import type { GroupEmblemGenre } from "@/lib/group-emblem-resolver";
 
 /**
  * Pure monochrome & crimson hanko/woodblock vector emblem library for Manga UI mode.
@@ -82,20 +84,26 @@ export function MangaCornerMarks({ className = "" }: { className?: string }) {
   );
 }
 
-type CrestFlavor =
-  | "adventure"
-  | "fantasy"
-  | "dark"
-  | "sentinel"
-  | "villain"
-  | "bloodline"
-  | "arsenal"
-  | "chronicler";
+type BaseCrestFlavor =
+  "adventure" | "fantasy" | "dark" | "sentinel" | "villain" | "arsenal" | "chronicler";
+
+type CrestFlavor = BaseCrestFlavor | GroupEmblemGenre;
 
 function resolveCrestFlavor(raw?: string | null): CrestFlavor {
   const s = (raw ?? "").toLowerCase();
+  if (/satan|lucifer|baphomet|diablo cult|pentagram|sabbath/.test(s)) return "satanism-cult";
+  if (/dark cult|abyssal cult|void cult|occult coven|eclipse cult/.test(s)) return "dark-cult";
+  if (/\bcult\b|\bsect\b|covenant/.test(s)) return "cult";
+  if (
+    /black[\s_-]*ops|special ops|strike team|covert|redline team|h\.?a\.?w\.?k\.?s|vanguard/.test(s)
+  )
+    return "black-ops";
+  if (/dark[\s_-]*org|d\.?e\.?w\.?|old order|obsidians|syndicate|cabal/.test(s)) return "dark-org";
+  if (/organization|institute|academy|bureau|ecap/.test(s)) return "organization";
+  if (/\bclan\b|kurohana|arashi|al-ahd|hidden ones/.test(s)) return "clan";
+  if (/bloodline|lineage|dynasty|duskmoor|aldercrest|corvani/.test(s)) return "bloodline";
+  if (/faction|coalition|alliance/.test(s)) return "faction";
   if (/dark|curse|demon|shadow|villain|antagonist|obsidian|diablo|blood/.test(s)) return "dark";
-  if (/bloodline|clan|lineage|kurohana|kazumi|al-mansur/.test(s)) return "bloodline";
   if (/fantasy|myth|divine|aether|cosmic|celestial|magic|arcane/.test(s)) return "fantasy";
   if (/adventure|protagonist|hero|explorer|rogue|scout/.test(s)) return "adventure";
   if (/weapon|sword|blade|arsenal|relic|armor/.test(s)) return "arsenal";
@@ -103,7 +111,19 @@ function resolveCrestFlavor(raw?: string | null): CrestFlavor {
   return "chronicler";
 }
 
-const CREST_PATHS: Record<CrestFlavor, { seal: string; d: string }> = {
+const GROUP_GENRE_SET = new Set<CrestFlavor>([
+  "satanism-cult",
+  "dark-cult",
+  "cult",
+  "black-ops",
+  "dark-org",
+  "organization",
+  "clan",
+  "bloodline",
+  "faction",
+]);
+
+const CREST_PATHS: Record<BaseCrestFlavor, { seal: string; d: string }> = {
   adventure: {
     seal: "ADV",
     d: "M16 4 L19 13 L28 16 L19 19 L16 28 L13 19 L4 16 L13 13 Z M16 11 L16 21 M11 16 L21 16",
@@ -123,10 +143,6 @@ const CREST_PATHS: Record<CrestFlavor, { seal: string; d: string }> = {
   villain: {
     seal: "EXT",
     d: "M5 7 L16 15 L27 7 M5 25 L16 17 L27 25 M16 4 V28",
-  },
-  bloodline: {
-    seal: "LIN",
-    d: "M16 4 L25 13 L16 28 L7 13 Z M16 9 V22 M12 14 H20",
   },
   arsenal: {
     seal: "ARM",
@@ -154,8 +170,28 @@ export function MangaCategorySeal({
 }) {
   const uid = useId().replace(/:/g, "");
   const resolved = resolveCrestFlavor(flavor ?? label);
-  const { d } = CREST_PATHS[resolved];
   const iconSize = size === "md" ? "h-5 w-5" : size === "sm" ? "h-4 w-4" : "h-3.5 w-3.5";
+
+  if (GROUP_GENRE_SET.has(resolved)) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 border-2 border-foreground px-2 py-0.5 font-mono font-bold uppercase tracking-wider select-none ${
+          inverted ? "bg-foreground text-background" : "bg-card text-foreground"
+        } ${size === "xs" ? "text-[9px]" : size === "md" ? "text-xs" : "text-[10px]"}`}
+        style={{ boxShadow: "2px 2px 0 currentColor" }}
+      >
+        <GroupEmblemVector
+          genre={resolved as GroupEmblemGenre}
+          className={`${iconSize} shrink-0`}
+        />
+        <span className="truncate">{label}</span>
+      </span>
+    );
+  }
+
+  const { d } =
+    CREST_PATHS[resolved as Exclude<CrestFlavor, GroupEmblemGenre | "bloodline">] ??
+    CREST_PATHS.chronicler;
 
   return (
     <span

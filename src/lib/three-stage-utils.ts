@@ -96,23 +96,66 @@ export function createConfiguredGltfLoader(): GLTFLoader {
   return loader;
 }
 
+function disposeMaterialWithTextures(mat: THREE.Material): void {
+  for (const val of Object.values(mat)) {
+    if (val instanceof THREE.Texture) {
+      val.dispose();
+    }
+  }
+  mat.dispose();
+}
+
 /**
- * Recursively disposes all geometries, materials, and textures attached to an Object3D subtree.
+ * Recursively disposes all geometries, materials, and textures attached to an Object3D subtree
+ * (Mesh, Points, Line, LineSegments, Sprite).
  */
 export function disposeObjectTree(root: THREE.Object3D): void {
   root.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) {
-      obj.geometry?.dispose();
-      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    const geom = (obj as { geometry?: THREE.BufferGeometry }).geometry;
+    if (geom && typeof geom.dispose === "function") {
+      geom.dispose();
+    }
+    const rawMat = (obj as { material?: THREE.Material | THREE.Material[] }).material;
+    if (rawMat) {
+      const mats = Array.isArray(rawMat) ? rawMat : [rawMat];
       for (const m of mats) {
-        if (!m) continue;
-        for (const val of Object.values(m)) {
-          if (val instanceof THREE.Texture) val.dispose();
+        if (m && typeof m.dispose === "function") {
+          disposeMaterialWithTextures(m);
         }
-        m.dispose();
       }
     }
   });
+}
+
+/**
+ * Performs complete zero-leak Three.js teardown on unmount or route transition:
+ * disposes scene objects, clears renderLists, detaches DOM canvas, and disposes renderer.
+ */
+export function disposeThreeRenderer(
+  renderer: THREE.WebGLRenderer,
+  scene?: THREE.Scene | null,
+  container?: HTMLElement | null,
+): void {
+  if (scene) {
+    disposeObjectTree(scene);
+    scene.clear();
+  }
+  try {
+    renderer.renderLists?.dispose();
+  } catch {
+    /* ignore renderLists errors during context loss */
+  }
+  try {
+    renderer.dispose();
+  } catch {
+    /* ignore disposal errors if context already lost */
+  }
+  if (renderer.domElement.parentNode) {
+    renderer.domElement.parentNode.removeChild(renderer.domElement);
+  }
+  if (container) {
+    container.innerHTML = "";
+  }
 }
 
 /**

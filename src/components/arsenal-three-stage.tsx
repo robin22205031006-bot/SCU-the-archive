@@ -39,6 +39,7 @@ import {
   createSafeWebGLRenderer,
   detectWebGLContext,
   disposeObjectTree,
+  disposeThreeRenderer,
 } from "@/lib/three-stage-utils";
 import { Button } from "@/components/ui/button";
 
@@ -619,7 +620,7 @@ export function ArsenalThreeStage({
       floorMat.dispose();
       textures.dispose();
       envTex?.dispose();
-      renderer.dispose();
+      disposeThreeRenderer(renderer, scene, container);
       sceneHooksRef.current = null;
     };
   }, []);

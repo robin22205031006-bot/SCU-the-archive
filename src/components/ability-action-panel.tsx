@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Layers, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { Box, Layers, Pause, Play, SkipBack, SkipForward, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { allAbilityDefs, abilityDef } from "@/lib/abilities";
 import { abilityFxRecipe } from "@/lib/ability-fx";
@@ -64,7 +64,12 @@ export function AbilityActionPanel() {
   return (
     <MotionPage as="main" className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6">
       <MotionSection as="header" className="grid gap-1">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Ability in Action</h1>
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-9 w-9 place-items-center rounded-xl border border-accent/40 bg-accent/15 text-accent">
+            <Swords className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Ability in Action</h1>
+        </div>
         <p className="text-sm text-muted-foreground">
           How a fighter actually uses each power: wind-up, movement, release and impact.
         </p>

@@ -60,6 +60,10 @@ export function MotionPage({
     );
   }
   const MotionTag = MOTION_TAGS[as];
+  const gpuStyle: MotionStyle = {
+    willChange: "transform, opacity",
+    ...(style as MotionStyle | undefined),
+  };
   return (
     <MotionTag
       data-motion-state="active"
@@ -70,7 +74,7 @@ export function MotionPage({
       className={className}
       {...(id ? { id } : {})}
       {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
-      {...(style ? { style: style as MotionStyle } : {})}
+      style={gpuStyle}
       {...(onCopy ? { onCopy } : {})}
     >
       {children}
@@ -107,6 +111,10 @@ export function MotionSection({
     );
   }
   const MotionTag = MOTION_TAGS[as];
+  const gpuStyle: MotionStyle = {
+    willChange: "transform, opacity",
+    ...(style as MotionStyle | undefined),
+  };
   return (
     <MotionTag
       data-motion-state="active"
@@ -117,7 +125,7 @@ export function MotionSection({
       className={className}
       {...(id ? { id } : {})}
       {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
-      {...(style ? { style: style as MotionStyle } : {})}
+      style={gpuStyle}
     >
       {children}
     </MotionTag>
@@ -176,6 +184,10 @@ export function MotionCard({
   }
 
   const MotionTag = MOTION_TAGS[as];
+  const gpuStyle: MotionStyle = {
+    willChange: "transform, opacity",
+    ...(style as MotionStyle | undefined),
+  };
   return (
     <MotionTag
       data-motion-state="active"
@@ -189,7 +201,7 @@ export function MotionCard({
       }}
       className={className}
       {...(id ? { id } : {})}
-      {...(style ? { style: style as MotionStyle } : {})}
+      style={gpuStyle}
       {...(onClick ? { onClick } : {})}
       {...(onKeyDown ? { onKeyDown } : {})}
       {...(role ? { role } : {})}
@@ -230,6 +242,10 @@ export function MotionModalPanel({
     );
   }
   const MotionTag = MOTION_TAGS[as];
+  const gpuStyle: MotionStyle = {
+    willChange: "transform, opacity",
+    ...(style as MotionStyle | undefined),
+  };
   return (
     <MotionTag
       data-motion-state="active"
@@ -240,7 +256,7 @@ export function MotionModalPanel({
       className={className}
       {...(id ? { id } : {})}
       {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
-      {...(style ? { style: style as MotionStyle } : {})}
+      style={gpuStyle}
     >
       {children}
     </MotionTag>
