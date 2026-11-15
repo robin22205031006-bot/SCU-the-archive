@@ -37,7 +37,7 @@ export function GenreFrameVfx({
           viewBox="0 0 120 56"
           className={`frame-vfx-slash absolute right-1 top-0 ${
             compact ? "h-8 w-20" : "h-12 w-32"
-          } text-primary drop-shadow-[0_0_8px_var(--primary)]`}
+          } text-primary`}
           fill="none"
         >
           <path
@@ -71,7 +71,7 @@ export function GenreFrameVfx({
           viewBox="0 0 28 24"
           className={`frame-vfx-butterfly absolute right-3 top-2 ${
             compact ? "h-4 w-4" : "h-5 w-6"
-          } text-[var(--genre-gold,#d4af37)] drop-shadow-[0_0_6px_rgba(212,175,55,0.65)]`}
+          } text-[var(--genre-gold,#d4af37)]`}
           fill="currentColor"
         >
           <path d="M14 12 C9 4, 2 5, 4 12 C2 17, 9 19, 14 14 C19 19, 26 17, 24 12 C26 5, 19 4, 14 12 Z" />
@@ -136,7 +136,7 @@ export function GenreFrameVfx({
           viewBox="0 0 110 48"
           className={`frame-vfx-slash absolute left-1 top-1 ${
             compact ? "h-7 w-16" : "h-10 w-28"
-          } text-accent drop-shadow-[0_0_8px_var(--primary)]`}
+          } text-accent`}
           fill="none"
         >
           <path
@@ -362,7 +362,7 @@ export function GenreCardFrame({
         <svg
           data-anime-rune="true"
           viewBox="0 0 64 64"
-          className="ivy-sway-alt absolute -bottom-0.5 -right-0.5 h-12 w-12 origin-bottom-right rotate-180 text-[#2e5a52] drop-shadow-[0_0_6px_rgba(92,225,184,0.35)]"
+          className="ivy-sway-alt absolute -bottom-0.5 -right-0.5 h-12 w-12 origin-bottom-right rotate-180 text-[#2e5a52]"
           fill="none"
         >
           <path
@@ -391,7 +391,7 @@ export function GenreCardFrame({
             key={corner}
             data-anime-rune="true"
             viewBox="0 0 32 32"
-            className={`absolute ${size} text-[#c5a869] drop-shadow-[0_0_6px_rgba(197,168,105,0.45)] ${
+            className={`absolute ${size} text-[#c5a869] ${
               corner === "tr" ? "right-1 top-1 -scale-x-100" : "bottom-1 left-1 -scale-y-100"
             }`}
             fill="none"
@@ -407,7 +407,7 @@ export function GenreCardFrame({
           <svg
             data-anime-rune="true"
             viewBox="0 0 40 16"
-            className="absolute left-1/2 top-0.5 h-4 w-10 -translate-x-1/2 text-[#c5a869] drop-shadow-[0_0_8px_rgba(92,225,184,0.5)]"
+            className="absolute left-1/2 top-0.5 h-4 w-10 -translate-x-1/2 text-[#c5a869]"
           >
             <path d="M8 12 L13 4 L20 9 L27 4 L32 12 Z" fill="currentColor" fillOpacity="0.85" />
             <polygon points="20,1 23,5 20,10 17,5" fill="#5ce1b8" />
@@ -461,7 +461,7 @@ export function GenreCardFrame({
             key={corner}
             data-anime-rune="true"
             viewBox="0 0 32 32"
-            className={`absolute ${size} text-primary drop-shadow-[0_0_6px_color-mix(in_oklab,var(--primary)_55%,transparent)] ${
+            className={`absolute ${size} text-primary ${
               corner === "tl"
                 ? "left-1 top-1"
                 : corner === "tr"
@@ -492,7 +492,12 @@ export function GenreCardFrame({
         data-genre-decoration="ghibli"
         className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] ${className}`}
       >
-        <div className="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-amber-200/18 blur-xl" />
+        <div
+          className="absolute -left-6 -top-6 h-24 w-24 rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(253,230,138,0.22) 0%, transparent 70%)",
+          }}
+        />
         <div className="absolute inset-[4px] rounded-[inherit] border border-primary/35" />
         {/* Ivy-entwined botanical sprig corners (Pic 3 & Pic 6 inspo) */}
         <svg
@@ -546,7 +551,7 @@ export function GenreCardFrame({
             key={corner}
             data-anime-rune="true"
             viewBox="0 0 28 28"
-            className={`absolute ${compact ? "h-4 w-4" : "h-5 w-5"} text-primary drop-shadow-[0_0_6px_color-mix(in_oklab,var(--primary)_60%,transparent)] ${
+            className={`absolute ${compact ? "h-4 w-4" : "h-5 w-5"} text-primary ${
               corner === "tl"
                 ? "left-1 top-1"
                 : corner === "tr"
@@ -567,7 +572,7 @@ export function GenreCardFrame({
           <svg
             data-anime-rune="true"
             viewBox="0 0 24 24"
-            className="absolute left-1/2 top-0.5 h-3.5 w-3.5 -translate-x-1/2 text-primary drop-shadow-[0_0_8px_var(--primary)]"
+            className="absolute left-1/2 top-0.5 h-3.5 w-3.5 -translate-x-1/2 text-primary"
           >
             <path
               d="M14 4A8 8 0 1 0 20 16A6.2 6.2 0 1 1 14 4Z"
@@ -962,7 +967,11 @@ export function GenrePortraitFrame({
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -inset-1 rounded-sm bg-gradient-to-tr from-[#14b8a6]/35 via-[#fffbeb]/50 to-[#e86a33]/40 blur-[4px]"
+          className="pointer-events-none absolute -inset-1 rounded-sm"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(255,251,235,0.45) 0%, rgba(20,184,166,0.24) 55%, transparent 78%)",
+          }}
         />
         <div
           className="relative h-full w-full overflow-hidden border-2 border-[#1e293b] bg-secondary shadow-[4px_4px_0_#0f172a] ring-1 ring-inset ring-[#fffbeb]/70"

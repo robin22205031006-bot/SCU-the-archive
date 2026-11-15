@@ -42,10 +42,9 @@ export function IvyDecoration({ variant = "card", className = "" }: IvyDecoratio
         viewBox="0 0 110 92"
         className={`absolute -left-1 -top-1 ${isCompact ? "h-14 w-16" : "h-20 w-24"} ${
           motionActive ? "ivy-sway" : ""
-        } drop-shadow-[0_2px_6px_rgba(92,225,184,0.3)]`}
+        }`}
         style={{
           transformOrigin: "top left",
-          animation: motionActive ? "ivySway 6.4s ease-in-out infinite alternate" : "none",
         }}
         fill="none"
       >
@@ -102,12 +101,9 @@ export function IvyDecoration({ variant = "card", className = "" }: IvyDecoratio
         viewBox="0 0 110 92"
         className={`absolute -right-1 -top-1 ${isCompact ? "h-14 w-16" : "h-20 w-24"} ${
           motionActive ? "ivy-pendulum-fast" : ""
-        } drop-shadow-[0_2px_6px_rgba(92,225,184,0.3)]`}
+        }`}
         style={{
           transformOrigin: "top right",
-          animation: motionActive
-            ? "ivySway 5.2s ease-in-out -1.4s infinite alternate-reverse"
-            : "none",
         }}
         fill="none"
       >
@@ -158,12 +154,9 @@ export function IvyDecoration({ variant = "card", className = "" }: IvyDecoratio
           viewBox="0 0 64 64"
           className={`absolute -bottom-0.5 -right-0.5 h-12 w-12 ${
             motionActive ? "ivy-sway-alt" : ""
-          } drop-shadow-[0_0_5px_rgba(92,225,184,0.28)]`}
+          }`}
           style={{
             transformOrigin: "bottom right",
-            animation: motionActive
-              ? "ivySway 7.2s ease-in-out -0.8s infinite alternate-reverse"
-              : "none",
           }}
           fill="none"
         >

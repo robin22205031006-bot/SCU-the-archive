@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { LoreExplorer, type LoreItem } from "@/components/LoreExplorer";
 
 describe("LoreExplorer reactive section relocation", () => {
@@ -182,5 +182,235 @@ describe("LoreExplorer bookmarking and personalized collection", () => {
       screen.getByRole("button", { name: /view bookmarked collection \(0\)/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Your personalized collection is empty/i)).toBeInTheDocument();
+  });
+});
+
+describe("LoreExplorer long-press context menu (bookmark, share, pin)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  const sampleItems: LoreItem[] = [
+    {
+      id: "char-ethan",
+      name: "Ethan Reed",
+      tier: "Mythic",
+      category: "Vanguard",
+      description: "Commander of the Vanguard division.",
+    },
+    {
+      id: "char-elizah",
+      name: "Elizah Vale",
+      tier: "Legendary",
+      category: "Sentinel",
+      description: "Master strategist and archivist.",
+    },
+  ];
+
+  it("opens on pointer long-press, cancels on pointer move beyond threshold, and toggles Bookmark & Pin across reloads", () => {
+    vi.useFakeTimers();
+    const { unmount } = render(<LoreExplorer initialItems={sampleItems} />);
+
+    const ethanHeading = screen.getByRole("heading", { name: "Ethan Reed" });
+    const cardSurface = ethanHeading.closest('[data-lore-card-surface="true"]') as HTMLElement;
+    expect(cardSurface).toBeTruthy();
+
+    // Pointer move > 8px cancels long-press before timer fires
+    fireEvent.pointerDown(cardSurface, { pointerType: "touch", clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(cardSurface, { pointerType: "touch", clientX: 120, clientY: 100 });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    // Clean long-press >= 450ms opens context menu
+    fireEvent.pointerDown(cardSurface, { pointerType: "touch", clientX: 100, clientY: 100 });
+    act(() => {
+      vi.advanceTimersByTime(460);
+    });
+
+    const menu = screen.getByRole("menu", { name: "Quick actions for Ethan Reed" });
+    expect(menu).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: /Bookmark/i })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: /Share/i })).toBeInTheDocument();
+    expect(
+      within(menu).getByRole("menuitem", { name: /Pin for quick access/i }),
+    ).toBeInTheDocument();
+
+    // Pin Ethan Reed via menu
+    fireEvent.click(within(menu).getByRole("menuitem", { name: /Pin for quick access/i }));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    const quickAccess = screen.getByRole("region", { name: "Pinned quick access" });
+    expect(
+      within(quickAccess).getByRole("button", { name: "Jump to pinned entry Ethan Reed" }),
+    ).toBeInTheDocument();
+
+    // Open again via right-click contextmenu and Bookmark Ethan Reed
+    fireEvent.contextMenu(cardSurface, { clientX: 140, clientY: 160 });
+    const menuAgain = screen.getByRole("menu", { name: "Quick actions for Ethan Reed" });
+    fireEvent.click(within(menuAgain).getByRole("menuitem", { name: /^Bookmark$/i }));
+
+    expect(
+      screen.getByRole("button", { name: /view bookmarked collection \(1\)/i }),
+    ).toBeInTheDocument();
+
+    // Unmount and remount to confirm Pin persistence
+    unmount();
+    render(<LoreExplorer initialItems={sampleItems} />);
+    const persistedQuickAccess = screen.getByRole("region", { name: "Pinned quick access" });
+    expect(
+      within(persistedQuickAccess).getByRole("button", { name: "Jump to pinned entry Ethan Reed" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shares via clipboard fallback and closes on Escape key", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+
+    render(<LoreExplorer initialItems={sampleItems} />);
+
+    // Open menu via accessible More actions button
+    fireEvent.click(screen.getByRole("button", { name: "More actions for Elizah Vale" }));
+    const menu = screen.getByRole("menu", { name: "Quick actions for Elizah Vale" });
+
+    // Escape closes menu
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    // Re-open and click Share
+    fireEvent.click(screen.getByRole("button", { name: "More actions for Elizah Vale" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Share/i }));
+
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalledTimes(1);
+    });
+    expect(writeText.mock.calls[0]?.[0]).toContain("Elizah Vale");
+    expect(await screen.findByRole("status")).toHaveTextContent(/Elizah Vale/i);
+  });
+});
+
+describe("LoreExplorer text-to-speech narration and scroll-reveal cards", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  const sampleItems: LoreItem[] = [
+    {
+      id: "char-ethan",
+      name: "Ethan Reed",
+      tier: "Mythic",
+      category: "Vanguard",
+      description: "Commander of the Vanguard division.",
+      combat_style: "Kinetic blade arts",
+    },
+    {
+      id: "char-elizah",
+      name: "Elizah Vale",
+      tier: "Legendary",
+      category: "Sentinel",
+      description: "Master strategist and archivist.",
+    },
+  ];
+
+  it("narrates lore content on Listen click, switches between cards, stops on Stop click, and sets scroll-reveal attributes", () => {
+    const utterances: Array<{
+      text: string;
+      onstart: (() => void) | null;
+      onend: (() => void) | null;
+    }> = [];
+    const speak = vi.fn(
+      (u: { text: string; onstart: (() => void) | null; onend: (() => void) | null }) => {
+        utterances.push(u);
+        u.onstart?.();
+      },
+    );
+    const cancel = vi.fn();
+
+    class MockSpeechSynthesisUtterance {
+      text: string;
+      lang = "";
+      rate = 1;
+      pitch = 1;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onerror: ((e: { error?: string }) => void) | null = null;
+      constructor(text: string) {
+        this.text = text;
+      }
+    }
+
+    vi.stubGlobal("speechSynthesis", { speak, cancel });
+    vi.stubGlobal("SpeechSynthesisUtterance", MockSpeechSynthesisUtterance);
+
+    render(<LoreExplorer initialItems={sampleItems} />);
+
+    // Cards enable Framer Motion scroll-reveal on the MotionCard <article> root
+    const ethanCard = screen
+      .getByRole("heading", { name: "Ethan Reed" })
+      .closest("article") as HTMLElement;
+    expect(ethanCard).toHaveAttribute("data-scroll-reveal", "true");
+    expect(ethanCard).toHaveAttribute("data-speaking", "false");
+
+    const listenEthan = screen.getByRole("button", { name: "Listen to Ethan Reed" });
+    expect(listenEthan).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(listenEthan);
+
+    expect(speak).toHaveBeenCalledTimes(1);
+    expect(utterances[0]?.text).toContain("Ethan Reed");
+    expect(utterances[0]?.text).toContain("Commander of the Vanguard division.");
+    expect(utterances[0]?.text).toContain("Combat style: Kinetic blade arts.");
+    expect(ethanCard).toHaveAttribute("data-speaking", "true");
+    expect(screen.getByRole("button", { name: "Stop narrating Ethan Reed" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(/Narrating Ethan Reed/i);
+
+    // Clicking Listen on a second card cancels the previous utterance and switches narration
+    fireEvent.click(screen.getByRole("button", { name: "Listen to Elizah Vale" }));
+    expect(speak).toHaveBeenCalledTimes(2);
+    expect(cancel).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Listen to Ethan Reed" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "Stop narrating Elizah Vale" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    // Clicking Stop cancels narration and resets button state
+    fireEvent.click(screen.getByRole("button", { name: "Stop narrating Elizah Vale" }));
+    expect(screen.getByRole("button", { name: "Listen to Elizah Vale" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(/Stopped narrating Elizah Vale/i);
+  });
+
+  it("shows an accessible status message if Web Speech API is unavailable", () => {
+    vi.stubGlobal("speechSynthesis", undefined);
+    vi.stubGlobal("SpeechSynthesisUtterance", undefined);
+
+    render(<LoreExplorer initialItems={sampleItems} />);
+    fireEvent.click(screen.getByRole("button", { name: "Listen to Ethan Reed" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /Text-to-speech is not supported in this browser/i,
+    );
+    expect(screen.getByRole("button", { name: "Listen to Ethan Reed" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 });

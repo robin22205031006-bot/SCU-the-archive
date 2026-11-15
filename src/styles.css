@@ -3012,7 +3012,6 @@ html[data-manga-subtheme="shounen"] .manga-root {
   background-image:
     repeating-linear-gradient(-26deg, rgba(255, 251, 235, 0.12) 0 1px, transparent 1px 28px),
     linear-gradient(165deg, #3898ec 0%, #7ce0f9 52%, #18a999 100%);
-  background-attachment: fixed;
 }
 html.dark[data-genre-theme="shonen"] body,
 html.dark[data-genre-theme="shonen"] .manga-root {
@@ -3654,8 +3653,6 @@ html[data-manga-subtheme="fantasy"] .manga-panel {
 }
 html[data-genre-theme="fantasy"] .manga-panel-hover,
 html[data-manga-subtheme="fantasy"] .manga-panel-hover {
-  animation: cardIdleBreath 6s ease-in-out infinite alternate;
-  will-change: transform;
   transition:
     transform 280ms cubic-bezier(0.25, 0.1, 0.25, 1),
     border-color 280ms ease,
@@ -4931,53 +4928,44 @@ html[data-motion="off"] [data-genre-viz] {
 .ivy-sway {
   transform-origin: top left;
   animation: ivySway 6.8s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 .ivy-sway-alt {
   transform-origin: bottom right;
   animation: ivySway 7.4s ease-in-out infinite alternate-reverse;
-  will-change: transform;
 }
 
 .ivy-pendulum-slow {
   transform-origin: top center;
   animation: ivySway 6.2s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 .ivy-pendulum-fast {
   transform-origin: top center;
   animation: ivySway 4.6s ease-in-out infinite alternate-reverse;
-  will-change: transform;
 }
 
 .botanical-branch-sway {
   transform-origin: top left;
   animation: branchWindSway 8.5s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 .botanical-branch-sway-right {
   transform-origin: top right;
   animation: branchWindSway 9.2s ease-in-out infinite alternate-reverse;
-  will-change: transform;
 }
 
 .leaf-flutter {
   transform-origin: center top;
   animation: leafBreezeFlutter 3.6s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 .leaf-drift {
   animation: botanicalLeafDrift 9.5s ease-in-out infinite;
-  will-change: transform, opacity;
 }
 
 .card-idle-breath {
   animation: cardIdleBreath 5.4s ease-in-out infinite alternate;
-  will-change: transform;
   transition:
     transform 300ms cubic-bezier(0.25, 0.1, 0.25, 1),
     border-color 280ms ease,
@@ -5507,23 +5495,19 @@ html[data-primary-system="minimal"] .glass::after,
 
 .shounen-cloud-drift {
   animation: shounen-cloud-drift var(--cloud-dur, 42s) ease-in-out infinite;
-  will-change: transform;
 }
 
 .studio-leaf-wind {
   animation: studio-leaf-wind 9.5s linear infinite;
-  will-change: transform, opacity;
 }
 
 .studio-mote-dot,
 .studio-mote-drift {
   animation: studio-mote-drift var(--mote-dur, 7.5s) ease-in-out infinite;
-  will-change: transform, opacity;
 }
 
 .anime-action-cut-slash {
   animation: anime-action-slash 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  will-change: transform, opacity;
 }
 
 .shounen-speedline-burst {
@@ -5626,34 +5610,30 @@ html[data-motion="off"] .nexus-page {
 
 /* ===== UX Fluidity & Performance Enhancement Pass ===== */
 
-/* 1. Hardware-Accelerated GPU Layers (compositor-only promotion) */
-html:not([data-ui="minimal"]):not([data-primary-system="minimal"]):not(
-    [data-ui-mode="minimal"]
-  ):not([data-motion="off"])
-  .glass,
-html:not([data-ui="minimal"]):not([data-primary-system="minimal"]):not(
-    [data-ui-mode="minimal"]
-  ):not([data-motion="off"])
-  .manga-panel,
-html:not([data-ui="minimal"]):not([data-primary-system="minimal"]):not(
-    [data-ui-mode="minimal"]
-  ):not([data-motion="off"])
-  .nexus-cluster,
-html:not([data-ui="minimal"]):not([data-primary-system="minimal"]):not(
-    [data-ui-mode="minimal"]
-  ):not([data-motion="off"])
-  .nexus-command,
-html:not([data-ui="minimal"]):not([data-primary-system="minimal"]):not(
-    [data-ui-mode="minimal"]
-  ):not([data-motion="off"])
-  .manga-masthead,
-html:not([data-ui="minimal"]):not([data-primary-system="minimal"]):not(
-    [data-ui-mode="minimal"]
-  ):not([data-motion="off"])
-  [data-card] {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform, opacity;
+/* 1. Manga Spread Grid Containment, Viewport Culling & Hover-Gated VFX */
+.manga-spread-grid > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+  contain: layout style;
+}
+
+html[data-genre-theme] .manga-spread-grid .manga-panel,
+html[data-manga-subtheme] .manga-spread-grid .manga-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) [data-frame-vfx] *,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .ivy-sway,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .ivy-sway-alt,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .ivy-pendulum-slow,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .ivy-pendulum-fast,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .botanical-branch-sway,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .botanical-branch-sway-right,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .leaf-flutter,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .leaf-drift,
+.manga-spread-grid .manga-panel:not(:hover):not(:focus-within) .card-idle-breath {
+  animation-play-state: paused;
 }
 
 /* 2. Micro-Haptics & Tactile Spring UI Feedback */
@@ -5666,7 +5646,6 @@ html:not([data-ui="minimal"]):not([data-primary-system="minimal"]):not(
     border-color 150ms ease,
     box-shadow 150ms ease,
     opacity 150ms ease;
-  will-change: transform;
 }
 
 .scu-tactile:active:not(:disabled),

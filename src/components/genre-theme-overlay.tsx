@@ -31,7 +31,7 @@ export function GenreThemeOverlay() {
         <section
           role="region"
           aria-label="Genre theme switcher overlay"
-          className="manga-panel w-[min(340px,calc(100vw-2rem))] rounded-lg border-2 border-border bg-card/95 p-2.5 text-card-foreground shadow-xl backdrop-blur-md"
+          className="manga-panel w-[min(340px,calc(100vw-2rem))] rounded-lg border-2 border-border bg-card p-2.5 text-card-foreground shadow-xl"
         >
           <div className="mb-2 flex items-center justify-between border-b border-border/40 pb-1.5">
             <div className="flex items-center gap-1.5">
@@ -132,7 +132,7 @@ export function GenreThemeOverlay() {
           triggerInteractionSfx("click", ev);
           setOpen((v) => !v);
         }}
-        className="manga-ink-btn inline-flex items-center gap-2 rounded-md border-2 border-border bg-card/95 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground shadow-lg backdrop-blur-md hover:border-primary"
+        className="manga-ink-btn inline-flex items-center gap-2 rounded-md border-2 border-border bg-card px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground shadow-lg hover:border-primary"
       >
         <span
           aria-hidden="true"

@@ -1,8 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Bookmark, Trash2 } from "lucide-react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bookmark, MoreVertical, Pin, Share2, Square, Trash2, Volume2, X } from "lucide-react";
 import { scuCache } from "../services/scuCache";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
+import { LoreCardContextMenu } from "@/components/lore-card-context-menu";
+import { useLongPress } from "@/hooks/use-long-press";
+import { useLoreTts } from "@/hooks/use-lore-tts";
+import { buildLoreSharePayload, executeLoreShare } from "@/lib/lore-card-actions";
 import {
   clearLoreBookmarkEntries,
   readLoreBookmarks,
@@ -11,6 +15,15 @@ import {
   toggleLoreBookmarkEntry,
   type LoreBookmarkEntry,
 } from "@/lib/lore-bookmarks";
+import {
+  clearLorePinEntries,
+  readLorePins,
+  removeLorePinEntry,
+  subscribeLorePins,
+  syncLorePinItem,
+  toggleLorePinEntry,
+  type LorePinEntry,
+} from "@/lib/lore-pins";
 
 export interface LoreItem {
   id?: string;
@@ -113,10 +126,239 @@ function applyOverrides(
   });
 }
 
+interface ActiveContextMenuState {
+  itemKey: string;
+  item: LoreItem;
+  displayName: string;
+  x: number;
+  y: number;
+}
+
+interface LoreExplorerCardProps {
+  item: LoreItem;
+  itemKey: string;
+  idx: number;
+  isBookmarked: boolean;
+  isPinned: boolean;
+  isHighlighted: boolean;
+  isSpeaking: boolean;
+  onToggleBookmark: (itemKey: string, item: LoreItem) => void;
+  onToggleSpeak: (itemKey: string, item: LoreItem) => void;
+  onUpdateProperty: (itemKey: string, patch: Partial<LoreItem>) => void;
+  onOpenContextMenu: (state: ActiveContextMenuState) => void;
+}
+
+const LoreExplorerCard = memo(function LoreExplorerCard({
+  item,
+  itemKey,
+  idx,
+  isBookmarked,
+  isPinned,
+  isHighlighted,
+  isSpeaking,
+  onToggleBookmark,
+  onToggleSpeak,
+  onUpdateProperty,
+  onOpenContextMenu,
+}: LoreExplorerCardProps) {
+  const displayName = item.name || item.event_name || item.title || "Unnamed";
+  const currentTier = resolveItemTier(item);
+  const currentCategory = resolveItemCategory(item);
+  const tierChoices = useMemo(
+    () => Array.from(new Set([...LORE_TIER_OPTIONS, currentTier])),
+    [currentTier],
+  );
+  const categoryChoices = useMemo(
+    () => Array.from(new Set([...LORE_CATEGORY_OPTIONS, currentCategory])),
+    [currentCategory],
+  );
+
+  const openMenuAt = useCallback(
+    (x: number, y: number) => {
+      onOpenContextMenu({
+        itemKey,
+        item,
+        displayName,
+        x,
+        y,
+      });
+    },
+    [onOpenContextMenu, itemKey, item, displayName],
+  );
+
+  const { pressing, handlers } = useLongPress({
+    onTrigger: ({ x, y }) => openMenuAt(x, y),
+  });
+
+  return (
+    <MotionCard
+      as="article"
+      index={idx}
+      scrollReveal
+      data-item-key={itemKey}
+      data-pinned={isPinned ? "true" : "false"}
+      data-highlighted={isHighlighted ? "true" : "false"}
+      data-speaking={isSpeaking ? "true" : "false"}
+      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 250px" }}
+      className={`scroll-mt-28 bg-gray-800 border rounded-lg p-5 shadow-lg flex flex-col justify-between gap-3 touch-pan-y transition-[transform,border-color,box-shadow] duration-150 ${
+        pressing
+          ? "scale-[0.985] border-red-400 ring-2 ring-red-500/40 select-none"
+          : isSpeaking
+            ? "border-sky-400 ring-2 ring-sky-400/50"
+            : isHighlighted
+              ? "border-emerald-400 ring-2 ring-emerald-400/50"
+              : isPinned
+                ? "border-emerald-500/70"
+                : "border-gray-700"
+      }`}
+    >
+      <div
+        {...handlers}
+        data-lore-card-surface="true"
+        className="flex flex-1 flex-col justify-between gap-3"
+      >
+        <div>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="min-w-0">
+              <h3 className="text-xl font-bold text-red-400">{displayName}</h3>
+              {isPinned && (
+                <span className="mt-1 inline-flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+                  <Pin className="h-2.5 w-2.5" aria-hidden="true" />
+                  Pinned
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <StatusTooltip label={currentTier}>
+                <span className="bg-red-900/50 text-red-200 text-[11px] font-semibold uppercase px-2 py-0.5 rounded">
+                  {currentTier}
+                </span>
+              </StatusTooltip>
+              <button
+                type="button"
+                onClick={() => onToggleBookmark(itemKey, item)}
+                aria-pressed={isBookmarked}
+                aria-label={
+                  isBookmarked ? `Remove bookmark for ${displayName}` : `Bookmark ${displayName}`
+                }
+                title={
+                  isBookmarked
+                    ? "Remove from personalized collection"
+                    : "Save to personalized collection"
+                }
+                className={`inline-flex min-h-[32px] min-w-[32px] items-center justify-center rounded border p-1 transition-colors ${
+                  isBookmarked
+                    ? "border-amber-400/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                    : "border-gray-700 bg-gray-900/80 text-gray-400 hover:border-amber-400/50 hover:text-amber-200"
+                }`}
+              >
+                <Bookmark
+                  className={`h-3.5 w-3.5 ${isBookmarked ? "fill-amber-300" : ""}`}
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                type="button"
+                aria-label={`More actions for ${displayName}`}
+                aria-haspopup="menu"
+                title="Long-press card or click for quick actions (Bookmark, Share, Pin)"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  openMenuAt(rect.right - 220, rect.bottom + 6);
+                }}
+                className="inline-flex min-h-[32px] min-w-[32px] items-center justify-center rounded border border-gray-700 bg-gray-900/80 p-1 text-gray-400 transition-colors hover:border-gray-500 hover:text-white"
+              >
+                <MoreVertical className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            {item.faction || item.category ? (
+              <span className="inline-block bg-gray-900/70 border border-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded">
+                {item.category ? `Category: ${item.category}` : `Faction: ${item.faction}`}
+              </span>
+            ) : (
+              <span />
+            )}
+            <button
+              type="button"
+              onClick={() => onToggleSpeak(itemKey, item)}
+              aria-pressed={isSpeaking}
+              aria-label={isSpeaking ? `Stop narrating ${displayName}` : `Listen to ${displayName}`}
+              title={isSpeaking ? "Stop lore narration" : "Listen to lore narration"}
+              className={`inline-flex min-h-[32px] items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium transition-colors ${
+                isSpeaking
+                  ? "border-sky-400 bg-sky-500/20 text-sky-200 hover:bg-sky-500/30"
+                  : "border-gray-700 bg-gray-900/80 text-gray-200 hover:border-sky-400/60 hover:text-sky-200"
+              }`}
+            >
+              {isSpeaking ? (
+                <Square className="h-3 w-3 fill-sky-300 text-sky-300" aria-hidden="true" />
+              ) : (
+                <Volume2 className="h-3.5 w-3.5 text-sky-300" aria-hidden="true" />
+              )}
+              <span>{isSpeaking ? "Stop" : "Listen"}</span>
+            </button>
+          </div>
+
+          <p className="text-gray-300 text-sm mb-3">{item.bio || item.description || item.lore}</p>
+
+          {item.combat_style && (
+            <p className="text-xs text-gray-400">
+              <strong>Combat Style:</strong> {item.combat_style}
+            </p>
+          )}
+          {item.year && (
+            <p className="text-xs text-gray-400">
+              <strong>Year:</strong> {item.year}
+            </p>
+          )}
+        </div>
+
+        <div className="pt-3 border-t border-gray-700/80 grid grid-cols-2 gap-2 text-xs">
+          <label className="flex flex-col gap-1 text-gray-400">
+            <span>Tier</span>
+            <select
+              aria-label={`Tier for ${displayName}`}
+              value={currentTier}
+              onChange={(e) => onUpdateProperty(itemKey, { tier: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white"
+            >
+              {tierChoices.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-gray-400">
+            <span>Category</span>
+            <select
+              aria-label={`Category for ${displayName}`}
+              value={currentCategory}
+              onChange={(e) => onUpdateProperty(itemKey, { category: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white"
+            >
+              {categoryChoices.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+    </MotionCard>
+  );
+});
+
 export interface LoreExplorerProps {
   initialTab?: LoreTab;
   initialGroupBy?: LoreGroupBy;
   initialItems?: LoreItem[];
+  fallbackItems?: LoreItem[];
   onItemUpdate?: (updatedItem: LoreItem, patch: Partial<LoreItem>) => void | Promise<void>;
 }
 
@@ -124,6 +366,7 @@ export function LoreExplorer({
   initialTab = "characters",
   initialGroupBy = "tier",
   initialItems,
+  fallbackItems,
   onItemUpdate,
 }: LoreExplorerProps = {}) {
   const [tab, setTab] = useState<LoreTab>(initialTab);
@@ -135,13 +378,66 @@ export function LoreExplorer({
   const [activeSection, setActiveSection] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [bookmarks, setBookmarks] = useState<LoreBookmarkEntry[]>(() => readLoreBookmarks());
+  const [pins, setPins] = useState<LorePinEntry[]>(() => readLorePins());
   const [viewBookmarksOnly, setViewBookmarksOnly] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ActiveContextMenuState | null>(null);
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const statusTimerRef = useRef<number | null>(null);
+  const highlightTimerRef = useRef<number | null>(null);
+
+  const announceStatus = useCallback((message: string) => {
+    setStatusMessage(message);
+    if (statusTimerRef.current !== null) {
+      window.clearTimeout(statusTimerRef.current);
+    }
+    statusTimerRef.current = window.setTimeout(() => {
+      setStatusMessage(null);
+      statusTimerRef.current = null;
+    }, 3200);
+  }, []);
+
+  const { speakingKey, toggleSpeak, stopSpeaking } = useLoreTts({
+    onStatus: announceStatus,
+  });
+
+  const focusCardByKey = useCallback((key: string) => {
+    setHighlightedKey(key);
+    if (highlightTimerRef.current !== null) {
+      window.clearTimeout(highlightTimerRef.current);
+    }
+    highlightTimerRef.current = window.setTimeout(() => {
+      setHighlightedKey(null);
+      highlightTimerRef.current = null;
+    }, 2200);
+    if (typeof document !== "undefined") {
+      window.requestAnimationFrame(() => {
+        const cards = document.querySelectorAll<HTMLElement>("[data-item-key]");
+        for (const el of cards) {
+          if (el.dataset["itemKey"] === key) {
+            el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            break;
+          }
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     setBookmarks(readLoreBookmarks());
-    return subscribeLoreBookmarks(() => {
+    setPins(readLorePins());
+    const unsubBookmarks = subscribeLoreBookmarks(() => {
       setBookmarks(readLoreBookmarks());
     });
+    const unsubPins = subscribeLorePins(() => {
+      setPins(readLorePins());
+    });
+    return () => {
+      unsubBookmarks();
+      unsubPins();
+      if (statusTimerRef.current !== null) window.clearTimeout(statusTimerRef.current);
+      if (highlightTimerRef.current !== null) window.clearTimeout(highlightTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -154,25 +450,42 @@ export function LoreExplorer({
   useEffect(() => {
     if (initialItems) return;
     let cancelled = false;
-    async function loadData() {
+    const hasFallback = Boolean(fallbackItems && fallbackItems.length > 0 && tab === "characters");
+    if (hasFallback && fallbackItems) {
+      setItems(applyOverrides(fallbackItems, readLocalOverrides()));
+      setActiveSection("all");
+      setLoading(false);
+    } else {
       setLoading(true);
+    }
+    async function loadData() {
       let raw: LoreItem[] = [];
-      if (tab === "characters") raw = (await scuCache.getCharacters()) as LoreItem[];
-      else if (tab === "organizations") raw = (await scuCache.getOrganizations()) as LoreItem[];
-      else if (tab === "timeline") raw = (await scuCache.getTimeline()) as LoreItem[];
-      if (!cancelled) {
-        setItems(applyOverrides(raw, readLocalOverrides()));
-        setActiveSection("all");
-        setLoading(false);
+      try {
+        if (tab === "characters") raw = (await scuCache.getCharacters()) as LoreItem[];
+        else if (tab === "organizations") raw = (await scuCache.getOrganizations()) as LoreItem[];
+        else if (tab === "timeline") raw = (await scuCache.getTimeline()) as LoreItem[];
+      } catch {
+        raw = [];
       }
+      if (cancelled) return;
+      if (raw.length === 0 && hasFallback) {
+        return;
+      }
+      if (raw.length === 0 && fallbackItems && fallbackItems.length > 0 && tab === "characters") {
+        raw = fallbackItems;
+      }
+      setItems(applyOverrides(raw, readLocalOverrides()));
+      setActiveSection("all");
+      setLoading(false);
     }
     void loadData();
     return () => {
       cancelled = true;
     };
-  }, [tab, initialItems]);
+  }, [tab, initialItems, fallbackItems]);
 
   const bookmarkedKeySet = useMemo(() => new Set(bookmarks.map((b) => b.key)), [bookmarks]);
+  const pinnedKeySet = useMemo(() => new Set(pins.map((p) => p.key)), [pins]);
 
   const liveItemByKey = useMemo(() => {
     const map = new Map<string, LoreItem>();
@@ -193,6 +506,49 @@ export function LoreExplorer({
   const handleClearBookmarks = useCallback(() => {
     setBookmarks(clearLoreBookmarkEntries());
   }, []);
+
+  const handleTogglePin = useCallback(
+    (itemKey: string, item: LoreItem, entryTab: LoreTab = tab) => {
+      const result = toggleLorePinEntry(itemKey, item, entryTab);
+      setPins(result.entries);
+      const name = item.name || item.event_name || item.title || "Entry";
+      announceStatus(result.pinned ? `Pinned ${name} to Quick Access` : `Unpinned ${name}`);
+    },
+    [tab, announceStatus],
+  );
+
+  const handleUnpin = useCallback((itemKey: string) => {
+    setPins(removeLorePinEntry(itemKey));
+  }, []);
+
+  const handleClearPins = useCallback(() => {
+    setPins(clearLorePinEntries());
+    announceStatus("Cleared pinned quick access entries");
+  }, [announceStatus]);
+
+  const handleShareItem = useCallback(
+    async (itemKey: string, item: LoreItem) => {
+      const payload = buildLoreSharePayload(item, itemKey);
+      const result = await executeLoreShare(payload);
+      if (result.status !== "cancelled") {
+        announceStatus(result.message);
+      }
+    },
+    [announceStatus],
+  );
+
+  const handleJumpToPinned = useCallback(
+    (entry: LorePinEntry) => {
+      setViewBookmarksOnly(false);
+      setSearch("");
+      setActiveSection("all");
+      if (!initialItems && entry.tab !== tab) {
+        setTab(entry.tab);
+      }
+      focusCardByKey(entry.key);
+    },
+    [initialItems, tab, focusCardByKey],
+  );
 
   // Immutable property updater: updating tier/category replaces the item object
   // in the single-source-of-truth array so derived sections immediately re-render
@@ -228,6 +584,8 @@ export function LoreExplorer({
       if (updatedSnapshot) {
         const synced = syncLoreBookmarkItem(itemKey, updatedSnapshot);
         if (synced) setBookmarks(synced);
+        const syncedPins = syncLorePinItem(itemKey, updatedSnapshot);
+        if (syncedPins) setPins(syncedPins);
         if (activeSection !== "all") {
           const targetSection = resolveItemSection(updatedSnapshot, groupBy);
           if (targetSection !== activeSection) {
@@ -319,9 +677,15 @@ export function LoreExplorer({
   return (
     <MotionPage className="p-6 bg-gray-900 text-white min-h-screen">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold tracking-wider text-red-500">
-          Sentinels Cinematic Universe
-        </h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-wider text-red-500">
+            Sentinels Cinematic Universe
+          </h1>
+          <p className="mt-1 text-xs text-gray-400">
+            Tip: Long-press or right-click any lore card to bookmark, share, or pin it for quick
+            access.
+          </p>
+        </div>
 
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <button
@@ -345,27 +709,106 @@ export function LoreExplorer({
             <span>Bookmarks ({bookmarks.length})</span>
           </button>
 
-          <span className="text-gray-400 uppercase tracking-wider">Group by:</span>
-          {(["tier", "category"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => {
-                setGroupBy(mode);
-                setActiveSection("all");
-              }}
-              aria-pressed={groupBy === mode}
-              className={`px-3 py-1.5 rounded uppercase font-semibold transition-colors ${
-                groupBy === mode
-                  ? "bg-red-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-              }`}
-            >
-              {mode}
-            </button>
-          ))}
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="text-gray-400 uppercase tracking-wider">Group by:</span>
+            {(["tier", "category"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  setGroupBy(mode);
+                  setActiveSection("all");
+                }}
+                aria-pressed={groupBy === mode}
+                className={`px-3 py-1.5 rounded uppercase font-semibold transition-colors ${
+                  groupBy === mode
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {statusMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-sky-500/40 bg-sky-950/50 px-4 py-2 text-xs text-sky-100"
+        >
+          <span className="flex items-center gap-2">
+            {/(Narrating|Stopped narrating|narrate|Text-to-speech)/i.test(statusMessage) ? (
+              <Volume2 className="h-3.5 w-3.5 text-sky-300" aria-hidden="true" />
+            ) : (
+              <Share2 className="h-3.5 w-3.5 text-sky-300" aria-hidden="true" />
+            )}
+            {statusMessage}
+          </span>
+          <button
+            type="button"
+            onClick={() => setStatusMessage(null)}
+            aria-label="Dismiss notification"
+            className="rounded p-0.5 text-sky-200/80 hover:bg-sky-900/50 hover:text-white"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {pins.length > 0 && (
+        <section
+          aria-label="Pinned quick access"
+          className="mb-5 rounded-lg border border-emerald-500/35 bg-emerald-950/20 px-4 py-3"
+        >
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-300">
+              <Pin className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Quick Access ({pins.length})</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearPins}
+              aria-label="Clear all pinned entries"
+              className="rounded border border-emerald-500/30 bg-gray-900/70 px-2 py-1 text-[11px] text-emerald-200 hover:bg-emerald-900/40"
+            >
+              Clear pins
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {pins.map((pinEntry) => {
+              const name =
+                pinEntry.item.name || pinEntry.item.event_name || pinEntry.item.title || "Unnamed";
+              return (
+                <div
+                  key={pinEntry.key}
+                  className="inline-flex items-center overflow-hidden rounded-full border border-emerald-500/45 bg-gray-900/90 text-xs"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleJumpToPinned(pinEntry)}
+                    aria-label={`Jump to pinned entry ${name}`}
+                    className="inline-flex min-h-[32px] items-center gap-1.5 px-3 py-1 font-medium text-emerald-100 hover:bg-emerald-900/40"
+                  >
+                    <Pin className="h-3 w-3 text-emerald-400" aria-hidden="true" />
+                    <span>{name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUnpin(pinEntry.key)}
+                    aria-label={`Unpin ${name}`}
+                    className="inline-flex min-h-[32px] min-w-[32px] items-center justify-center border-l border-emerald-500/30 px-1.5 text-gray-400 hover:bg-red-950/60 hover:text-red-200"
+                  >
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {!initialItems && (
         <div className="flex flex-wrap gap-3 mb-5">
@@ -374,6 +817,7 @@ export function LoreExplorer({
               key={t}
               type="button"
               onClick={() => {
+                stopSpeaking();
                 setViewBookmarksOnly(false);
                 setTab(t);
               }}
@@ -525,122 +969,21 @@ export function LoreExplorer({
                   {sectionItems.map((item, idx) => {
                     const fallbackIdx = items.indexOf(item);
                     const itemKey = getLoreItemKey(item, fallbackIdx >= 0 ? fallbackIdx : idx);
-                    const displayName = item.name || item.event_name || item.title || "Unnamed";
-                    const currentTier = resolveItemTier(item);
-                    const currentCategory = resolveItemCategory(item);
-                    const tierChoices = Array.from(new Set([...LORE_TIER_OPTIONS, currentTier]));
-                    const categoryChoices = Array.from(
-                      new Set([...LORE_CATEGORY_OPTIONS, currentCategory]),
-                    );
-                    const isBookmarked = bookmarkedKeySet.has(itemKey);
-
                     return (
-                      <MotionCard
+                      <LoreExplorerCard
                         key={itemKey}
-                        as="article"
-                        index={idx}
-                        data-item-key={itemKey}
-                        className="bg-gray-800 border border-gray-700 rounded-lg p-5 shadow-lg flex flex-col justify-between gap-3"
-                      >
-                        <div>
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <h3 className="text-xl font-bold text-red-400">{displayName}</h3>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <StatusTooltip label={currentTier}>
-                                <span className="bg-red-900/50 text-red-200 text-[11px] font-semibold uppercase px-2 py-0.5 rounded">
-                                  {currentTier}
-                                </span>
-                              </StatusTooltip>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleBookmark(itemKey, item)}
-                                aria-pressed={isBookmarked}
-                                aria-label={
-                                  isBookmarked
-                                    ? `Remove bookmark for ${displayName}`
-                                    : `Bookmark ${displayName}`
-                                }
-                                title={
-                                  isBookmarked
-                                    ? "Remove from personalized collection"
-                                    : "Save to personalized collection"
-                                }
-                                className={`inline-flex items-center justify-center rounded border p-1 transition-colors ${
-                                  isBookmarked
-                                    ? "border-amber-400/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
-                                    : "border-gray-700 bg-gray-900/80 text-gray-400 hover:border-amber-400/50 hover:text-amber-200"
-                                }`}
-                              >
-                                <Bookmark
-                                  className={`h-3.5 w-3.5 ${isBookmarked ? "fill-amber-300" : ""}`}
-                                  aria-hidden="true"
-                                />
-                              </button>
-                            </div>
-                          </div>
-
-                          {(item.faction || item.category) && (
-                            <span className="inline-block bg-gray-900/70 border border-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded mb-2">
-                              {item.category
-                                ? `Category: ${item.category}`
-                                : `Faction: ${item.faction}`}
-                            </span>
-                          )}
-
-                          <p className="text-gray-300 text-sm mb-3">
-                            {item.bio || item.description || item.lore}
-                          </p>
-
-                          {item.combat_style && (
-                            <p className="text-xs text-gray-400">
-                              <strong>Combat Style:</strong> {item.combat_style}
-                            </p>
-                          )}
-                          {item.year && (
-                            <p className="text-xs text-gray-400">
-                              <strong>Year:</strong> {item.year}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="pt-3 border-t border-gray-700/80 grid grid-cols-2 gap-2 text-xs">
-                          <label className="flex flex-col gap-1 text-gray-400">
-                            <span>Tier</span>
-                            <select
-                              aria-label={`Tier for ${displayName}`}
-                              value={currentTier}
-                              onChange={(e) =>
-                                handleUpdateItemProperty(itemKey, { tier: e.target.value })
-                              }
-                              className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white"
-                            >
-                              {tierChoices.map((opt) => (
-                                <option key={opt} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <label className="flex flex-col gap-1 text-gray-400">
-                            <span>Category</span>
-                            <select
-                              aria-label={`Category for ${displayName}`}
-                              value={currentCategory}
-                              onChange={(e) =>
-                                handleUpdateItemProperty(itemKey, { category: e.target.value })
-                              }
-                              className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white"
-                            >
-                              {categoryChoices.map((opt) => (
-                                <option key={opt} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-                      </MotionCard>
+                        item={item}
+                        itemKey={itemKey}
+                        idx={idx}
+                        isBookmarked={bookmarkedKeySet.has(itemKey)}
+                        isPinned={pinnedKeySet.has(itemKey)}
+                        isHighlighted={highlightedKey === itemKey}
+                        isSpeaking={speakingKey === itemKey}
+                        onToggleBookmark={handleToggleBookmark}
+                        onToggleSpeak={toggleSpeak}
+                        onUpdateProperty={handleUpdateItemProperty}
+                        onOpenContextMenu={setContextMenu}
+                      />
                     );
                   })}
                 </div>
@@ -649,6 +992,28 @@ export function LoreExplorer({
           })}
         </div>
       )}
+
+      <LoreCardContextMenu
+        open={contextMenu !== null}
+        displayName={contextMenu?.displayName ?? ""}
+        anchorX={contextMenu?.x ?? 0}
+        anchorY={contextMenu?.y ?? 0}
+        isBookmarked={contextMenu ? bookmarkedKeySet.has(contextMenu.itemKey) : false}
+        isPinned={contextMenu ? pinnedKeySet.has(contextMenu.itemKey) : false}
+        onBookmark={() => {
+          if (!contextMenu) return;
+          handleToggleBookmark(contextMenu.itemKey, contextMenu.item);
+        }}
+        onShare={() => {
+          if (!contextMenu) return;
+          void handleShareItem(contextMenu.itemKey, contextMenu.item);
+        }}
+        onPin={() => {
+          if (!contextMenu) return;
+          handleTogglePin(contextMenu.itemKey, contextMenu.item);
+        }}
+        onClose={() => setContextMenu(null)}
+      />
     </MotionPage>
   );
 }

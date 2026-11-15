@@ -167,6 +167,9 @@ export function AmbientStudioParticles() {
     (themeCtx?.mangaSubTheme === "shounen" || activeGenre === "shonen");
   const isNexus = primarySystem === "nexus";
 
+  const isManga = primarySystem === "manga";
+  const visibleParticles = isManga ? PARTICLES.filter((p) => p.depth === "near") : PARTICLES;
+
   return (
     <div
       aria-hidden="true"
@@ -174,7 +177,7 @@ export function AmbientStudioParticles() {
       data-particle-theme={isShounen ? "shounen-daylight" : isNexus ? "nexus-hud" : primarySystem}
       className="pointer-events-none fixed inset-0 z-[1] overflow-hidden select-none"
     >
-      {PARTICLES.map((p) => {
+      {visibleParticles.map((p) => {
         if (isShounen && p.kind === "leaf") {
           return (
             <svg
@@ -187,7 +190,6 @@ export function AmbientStudioParticles() {
                   top: p.top,
                   width: `${p.size * 1.4}px`,
                   height: `${p.size}px`,
-                  filter: `blur(${p.depth === "far" ? p.blur : "0px"}) drop-shadow(0 2px 4px rgba(15,23,42,0.22))`,
                   animationDuration: p.duration,
                   animationDelay: p.delay,
                 } as CSSProperties
@@ -227,15 +229,13 @@ export function AmbientStudioParticles() {
               {
                 left: p.left,
                 top: p.top,
-                width: `${p.size}px`,
-                height: `${p.size}px`,
+                width: `${Math.round(p.size * 1.6)}px`,
+                height: `${Math.round(p.size * 1.6)}px`,
                 background:
                   p.kind === "spark"
-                    ? `radial-gradient(circle, #ffffff 0%, ${particleColor} 58%, transparent 100%)`
-                    : particleColor,
-                boxShadow: `0 0 ${Math.round(p.size * 2.2)}px ${particleColor}`,
-                filter: `blur(${p.blur})`,
-                opacity: p.depth === "far" ? 0.55 : 0.78,
+                    ? `radial-gradient(circle, #ffffff 0%, ${particleColor} 45%, transparent 80%)`
+                    : `radial-gradient(circle, ${particleColor} 25%, transparent 75%)`,
+                opacity: p.depth === "far" ? 0.52 : 0.76,
                 animationDuration: p.duration,
                 animationDelay: p.delay,
               } as CSSProperties

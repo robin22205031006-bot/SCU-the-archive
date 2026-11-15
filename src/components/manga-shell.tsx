@@ -33,6 +33,7 @@ const EXTRA_CHAPTERS = [
   { to: "/graph", ch: "CH. 14", label: "Relations" },
   { to: "/clans", ch: "CH. 15", label: "Bloodlines" },
   { to: "/atlas", ch: "CH. 16", label: "World Atlas" },
+  { to: "/explorer", ch: "CH. 17", label: "Lore Explorer" },
 ] as const;
 
 function chapterCode(idx: number): string {
@@ -111,11 +112,16 @@ export function MangaShell({ children }: { children: ReactNode }) {
     if (!motionActive) return;
     const node = pageRef.current;
     if (!node) return;
-    const staggerHandle = animateMangaStagger(node);
-    const runeHandle = animateSvgRuneDraw(node);
+    let staggerHandle: ReturnType<typeof animateMangaStagger> | null = null;
+    let runeHandle: ReturnType<typeof animateSvgRuneDraw> | null = null;
+    const rafId = requestAnimationFrame(() => {
+      staggerHandle = animateMangaStagger(node);
+      runeHandle = animateSvgRuneDraw(node);
+    });
     return () => {
-      staggerHandle.cancel();
-      runeHandle.cancel();
+      cancelAnimationFrame(rafId);
+      staggerHandle?.cancel();
+      runeHandle?.cancel();
     };
   }, [pathname, activeGenre, activeSubTheme, motionActive]);
 
@@ -156,8 +162,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
           data-manga-header
           className={`manga-masthead sticky top-0 z-40 transition-colors duration-300 ${
             isFantasy
-              ? "fantasy-scroll-banner mx-auto border-b-2 border-[#c5a869] text-[#15221b] backdrop-blur-md"
-              : "border-b-2 border-border bg-card/95 text-foreground backdrop-blur-sm"
+              ? "fantasy-scroll-banner mx-auto border-b-2 border-[#c5a869] text-[#15221b]"
+              : "border-b-2 border-border bg-card text-foreground"
           }`}
         >
           {isFantasy && (

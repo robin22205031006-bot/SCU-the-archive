@@ -3,11 +3,11 @@ import * as THREE from "three";
 import type { GenreThemeId } from "@/lib/genre-themes";
 import { hasBlockingModalOpen, observeBlockingModal } from "@/lib/three-cel-shading";
 import {
-  createAfterDrawScheduler,
   createSafeWebGLRenderer,
   detectWebGLContext,
   disposeThreeRenderer,
 } from "@/lib/three-stage-utils";
+import { computeBackdropCanvasDimensions, getBackdropFrameIntervalMs } from "@/lib/manga-perf";
 
 interface BackdropPalette {
   foliageA: string;
@@ -142,9 +142,15 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
     });
     if (!renderer) return;
 
-    const pixelRatio = isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
+    const initDims = computeBackdropCanvasDimensions(
+      container.clientWidth,
+      container.clientHeight,
+      isSoftwareGl,
+      window.devicePixelRatio || 1,
+    );
+    const pixelRatio = initDims.pixelRatio;
     renderer.setPixelRatio(pixelRatio);
-    renderer.setSize(Math.max(container.clientWidth, 320), Math.max(container.clientHeight, 320));
+    renderer.setSize(initDims.renderWidth, initDims.renderHeight, false);
     renderer.domElement.style.display = "block";
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
@@ -162,7 +168,7 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
     const initPal = paletteForTheme(genreRef.current, initialSub);
 
     // 1. UV-Panning Water / Mist Reflection Plane at lower viewport
-    const waterGeo = new THREE.PlaneGeometry(2.2, 0.72, 24, 6);
+    const waterGeo = new THREE.PlaneGeometry(2.2, 0.72, 12, 4);
     const waterMat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -246,18 +252,18 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
       `,
     });
 
-    const leftVineGeo = new THREE.PlaneGeometry(0.46, 2.0, 8, 36);
+    const leftVineGeo = new THREE.PlaneGeometry(0.46, 2.0, 4, 16);
     const leftVineMesh = new THREE.Mesh(leftVineGeo, foliageMat);
     leftVineMesh.position.set(-0.82, 0, -0.1);
     scene.add(leftVineMesh);
 
-    const rightVineGeo = new THREE.PlaneGeometry(0.46, 2.0, 8, 36);
+    const rightVineGeo = new THREE.PlaneGeometry(0.46, 2.0, 4, 16);
     const rightVineMesh = new THREE.Mesh(rightVineGeo, foliageMat);
     rightVineMesh.rotation.y = Math.PI;
     rightVineMesh.position.set(0.82, 0, -0.1);
     scene.add(rightVineMesh);
 
-    const topCanopyGeo = new THREE.PlaneGeometry(2.2, 0.38, 32, 8);
+    const topCanopyGeo = new THREE.PlaneGeometry(2.2, 0.38, 14, 4);
     const topCanopyMesh = new THREE.Mesh(topCanopyGeo, foliageMat);
     topCanopyMesh.rotation.z = -Math.PI / 2;
     topCanopyMesh.scale.set(0.36, 5.8, 1);
@@ -265,7 +271,7 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
     scene.add(topCanopyMesh);
 
     // 3. Drifting Fireflies / Botanical Dust Motes
-    const moteCount = isSoftwareGl ? 18 : 44;
+    const moteCount = isSoftwareGl ? 12 : 28;
     const motePositions = new Float32Array(moteCount * 3);
     const moteSeeds = new Float32Array(moteCount * 3);
     for (let i = 0; i < moteCount; i++) {
@@ -320,27 +326,43 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
     let disposed = false;
     let contextLost = false;
     let modalBlocked = hasBlockingModalOpen();
+    let isScrolling = false;
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     let frameId = 0;
     let timeoutId = 0;
+    let scrollResumeId = 0;
     let lastTime = performance.now();
     let elapsed = 0;
+    const frameIntervalMs = getBackdropFrameIntervalMs(isSoftwareGl);
 
-    const afterDraw = createAfterDrawScheduler(
-      renderer,
-      () => disposed || contextLost || modalBlocked,
-      (id) => {
-        timeoutId = id;
-      },
-    );
+    const scheduleRender = () => {
+      if (
+        disposed ||
+        contextLost ||
+        modalBlocked ||
+        isScrolling ||
+        document.hidden ||
+        frameId ||
+        timeoutId
+      ) {
+        return;
+      }
+      frameId = requestAnimationFrame(() => {
+        frameId = 0;
+        renderFrame();
+      });
+    };
 
     const renderFrame = () => {
-      if (disposed || contextLost || modalBlocked) {
+      if (disposed || contextLost || modalBlocked || isScrolling) {
         frameId = 0;
         return;
       }
       frameId = 0;
       const now = performance.now();
-      const dt = Math.min((now - lastTime) / 1000, 0.08);
+      const dt = Math.min((now - lastTime) / 1000, 0.12);
       lastTime = now;
       elapsed += dt;
 
@@ -349,21 +371,12 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
       moteMat.uniforms["uTime"]!.value = elapsed;
       renderer.render(scene, camera);
 
-      if (!document.hidden && !modalBlocked) {
-        if (isSoftwareGl) {
-          afterDraw(() => scheduleRender());
-        } else {
-          frameId = requestAnimationFrame(renderFrame);
-        }
+      if (!reducedMotion && !document.hidden && !modalBlocked && !isScrolling && !disposed) {
+        timeoutId = window.setTimeout(() => {
+          timeoutId = 0;
+          scheduleRender();
+        }, frameIntervalMs);
       }
-    };
-
-    const scheduleRender = () => {
-      if (disposed || contextLost || modalBlocked || document.hidden || frameId) return;
-      frameId = requestAnimationFrame(() => {
-        frameId = 0;
-        renderFrame();
-      });
     };
 
     hooksRef.current = {
@@ -378,6 +391,8 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
         foliageUniforms.uSpeed.value = p.windSpeed;
         foliageUniforms.uAlpha.value = p.foliageAlpha;
         (moteMat.uniforms["uColor"]!.value as THREE.Color).set(p.moteColor);
+        window.clearTimeout(timeoutId);
+        timeoutId = 0;
         scheduleRender();
       },
       requestRender: scheduleRender,
@@ -389,14 +404,30 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
         cancelAnimationFrame(frameId);
         frameId = 0;
         window.clearTimeout(timeoutId);
+        timeoutId = 0;
       } else {
         lastTime = performance.now();
         scheduleRender();
       }
     });
 
+    const handleScroll = () => {
+      isScrolling = true;
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+      window.clearTimeout(timeoutId);
+      timeoutId = 0;
+      window.clearTimeout(scrollResumeId);
+      scrollResumeId = window.setTimeout(() => {
+        scrollResumeId = 0;
+        isScrolling = false;
+        lastTime = performance.now();
+        scheduleRender();
+      }, 260);
+    };
+
     const handleVisibility = () => {
-      if (!document.hidden && !modalBlocked && !disposed && !contextLost) {
+      if (!document.hidden && !modalBlocked && !isScrolling && !disposed && !contextLost) {
         lastTime = performance.now();
         scheduleRender();
       }
@@ -411,6 +442,7 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
       cancelAnimationFrame(frameId);
       frameId = 0;
       window.clearTimeout(timeoutId);
+      timeoutId = 0;
     };
     const handleContextRestored = () => {
       contextLost = false;
@@ -420,12 +452,18 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
 
     const ro = new ResizeObserver(() => {
       if (disposed || contextLost) return;
-      const w = Math.max(container.clientWidth, 320);
-      const h = Math.max(container.clientHeight, 320);
-      renderer.setSize(w, h);
+      const dims = computeBackdropCanvasDimensions(
+        container.clientWidth,
+        container.clientHeight,
+        isSoftwareGl,
+        window.devicePixelRatio || 1,
+      );
+      renderer.setPixelRatio(dims.pixelRatio);
+      renderer.setSize(dims.renderWidth, dims.renderHeight, false);
     });
     ro.observe(container);
 
+    window.addEventListener("scroll", handleScroll, { passive: true });
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("scu:manga-subtheme-change", handleSubThemeEvent);
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
@@ -437,8 +475,10 @@ export function LivingThemeBackdrop({ genre }: { genre: GenreThemeId }) {
       disposed = true;
       cancelAnimationFrame(frameId);
       window.clearTimeout(timeoutId);
+      window.clearTimeout(scrollResumeId);
       stopModalObserver();
       ro.disconnect();
+      window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("scu:manga-subtheme-change", handleSubThemeEvent);
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);

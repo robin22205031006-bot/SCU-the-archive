@@ -15,6 +15,9 @@ import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/compone
 const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
 const Clans = lazy(() => import("./clans").then((m) => ({ default: m.Clans })));
 const Timeline = lazy(() => import("./timeline").then((m) => ({ default: m.Timeline })));
+const LoreExplorer = lazy(() =>
+  import("@/components/LoreExplorer").then((m) => ({ default: m.LoreExplorer })),
+);
 const RelationshipGraph = lazy(() =>
   import("@/components/relationship-graph").then((m) => ({ default: m.RelationshipGraph })),
 );
@@ -40,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/archive")({
   component: Archive,
 });
 
-type Module = "series" | "orgs" | "clans" | "graph" | "timeline";
+type Module = "series" | "orgs" | "clans" | "graph" | "timeline" | "explorer";
 
 const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
   {
@@ -72,6 +75,12 @@ const MODULES: { id: Module; icon: typeof Shield; t: string; d: string }[] = [
     icon: Clock,
     t: "Canon Timeline",
     d: "Season 1 through Season 5 chronological history.",
+  },
+  {
+    id: "explorer",
+    icon: BookOpen,
+    t: "Lore Explorer",
+    d: "Interactive lore cards with long-press bookmark, share & quick-pin.",
   },
 ];
 
@@ -132,6 +141,8 @@ function Archive() {
                       <Clans />
                     ) : m.id === "graph" ? (
                       <RelationshipGraph />
+                    ) : m.id === "explorer" ? (
+                      <LoreExplorer />
                     ) : (
                       <Timeline />
                     )}
@@ -143,7 +154,7 @@ function Archive() {
         </div>
       ) : isManga ? (
         <>
-          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {MODULES.map((m, idx) => {
               const selected = module === m.id;
               return (
@@ -193,6 +204,7 @@ function Archive() {
                       {module === "clans" && <Clans />}
                       {module === "graph" && <RelationshipGraph />}
                       {module === "timeline" && <Timeline />}
+                      {module === "explorer" && <LoreExplorer />}
                     </Suspense>
                   </SectionBoundary>
                 </MangaPanel>
@@ -202,7 +214,7 @@ function Archive() {
         </>
       ) : (
         <>
-          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {MODULES.map((m, idx) => (
               <MotionCard key={m.id} index={idx}>
                 <button
@@ -233,6 +245,7 @@ function Archive() {
                       </div>
                     )}
                     {module === "timeline" && <Timeline />}
+                    {module === "explorer" && <LoreExplorer />}
                   </Suspense>
                 </SectionBoundary>
               </MotionSection>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,7 +56,6 @@ import { Input } from "@/components/ui/input";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
-import { getThemeMotionSpec } from "@/lib/motionVariants";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
 import { type GenreThemeId } from "@/lib/genre-themes";
@@ -74,6 +73,7 @@ import { MANGA_SCALE } from "@/lib/manga-scale";
 import { animateMangaStagger, animateSvgRuneDraw } from "@/lib/anime-animations";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 import { GroupGenreEmblem } from "@/components/group-emblem";
+import { shouldAnimateGridCardIdle } from "@/lib/manga-perf";
 
 export type DossierLayoutMode =
   | "royal-class-showcase"
@@ -321,6 +321,270 @@ export function MangaPowerMeter({
    Entity Spread — Compact Proportional Cards with Multi-Genre Frames
    ─────────────────────────────────────────────────────────────────────────── */
 
+const MangaEntityCard = memo(function MangaEntityCard({
+  e,
+  idx,
+  activeGenre,
+  isFantasy,
+  allowIdleBreath,
+  spoilerMasked,
+  compared,
+  isAdmin,
+  onSelect,
+  onToggleCompare,
+  onEdit,
+  onMerge,
+  onDelete,
+  playTap,
+  playSwitch,
+  triggerSfx,
+  triggerInteractionSfx,
+}: {
+  e: Entity;
+  idx: number;
+  activeGenre: GenreThemeId;
+  isFantasy: boolean;
+  allowIdleBreath: boolean;
+  spoilerMasked: boolean;
+  compared: boolean;
+  isAdmin?: boolean | undefined;
+  onSelect: (e: Entity) => void;
+  onToggleCompare?: ((id: string) => void) | undefined;
+  onEdit?: ((e: Entity) => void) | undefined;
+  onMerge?: ((e: Entity) => void) | undefined;
+  onDelete?: ((e: Entity) => void) | undefined;
+  playTap: () => void;
+  playSwitch: () => void;
+  triggerSfx: (word: "CRACK", ev?: React.MouseEvent<HTMLElement>) => void;
+  triggerInteractionSfx: (kind: "click", ev?: React.MouseEvent<HTMLElement>) => void;
+}) {
+  const tier = tierDef(e.character_tier);
+  const actionCutColor = isFantasy ? "#5ce1b8" : activeGenre === "shonen" ? "#e86a33" : "#38bdf8";
+
+  return (
+    <article
+      {...(allowIdleBreath ? { style: { animationDelay: `${(idx % 6) * 0.48}s` } } : {})}
+      onClick={(ev) => {
+        playTap();
+        triggerInteractionSfx("click", ev);
+        triggerAnimeActionCut({
+          color: actionCutColor,
+          label: e.name,
+        });
+        onSelect(e);
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(ev) => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          playTap();
+          triggerAnimeActionCut({
+            color: actionCutColor,
+            label: e.name,
+          });
+          onSelect(e);
+        }
+      }}
+      className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex cursor-pointer flex-col justify-between transition-transform active:scale-[0.99] ${
+        isFantasy
+          ? `rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] fantasy-mint-aura-hover hover:mint-emerald-aura focus-within:mint-emerald-aura ${
+              allowIdleBreath ? "card-idle-breath" : ""
+            }`
+          : "border-2 border-border bg-card transition-shadow"
+      }`}
+    >
+      <GenreCardFrame theme={activeGenre} compact />
+      {isFantasy && <IvyDecoration variant="card" />}
+
+      {/* Top Frame: Index + Status + Actions */}
+      <div
+        className={`relative mb-2 flex flex-wrap items-center justify-between gap-1.5 pb-1.5 ${
+          isFantasy ? "border-b border-[#c5a869]/35" : "border-b border-border/35"
+        }`}
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            className={`px-1.5 py-0.5 font-mono text-[9px] font-bold ${
+              isFantasy
+                ? "border border-[#c5a869] bg-[#2e5a52] text-[#f5ebe6]"
+                : "bg-foreground text-background"
+            }`}
+          >
+            #{String(idx + 1).padStart(2, "0")}
+          </span>
+          <span
+            data-spoiler="char"
+            className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+              isFantasy ? "border-[#c5a869]/55 text-[#e6dcc5]" : "border-border/60"
+            }`}
+          >
+            {e.status}
+          </span>
+          {tier && (
+            <span
+              className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
+                isFantasy
+                  ? "border-[#5ce1b8]/60 bg-[#5ce1b8]/15 text-[#5ce1b8]"
+                  : "border-primary/60 bg-primary/10 text-primary"
+              }`}
+            >
+              {tier.label}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1" onClick={(ev) => ev.stopPropagation()}>
+          {onToggleCompare && (
+            <button
+              type="button"
+              onClick={(ev) => {
+                playSwitch();
+                triggerSfx("CRACK", ev);
+                onToggleCompare(e.id);
+              }}
+              aria-pressed={compared}
+              title="Select for VS comparison"
+              className={`border border-border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
+                compared
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-background text-foreground hover:bg-secondary"
+              }`}
+            >
+              {compared ? "VS✓" : "VS"}
+            </button>
+          )}
+          {isAdmin && onEdit && (
+            <button
+              type="button"
+              aria-label={`Edit ${e.name}`}
+              onClick={() => onEdit(e)}
+              className="border border-border bg-background p-1 text-foreground hover:bg-foreground hover:text-background"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
+          {isAdmin && onMerge && (
+            <button
+              type="button"
+              aria-label={`Merge ${e.name}`}
+              onClick={() => onMerge(e)}
+              className="border border-border bg-background p-1 text-foreground hover:bg-foreground hover:text-background"
+            >
+              <GitMerge className="h-3 w-3" />
+            </button>
+          )}
+          {isAdmin && onDelete && (
+            <button
+              type="button"
+              aria-label={`Delete ${e.name}`}
+              onClick={() => onDelete(e)}
+              className="border border-border bg-background p-1 text-foreground hover:bg-primary hover:text-primary-foreground"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Inner Parchment Surface (for Fantasy) + Framed Portrait */}
+      <div
+        className={`relative flex items-start gap-3 ${
+          isFantasy
+            ? "parchment-dot-grid rounded border border-[#c5a869]/75 p-2.5 shadow-inner"
+            : ""
+        }`}
+      >
+        <GenrePortraitFrame
+          theme={activeGenre}
+          src={e.image_url}
+          alt={e.name}
+          fallback={e.name[0] ?? "?"}
+          fallbackNode={
+            e.kind !== "character" ? (
+              <GroupGenreEmblem entity={e} variant="seal" size="md" />
+            ) : undefined
+          }
+          size="card"
+        />
+
+        <div className="min-w-0 flex-1">
+          {!spoilerMasked && e.kind !== "character" ? (
+            <GroupGenreEmblem entity={e} variant="badge" size="xs" />
+          ) : !spoilerMasked && e.category ? (
+            <MangaCategorySeal label={e.category} size="xs" />
+          ) : null}
+          <h2
+            className={`mt-1 truncate font-display ${MANGA_SCALE.cardTitle} uppercase ${
+              isFantasy ? "text-[#15221b] group-hover:text-[#2e5a52]" : "group-hover:text-primary"
+            }`}
+          >
+            {e.name}
+          </h2>
+          {e.alias && (
+            <p
+              className={`truncate font-mono ${MANGA_SCALE.meta} uppercase tracking-wider ${
+                isFantasy ? "text-[#2e5a52]" : "text-muted-foreground"
+              }`}
+            >
+              {e.alias}
+            </p>
+          )}
+          {e.description && (
+            <p
+              className={`mt-1 line-clamp-2 ${MANGA_SCALE.body} ${
+                isFantasy ? "text-[#1a241e]/90" : "text-muted-foreground"
+              }`}
+            >
+              {stripMerged(e.description)}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Strip: Ability Badges / Alchemical Seals + Action */}
+      <div
+        className={`relative mt-2.5 flex flex-col gap-1.5 pt-2 ${
+          isFantasy ? "border-t border-[#c5a869]/35" : "border-t border-border/25"
+        }`}
+      >
+        {(e.abilities ?? []).length > 0 && (
+          <div className="flex flex-wrap gap-1" onClick={(ev) => ev.stopPropagation()}>
+            {e.abilities.slice(0, 3).map((ab) => (
+              <AbilityBadge key={ab} name={ab} />
+            ))}
+            {e.abilities.length > 3 && (
+              <span
+                className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold ${
+                  isFantasy ? "border-[#c5a869]/60 bg-[#1a241e] text-[#c5a869]" : "border-border"
+                }`}
+              >
+                +{e.abilities.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+        <div
+          className={`flex items-center justify-between font-mono text-[9px] font-bold uppercase tracking-widest ${
+            isFantasy ? "text-[#e6dcc5]" : "text-muted-foreground"
+          }`}
+        >
+          <span className="truncate">
+            {(e.stats as Record<string, string> | null)?.["affiliation"] || e.role || e.kind}
+          </span>
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 transition-transform group-hover:translate-x-0.5 ${
+              isFantasy ? "fantasy-discover-btn rounded px-2 py-0.5 text-[9px]" : "text-foreground"
+            }`}
+          >
+            {isFantasy ? "DISCOVER" : "DOSSIER"} <ArrowRight className="h-3 w-3" />
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+});
+
 export function MangaEntitySpread({
   entities,
   kind,
@@ -368,10 +632,6 @@ export function MangaEntitySpread({
   const activeGenre = useActiveGenre() ?? "manga-ink";
   const themeCtx = useOptionalThemeContext();
   const animEnabled = useAnimationsEnabled();
-  const motionSpec = getThemeMotionSpec(
-    themeCtx?.primarySystem ?? "manga",
-    themeCtx?.mangaSubTheme ?? (activeGenre === "fantasy" ? "fantasy" : undefined),
-  );
   const motionActive = animEnabled && !themeCtx?.isMinimal;
   const isManga = useIsManga();
   const isFantasy = themeCtx
@@ -387,13 +647,15 @@ export function MangaEntitySpread({
     if (!motionActive) return;
     const node = spreadRef.current;
     if (!node) return;
-    const hStagger = animateMangaStagger(node);
-    const hRune = animateSvgRuneDraw(node);
+    let hStagger: ReturnType<typeof animateMangaStagger> | null = null;
+    const rafId = requestAnimationFrame(() => {
+      hStagger = animateMangaStagger(node);
+    });
     return () => {
-      hStagger.cancel();
-      hRune.cancel();
+      cancelAnimationFrame(rafId);
+      hStagger?.cancel();
     };
-  }, [activeGenre, motionActive, entities.length]);
+  }, [activeGenre, motionActive]);
 
   const groups = useMemo(() => {
     const counts = new Map<string, number>();
@@ -512,252 +774,33 @@ export function MangaEntitySpread({
           No entries match the active index filter.
         </MangaThoughtBox>
       ) : (
-        <div className={`grid grid-cols-1 ${MANGA_SCALE.grid} sm:grid-cols-2 lg:grid-cols-3`}>
-          {visible.map((e, idx) => {
-            const tier = tierDef(e.character_tier);
-            const compared = compareIds?.includes(e.id) ?? false;
-
-            return (
-              <motion.article
-                key={e.id}
-                variants={motionSpec.cardVariants}
-                initial={false}
-                {...(motionActive ? { whileHover: "hover", whileTap: "tap" } : {})}
-                {...(isFantasy && motionActive
-                  ? { style: { animationDelay: `${(idx % 6) * 0.48}s` } }
-                  : {})}
-                onClick={(ev) => {
-                  playTap();
-                  triggerInteractionSfx("click", ev);
-                  triggerAnimeActionCut({
-                    color: isFantasy ? "#5ce1b8" : activeGenre === "shonen" ? "#e86a33" : "#38bdf8",
-                    label: e.name,
-                  });
-                  onSelect(e);
-                }}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(ev) => {
-                  if (ev.key === "Enter" || ev.key === " ") {
-                    ev.preventDefault();
-                    playTap();
-                    triggerAnimeActionCut({
-                      color: isFantasy
-                        ? "#5ce1b8"
-                        : activeGenre === "shonen"
-                          ? "#e86a33"
-                          : "#38bdf8",
-                      label: e.name,
-                    });
-                    onSelect(e);
-                  }
-                }}
-                className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex cursor-pointer flex-col justify-between ${
-                  isFantasy
-                    ? `rounded-lg border-2 border-[#c5a869] bg-[#15221b] text-[#f5ebe6] fantasy-mint-aura-hover hover:mint-emerald-aura focus-within:mint-emerald-aura ${
-                        motionActive ? "card-idle-breath" : ""
-                      }`
-                    : "border-2 border-border bg-card transition-shadow"
-                }`}
-              >
-                <GenreCardFrame theme={activeGenre} compact />
-                {isFantasy && <IvyDecoration variant="card" />}
-
-                {/* Top Frame: Index + Status + Actions */}
-                <div
-                  className={`relative mb-2 flex flex-wrap items-center justify-between gap-1.5 pb-1.5 ${
-                    isFantasy ? "border-b border-[#c5a869]/35" : "border-b border-border/35"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span
-                      className={`px-1.5 py-0.5 font-mono text-[9px] font-bold ${
-                        isFantasy
-                          ? "border border-[#c5a869] bg-[#2e5a52] text-[#f5ebe6]"
-                          : "bg-foreground text-background"
-                      }`}
-                    >
-                      #{String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <span
-                      data-spoiler="char"
-                      className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
-                        isFantasy ? "border-[#c5a869]/55 text-[#e6dcc5]" : "border-border/60"
-                      }`}
-                    >
-                      {e.status}
-                    </span>
-                    {tier && (
-                      <span
-                        className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
-                          isFantasy
-                            ? "border-[#5ce1b8]/60 bg-[#5ce1b8]/15 text-[#5ce1b8]"
-                            : "border-primary/60 bg-primary/10 text-primary"
-                        }`}
-                      >
-                        {tier.label}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1" onClick={(ev) => ev.stopPropagation()}>
-                    {onToggleCompare && (
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          playSwitch();
-                          triggerSfx("CRACK", ev);
-                          onToggleCompare(e.id);
-                        }}
-                        aria-pressed={compared}
-                        title="Select for VS comparison"
-                        className={`border border-border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
-                          compared
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "bg-background text-foreground hover:bg-secondary"
-                        }`}
-                      >
-                        {compared ? "VS✓" : "VS"}
-                      </button>
-                    )}
-                    {isAdmin && onEdit && (
-                      <button
-                        type="button"
-                        aria-label={`Edit ${e.name}`}
-                        onClick={() => onEdit(e)}
-                        className="border border-border bg-background p-1 text-foreground hover:bg-foreground hover:text-background"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                    )}
-                    {isAdmin && onMerge && (
-                      <button
-                        type="button"
-                        aria-label={`Merge ${e.name}`}
-                        onClick={() => onMerge(e)}
-                        className="border border-border bg-background p-1 text-foreground hover:bg-foreground hover:text-background"
-                      >
-                        <GitMerge className="h-3 w-3" />
-                      </button>
-                    )}
-                    {isAdmin && onDelete && (
-                      <button
-                        type="button"
-                        aria-label={`Delete ${e.name}`}
-                        onClick={() => onDelete(e)}
-                        className="border border-border bg-background p-1 text-foreground hover:bg-primary hover:text-primary-foreground"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Inner Parchment Surface (for Fantasy) + Framed Portrait */}
-                <div
-                  className={`relative flex items-start gap-3 ${
-                    isFantasy
-                      ? "parchment-dot-grid rounded border border-[#c5a869]/75 p-2.5 shadow-inner"
-                      : ""
-                  }`}
-                >
-                  <GenrePortraitFrame
-                    theme={activeGenre}
-                    src={e.image_url}
-                    alt={e.name}
-                    fallback={e.name[0] ?? "?"}
-                    fallbackNode={
-                      e.kind !== "character" ? (
-                        <GroupGenreEmblem entity={e} variant="seal" size="md" />
-                      ) : undefined
-                    }
-                    size="card"
-                  />
-
-                  <div className="min-w-0 flex-1">
-                    {!spoilerMasked && e.kind !== "character" ? (
-                      <GroupGenreEmblem entity={e} variant="badge" size="xs" />
-                    ) : !spoilerMasked && e.category ? (
-                      <MangaCategorySeal label={e.category} size="xs" />
-                    ) : null}
-                    <h2
-                      className={`mt-1 truncate font-display ${MANGA_SCALE.cardTitle} uppercase ${
-                        isFantasy
-                          ? "text-[#15221b] group-hover:text-[#2e5a52]"
-                          : "group-hover:text-primary"
-                      }`}
-                    >
-                      {e.name}
-                    </h2>
-                    {e.alias && (
-                      <p
-                        className={`truncate font-mono ${MANGA_SCALE.meta} uppercase tracking-wider ${
-                          isFantasy ? "text-[#2e5a52]" : "text-muted-foreground"
-                        }`}
-                      >
-                        {e.alias}
-                      </p>
-                    )}
-                    {e.description && (
-                      <p
-                        className={`mt-1 line-clamp-2 ${MANGA_SCALE.body} ${
-                          isFantasy ? "text-[#1a241e]/90" : "text-muted-foreground"
-                        }`}
-                      >
-                        {stripMerged(e.description)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Bottom Strip: Ability Badges / Alchemical Seals + Action */}
-                <div
-                  className={`relative mt-2.5 flex flex-col gap-1.5 pt-2 ${
-                    isFantasy ? "border-t border-[#c5a869]/35" : "border-t border-border/25"
-                  }`}
-                >
-                  {(e.abilities ?? []).length > 0 && (
-                    <div className="flex flex-wrap gap-1" onClick={(ev) => ev.stopPropagation()}>
-                      {e.abilities.slice(0, 3).map((ab) => (
-                        <AbilityBadge key={ab} name={ab} />
-                      ))}
-                      {e.abilities.length > 3 && (
-                        <span
-                          className={`border px-1.5 py-0.5 font-mono text-[9px] font-bold ${
-                            isFantasy
-                              ? "border-[#c5a869]/60 bg-[#1a241e] text-[#c5a869]"
-                              : "border-border"
-                          }`}
-                        >
-                          +{e.abilities.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <div
-                    className={`flex items-center justify-between font-mono text-[9px] font-bold uppercase tracking-widest ${
-                      isFantasy ? "text-[#e6dcc5]" : "text-muted-foreground"
-                    }`}
-                  >
-                    <span className="truncate">
-                      {(e.stats as Record<string, string> | null)?.["affiliation"] ||
-                        e.role ||
-                        e.kind}
-                    </span>
-                    <span
-                      className={`inline-flex shrink-0 items-center gap-1 transition-transform group-hover:translate-x-0.5 ${
-                        isFantasy
-                          ? "fantasy-discover-btn rounded px-2 py-0.5 text-[9px]"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {isFantasy ? "DISCOVER" : "DOSSIER"} <ArrowRight className="h-3 w-3" />
-                    </span>
-                  </div>
-                </div>
-              </motion.article>
-            );
-          })}
+        <div
+          className={`manga-spread-grid grid grid-cols-1 ${MANGA_SCALE.grid} sm:grid-cols-2 lg:grid-cols-3`}
+        >
+          {visible.map((e, idx) => (
+            <MangaEntityCard
+              key={e.id}
+              e={e}
+              idx={idx}
+              activeGenre={activeGenre}
+              isFantasy={isFantasy}
+              allowIdleBreath={
+                isFantasy && motionActive && shouldAnimateGridCardIdle(visible.length)
+              }
+              spoilerMasked={spoilerMasked}
+              compared={compareIds?.includes(e.id) ?? false}
+              isAdmin={isAdmin}
+              onSelect={onSelect}
+              onToggleCompare={onToggleCompare}
+              onEdit={onEdit}
+              onMerge={onMerge}
+              onDelete={onDelete}
+              playTap={playTap}
+              playSwitch={playSwitch}
+              triggerSfx={triggerSfx}
+              triggerInteractionSfx={triggerInteractionSfx}
+            />
+          ))}
         </div>
       )}
     </main>

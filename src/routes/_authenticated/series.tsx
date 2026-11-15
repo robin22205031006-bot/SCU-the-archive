@@ -543,7 +543,9 @@ export function SeriesPage() {
               </p>
             )
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${isManga ? "manga-spread-grid" : ""}`}
+            >
               {list.map((s, idx) => (
                 <MotionCard
                   key={s.id}

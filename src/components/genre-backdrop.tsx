@@ -226,17 +226,17 @@ export function GenreBackdrop() {
             }`}
           />
           <div
-            className={`absolute -right-24 -top-24 h-80 w-80 rounded-full opacity-25 blur-3xl ${
+            className={`absolute -right-24 -top-24 h-80 w-80 rounded-full opacity-25 ${
               animOn ? "genre-aura-pulse" : ""
             }`}
-            style={{ background: "radial-gradient(circle, var(--primary), transparent 70%)" }}
+            style={{ background: "radial-gradient(circle, var(--primary) 0%, transparent 68%)" }}
           />
           <div
-            className={`absolute -bottom-24 -left-24 h-80 w-80 rounded-full opacity-20 blur-3xl ${
+            className={`absolute -bottom-24 -left-24 h-80 w-80 rounded-full opacity-20 ${
               animOn ? "genre-aura-pulse" : ""
             }`}
             style={{
-              background: "radial-gradient(circle, var(--accent), transparent 70%)",
+              background: "radial-gradient(circle, var(--accent) 0%, transparent 68%)",
               animationDelay: "1.6s",
             }}
           />
@@ -334,16 +334,19 @@ export function GenreBackdrop() {
             />
           </svg>
           <div
-            className={`absolute right-[12%] top-[18%] h-44 w-44 rounded-full opacity-20 blur-2xl ${
+            className={`absolute right-[12%] top-[18%] h-44 w-44 rounded-full opacity-20 ${
               animOn ? "genre-aura-pulse" : ""
             }`}
-            style={{ background: "var(--accent)" }}
+            style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }}
           />
           <div
-            className={`absolute left-[18%] top-[24%] h-32 w-32 rounded-full opacity-20 blur-2xl ${
+            className={`absolute left-[18%] top-[24%] h-32 w-32 rounded-full opacity-20 ${
               animOn ? "genre-aura-pulse" : ""
             }`}
-            style={{ background: "var(--primary)", animationDelay: "1.5s" }}
+            style={{
+              background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)",
+              animationDelay: "1.5s",
+            }}
           />
           {ISEKAI_SPARKLES.map((spec, idx) => (
             <FourPointSparkle
@@ -380,12 +383,11 @@ export function GenreBackdrop() {
                 {
                   left: spec.left,
                   top: spec.top,
-                  width: `${spec.size}px`,
-                  height: `${spec.size}px`,
-                  background: spec.alt ? "var(--accent)" : "var(--primary)",
-                  boxShadow: spec.alt
-                    ? "0 0 10px 2px var(--accent)"
-                    : "0 0 10px 2px var(--primary)",
+                  width: `${spec.size * 2}px`,
+                  height: `${spec.size * 2}px`,
+                  background: spec.alt
+                    ? "radial-gradient(circle, var(--accent) 25%, transparent 72%)"
+                    : "radial-gradient(circle, var(--primary) 25%, transparent 72%)",
                   animationDelay: spec.delay,
                   animationDuration: spec.duration,
                 } as CSSProperties
@@ -480,12 +482,11 @@ export function GenreBackdrop() {
                 {
                   left: spec.left,
                   top: spec.top,
-                  width: `${spec.size}px`,
-                  height: `${spec.size}px`,
-                  background: spec.alt ? "var(--accent)" : "var(--genre-gold, #d6b26a)",
-                  boxShadow: spec.alt
-                    ? "0 0 10px var(--accent)"
-                    : "0 0 10px var(--genre-gold, #d6b26a)",
+                  width: `${spec.size * 2}px`,
+                  height: `${spec.size * 2}px`,
+                  background: spec.alt
+                    ? "radial-gradient(circle, var(--accent) 25%, transparent 72%)"
+                    : "radial-gradient(circle, var(--genre-gold, #d6b26a) 25%, transparent 72%)",
                   animationDelay: spec.delay,
                   animationDuration: spec.duration,
                 } as CSSProperties

@@ -92,7 +92,7 @@ function Index() {
 
         <section
           aria-label="Serialized chapter directory"
-          className={`grid grid-cols-1 ${MANGA_SCALE.grid} sm:grid-cols-2 lg:grid-cols-3`}
+          className={`manga-spread-grid grid grid-cols-1 ${MANGA_SCALE.grid} sm:grid-cols-2 lg:grid-cols-3`}
         >
           {sections.map((s, idx) => (
             <MotionCard key={s.to} index={idx}>
