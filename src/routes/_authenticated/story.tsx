@@ -11,6 +11,7 @@ import { useAppearance } from "@/hooks/use-appearance";
 import { sfx } from "@/lib/scu-audio";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
+import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/story")({
   validateSearch: (s: Record<string, unknown>): { ep?: string } =>
@@ -106,7 +107,7 @@ function Story() {
 
   if (ep && story) {
     return (
-      <div
+      <MotionPage
         className={`min-h-screen select-none ${
           isManga
             ? eyeCare
@@ -180,7 +181,8 @@ function Story() {
             </button>
           </div>
         </div>
-        <article
+        <MotionSection
+          as="article"
           className={
             isManga
               ? "manga-panel mx-auto my-8 max-w-2xl border-[3px] border-foreground bg-card px-6 py-10 sm:px-10"
@@ -224,31 +226,33 @@ function Story() {
               ),
             )}
           </div>
-        </article>
-      </div>
+        </MotionSection>
+      </MotionPage>
     );
   }
 
   return (
-    <div className={`mx-auto max-w-3xl px-4 pb-24 ${isManga ? "pt-6" : "pt-28"}`}>
-      {isManga ? (
-        <MangaChapterBanner
-          chapter="CH. 09 // STORY READER"
-          jp="公式物語・連載"
-          title="Story"
-          subtitle="Official SCU serialized epics and published manuscript chapters."
-          stamp="物語"
-        />
-      ) : (
-        <>
-          <h1 className="flex items-center gap-2 font-display text-4xl">
-            <BookOpen className="h-7 w-7 text-accent" /> Story
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Official SCU epics and published stories.
-          </p>
-        </>
-      )}
+    <MotionPage className={`mx-auto max-w-3xl px-4 pb-24 ${isManga ? "pt-6" : "pt-28"}`}>
+      <MotionSection as="header">
+        {isManga ? (
+          <MangaChapterBanner
+            chapter="CH. 09 // STORY READER"
+            jp="公式物語・連載"
+            title="Story"
+            subtitle="Official SCU serialized epics and published manuscript chapters."
+            stamp="物語"
+          />
+        ) : (
+          <>
+            <h1 className="flex items-center gap-2 font-display text-4xl">
+              <BookOpen className="h-7 w-7 text-accent" /> Story
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Official SCU epics and published stories.
+            </p>
+          </>
+        )}
+      </MotionSection>
       {nexus ? (
         <div className="mt-6">
           <NexusExplorer
@@ -278,41 +282,43 @@ function Story() {
         <ul className="mt-6 grid gap-3">
           {(episodes ?? []).map((e, idx) => (
             <li key={e.id}>
-              <Link
-                to="/story"
-                search={{ ep: e.id }}
-                onClick={() => sfx.whoosh()}
-                className={
-                  isManga
-                    ? "manga-panel manga-panel-hover flex items-center justify-between gap-3 border-[3px] border-foreground bg-card px-4 py-3 transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
-                    : "glass flex items-center justify-between rounded-2xl px-4 py-3 transition hover:border-accent/50"
-                }
-              >
-                <span className="flex items-center gap-3">
-                  {isManga && (
-                    <span className="border-2 border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold text-background">
-                      CH.{String(idx + 1).padStart(2, "0")}
-                    </span>
-                  )}
-                  <span>
-                    <span
-                      className={`block ${
-                        isManga ? "font-display text-xl uppercase tracking-wide" : "font-medium"
-                      }`}
-                    >
-                      {e.title}
-                    </span>
-                    {e.series && (
-                      <span className="font-mono text-[11px] uppercase text-muted-foreground">
-                        {e.series}
+              <MotionCard index={idx} interactive>
+                <Link
+                  to="/story"
+                  search={{ ep: e.id }}
+                  onClick={() => sfx.whoosh()}
+                  className={
+                    isManga
+                      ? "manga-panel manga-panel-hover flex items-center justify-between gap-3 border-[3px] border-foreground bg-card px-4 py-3"
+                      : "glass flex items-center justify-between rounded-2xl px-4 py-3 transition hover:border-accent/50"
+                  }
+                >
+                  <span className="flex items-center gap-3">
+                    {isManga && (
+                      <span className="border-2 border-foreground bg-foreground px-2 py-0.5 font-mono text-[10px] font-bold text-background">
+                        CH.{String(idx + 1).padStart(2, "0")}
                       </span>
                     )}
+                    <span>
+                      <span
+                        className={`block ${
+                          isManga ? "font-display text-xl uppercase tracking-wide" : "font-medium"
+                        }`}
+                      >
+                        {e.title}
+                      </span>
+                      {e.series && (
+                        <span className="font-mono text-[11px] uppercase text-muted-foreground">
+                          {e.series}
+                        </span>
+                      )}
+                    </span>
                   </span>
-                </span>
-                <span className="border border-foreground/40 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  {e.status}
-                </span>
-              </Link>
+                  <span className="border border-foreground/40 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    {e.status}
+                  </span>
+                </Link>
+              </MotionCard>
             </li>
           ))}
           {(episodes ?? []).length === 0 &&
@@ -323,6 +329,6 @@ function Story() {
             ))}
         </ul>
       )}
-    </div>
+    </MotionPage>
   );
 }

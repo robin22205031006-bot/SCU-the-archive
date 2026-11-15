@@ -14,6 +14,7 @@ import {
   type AtmosphereWeather,
 } from "@/lib/ambient-atmosphere";
 import { useUIFeedback } from "@/hooks/use-ui-feedback";
+import { useAppMotion } from "@/hooks/use-app-motion";
 
 type Era = {
   id: string;
@@ -265,6 +266,7 @@ function WeatherIcon({ weather }: { weather: AtmosphereWeather }) {
 }
 
 export function LoreLocations() {
+  const { motionActive } = useAppMotion();
   const isManga = useIsManga();
   const activeGenre = useActiveGenre();
   const isFantasy = isManga && activeGenre === "fantasy";
@@ -366,18 +368,23 @@ export function LoreLocations() {
                 : "glass relative overflow-hidden rounded-2xl border border-border p-5"
           }
         >
-          {!isManga && (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`bg-${loc.id}-${era.id}`}
+          {!isManga &&
+            (motionActive ? (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`bg-${loc.id}-${era.id}`}
+                  className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${TONE[era.tone]}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                />
+              </AnimatePresence>
+            ) : (
+              <div
                 className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${TONE[era.tone]}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
               />
-            </AnimatePresence>
-          )}
+            ))}
           <div className="relative">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -479,26 +486,110 @@ export function LoreLocations() {
                         : `relative rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${i === idx ? "border-accent/60 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`
                   }
                 >
-                  {!isManga && i === idx && (
-                    <motion.span
-                      layoutId="era-pill"
-                      className="absolute inset-0 -z-10 rounded-full bg-accent/15"
-                    />
-                  )}
+                  {!isManga &&
+                    i === idx &&
+                    (motionActive ? (
+                      <motion.span
+                        layoutId="era-pill"
+                        className="absolute inset-0 -z-10 rounded-full bg-accent/15"
+                      />
+                    ) : (
+                      <span className="absolute inset-0 -z-10 rounded-full bg-accent/15" />
+                    ))}
                   Era {i + 1} · {e.era}
                 </button>
               ))}
             </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${loc.id}-${era.id}`}
-                initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: -12, filter: "blur(6px)" }}
-                transition={{ duration: 0.35 }}
-                className="mt-6 grid gap-4 md:grid-cols-3"
-              >
+            {motionActive ? (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`${loc.id}-${era.id}`}
+                  initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -12, filter: "blur(6px)" }}
+                  transition={{ duration: 0.35 }}
+                  className="mt-6 grid gap-4 md:grid-cols-3"
+                >
+                  <div
+                    className={
+                      isFantasy
+                        ? "parchment-dot-grid rounded-lg border border-[#c5a869]/75 p-4 text-[#15221b] md:col-span-3"
+                        : "md:col-span-3"
+                    }
+                  >
+                    <div
+                      className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+                        isFantasy ? "text-[#2e5a52]" : "text-muted-foreground"
+                      }`}
+                    >
+                      State
+                    </div>
+                    <div
+                      className={
+                        isFantasy
+                          ? "font-display text-2xl uppercase text-[#15221b]"
+                          : isManga
+                            ? "font-display text-2xl uppercase"
+                            : "text-2xl font-medium"
+                      }
+                    >
+                      {era.state}
+                    </div>
+                    <p
+                      className={`mt-2 max-w-2xl text-sm ${
+                        isFantasy ? "text-[#1a241e]/90" : "text-muted-foreground"
+                      }`}
+                    >
+                      {era.description}
+                    </p>
+                  </div>
+                  <div
+                    className={
+                      isFantasy
+                        ? "rounded-lg border border-[#c5a869]/60 bg-[#1a241e]/95 p-4 text-[#f5ebe6] md:col-span-2"
+                        : isManga
+                          ? "border-2 border-border bg-background p-4 md:col-span-2"
+                          : "rounded-xl border border-border bg-background/40 p-4 md:col-span-2"
+                    }
+                  >
+                    <div
+                      className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+                        isFantasy ? "text-[#c5a869]" : "text-muted-foreground"
+                      }`}
+                    >
+                      Visual state
+                    </div>
+                    <p className="mt-1 text-sm">{era.visual}</p>
+                  </div>
+                  <div
+                    className={
+                      isFantasy
+                        ? "rounded-lg border border-[#c5a869]/60 bg-[#1a241e]/95 p-4 text-[#f5ebe6]"
+                        : isManga
+                          ? "border-2 border-border bg-foreground p-4 text-background"
+                          : "rounded-xl border border-border bg-background/40 p-4"
+                    }
+                  >
+                    <div
+                      className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+                        isFantasy ? "text-[#c5a869]" : "opacity-70"
+                      }`}
+                    >
+                      Environment status
+                    </div>
+                    <p
+                      className={`mt-1 text-sm font-bold ${
+                        isFantasy ? "text-[#5ce1b8]" : isManga ? "text-primary" : "text-accent"
+                      }`}
+                    >
+                      {era.status}
+                    </p>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            ) : (
+              <div className="mt-6 grid gap-4 md:grid-cols-3" data-motion-state="minimal-off">
                 <div
                   className={
                     isFantasy
@@ -574,8 +665,8 @@ export function LoreLocations() {
                     {era.status}
                   </p>
                 </div>
-              </motion.div>
-            </AnimatePresence>
+              </div>
+            )}
           </div>
         </div>
       </section>

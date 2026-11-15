@@ -32,6 +32,13 @@ import { Pencil } from "lucide-react";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
+import {
+  MotionCard,
+  MotionModalPanel,
+  MotionPage,
+  MotionPresence,
+  MotionSection,
+} from "@/components/app-motion";
 
 /** Series title with the admin-chosen font, colour and effect. */
 function SeriesTitle({ series, className = "" }: { series: Series; className?: string }) {
@@ -168,8 +175,9 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
         className="mx-auto max-w-3xl px-4 pb-16 pt-24 sm:px-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <section
-          className={`morph-in grid gap-6 p-5 sm:p-7 ${
+        <MotionModalPanel
+          as="section"
+          className={`grid gap-6 p-5 sm:p-7 ${
             isManga ? "manga-panel border-[3px] border-foreground bg-card" : "glass rounded-2xl"
           }`}
         >
@@ -257,7 +265,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
               ))
             )}
           </div>
-        </section>
+        </MotionModalPanel>
       </div>
     </div>
   );
@@ -432,12 +440,13 @@ export function SeriesPage() {
   }, [series, q]);
 
   return (
-    <main
+    <MotionPage
+      as="main"
       className={`mx-auto w-full max-w-5xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}
       style={sectionStyle}
     >
       {isManga ? (
-        <div className="mb-8">
+        <MotionSection className="mb-8">
           <MangaChapterBanner
             chapter="CH. 11 // SAGAS"
             jp="連載年表・外伝"
@@ -447,9 +456,9 @@ export function SeriesPage() {
             actions={<SpoilerToggle scope="series" />}
           />
           <StaffSeriesManager />
-        </div>
+        </MotionSection>
       ) : (
-        <header className="mb-8">
+        <MotionSection as="header" className="mb-8">
           <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
           <h1 className="mt-2 text-5xl font-medium glow-text">Series</h1>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
@@ -459,7 +468,7 @@ export function SeriesPage() {
             <SpoilerToggle scope="series" />
           </div>
           <StaffSeriesManager />
-        </header>
+        </MotionSection>
       )}
 
       {nexus ? (
@@ -536,54 +545,60 @@ export function SeriesPage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((s, idx) => (
-                <button
+                <MotionCard
                   key={s.id}
-                  onClick={() => navigate({ search: { s: s.id } })}
+                  index={idx}
+                  interactive
                   className={
                     isManga
-                      ? "manga-panel manga-panel-hover group flex gap-4 border-[3px] border-foreground bg-card p-4 text-left transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
-                      : "glass group flex gap-4 rounded-2xl p-4 text-left transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring"
+                      ? "manga-panel manga-panel-hover border-[3px] border-foreground bg-card"
+                      : "glass rounded-2xl"
                   }
                 >
-                  {s.cover_image_url ? (
-                    <img
-                      src={s.cover_image_url}
-                      alt={s.title}
-                      loading="lazy"
-                      decoding="async"
-                      className={`h-16 w-16 shrink-0 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
-                    />
-                  ) : (
-                    <div
-                      className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
-                    >
-                      {isManga ? (
-                        `#${String(idx + 1).padStart(2, "0")}`
-                      ) : (
-                        <BookMarked className="h-6 w-6" />
-                      )}
-                    </div>
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <SeriesTitle
-                      series={s}
-                      className={
-                        isManga
-                          ? "block truncate font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]"
-                          : "block truncate text-xl font-medium"
-                      }
-                    />
-                    <span className="mt-1 flex items-center gap-1.5 font-mono text-[11px] uppercase text-muted-foreground">
-                      <Users className="h-3.5 w-3.5" />
-                      {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
-                    </span>
-                    {s.description && (
-                      <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
-                        {s.description}
-                      </span>
+                  <button
+                    onClick={() => navigate({ search: { s: s.id } })}
+                    className="group flex w-full gap-4 p-4 text-left"
+                  >
+                    {s.cover_image_url ? (
+                      <img
+                        src={s.cover_image_url}
+                        alt={s.title}
+                        loading="lazy"
+                        decoding="async"
+                        className={`h-16 w-16 shrink-0 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
+                      />
+                    ) : (
+                      <div
+                        className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
+                      >
+                        {isManga ? (
+                          `#${String(idx + 1).padStart(2, "0")}`
+                        ) : (
+                          <BookMarked className="h-6 w-6" />
+                        )}
+                      </div>
                     )}
-                  </span>
-                </button>
+                    <span className="min-w-0 flex-1">
+                      <SeriesTitle
+                        series={s}
+                        className={
+                          isManga
+                            ? "block truncate font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]"
+                            : "block truncate text-xl font-medium"
+                        }
+                      />
+                      <span className="mt-1 flex items-center gap-1.5 font-mono text-[11px] uppercase text-muted-foreground">
+                        <Users className="h-3.5 w-3.5" />
+                        {counts.get(s.id) ?? 0} character{(counts.get(s.id) ?? 0) === 1 ? "" : "s"}
+                      </span>
+                      {s.description && (
+                        <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
+                          {s.description}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                </MotionCard>
               ))}
             </div>
           )}
@@ -603,7 +618,7 @@ export function SeriesPage() {
         </div>
       )}
       {(episodes?.length ?? 0) > 0 && (
-        <section className="mt-14">
+        <MotionSection as="section" className="mt-14">
           {isManga ? (
             <div className="mb-4 flex items-center justify-between border-b-[3px] border-foreground pb-2">
               <span className="flex items-center gap-2 font-display text-3xl uppercase tracking-wide">
@@ -657,10 +672,12 @@ export function SeriesPage() {
               </details>
             ))}
           </div>
-        </section>
+        </MotionSection>
       )}
 
-      {s && <SeriesDetail seriesId={s} onClose={() => navigate({ search: {} })} />}
-    </main>
+      <MotionPresence>
+        {s && <SeriesDetail seriesId={s} onClose={() => navigate({ search: {} })} />}
+      </MotionPresence>
+    </MotionPage>
   );
 }

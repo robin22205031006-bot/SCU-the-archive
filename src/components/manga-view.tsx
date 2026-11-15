@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -65,6 +65,8 @@ import { DossierComponent } from "@/components/dossier-component";
 import { IvyDecoration } from "@/components/manga/fantasy/IvyDecoration";
 import { useMangaSfx } from "@/hooks/use-manga-sfx";
 import { MANGA_SCALE } from "@/lib/manga-scale";
+import { animateMangaStagger, animateSvgRuneDraw } from "@/lib/anime-animations";
+import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 
 export type DossierLayoutMode =
   | "royal-class-showcase"
@@ -372,6 +374,19 @@ export function MangaEntitySpread({
   const { playTap, playSwitch } = useSensoryFeedback();
   const isChar = kind === "character";
   const spoilerMasked = useSpoilerMask(spoilerScope);
+  const spreadRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!motionActive) return;
+    const node = spreadRef.current;
+    if (!node) return;
+    const hStagger = animateMangaStagger(node);
+    const hRune = animateSvgRuneDraw(node);
+    return () => {
+      hStagger.cancel();
+      hRune.cancel();
+    };
+  }, [activeGenre, motionActive, entities.length]);
 
   const groups = useMemo(() => {
     const counts = new Map<string, number>();
@@ -390,7 +405,7 @@ export function MangaEntitySpread({
   }, [entities, groupFilter]);
 
   return (
-    <main className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-5">
+    <main ref={spreadRef} className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-5">
       <MangaChapterBanner
         chapter={chapter}
         jp={isChar ? "登場人物名鑑" : "組織・勢力図"}
@@ -507,6 +522,10 @@ export function MangaEntitySpread({
                 onClick={(ev) => {
                   playTap();
                   triggerInteractionSfx("click", ev);
+                  triggerAnimeActionCut({
+                    color: isFantasy ? "#5ce1b8" : activeGenre === "shonen" ? "#e86a33" : "#38bdf8",
+                    label: e.name,
+                  });
                   onSelect(e);
                 }}
                 role="button"
@@ -515,6 +534,14 @@ export function MangaEntitySpread({
                   if (ev.key === "Enter" || ev.key === " ") {
                     ev.preventDefault();
                     playTap();
+                    triggerAnimeActionCut({
+                      color: isFantasy
+                        ? "#5ce1b8"
+                        : activeGenre === "shonen"
+                          ? "#e86a33"
+                          : "#38bdf8",
+                      label: e.name,
+                    });
                     onSelect(e);
                   }
                 }}
@@ -746,6 +773,7 @@ export function MangaCharacterSpread({
   const motionActive = animEnabled && !themeCtx?.isMinimal;
   const dossierLayout = resolveDossierLayout(activeGenre);
   const { triggerInteractionSfx } = useMangaSfx();
+  const dossierRef = useRef<HTMLElement>(null);
 
   const [tab, setTab] = useState<"powers" | "lore" | "bonds" | "progress">("powers");
   const [seasonIdx, setSeasonIdx] = useState(-1);
@@ -758,6 +786,17 @@ export function MangaCharacterSpread({
     setAvatarIdx(0);
     setView3d(false);
   }, [id]);
+  useEffect(() => {
+    if (!motionActive) return;
+    const node = dossierRef.current;
+    if (!node) return;
+    const hStagger = animateMangaStagger(node);
+    const hRune = animateSvgRuneDraw(node);
+    return () => {
+      hStagger.cancel();
+      hRune.cancel();
+    };
+  }, [id, tab, activeGenre, motionActive]);
 
   const { data: e } = useQuery({ ...entityByIdQuery(id), enabled: !!id });
   const { data: notes } = useQuery({ ...notesQuery(id), enabled: !!id });
@@ -938,6 +977,10 @@ export function MangaCharacterSpread({
               type="button"
               onClick={(ev) => {
                 triggerInteractionSfx("switch-mode", ev);
+                triggerAnimeActionCut({
+                  color: activeGenre === "shonen" ? "#e86a33" : "#38bdf8",
+                  label: view3d ? "2D PLATE" : "3D SCULPT",
+                });
                 setView3d((v) => !v);
               }}
               className="border border-border bg-foreground px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-background hover:bg-primary"
@@ -951,6 +994,7 @@ export function MangaCharacterSpread({
                   type="button"
                   onClick={(ev) => {
                     triggerInteractionSfx("click", ev);
+                    triggerAnimeActionCut({ color: "#e86a33", label: av.label });
                     setAvatarIdx(idx);
                     setView3d(true);
                   }}
@@ -1070,7 +1114,16 @@ export function MangaCharacterSpread({
                     {...(isFantasyGenre && motionActive
                       ? { style: { animationDelay: `${(idx % 4) * 0.55}s` } }
                       : {})}
-                    className={`relative overflow-hidden p-3 ${
+                    onClick={() =>
+                      triggerAnimeActionCut({
+                        color: def.color,
+                        label: def.label,
+                        intensity: def.tier === "Mythic" ? "heavy" : "normal",
+                      })
+                    }
+                    className={`relative cursor-pointer overflow-hidden p-3 ${
+                      !themeCtx?.isMinimal ? "studio-bloom-border " : ""
+                    }${
                       isFantasyGenre
                         ? `${motionActive ? "card-idle-breath" : ""} rounded-lg border-2 border-[#c5a869]/85 bg-[#15221b] text-[#f5ebe6] shadow-[0_8px_22px_rgba(0,0,0,0.45),0_0_14px_rgba(92,225,184,0.16)] fantasy-mint-aura-hover hover:mint-emerald-aura focus-within:mint-emerald-aura`
                         : "border border-border bg-background/80"
@@ -1302,7 +1355,11 @@ export function MangaCharacterSpread({
   );
 
   return (
-    <main className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-5" data-dossier-layout={dossierLayout}>
+    <main
+      ref={dossierRef}
+      className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-5"
+      data-dossier-layout={dossierLayout}
+    >
       {/* Top Anthology Bar */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b-2 border-border pb-2.5">
         <div className="flex flex-wrap items-center gap-2">
@@ -1316,7 +1373,14 @@ export function MangaCharacterSpread({
           <select
             aria-label="Jump to character"
             value={id}
-            onChange={(ev) => void nav({ to: "/character", search: { e: ev.target.value } })}
+            onChange={(ev) => {
+              const target = (allChars ?? []).find((c) => c.id === ev.target.value);
+              triggerAnimeActionCut({
+                color: activeGenre === "shonen" ? "#e86a33" : "#38bdf8",
+                label: target?.name ?? "DOSSIER CUT",
+              });
+              void nav({ to: "/character", search: { e: ev.target.value } });
+            }}
             className="h-8 border border-border bg-card px-2 font-mono text-xs font-bold uppercase"
           >
             {(allChars ?? []).map((c) => (

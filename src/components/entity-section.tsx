@@ -12,6 +12,7 @@ import {
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, type MotionStyle } from "framer-motion";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import {
   BookOpen,
   FileDown,
@@ -286,6 +287,7 @@ function DetailOverlay({
   isAdmin: boolean;
   onOpen: (target: Entity) => void;
 }) {
+  const { motionActive, spec } = useAppMotion();
   const qc = useQueryClient();
   useAbilityRegistryVersion();
   const { data: notes } = useQuery(notesQuery(e.id));
@@ -437,12 +439,14 @@ function DetailOverlay({
   return (
     <motion.div
       ref={scrollRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1, transition: { duration: 0.2 } }}
-      exit={{ opacity: 0, transition: { duration: 0.18 } }}
+      initial={motionActive ? { opacity: 0 } : false}
+      animate={{ opacity: 1, transition: motionActive ? { duration: 0.2 } : { duration: 0 } }}
+      {...(motionActive ? { exit: { opacity: 0, transition: { duration: 0.18 } } } : {})}
       className="fixed inset-0 z-30 overflow-hidden bg-[#020408]"
-      layoutId={`card-${e.id}`}
-      transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
+      {...(motionActive ? { layoutId: `card-${e.id}` } : {})}
+      transition={
+        motionActive ? { type: "spring", stiffness: 300, damping: 30, mass: 0.8 } : { duration: 0 }
+      }
       onClick={onClose}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
@@ -651,7 +655,9 @@ function DetailOverlay({
             ))}
           </div>
         )}
-        <section className="morph-in relative grid h-full content-start gap-6 overflow-y-auto p-5 text-sm leading-relaxed sm:p-7 lg:p-10">
+        <section
+          className={`${motionActive ? "morph-in " : ""}relative grid h-full content-start gap-6 overflow-y-auto p-5 text-sm leading-relaxed sm:p-7 lg:p-10`}
+        >
           <AbilityCardCanvas
             abilities={e.abilities}
             theme={seasonIdx >= 0 ? (seasons[seasonIdx]?.card_theme ?? e.card_theme) : e.card_theme}
@@ -1441,6 +1447,7 @@ export function EntitySection({
   const isManga = useIsManga();
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
+  const { motionActive, spec } = useAppMotion();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(entitiesQuery(kinds));
   const [open, setOpen] = useState<{ id: string; rect: DOMRect | null } | null>(null);
@@ -1790,35 +1797,16 @@ export function EntitySection({
                   <AnimatePresence initial={false}>
                     {list.map((e, i) => {
                       if (open?.id === e.id) return null; // unmount → shared-element morph into dossier
-                      return (
-                        <motion.article
-                          key={e.id}
-                          layout
-                          layoutId={`card-${e.id}`}
-                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                          animate={{
-                            opacity: 1,
-                            scale: 1,
-                            y: 0,
-                            transition: {
-                              delay: Math.min(i * 0.03, 0.45),
-                              duration: 0.3,
-                              ease: [0.2, 0.8, 0.2, 1],
-                            },
-                          }}
-                          exit={{
-                            opacity: 0,
-                            scale: 0.95,
-                            transition: { duration: 0.18, ease: "easeIn" },
-                          }}
-                          whileTap={{ scale: 0.98 }}
-                          className={`glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`}
-                          style={
-                            {
-                              "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
-                            } as unknown as MotionStyle
-                          }
-                        >
+                      const cardClass = `glass group relative flex gap-4 overflow-hidden rounded-2xl p-4 ${
+                        motionActive
+                          ? `transition-[transform,box-shadow,border-radius] duration-300 hover:-translate-y-0.5 hover:rounded-tr-[2rem] hover:glow-ring ${tierDef(e.character_tier)?.vfxClass ?? ""} ${animationClass(e.animation_style)}`
+                          : ""
+                      }`;
+                      const cardStyle = {
+                        "--scu-aura": e.accent_glow ?? e.theme_color ?? "#a855f7",
+                      } as unknown as MotionStyle;
+                      const cardInner = (
+                        <>
                           <AbilityCardCanvas
                             abilities={e.abilities}
                             theme={e.card_theme}
@@ -1864,6 +1852,42 @@ export function EntitySection({
                               </Button>
                             </div>
                           )}
+                        </>
+                      );
+                      if (!motionActive) {
+                        return (
+                          <article
+                            key={e.id}
+                            className={cardClass}
+                            style={cardStyle as CSSProperties}
+                          >
+                            {cardInner}
+                          </article>
+                        );
+                      }
+                      return (
+                        <motion.article
+                          key={e.id}
+                          layout
+                          layoutId={`card-${e.id}`}
+                          variants={spec.cardVariants}
+                          initial="initial"
+                          animate="animate"
+                          exit={{
+                            opacity: 0,
+                            scale: 0.95,
+                            transition: { duration: 0.18, ease: "easeIn" },
+                          }}
+                          whileHover="hover"
+                          whileTap="tap"
+                          transition={{
+                            ...spec.transition,
+                            delay: Math.min(i * 0.03, 0.36),
+                          }}
+                          className={cardClass}
+                          style={cardStyle}
+                        >
+                          {cardInner}
                         </motion.article>
                       );
                     })}

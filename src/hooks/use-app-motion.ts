@@ -3,6 +3,7 @@ import {
   type MangaSubTheme,
   type PrimarySystem,
 } from "@/context/ThemeContext";
+import { useOptionalUIState } from "@/context/UIStateContext";
 import { useOptionalUiMode } from "@/hooks/use-ui-mode";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { getThemeMotionSpec, type ThemeMotionSpec } from "@/lib/motionVariants";
@@ -24,10 +25,14 @@ export interface AppMotionState {
 export function useAppMotion(): AppMotionState {
   const uiMode = useOptionalUiMode();
   const themeCtx = useOptionalThemeContext();
+  const uiState = useOptionalUIState();
   const animationsEnabled = useAnimationsEnabled();
 
   const primarySystem: PrimarySystem =
-    themeCtx?.primarySystem ?? (uiMode?.mode as PrimarySystem | undefined) ?? "classic";
+    themeCtx?.primarySystem ??
+    uiState?.mode ??
+    (uiMode?.mode as PrimarySystem | undefined) ??
+    "classic";
   const mangaSubTheme: MangaSubTheme | null =
     primarySystem === "manga" ? (themeCtx?.mangaSubTheme ?? null) : null;
   const isMinimal = primarySystem === "minimal";

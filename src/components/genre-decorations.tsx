@@ -316,6 +316,7 @@ export function GenreCardFrame({
         {(["tl", "tr", "bl", "br"] as const).map((corner) => (
           <svg
             key={corner}
+            data-anime-rune="true"
             viewBox="0 0 36 36"
             className={`absolute ${size} text-[var(--genre-gold,#d6b26a)] opacity-90 ${
               corner === "tl"
@@ -355,6 +356,7 @@ export function GenreCardFrame({
         <BotanicalCanopyOverlay variant="card" />
         {/* Bottom-right trailing ivy filigree */}
         <svg
+          data-anime-rune="true"
           viewBox="0 0 64 64"
           className="ivy-sway-alt absolute -bottom-0.5 -right-0.5 h-12 w-12 origin-bottom-right rotate-180 text-[#2e5a52] drop-shadow-[0_0_6px_rgba(92,225,184,0.35)]"
           fill="none"
@@ -383,6 +385,7 @@ export function GenreCardFrame({
         {(["tr", "bl"] as const).map((corner) => (
           <svg
             key={corner}
+            data-anime-rune="true"
             viewBox="0 0 32 32"
             className={`absolute ${size} text-[#c5a869] drop-shadow-[0_0_6px_rgba(197,168,105,0.45)] ${
               corner === "tr" ? "right-1 top-1 -scale-x-100" : "bottom-1 left-1 -scale-y-100"
@@ -398,6 +401,7 @@ export function GenreCardFrame({
         ))}
         {!compact && (
           <svg
+            data-anime-rune="true"
             viewBox="0 0 40 16"
             className="absolute left-1/2 top-0.5 h-4 w-10 -translate-x-1/2 text-[#c5a869] drop-shadow-[0_0_8px_rgba(92,225,184,0.5)]"
           >
@@ -451,6 +455,7 @@ export function GenreCardFrame({
         {(["tl", "tr", "bl", "br"] as const).map((corner) => (
           <svg
             key={corner}
+            data-anime-rune="true"
             viewBox="0 0 32 32"
             className={`absolute ${size} text-primary drop-shadow-[0_0_6px_color-mix(in_oklab,var(--primary)_55%,transparent)] ${
               corner === "tl"
@@ -487,6 +492,7 @@ export function GenreCardFrame({
         <div className="absolute inset-[4px] rounded-[inherit] border border-primary/35" />
         {/* Ivy-entwined botanical sprig corners (Pic 3 & Pic 6 inspo) */}
         <svg
+          data-anime-rune="true"
           viewBox="0 0 40 40"
           className={`absolute left-1 top-1 ${size} text-primary/80`}
           fill="none"
@@ -502,6 +508,7 @@ export function GenreCardFrame({
           <path d="M19 10C18 6 22 3 26 6C24 9 21 10 19 10Z" fill="currentColor" fillOpacity="0.3" />
         </svg>
         <svg
+          data-anime-rune="true"
           viewBox="0 0 40 40"
           className={`absolute bottom-1 right-1 ${size} rotate-180 text-primary/80`}
           fill="none"
@@ -533,6 +540,7 @@ export function GenreCardFrame({
         {(["tl", "tr", "bl", "br"] as const).map((corner) => (
           <svg
             key={corner}
+            data-anime-rune="true"
             viewBox="0 0 28 28"
             className={`absolute ${compact ? "h-4 w-4" : "h-5 w-5"} text-primary drop-shadow-[0_0_6px_color-mix(in_oklab,var(--primary)_60%,transparent)] ${
               corner === "tl"
@@ -553,6 +561,7 @@ export function GenreCardFrame({
         ))}
         {!compact && (
           <svg
+            data-anime-rune="true"
             viewBox="0 0 24 24"
             className="absolute left-1/2 top-0.5 h-3.5 w-3.5 -translate-x-1/2 text-primary drop-shadow-[0_0_8px_var(--primary)]"
           >
@@ -575,14 +584,24 @@ export function GenreCardFrame({
         data-genre-decoration="shonen"
         className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] ${className}`}
       >
-        <span className="absolute left-0 top-0 h-3 w-3 border-l-[3px] border-t-[3px] border-primary" />
-        <span className="absolute right-0 top-0 h-3 w-3 border-r-[3px] border-t-[3px] border-[var(--genre-accent-2,#38bdf8)]" />
-        <span className="absolute bottom-0 left-0 h-3 w-3 border-b-[3px] border-l-[3px] border-[var(--genre-accent-2,#38bdf8)]" />
-        <span className="absolute bottom-0 right-0 h-3 w-3 border-b-[3px] border-r-[3px] border-primary" />
+        <span className="absolute left-0 top-0 h-3 w-3 border-l-[3px] border-t-[3px] border-[#e86a33]" />
+        <span className="absolute right-0 top-0 h-3 w-3 border-r-[3px] border-t-[3px] border-[#14b8a6]" />
+        <span className="absolute bottom-0 left-0 h-3 w-3 border-b-[3px] border-l-[3px] border-[#14b8a6]" />
+        <span className="absolute bottom-0 right-0 h-3 w-3 border-b-[3px] border-r-[3px] border-[#e86a33]" />
         <span
-          className="pointer-events-none absolute right-0 top-0 h-8 w-8 bg-primary/20"
+          className="pointer-events-none absolute right-0 top-0 h-8 w-8 bg-[#e86a33]/20"
           style={{ clipPath: "polygon(100% 0, 0 0, 100% 100%)" }}
         />
+        <svg
+          data-anime-rune="true"
+          viewBox="0 0 36 16"
+          className="pointer-events-none absolute bottom-1 right-2 h-3 w-7 text-[#14b8a6]/75"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        >
+          <path d="M2 13 L14 3 L19 8 L33 2" />
+        </svg>
         <GenreFrameVfx theme={theme} compact={compact} />
       </div>
     );
@@ -924,13 +943,21 @@ export function GenrePortraitFrame({
     );
   }
 
-  // Shonen: Slanted kinetic portrait frame with energy trim
+  // Shonen: Slanted kinetic portrait frame with cel-shaded sunlit rim halo
   if (theme === "shonen") {
     const dim = isDossier ? MANGA_SCALE.portraitDossier : MANGA_SCALE.portraitCard;
     return (
-      <div className={`relative shrink-0 ${dim}`} data-portrait-frame="slash-cut">
+      <div
+        className={`relative shrink-0 ${dim}`}
+        data-portrait-frame="slash-cut"
+        data-cel-rim="true"
+      >
         <div
-          className="relative h-full w-full overflow-hidden border-2 border-primary bg-secondary shadow-[3px_3px_0_var(--foreground)]"
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-1 rounded-sm bg-gradient-to-tr from-[#14b8a6]/35 via-[#fffbeb]/50 to-[#e86a33]/40 blur-[4px]"
+        />
+        <div
+          className="relative h-full w-full overflow-hidden border-2 border-[#1e293b] bg-secondary shadow-[4px_4px_0_#0f172a] ring-1 ring-inset ring-[#fffbeb]/70"
           style={{
             clipPath: `url(#${uid})`,
           }}
@@ -943,6 +970,10 @@ export function GenrePortraitFrame({
             </defs>
           </svg>
           {imgContent}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/45"
+          />
         </div>
       </div>
     );
@@ -1633,18 +1664,30 @@ export function GenreAbilityEmblem({
         data-ability-emblem={active}
         data-emblem-style={active === "shonen" ? "kinetic-spark-crest" : "hanko-plate"}
         data-ability-tier={tier}
-        className={`flex items-center gap-2 border-2 border-border bg-card px-2.5 py-1 shadow-[2px_2px_0_var(--primary)] ${
-          active === "shonen" ? "-skew-x-6" : ""
-        } ${className}`}
+        className={`flex items-center gap-2 border-2 px-2.5 py-1 ${
+          active === "shonen"
+            ? "-skew-x-6 border-[#1e293b] bg-[#fffdf8]/90 shadow-[4px_4px_0_#0f172a]"
+            : "border-border bg-card shadow-[2px_2px_0_var(--primary)]"
+        } ${isMythic || isLegendary ? "studio-bloom-node " : ""}${className}`}
       >
-        <span className="grid h-6 w-6 shrink-0 place-items-center border border-border bg-foreground text-background">
+        <span
+          className={`grid h-6 w-6 shrink-0 place-items-center border ${
+            active === "shonen"
+              ? "border-[#1e293b] bg-[#e86a33] text-white"
+              : "border-border bg-foreground text-background"
+          }`}
+        >
           <Icon className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0">
           <span className="block truncate font-display text-[11px] font-bold uppercase tracking-wider text-foreground">
             {label}
           </span>
-          <span className="block font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
+          <span
+            className={`block font-mono text-[8px] font-bold uppercase tracking-widest ${
+              active === "shonen" ? "text-[#14b8a6]" : "text-muted-foreground"
+            }`}
+          >
             {tier}
           </span>
         </div>
@@ -1806,10 +1849,10 @@ export function GenreAbilityEmblem({
         data-ability-tier={tier}
         className={`inline-flex -skew-x-6 items-center gap-1.5 border-2 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wider ${
           isMythic
-            ? "border-border bg-primary text-primary-foreground shadow-[2px_2px_0_var(--border)]"
+            ? "studio-bloom-node border-[#1e293b] bg-[#e86a33] text-white shadow-[2px_2px_0_#0f172a]"
             : isLegendary
-              ? "border-accent bg-card text-foreground shadow-[2px_2px_0_var(--accent)]"
-              : "border-border bg-card text-foreground shadow-[2px_2px_0_var(--primary)]"
+              ? "studio-bloom-node border-[#14b8a6] bg-[#fffdf8]/95 text-[#1e293b] shadow-[2px_2px_0_#0f172a]"
+              : "border-[#1e293b] bg-[#fffdf8]/90 text-[#1e293b] shadow-[2px_2px_0_#0f172a]"
         } ${className}`}
       >
         <Icon className="h-3 w-3 shrink-0 skew-x-6" />

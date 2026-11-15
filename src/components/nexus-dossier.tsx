@@ -31,8 +31,9 @@ import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { tierDef } from "@/lib/character-tier";
+import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 type Menu = "story" | "role" | "details";
 const MENU: Array<{ key: Menu; label: string; icon: typeof BookOpen }> = [
@@ -193,6 +194,7 @@ export function NexusDossier({
   const selectSeason = (value: { seriesId: string; n: number } | null) => {
     setSeason(value);
     setSelectedAbility(null);
+    triggerAnimeActionCut({ color: coreColor, label: value ? `SEASON ${value.n}` : "ALL SEASONS" });
   };
 
   return (
@@ -236,7 +238,7 @@ export function NexusDossier({
             </Link>
             <span
               data-spoiler="char"
-              className="rounded-sm border border-accent/40 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-accent"
+              className="rounded-sm border border-amber-400/50 bg-amber-500/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-300"
             >
               {roleBadge}
             </span>
@@ -336,7 +338,13 @@ export function NexusDossier({
                 stats={statVals}
                 abilities={abilities}
                 selected={abilitySelection}
-                onSelect={setSelectedAbility}
+                onSelect={(name) => {
+                  setSelectedAbility(name);
+                  if (name) {
+                    const abDef = abilityDef(name);
+                    triggerAnimeActionCut({ color: abDef.color, label: abDef.label });
+                  }
+                }}
               />
             </div>
           </div>
@@ -437,11 +445,11 @@ export function NexusDossier({
 
         {/* ═════ MIDDLE: arc menu · content · identity ═════ */}
         <section className="relative mx-auto mt-10 max-w-6xl px-4">
-          <div className="grid gap-6 rounded-2xl border border-border bg-card/40 p-5 backdrop-blur md:grid-cols-[180px_1fr_240px]">
+          <div className="grid gap-6 rounded-2xl border border-cyan-400/35 bg-slate-950/60 p-5 shadow-[0_0_28px_rgba(56,189,248,0.12)] backdrop-blur-md md:grid-cols-[180px_1fr_240px]">
             <nav className="relative flex flex-row gap-3 md:flex-col md:gap-6 md:py-6">
               <span
                 aria-hidden
-                className="pointer-events-none absolute -left-1 top-2 bottom-2 hidden w-16 rounded-[50%] border-l border-border md:block"
+                className="pointer-events-none absolute -left-1 top-2 bottom-2 hidden w-16 rounded-[50%] border-l border-cyan-400/30 md:block"
               />
               {MENU.map((m, i) => {
                 const Icon = m.icon;
@@ -449,7 +457,10 @@ export function NexusDossier({
                 return (
                   <button
                     key={m.key}
-                    onClick={() => setMenu(m.key)}
+                    onClick={() => {
+                      setMenu(m.key);
+                      triggerAnimeActionCut({ color: coreColor, label: m.label });
+                    }}
                     className="relative flex items-center gap-3 text-left"
                     style={{ marginLeft: [24, 6, 24][i] }}
                   >
@@ -619,13 +630,21 @@ export function NexusDossier({
           <p className="mb-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
             Ability core · {seasonLabel}
           </p>
-          <div className="grid gap-6 rounded-2xl border border-border bg-card/40 p-5 md:grid-cols-[1fr_240px]">
+          <div className="grid gap-6 rounded-2xl border border-cyan-400/35 bg-slate-950/60 p-5 shadow-[0_0_28px_rgba(56,189,248,0.12)] backdrop-blur-md md:grid-cols-[1fr_240px]">
             <AbilityOrbit
               abilities={abilities}
               masked={masked}
               seasonKey={seasonKey ?? "all"}
               selected={abilitySelection}
-              onSelect={setSelectedAbility}
+              onSelect={(name) => {
+                setSelectedAbility(name);
+                const abDef = abilityDef(name);
+                triggerAnimeActionCut({
+                  color: abDef.color,
+                  label: abDef.label,
+                  intensity: abDef.tier === "Mythic" ? "heavy" : "normal",
+                });
+              }}
               moving={moving}
             />
             <div className="space-y-2 text-xs">

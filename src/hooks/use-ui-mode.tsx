@@ -419,7 +419,10 @@ export function UiModeProvider({
   }, []);
 
   // Also sync when externalStyle changes via useUiStyle() (e.g., cross-tab sync).
+  const prevExternalStyleRef = useRef(externalStyle);
   useEffect(() => {
+    if (prevExternalStyleRef.current === externalStyle) return;
+    prevExternalStyleRef.current = externalStyle;
     setModeState((prev) => {
       if (externalStyle === "classic" && (prev === "manga" || prev === "classic")) return prev;
       return resolveVisualUiMode(externalStyle);

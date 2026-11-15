@@ -1,4 +1,7 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef } from "react";
+import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import { MotionPage } from "@/components/app-motion";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { supabase } from "@/integrations/supabase/client";
 
 const AUTH_TIMEOUT_MS = 5_000;
@@ -10,14 +13,28 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | "__timeout__
   ]);
 }
 
-import { useAppMotion } from "@/hooks/use-app-motion";
-
 function AuthenticatedLayout() {
-  const { motionActive } = useAppMotion();
+  // All React hooks called unconditionally at the very top before any conditional checks or returns
+  const location = useLocation();
+  const { isMinimal, motionActive } = useAppMotion();
+  const mountedRef = useRef(true);
+  const stablePathname = useCallback(() => location.pathname, [location.pathname]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  void stablePathname;
+  void isMinimal;
+  void motionActive;
+
   return (
-    <div className={motionActive ? "morph-in" : undefined}>
+    <MotionPage>
       <Outlet />
-    </div>
+    </MotionPage>
   );
 }
 

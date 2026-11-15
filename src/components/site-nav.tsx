@@ -239,7 +239,9 @@ export function SiteNav() {
         <div className="relative flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none]">
           <span
             className={`absolute inset-y-0 left-0 rounded-full bg-secondary will-change-transform ${
-              motionActive ? "transition-[transform,opacity,width] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]" : ""
+              motionActive
+                ? "transition-[transform,opacity,width] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]"
+                : ""
             }`}
             style={{
               transform: `translateX(${pill.left}px)`,
@@ -427,6 +429,6 @@ export function SiteNav() {
           style={{ transform: `scaleX(${Math.max(progress, 6)}%)` }}
         />
       </div>
-    </nav>
+    </motion.nav>
   );
 }

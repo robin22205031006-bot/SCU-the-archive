@@ -12,6 +12,9 @@ export interface CelThemeConfig {
   outlineWidth: number;
   /** Quantized frame rate ("on 2s" at 12fps in Manga/Anime modes, 0 = smooth 60fps). */
   steppedFps: number;
+  /** Crisp cel-shaded silhouette rim-light halo color & intensity. */
+  rimColor?: string;
+  rimStrength?: number;
 }
 
 const OUTLINE_TAG = "__isCelOutline";
@@ -82,6 +85,8 @@ export function resolveCelThemeConfig(
         outlineColor: "#0c1410",
         outlineWidth: 0.018,
         steppedFps: 12,
+        rimColor: "#5ce1b8",
+        rimStrength: 0.65,
       };
     case "darkFantasy":
     case "dark-fantasy":
@@ -93,6 +98,8 @@ export function resolveCelThemeConfig(
         outlineColor: "#08050d",
         outlineWidth: 0.02,
         steppedFps: 12,
+        rimColor: "#f43f5e",
+        rimStrength: 0.72,
       };
     case "anime":
     case "xianxia":
@@ -104,6 +111,8 @@ export function resolveCelThemeConfig(
         outlineColor: "#0b1713",
         outlineWidth: 0.017,
         steppedFps: 12,
+        rimColor: "#fde68a",
+        rimStrength: 0.68,
       };
     case "manhwa":
     case "scifiAnime":
@@ -116,6 +125,8 @@ export function resolveCelThemeConfig(
         outlineColor: "#070b18",
         outlineWidth: 0.016,
         steppedFps: 12,
+        rimColor: "#38bdf8",
+        rimStrength: 0.75,
       };
     case "isekai":
       return {
@@ -126,6 +137,8 @@ export function resolveCelThemeConfig(
         outlineColor: "#140f0a",
         outlineWidth: 0.018,
         steppedFps: 12,
+        rimColor: "#fbbf24",
+        rimStrength: 0.68,
       };
     case "ghibli":
       return {
@@ -136,17 +149,22 @@ export function resolveCelThemeConfig(
         outlineColor: "#1d2e23",
         outlineWidth: 0.014,
         steppedFps: 12,
+        rimColor: "#fef9c3",
+        rimStrength: 0.55,
       };
     case "shounen":
     case "shonen":
       return {
         enabled: true,
         outlineOnly: false,
-        gradientSteps: 2,
-        stops: ["#544943", "#f8fafc", "#ffffff"],
-        outlineColor: "#0a0a0a",
-        outlineWidth: 0.022,
+        gradientSteps: 3,
+        // Crisp anime blue-violet cel shadows -> sky daylight mid -> warm highlight
+        stops: ["#4b4d8f", "#cfe9ff", "#fffbeb"],
+        outlineColor: "#1e293b",
+        outlineWidth: 0.02,
         steppedFps: 12,
+        rimColor: "#fffbeb",
+        rimStrength: 0.9,
       };
     case "manga-ink":
     default:
@@ -158,6 +176,8 @@ export function resolveCelThemeConfig(
         outlineColor: "#080808",
         outlineWidth: 0.021,
         steppedFps: 12,
+        rimColor: "#ffffff",
+        rimStrength: 0.5,
       };
   }
 }
@@ -228,6 +248,8 @@ function createOutlineMaterial(outlineColor: string, outlineWidth: number): THRE
 function cloneMaterialToToon(
   source: THREE.Material,
   gradientMap: THREE.DataTexture,
+  rimColorHex = "#fffbeb",
+  rimStrength = 0.65,
 ): THREE.MeshToonMaterial {
   const std = source as THREE.MeshStandardMaterial;
   const color = std.color instanceof THREE.Color ? std.color.clone() : new THREE.Color(0xffffff);
@@ -246,6 +268,27 @@ function cloneMaterialToToon(
     side: source.side,
     vertexColors: Boolean(source.vertexColors),
   });
+
+  if (rimStrength > 0) {
+    const rimVec = normalizeThreeColor(rimColorHex, "#fffbeb");
+    toon.customProgramCacheKey = () => `scu-cel-rim-${rimColorHex}-${rimStrength.toFixed(2)}`;
+    toon.onBeforeCompile = (shader) => {
+      shader.uniforms["uCelRimColor"] = { value: rimVec };
+      shader.uniforms["uCelRimStrength"] = { value: rimStrength };
+      shader.fragmentShader =
+        `uniform vec3 uCelRimColor;\nuniform float uCelRimStrength;\n` +
+        shader.fragmentShader.replace(
+          "#include <dithering_fragment>",
+          `
+          vec3 rimViewDir = normalize(vViewPosition);
+          float rimDot = 1.0 - max(dot(normal, rimViewDir), 0.0);
+          float rimStep = smoothstep(0.62, 0.72, rimDot);
+          gl_FragColor.rgb += uCelRimColor * (rimStep * uCelRimStrength * 0.55);
+          #include <dithering_fragment>
+          `,
+        );
+    };
+  }
   return toon;
 }
 
@@ -319,12 +362,14 @@ export function applyCelShading(
     if (!config.outlineOnly) {
       obj.userData[ORIG_MAT_KEY] = origMat;
       const gMap = createToonGradientMap(config.gradientSteps, config.stops);
+      const rimCol = config.rimColor ?? "#fffbeb";
+      const rimStr = config.rimStrength ?? 0.6;
       if (Array.isArray(origMat)) {
-        const toons = origMat.map((m) => cloneMaterialToToon(m, gMap));
+        const toons = origMat.map((m) => cloneMaterialToToon(m, gMap, rimCol, rimStr));
         obj.userData[TOON_MAT_KEY] = toons;
         obj.material = toons;
       } else {
-        const toon = cloneMaterialToToon(origMat, gMap);
+        const toon = cloneMaterialToToon(origMat, gMap, rimCol, rimStr);
         obj.userData[TOON_MAT_KEY] = toon;
         obj.material = toon;
       }

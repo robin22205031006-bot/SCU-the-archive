@@ -13,9 +13,13 @@ vi.mock("@tanstack/react-start", () => ({
   useServerFn: (fn: unknown) => fn,
 }));
 
-vi.mock("@/hooks/use-ui-mode", () => ({
-  useIsManga: () => false,
-}));
+vi.mock("@/hooks/use-ui-mode", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/hooks/use-ui-mode")>();
+  return {
+    ...actual,
+    useIsManga: () => false,
+  };
+});
 
 type MockRecognitionInstance = {
   continuous: boolean;

@@ -15,12 +15,14 @@ import {
 } from "@/lib/ability-action";
 import { AbilityActionCanvas } from "@/components/ability-action-canvas";
 import { CelCombatStage } from "@/components/lazy-three";
+import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 import {
   CHARACTER_COMBAT,
   characterCombat,
   type CombatBackdrop,
   type CombatSceneId,
 } from "@/lib/character-combat";
+import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
@@ -60,22 +62,24 @@ export function AbilityActionPanel() {
   const d = abilityDef(ability),
     r = abilityFxRecipe(ability);
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6">
-      <header className="grid gap-1">
+    <MotionPage as="main" className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6">
+      <MotionSection as="header" className="grid gap-1">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Ability in Action</h1>
         <p className="text-sm text-muted-foreground">
           How a fighter actually uses each power: wind-up, movement, release and impact.
         </p>
-      </header>
+      </MotionSection>
       <div className="flex flex-wrap items-center gap-2">
         <select
           className={`${sel} max-w-full`}
           value={sceneId ?? "free"}
           onChange={(e) => {
-            setSceneId(e.target.value === "free" ? undefined : (e.target.value as CombatSceneId));
+            const val = e.target.value === "free" ? undefined : (e.target.value as CombatSceneId);
+            setSceneId(val);
             setFightId(null);
             setFrame(undefined);
             setPlaying(true);
+            triggerAnimeActionCut({ color: d.color, label: val ? "COMBAT CUT" : d.label });
           }}
           aria-label="Combat scene"
         >
@@ -90,10 +94,12 @@ export function AbilityActionPanel() {
           className={`${sel} max-w-full`}
           value={k}
           onChange={(e) => {
+            const nextDef = abilityDef(e.target.value);
             setK(e.target.value);
             setFightId(null);
             setSceneId(undefined);
             setFrame(undefined);
+            triggerAnimeActionCut({ color: nextDef.color, label: nextDef.label });
           }}
           aria-label="Ability"
         >
@@ -188,7 +194,14 @@ export function AbilityActionPanel() {
         <Button
           size="sm"
           variant={stageMode === "3d" ? "default" : "outline"}
-          onClick={() => setStageMode((m) => (m === "2d" ? "3d" : "2d"))}
+          onClick={() => {
+            triggerAnimeActionCut({
+              color: d.color,
+              label: stageMode === "2d" ? "3D ARENA" : "2D CEL",
+              intensity: "heavy",
+            });
+            setStageMode((m) => (m === "2d" ? "3d" : "2d"));
+          }}
           aria-pressed={stageMode === "3d"}
         >
           {stageMode === "3d" ? (
@@ -199,7 +212,10 @@ export function AbilityActionPanel() {
           {stageMode === "3d" ? "3D Cel Arena" : "2D Canvas"}
         </Button>
       </div>
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border">
+      <MotionSection
+        delay={0.04}
+        className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border"
+      >
         {stageMode === "3d" ? (
           <CelCombatStage
             key={`cel-${sceneId ?? (fight ? `${fight.id}-${beat}` : "free")}`}
@@ -235,7 +251,7 @@ export function AbilityActionPanel() {
         >
           {phase.i + 1}/{phase.n} · {phase.label}
         </span>
-      </div>
+      </MotionSection>
       <div className="flex min-w-0 items-center gap-2">
         <Button
           variant="outline"
@@ -321,32 +337,38 @@ export function AbilityActionPanel() {
           appear here.
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {STORY_FIGHTS.map((f) => (
-            <Button
-              variant="ghost"
-              key={f.id}
-              onClick={() => {
-                setSceneId(undefined);
-                setFrame(undefined);
-                setFightId(f.id);
-                setBeat(0);
-                setPlaying(true);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={`grid h-auto gap-1 whitespace-normal rounded-2xl border p-4 text-left text-sm transition hover:border-primary/60 ${fightId === f.id ? "border-primary bg-accent/10" : "border-border bg-card/40"}`}
-            >
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                {f.when}
-              </span>
-              <span className="font-semibold text-foreground">{f.title}</span>
-              <span className="line-clamp-3 italic text-muted-foreground">"{f.quote}"</span>
-              <span className="text-xs text-muted-foreground">
-                {f.beats.map((b) => b.who).join(" → ")}
-              </span>
-            </Button>
+          {STORY_FIGHTS.map((f, idx) => (
+            <MotionCard key={f.id} index={idx}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  triggerAnimeActionCut({
+                    color: "#e86a33",
+                    label: f.title,
+                    intensity: "heavy",
+                  });
+                  setSceneId(undefined);
+                  setFrame(undefined);
+                  setFightId(f.id);
+                  setBeat(0);
+                  setPlaying(true);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className={`grid h-auto w-full gap-1 whitespace-normal rounded-2xl border p-4 text-left text-sm transition hover:border-primary/60 ${fightId === f.id ? "border-primary bg-accent/10" : "border-border bg-card/40"}`}
+              >
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {f.when}
+                </span>
+                <span className="font-semibold text-foreground">{f.title}</span>
+                <span className="line-clamp-3 italic text-muted-foreground">"{f.quote}"</span>
+                <span className="text-xs text-muted-foreground">
+                  {f.beats.map((b) => b.who).join(" → ")}
+                </span>
+              </Button>
+            </MotionCard>
           ))}
         </div>
       </section>
-    </main>
+    </MotionPage>
   );
 }

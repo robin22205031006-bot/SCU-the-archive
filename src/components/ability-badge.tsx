@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
+import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 
 const TIER_RANK: Record<AbilityTier, number> = {
   Mythic: 7,
@@ -53,10 +54,15 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
           title={title}
           onClick={(e) => {
             e.stopPropagation();
+            triggerAnimeActionCut({
+              color: def.color,
+              label: def.label,
+              intensity: mythic ? "heavy" : "normal",
+            });
             setFxOpen(true);
           }}
           aria-label={`Play ${def.label} animation`}
-          className={`inline-flex items-center gap-1 border border-border text-xs text-accent hover:border-accent ${className}`}
+          className={`inline-flex items-center gap-1 border border-border text-xs text-accent hover:border-accent ${mythic || legendary ? "studio-bloom-node " : ""}${className}`}
         >
           <NexusAbilitySymbol name={def.key} className="h-6 w-6" />
           {def.label}
@@ -68,7 +74,7 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
     return (
       <span
         title={title}
-        className={`inline-flex items-center gap-1 border border-border text-xs text-accent ${className}`}
+        className={`inline-flex items-center gap-1 border border-border text-xs text-accent ${mythic || legendary ? "studio-bloom-node " : ""}${className}`}
       >
         <NexusAbilitySymbol name={def.key} className="h-6 w-6" />
         {def.label}
@@ -77,7 +83,7 @@ export function AbilityBadge({ name, className = "" }: { name: string; className
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${mythic ? "animate-pulse" : ""} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${mythic ? "animate-pulse " : ""}${mythic || legendary ? "studio-bloom-node " : ""}${className}`}
       style={{
         color: def.color,
         borderColor: mythic ? "#ff2d2d" : `${def.color}66`,

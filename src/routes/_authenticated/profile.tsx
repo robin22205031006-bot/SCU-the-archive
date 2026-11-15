@@ -13,6 +13,7 @@ import { useSession } from "@/hooks/use-admin";
 import { favorites, onFavoritesChange, removeFavorite, type FavoriteEntry } from "@/lib/favorites";
 import { useAmbientAtmosphere, useLoreAtmosphere } from "@/lib/ambient-atmosphere";
 import { useUIFeedback } from "@/hooks/use-ui-feedback";
+import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -103,11 +104,13 @@ function ProfilePage() {
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-5 pb-24 pt-28">
-      <h1 className="text-4xl font-medium">Profile</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{user?.email ?? "Not signed in."}</p>
+    <MotionPage as="main" className="mx-auto max-w-2xl px-5 pb-24 pt-28">
+      <MotionSection as="header">
+        <h1 className="text-4xl font-medium">Profile</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{user?.email ?? "Not signed in."}</p>
+      </MotionSection>
 
-      <section className="glass mt-8 rounded-2xl p-5">
+      <MotionSection as="section" delay={0.04} className="glass mt-8 rounded-2xl p-5">
         <h2 className="text-lg">Account</h2>
         <div className="mt-4 grid gap-4">
           <div className="grid gap-1.5">
@@ -157,9 +160,11 @@ function ProfilePage() {
             </div>
           </div>
         </div>
-      </section>
+      </MotionSection>
 
-      <section
+      <MotionSection
+        as="section"
+        delay={0.08}
         className="glass mt-6 rounded-2xl p-5"
         aria-label="Atmosphere and immersion settings"
       >
@@ -185,9 +190,9 @@ function ProfilePage() {
             }}
           />
         </div>
-      </section>
+      </MotionSection>
 
-      <section className="glass mt-6 rounded-2xl p-5">
+      <MotionSection as="section" delay={0.12} className="glass mt-6 rounded-2xl p-5">
         <h2 className="flex items-center gap-2 text-lg">
           <Heart className="h-4 w-4 text-accent" /> Favorite characters
         </h2>
@@ -197,30 +202,33 @@ function ProfilePage() {
           </p>
         ) : (
           <ul className="mt-3 grid gap-2">
-            {favs.map((f) => (
-              <li
-                key={f.id}
-                className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm"
-              >
-                <Link
-                  to="/characters"
-                  search={{ open: f.id }}
-                  className="font-medium hover:text-accent"
+            {favs.map((f, idx) => (
+              <li key={f.id}>
+                <MotionCard
+                  index={idx}
+                  interactive
+                  className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm"
                 >
-                  {f.name}
-                </Link>
-                <button
-                  aria-label={`Remove ${f.name}`}
-                  onClick={() => removeFavorite(f.id)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                  <Link
+                    to="/characters"
+                    search={{ open: f.id }}
+                    className="font-medium hover:text-accent"
+                  >
+                    {f.name}
+                  </Link>
+                  <button
+                    aria-label={`Remove ${f.name}`}
+                    onClick={() => removeFavorite(f.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </MotionCard>
               </li>
             ))}
           </ul>
         )}
-      </section>
-    </main>
+      </MotionSection>
+    </MotionPage>
   );
 }

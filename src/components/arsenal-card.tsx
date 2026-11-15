@@ -9,6 +9,7 @@ import { ArsenalFx } from "@/components/arsenal-fx";
 import { ArsenalEmblem } from "@/components/arsenal-emblem";
 import { GlbModelViewer } from "@/components/lazy-three";
 import { useIsManga } from "@/hooks/use-ui-mode";
+import { MotionCard, MotionModalPanel } from "@/components/app-motion";
 
 type Artifact = Tables<"artifacts">;
 const CAT: Record<string, string> = {
@@ -207,7 +208,9 @@ export function ArtifactCard({
   const fallbackImg = artUrl(form.art) ?? null;
 
   return (
-    <article
+    <MotionCard
+      as="article"
+      interactive={motion && style !== "minimal"}
       className={
         isManga
           ? "manga-panel manga-panel-hover grid content-start gap-2.5 border-[3px] border-foreground bg-card p-3.5"
@@ -370,7 +373,7 @@ export function ArtifactCard({
       <FormTabs art={art} i={i} set={setI} />
       {(isManga || style !== "nexus") && <Details a={a} form={form} />}
       {nexus && <p className="line-clamp-2 text-sm text-muted-foreground">{a.how_it_works}</p>}
-    </article>
+    </MotionCard>
   );
 }
 
@@ -405,92 +408,94 @@ export function NexusArtifactViewer({
       role="dialog"
       aria-modal
       aria-label={a.name}
-      className="fixed inset-0 z-[300] grid bg-background/95 backdrop-blur-md md:grid-cols-[1.4fr_1fr]"
+      className="fixed inset-0 z-[300] flex items-stretch justify-center bg-background/95 backdrop-blur-md"
       onClick={onClose}
     >
-      <div className="relative h-[55vh] p-3 md:h-screen" onClick={(e) => e.stopPropagation()}>
-        {showing3d && modelUrl ? (
-          <div className="h-full overflow-hidden rounded-xl border border-white/10">
-            <GlbModelViewer
-              url={modelUrl}
-              alt={a.name}
-              name={a.name}
-              description={[a.how_it_works, a.lore, a.materials, a.colors, form.note]
-                .filter(Boolean)
-                .join(" ")}
-              tags={[
-                a.category,
-                a.weapon_type,
-                ...(a.wielders ?? []),
-                a.curse_level > 0 ? "cursed" : null,
-              ]}
-              fallbackImageUrl={artUrl(form.art) ?? null}
-              accentColor={`hsl(${art.hue}, 85%, 60%)`}
-              onFallbackTo2d={() => setViewMode("2d")}
-            />
+      <MotionModalPanel className="grid h-full w-full md:grid-cols-[1.4fr_1fr]">
+        <div className="relative h-[55vh] p-3 md:h-screen" onClick={(e) => e.stopPropagation()}>
+          {showing3d && modelUrl ? (
+            <div className="h-full overflow-hidden rounded-xl border border-white/10">
+              <GlbModelViewer
+                url={modelUrl}
+                alt={a.name}
+                name={a.name}
+                description={[a.how_it_works, a.lore, a.materials, a.colors, form.note]
+                  .filter(Boolean)
+                  .join(" ")}
+                tags={[
+                  a.category,
+                  a.weapon_type,
+                  ...(a.wielders ?? []),
+                  a.curse_level > 0 ? "cursed" : null,
+                ]}
+                fallbackImageUrl={artUrl(form.art) ?? null}
+                accentColor={`hsl(${art.hue}, 85%, 60%)`}
+                onFallbackTo2d={() => setViewMode("2d")}
+              />
+            </div>
+          ) : (
+            <ArtFrame art={art} form={form} style="nexus" motion={motion} big />
+          )}
+          <div
+            role="group"
+            aria-label={`View mode for ${a.name}`}
+            className="absolute left-6 top-6 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-[#060a14]/90 p-0.5 text-xs font-semibold"
+          >
+            <button
+              type="button"
+              onClick={() => setViewMode("2d")}
+              aria-pressed={viewMode === "2d"}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
+                viewMode === "2d"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-zinc-300 hover:text-white"
+              }`}
+            >
+              <ImageIcon className="size-3.5" />
+              2D
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("3d")}
+              aria-pressed={viewMode === "3d"}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
+                viewMode === "3d"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-zinc-300 hover:text-white"
+              }`}
+            >
+              <Box className="size-3.5" />
+              3D
+            </button>
           </div>
-        ) : (
-          <ArtFrame art={art} form={form} style="nexus" motion={motion} big />
-        )}
+        </div>
         <div
-          role="group"
-          aria-label={`View mode for ${a.name}`}
-          className="absolute left-6 top-6 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/20 bg-[#060a14]/90 p-0.5 text-xs font-semibold"
+          className="grid content-start gap-3 overflow-y-auto p-5 pb-16"
+          onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            onClick={() => setViewMode("2d")}
-            aria-pressed={viewMode === "2d"}
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
-              viewMode === "2d"
-                ? "bg-accent text-accent-foreground"
-                : "text-zinc-300 hover:text-white"
-            }`}
-          >
-            <ImageIcon className="size-3.5" />
-            2D
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("3d")}
-            aria-pressed={viewMode === "3d"}
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
-              viewMode === "3d"
-                ? "bg-accent text-accent-foreground"
-                : "text-zinc-300 hover:text-white"
-            }`}
-          >
-            <Box className="size-3.5" />
-            3D
-          </button>
-        </div>
-      </div>
-      <div
-        className="grid content-start gap-3 overflow-y-auto p-5 pb-16"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3">
-          <ArsenalEmblem
-            glyph={art.glyph}
-            hue={art.hue}
-            nexus
-            animate={motion}
-            className="size-14 shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] uppercase tracking-widest text-accent">
-              {CAT[a.category] ?? a.category}
-              {a.weapon_type ? ` · ${a.weapon_type}` : ""}
-            </p>
-            <p className="text-2xl font-bold leading-tight text-foreground">{a.name}</p>
+          <div className="flex items-start gap-3">
+            <ArsenalEmblem
+              glyph={art.glyph}
+              hue={art.hue}
+              nexus
+              animate={motion}
+              className="size-14 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] uppercase tracking-widest text-accent">
+                {CAT[a.category] ?? a.category}
+                {a.weapon_type ? ` · ${a.weapon_type}` : ""}
+              </p>
+              <p className="text-2xl font-bold leading-tight text-foreground">{a.name}</p>
+            </div>
+            <Button size="icon" variant="ghost" aria-label="Close" onClick={onClose}>
+              <X className="size-5" />
+            </Button>
           </div>
-          <Button size="icon" variant="ghost" aria-label="Close" onClick={onClose}>
-            <X className="size-5" />
-          </Button>
+          <FormTabs art={art} i={i} set={setI} />
+          <Details a={a} form={form} />
         </div>
-        <FormTabs art={art} i={i} set={setI} />
-        <Details a={a} form={form} />
-      </div>
+      </MotionModalPanel>
     </div>,
     document.body,
   );

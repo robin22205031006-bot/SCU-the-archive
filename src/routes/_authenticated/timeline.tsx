@@ -24,6 +24,7 @@ import { entitiesQuery, GROUP_LINK_KINDS, timelineQuery, type TimelineEvent } fr
 import { NexusExplorer } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { useIsManga } from "@/hooks/use-ui-mode";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
 import { sfx } from "@/lib/scu-audio";
@@ -79,6 +80,7 @@ export function Timeline() {
   const isManga = useIsManga();
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
+  const { motionActive, spec } = useAppMotion();
   const isAdmin = useIsAdmin();
   const sectionStyle = useSectionStyle("timeline");
   const qc = useQueryClient();
@@ -779,69 +781,86 @@ export function Timeline() {
         </ol>
       ) : (
         <ol className="relative border-l pl-8">
-          {events.map((ev, i) => (
-            <motion.li
-              key={ev.id}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{
-                opacity: 1,
-                x: 0,
-                transition: {
-                  delay: Math.min(i * 0.04, 0.5),
-                  duration: 0.35,
-                  ease: [0.2, 0.8, 0.2, 1],
-                },
-              }}
-              className="relative pb-10 last:pb-0"
-            >
-              <span className="absolute -left-[37px] top-2 h-2.5 w-2.5 rounded-full border-2 border-accent bg-background glow-ring" />
-              <p className="text-[11px] uppercase tracking-widest text-accent">
-                {[ev.era, ev.series].filter(Boolean).join(" · ")}
-              </p>
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="text-2xl font-medium">{ev.title}</h2>
-                {isAdmin && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      aria-label="Move earlier"
-                      onClick={() => move(ev.id, -1)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      aria-label="Move later"
-                      onClick={() => move(ev.id, 1)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      aria-label="Edit event"
-                      onClick={() => startEdit(ev)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      aria-label="Delete event"
-                      onClick={() => del(ev.id)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+          {events.map((ev, i) => {
+            const inner = (
+              <>
+                <span className="absolute -left-[37px] top-2 h-2.5 w-2.5 rounded-full border-2 border-accent bg-background glow-ring" />
+                <p className="text-[11px] uppercase tracking-widest text-accent">
+                  {[ev.era, ev.series].filter(Boolean).join(" · ")}
+                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-2xl font-medium">{ev.title}</h2>
+                  {isAdmin && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        aria-label="Move earlier"
+                        onClick={() => move(ev.id, -1)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        aria-label="Move later"
+                        onClick={() => move(ev.id, 1)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        aria-label="Edit event"
+                        onClick={() => startEdit(ev)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        aria-label="Delete event"
+                        onClick={() => del(ev.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Impact {ev.impact}/10 · {impactTier(ev.impact).label}
+                </p>
+                {ev.description && (
+                  <p className="mt-1 text-sm leading-relaxed text-foreground/80">
+                    {ev.description}
+                  </p>
                 )}
-              </div>
-              <p className="mt-0.5 text-[11px] uppercase tracking-widest text-muted-foreground">
-                Impact {ev.impact}/10 · {impactTier(ev.impact).label}
-              </p>
-              {ev.description && (
-                <p className="mt-1 text-sm leading-relaxed text-foreground/80">{ev.description}</p>
-              )}
-              {ev.source && <p className="mt-1 text-xs text-muted-foreground">From {ev.source}</p>}
-            </motion.li>
-          ))}
+                {ev.source && (
+                  <p className="mt-1 text-xs text-muted-foreground">From {ev.source}</p>
+                )}
+              </>
+            );
+            if (!motionActive) {
+              return (
+                <li key={ev.id} className="relative pb-10 last:pb-0">
+                  {inner}
+                </li>
+              );
+            }
+            return (
+              <motion.li
+                key={ev.id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{
+                  opacity: 1,
+                  x: 0,
+                  transition: {
+                    ...spec.transition,
+                    delay: Math.min(i * 0.04, 0.45),
+                  },
+                }}
+                className="relative pb-10 last:pb-0"
+              >
+                {inner}
+              </motion.li>
+            );
+          })}
         </ol>
       )}
     </main>

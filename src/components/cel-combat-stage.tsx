@@ -28,6 +28,13 @@ import {
   normalizeThreeColor,
 } from "@/lib/three-stage-utils";
 
+function isShounenDaylightStage(): boolean {
+  if (typeof document === "undefined") return false;
+  const d = document.documentElement.dataset;
+  if (d["primarySystem"] === "minimal" || d["uiMode"] === "minimal") return false;
+  return d["mangaSubtheme"] === "shounen" || d["genreTheme"] === "shonen";
+}
+
 export interface CelCombatStageProps {
   name: string;
   gender: Gender;
@@ -364,9 +371,12 @@ export function CelCombatStage({
       celCfg.enabled ? celCfg.stops : ["#3a4440", "#9aa8a1", "#ffffff"],
     );
 
-    // Key + Cool Hemi + Rim light rig for bold anime cel shading contrast
+    // Key + Cool Hemi + Sky Bounce + Rim light rig for bold anime cel shading contrast
     const hemi = new THREE.HemisphereLight(0xcbe7ff, 0x10141f, 0.9);
     scene.add(hemi);
+
+    const ambientBounce = new THREE.AmbientLight(0x38bdf8, 0);
+    scene.add(ambientBounce);
 
     const keyLight = new THREE.DirectionalLight(0xfff6e5, 2.5);
     keyLight.position.set(4.5, 7.5, 5.2);
@@ -390,6 +400,35 @@ export function CelCombatStage({
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
+
+    const applyStageLighting = () => {
+      if (isShounenDaylightStage()) {
+        scene.background = new THREE.Color(0x7ce0f9);
+        scene.fog = new THREE.FogExp2(0x3898ec, 0.025);
+        hemi.color.setHex(0x38bdf8);
+        hemi.groundColor.setHex(0x18a999);
+        hemi.intensity = 1.08;
+        ambientBounce.intensity = 0.45;
+        keyLight.color.setHex(0xfffbeb);
+        keyLight.intensity = 2.2;
+        rimLight.color.setHex(0xfffbeb);
+        rimLight.intensity = 1.95;
+        floorMat.color.setHex(0xd6f4ef);
+      } else {
+        scene.background = normalizeThreeColor(bdPalette.bg);
+        scene.fog = new THREE.FogExp2(normalizeThreeColor(bdPalette.fog).getHex(), 0.045);
+        hemi.color.setHex(0xcbe7ff);
+        hemi.groundColor.setHex(0x10141f);
+        hemi.intensity = 0.9;
+        ambientBounce.intensity = 0;
+        keyLight.color.setHex(0xfff6e5);
+        keyLight.intensity = 2.5;
+        rimLight.color.copy(rimColor);
+        rimLight.intensity = 1.85;
+        floorMat.color.copy(normalizeThreeColor(bdPalette.floor));
+      }
+    };
+    applyStageLighting();
 
     const ringGeo = new THREE.RingGeometry(2.6, 2.74, 64);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -737,6 +776,7 @@ export function CelCombatStage({
 
     const onThemeChange = () => {
       const nextCfg = resolveCelThemeConfig();
+      applyStageLighting();
       applyCelShading(fighterRig.root, {
         ...nextCfg,
         enabled: true,

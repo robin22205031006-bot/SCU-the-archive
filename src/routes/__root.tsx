@@ -35,6 +35,8 @@ import { NexusShell } from "@/components/nexus-shell";
 import { MangaShell } from "@/components/manga-shell";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
+import { AmbientStudioParticles } from "@/components/ambient-studio-particles";
+import { AnimeActionOverlay } from "@/components/anime-action-overlay";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -144,7 +146,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@600;700;800&family=Comic+Neue:ital,wght@0,400;0,700;1,700&family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Nunito:wght@400;600;700&family=Oswald:wght@500;700&family=Rajdhani:wght@400;500;600;700&family=Shippori+Mincho:wght@600;800&family=Space+Grotesk:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@600;700;800&family=Comic+Neue:ital,wght@0,400;0,700;1,700&family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Montserrat:wght@700;800;900&family=Nunito:wght@400;600;700&family=Oswald:wght@500;700&family=Rajdhani:wght@400;500;600;700&family=Shippori+Mincho:wght@600;800&family=Space+Grotesk:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -195,6 +197,8 @@ function RootContent({ offline }: { offline: boolean }) {
       >
         {mode === "classic" && <AmbientField />}
         {mode === "classic" && <PlexusWallpaper />}
+        {mode !== "minimal" && <AmbientStudioParticles />}
+        {mode !== "minimal" && <AnimeActionOverlay />}
         <ScrollProgress />
         {mode !== "nexus" && mode !== "manga" && <SiteNav />}
         <FloatingNav />

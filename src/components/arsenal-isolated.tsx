@@ -24,6 +24,7 @@ import { ArsenalEmblem } from "@/components/arsenal-emblem";
 import { ArsenalThreeStage } from "@/components/lazy-three";
 import { sfx } from "@/lib/scu-audio";
 import { useIsManga } from "@/hooks/use-ui-mode";
+import { useAppMotion } from "@/hooks/use-app-motion";
 
 type Artifact = Tables<"artifacts">;
 
@@ -315,6 +316,7 @@ export function ArsenalIsolatedView({
   onSelectArtifact?: (a: Artifact) => void;
 }) {
   const isManga = useIsManga();
+  const { motionActive } = useAppMotion();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [formIdx, setFormIdx] = useState(0);
   const [stageView, setStageView] = useState<"3d" | "2d">("3d");
@@ -325,6 +327,7 @@ export function ArsenalIsolatedView({
   const [search, setSearch] = useState("");
   const [rotationActive, setRotationActive] = useState(true);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const effectiveRotation = rotationActive && motionActive;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -639,24 +642,28 @@ export function ArsenalIsolatedView({
           )}
 
           {/* Overdrive Shockwave Ring / Ink Impact Frame on Burst */}
-          <AnimatePresence>
-            {boostSurge && (
-              <motion.div
-                initial={{ scale: 0.2, opacity: 1 }}
-                animate={{ scale: 2.8, opacity: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.4, ease: "easeOut" }}
-                className={`pointer-events-none absolute ${
-                  isManga ? "border-4 border-[#b91c1c]" : "rounded-full border-2 border-accent"
-                }`}
-                style={{
-                  width: "340px",
-                  height: "340px",
-                  boxShadow: isManga ? "none" : `0 0 50px ${cfg.glow}, inset 0 0 50px ${cfg.glow}`,
-                }}
-              />
-            )}
-          </AnimatePresence>
+          {motionActive && (
+            <AnimatePresence>
+              {boostSurge && (
+                <motion.div
+                  initial={{ scale: 0.2, opacity: 1 }}
+                  animate={{ scale: 2.8, opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1.4, ease: "easeOut" }}
+                  className={`pointer-events-none absolute ${
+                    isManga ? "border-4 border-[#b91c1c]" : "rounded-full border-2 border-accent"
+                  }`}
+                  style={{
+                    width: "340px",
+                    height: "340px",
+                    boxShadow: isManga
+                      ? "none"
+                      : `0 0 50px ${cfg.glow}, inset 0 0 50px ${cfg.glow}`,
+                  }}
+                />
+              )}
+            </AnimatePresence>
+          )}
 
           {/* Orbiting Rotating HUD Crests (Nexus/Classic) OR Crisp Technical Corner Brackets (Manga) */}
           {isManga ? (
@@ -670,7 +677,7 @@ export function ArsenalIsolatedView({
             <>
               <div
                 className={`pointer-events-none absolute size-80 rounded-full border border-dashed opacity-30 ${
-                  rotationActive ? "nexus-orbit-cw" : ""
+                  effectiveRotation ? "nexus-orbit-cw" : ""
                 }`}
                 style={{
                   borderColor: `hsl(${art?.hue ?? cfg.hue} 80% 60%)`,
@@ -679,7 +686,7 @@ export function ArsenalIsolatedView({
               />
               <div
                 className={`pointer-events-none absolute size-[460px] rounded-full border border-dotted opacity-20 ${
-                  rotationActive ? "nexus-orbit-ccw" : ""
+                  effectiveRotation ? "nexus-orbit-ccw" : ""
                 }`}
                 style={{
                   borderColor: `hsl(${art?.hue ?? cfg.hue} 70% 50%)`,
@@ -723,7 +730,7 @@ export function ArsenalIsolatedView({
             >
               <div
                 className={`relative flex items-center justify-center ${
-                  rotationActive && !isManga ? "arsenal-isolated-obj" : ""
+                  effectiveRotation && !isManga ? "arsenal-isolated-obj" : ""
                 }`}
               >
                 {imgUrl ? (
@@ -758,7 +765,7 @@ export function ArsenalIsolatedView({
                       glyph={art?.glyph ?? "sword"}
                       hue={art?.hue ?? cfg.hue}
                       nexus={!isManga}
-                      animate={rotationActive && !isManga}
+                      animate={effectiveRotation && !isManga}
                       className={`size-56 ${boostSurge ? "scale-115" : ""}`}
                     />
                   </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -20,6 +20,7 @@ import { useUIFeedback } from "@/hooks/use-ui-feedback";
 import { GenreBackdrop } from "@/components/genre-backdrop";
 import { GenreCardFrame } from "@/components/genre-decorations";
 import { GenreThemeOverlay } from "@/components/genre-theme-overlay";
+import { animateMangaStagger, animateSvgRuneDraw } from "@/lib/anime-animations";
 
 const EXTRA_CHAPTERS = [
   { to: "/series", ch: "CH. 11", label: "Sagas" },
@@ -73,6 +74,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
     triggerFeedback("switch", target);
   const [tocOpen, setTocOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
 
   const { data: visibility } = useQuery({
     queryKey: ["app-settings", "nav_visibility"],
@@ -98,6 +100,18 @@ export function MangaShell({ children }: { children: ReactNode }) {
       delete document.documentElement.dataset["motion"];
     };
   }, [enabled]);
+
+  useEffect(() => {
+    if (!motionActive) return;
+    const node = pageRef.current;
+    if (!node) return;
+    const staggerHandle = animateMangaStagger(node);
+    const runeHandle = animateSvgRuneDraw(node);
+    return () => {
+      staggerHandle.cancel();
+      runeHandle.cancel();
+    };
+  }, [pathname, activeGenre, activeSubTheme, motionActive]);
 
   const primaryTabs = [...TABS, ...(isStaff ? [STAFF_TAB] : [])].filter(
     (t) => visibility?.[t.to] ?? true,
@@ -145,6 +159,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
               {/* Decorative Jade-Teal Cloud Scrolls & Brass Filigree Corners on Scroll Banner */}
               <svg
                 aria-hidden="true"
+                data-anime-rune="true"
                 viewBox="0 0 64 28"
                 className="pointer-events-none absolute left-1 top-1 hidden h-6 w-14 text-[#2e5a52] opacity-85 lg:block"
                 fill="none"
@@ -164,6 +179,7 @@ export function MangaShell({ children }: { children: ReactNode }) {
               </svg>
               <svg
                 aria-hidden="true"
+                data-anime-rune="true"
                 viewBox="0 0 64 28"
                 className="pointer-events-none absolute right-1 top-1 hidden h-6 w-14 -scale-x-100 text-[#2e5a52] opacity-85 lg:block"
                 fill="none"
@@ -193,6 +209,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
             <Link to="/" onClick={(e) => playClick(e)} className="group flex items-center gap-2">
               <span
                 className={`border-2 px-1.5 py-0.5 font-display text-sm tracking-wider transition-transform group-hover:-rotate-1 ${
+                  !themeCtx?.isMinimal ? "studio-bloom-border " : ""
+                }${
                   isFantasy
                     ? "border-[#c5a869] bg-[#15221b] text-[#5ce1b8] shadow-[0_0_10px_rgba(92,225,184,0.3)]"
                     : "border-foreground bg-foreground text-background"
@@ -328,8 +346,8 @@ export function MangaShell({ children }: { children: ReactNode }) {
                   className={`inline-flex shrink-0 items-center gap-1.5 border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
                     selected
                       ? isFantasy
-                        ? "border-[#5ce1b8] bg-[#2e5a52] text-[#f5ebe6] shadow-[0_0_10px_rgba(92,225,184,0.35)]"
-                        : "border-primary bg-primary text-primary-foreground"
+                        ? "studio-bloom-border border-[#5ce1b8] bg-[#2e5a52] text-[#f5ebe6] shadow-[0_0_10px_rgba(92,225,184,0.35)]"
+                        : `${!themeCtx?.isMinimal ? "studio-bloom-border " : ""}border-primary bg-primary text-primary-foreground`
                       : isFantasy
                         ? "border-[#c5a869]/45 bg-[#1a241e] text-[#e6dcc5] hover:border-[#5ce1b8]"
                         : "border-border/50 bg-background/80 text-foreground hover:border-primary"
@@ -411,97 +429,118 @@ export function MangaShell({ children }: { children: ReactNode }) {
           </nav>
 
           {/* Expandable Full Anthology Table of Contents Drawer */}
-          {tocOpen && (
-            <div
-              className="manga-halftone border-t-2 border-border bg-card px-4 py-3 text-card-foreground shadow-lg"
-              role="region"
-              aria-label="Complete anthology directory"
-            >
-              <div className="mx-auto max-w-7xl">
-                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-1.5">
-                  <div className="flex items-center gap-2">
-                    <BookOpenText className="h-4 w-4" />
-                    <h2 className="font-display text-base uppercase tracking-wider">
-                      COMPLETE ARCHIVE TABLE OF CONTENTS // 全目次
-                    </h2>
+          <AnimatePresence initial={false}>
+            {tocOpen && (
+              <motion.div
+                key="manga-toc-drawer"
+                initial={motionActive ? { opacity: 0, y: -8 } : false}
+                animate={{ opacity: 1, y: 0 }}
+                {...(motionActive ? { exit: { opacity: 0, y: -6 } } : {})}
+                transition={motionActive ? motionSpec.transition : { duration: 0 }}
+                className="manga-halftone border-t-2 border-border bg-card px-4 py-3 text-card-foreground shadow-lg"
+                role="region"
+                aria-label="Complete anthology directory"
+              >
+                <div className="mx-auto max-w-7xl">
+                  <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-1.5">
+                    <div className="flex items-center gap-2">
+                      <BookOpenText className="h-4 w-4" />
+                      <h2 className="font-display text-base uppercase tracking-wider">
+                        COMPLETE ARCHIVE TABLE OF CONTENTS // 全目次
+                      </h2>
+                    </div>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      SELECT CHAPTER STAMP TO JUMP
+                    </span>
                   </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    SELECT CHAPTER STAMP TO JUMP
-                  </span>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                    {primaryTabs.map((t, idx) => {
+                      const active = pathname === t.to;
+                      return (
+                        <Link
+                          key={t.to}
+                          to={t.to}
+                          onClick={(e) => {
+                            playSnap(e);
+                            setTocOpen(false);
+                          }}
+                          className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
+                            active
+                              ? "bg-foreground text-background"
+                              : "bg-background text-foreground"
+                          }`}
+                        >
+                          <GenreCardFrame theme={activeGenre} compact />
+                          <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
+                            {chapterCode(idx)}
+                          </span>
+                          <span className="mt-0.5 font-display text-sm uppercase leading-tight">
+                            {t.label}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                    {visibleExtra.map((t) => {
+                      const active = pathname === t.to;
+                      return (
+                        <Link
+                          key={t.to}
+                          to={t.to}
+                          onClick={(e) => {
+                            playSnap(e);
+                            setTocOpen(false);
+                          }}
+                          className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
+                            active
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary/60 text-foreground"
+                          }`}
+                        >
+                          <GenreCardFrame theme={activeGenre} compact />
+                          <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
+                            {t.ch}
+                          </span>
+                          <span className="mt-0.5 font-display text-sm uppercase leading-tight">
+                            {t.label}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                  {primaryTabs.map((t, idx) => {
-                    const active = pathname === t.to;
-                    return (
-                      <Link
-                        key={t.to}
-                        to={t.to}
-                        onClick={(e) => {
-                          playSnap(e);
-                          setTocOpen(false);
-                        }}
-                        className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
-                          active ? "bg-foreground text-background" : "bg-background text-foreground"
-                        }`}
-                      >
-                        <GenreCardFrame theme={activeGenre} compact />
-                        <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
-                          {chapterCode(idx)}
-                        </span>
-                        <span className="mt-0.5 font-display text-sm uppercase leading-tight">
-                          {t.label}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                  {visibleExtra.map((t) => {
-                    const active = pathname === t.to;
-                    return (
-                      <Link
-                        key={t.to}
-                        to={t.to}
-                        onClick={(e) => {
-                          playSnap(e);
-                          setTocOpen(false);
-                        }}
-                        className={`relative flex flex-col justify-between border border-border p-2 transition-transform hover:-translate-y-0.5 ${
-                          active
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary/60 text-foreground"
-                        }`}
-                      >
-                        <GenreCardFrame theme={activeGenre} compact />
-                        <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
-                          {t.ch}
-                        </span>
-                        <span className="mt-0.5 font-display text-sm uppercase leading-tight">
-                          {t.label}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </header>
       )}
 
       <ThemeDrawer open={themeOpen} onOpenChange={setThemeOpen} />
 
-      <AnimatePresence mode="wait">
-        <motion.div
+      {motionActive ? (
+        <AnimatePresence mode="wait">
+          <motion.div
+            ref={pageRef}
+            key={pathname}
+            data-manga-page={pathname.slice(1) || "home"}
+            variants={motionSpec.pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="manga-page relative z-[1]"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      ) : (
+        <div
+          ref={pageRef}
           key={pathname}
           data-manga-page={pathname.slice(1) || "home"}
-          variants={motionSpec.pageVariants}
-          initial={motionActive ? "initial" : false}
-          animate="animate"
-          {...(motionActive ? { exit: "exit" } : {})}
           className="manga-page relative z-[1]"
         >
           {children}
-        </motion.div>
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getInstallGuide } from "@/lib/install-guide.functions";
+import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/install")({
   head: () => ({
@@ -75,84 +76,98 @@ function InstallPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Install</p>
-      <h1 className="mt-2 font-serif text-4xl text-foreground">Take the archive with you</h1>
-      <p className="mt-3 text-muted-foreground">
-        Tell us about your device and we'll write install steps just for you.
-      </p>
-
-      <form
-        onSubmit={submit}
-        className="mt-8 space-y-5 rounded-lg border border-border bg-card p-6"
-      >
-        <div className="space-y-2">
-          <Label htmlFor="device">Device</Label>
-          <select
-            id="device"
-            className={selectCls}
-            value={device}
-            onChange={(e) => setDevice(e.target.value)}
-          >
-            {DEVICES.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="browser">Browser</Label>
-          <select
-            id="browser"
-            className={selectCls}
-            value={browser}
-            onChange={(e) => setBrowser(e.target.value)}
-          >
-            {BROWSERS.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="goal">What would you like?</Label>
-          <select
-            id="goal"
-            className={selectCls}
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-          >
-            {GOALS.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="notes">Anything else? (optional)</Label>
-          <Textarea
-            id="notes"
-            maxLength={500}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. older phone, low storage, I don't see an install button…"
-          />
-        </div>
-        <Button type="submit" disabled={busy} className="w-full">
-          {busy ? "Writing your steps…" : "Get my install steps"}
-        </Button>
-      </form>
-
-      {error && (
-        <p role="alert" className="mt-6 text-sm text-destructive">
-          {error}
+    <MotionPage className="mx-auto max-w-2xl px-4 py-10">
+      <MotionSection>
+        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Install</p>
+        <h1 className="mt-2 font-serif text-4xl text-foreground">Take the archive with you</h1>
+        <p className="mt-3 text-muted-foreground">
+          Tell us about your device and we'll write install steps just for you.
         </p>
-      )}
-      {steps && (
-        <section aria-live="polite" className="mt-6 rounded-lg border border-border bg-card p-6">
-          <h2 className="font-serif text-2xl text-foreground">Your steps</h2>
-          <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-            {steps}
+      </MotionSection>
+
+      <MotionSection delay={0.05}>
+        <form
+          onSubmit={submit}
+          className="mt-8 space-y-5 rounded-lg border border-border bg-card p-6"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="device">Device</Label>
+            <select
+              id="device"
+              className={selectCls}
+              value={device}
+              onChange={(e) => setDevice(e.target.value)}
+            >
+              {DEVICES.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
           </div>
-        </section>
-      )}
-    </div>
+          <div className="space-y-2">
+            <Label htmlFor="browser">Browser</Label>
+            <select
+              id="browser"
+              className={selectCls}
+              value={browser}
+              onChange={(e) => setBrowser(e.target.value)}
+            >
+              {BROWSERS.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="goal">What would you like?</Label>
+            <select
+              id="goal"
+              className={selectCls}
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+            >
+              {GOALS.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Anything else? (optional)</Label>
+            <Textarea
+              id="notes"
+              maxLength={500}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. older phone, low storage, I don't see an install button…"
+            />
+          </div>
+          <Button type="submit" disabled={busy} className="w-full">
+            {busy ? "Writing your steps…" : "Get my install steps"}
+          </Button>
+        </form>
+      </MotionSection>
+
+      <MotionPresence initial={false}>
+        {error && (
+          <MotionSection key="install-error">
+            <p role="alert" className="mt-6 text-sm text-destructive">
+              {error}
+            </p>
+          </MotionSection>
+        )}
+        {steps && (
+          <MotionSection
+            key="install-steps"
+            as="section"
+            className="mt-6 rounded-lg border border-border bg-card p-6"
+          >
+            <div aria-live="polite">
+              <h2 className="font-serif text-2xl text-foreground">Your steps</h2>
+              <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {steps}
+              </div>
+            </div>
+          </MotionSection>
+        )}
+      </MotionPresence>
+    </MotionPage>
   );
 }

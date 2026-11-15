@@ -987,28 +987,39 @@ html[data-ui="nexus"] h3 {
   letter-spacing: 0;
 }
 .nexus-command {
-  border-radius: 4px;
-  box-shadow: var(--nexus-shadow);
+  border-radius: 6px;
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow:
+    var(--nexus-shadow),
+    0 0 22px rgba(56, 189, 248, 0.14);
 }
 .nexus-nav-link {
   transition:
-    background-color 0.3s,
-    transform 0.4s;
+    background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nexus-nav-link:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 .nexus-nav-link[aria-current="page"] {
+  border-color: rgba(245, 158, 11, 0.72);
   background: color-mix(in oklab, var(--accent) 14%, transparent);
 }
 .nexus-grid {
-  opacity: 0.28;
+  opacity: 0.34;
   background-image:
-    linear-gradient(var(--nexus-border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--nexus-border) 1px, transparent 1px);
-  background-size: 80px 80px;
-  mask-image: linear-gradient(transparent, var(--nexus-fg) 30%, transparent);
-  animation: nexus-grid-drift 35s linear infinite;
+    linear-gradient(rgba(56, 189, 248, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.18) 1px, transparent 1px),
+    linear-gradient(rgba(245, 158, 11, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.12) 1px, transparent 1px);
+  background-size:
+    40px 40px,
+    40px 40px,
+    160px 160px,
+    160px 160px;
+  mask-image: linear-gradient(transparent, var(--nexus-fg) 28%, transparent);
+  animation: nexus-grid-drift 32s linear infinite;
 }
 .nexus-dossier {
   --nexus-role: var(--nexus-role-neutral);
@@ -1123,21 +1134,27 @@ html[data-ui="nexus"] h3 {
 }
 .nexus-explorer .nexus-record {
   transition:
-    border-color 0.3s,
-    background-color 0.3s;
+    border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nexus-explorer .nexus-record:hover {
-  border-color: var(--nexus-glow);
+  border-color: rgba(56, 189, 248, 0.78);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.22);
 }
 .nexus-explorer .nexus-record[aria-pressed="true"] {
-  background: color-mix(in oklab, var(--nexus-glow) 12%, var(--card));
+  border-color: rgba(245, 158, 11, 0.8);
+  background: color-mix(in oklab, #f59e0b 12%, var(--card));
   color: var(--foreground);
+  box-shadow: 0 0 22px rgba(245, 158, 11, 0.24);
 }
 .nexus-explorer article {
   align-self: start;
 }
 .nexus-cluster {
-  box-shadow: var(--nexus-shadow);
+  box-shadow:
+    var(--nexus-shadow),
+    0 0 20px rgba(56, 189, 248, 0.12);
 }
 .nexus-workspace > [role="tabpanel"] > main {
   padding: 0;
@@ -2899,36 +2916,37 @@ html.dark[data-genre-theme="manga-ink"] {
   --genre-accent-2: #f4efe4;
 }
 
-/* 2. Shonen (Kinetic Impact, Amber Flame & Cobalt) */
-html[data-genre-theme="shonen"] {
-  --background: #f8fafc;
+/* 2. Shounen Daylight (Sunlit European Citadel, Sky-to-Turquoise & Terracotta) */
+html[data-genre-theme="shonen"],
+html[data-manga-subtheme="shounen"] {
+  --background: #3898ec;
   --foreground: #0f172a;
-  --card: #ffffff;
+  --card: rgba(255, 253, 248, 0.88);
   --card-foreground: #0f172a;
-  --popover: #ffffff;
+  --popover: rgba(255, 253, 248, 0.96);
   --popover-foreground: #0f172a;
-  --primary: #ea580c;
+  --primary: #e86a33;
   --primary-foreground: #ffffff;
-  --secondary: #e2e8f0;
-  --secondary-foreground: #0f172a;
-  --muted: #e2e8f0;
-  --muted-foreground: #475569;
-  --accent: #0284c7;
+  --secondary: rgba(255, 253, 248, 0.72);
+  --secondary-foreground: #1e293b;
+  --muted: rgba(226, 242, 248, 0.82);
+  --muted-foreground: #334155;
+  --accent: #14b8a6;
   --accent-foreground: #ffffff;
-  --border: #0f172a;
-  --input: #0f172a;
-  --ring: #ea580c;
-  --glow: #ea580c;
-  --glow-strength: 0.2;
-  --glass-blur: 0px;
-  --radius: 0.15rem;
-  --ui-card-border-width: 2.5px;
-  --ui-card-shadow: 4px 4px 0 #0f172a;
-  --ui-heading-tracking: 0.05em;
-  --ui-heading-shadow: 2px 2px 0 rgba(234, 88, 12, 0.25);
-  --genre-gold: #eab308;
-  --genre-accent-2: #0284c7;
-  --font-display: "Oswald", "Bangers", system-ui, sans-serif;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #e86a33;
+  --glow: #e86a33;
+  --glow-strength: 0.32;
+  --glass-blur: 12px;
+  --radius: 0.25rem;
+  --ui-card-border-width: 2px;
+  --ui-card-shadow: 4px 4px 0px #0f172a;
+  --ui-heading-tracking: 0.06em;
+  --ui-heading-shadow: 2px 2px 0 rgba(15, 23, 42, 0.16);
+  --genre-gold: #fffbeb;
+  --genre-accent-2: #14b8a6;
+  --font-display: "Montserrat", "Cinzel", system-ui, sans-serif;
   --font-sans: "Space Grotesk", "Manrope", system-ui, sans-serif;
 }
 html.dark[data-genre-theme="shonen"] {
@@ -2938,25 +2956,35 @@ html.dark[data-genre-theme="shonen"] {
   --card-foreground: #f8fafc;
   --popover: #131c31;
   --popover-foreground: #f8fafc;
-  --primary: #f97316;
+  --primary: #e86a33;
   --primary-foreground: #0b1120;
   --secondary: #1e293b;
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
-  --accent: #38bdf8;
+  --accent: #14b8a6;
   --accent-foreground: #0b1120;
-  --border: #f97316;
+  --border: #e86a33;
   --input: #334155;
-  --ring: #f97316;
-  --glow: #f97316;
-  --ui-card-shadow: 4px 4px 0 #020617, 0 0 18px rgba(249, 115, 22, 0.16);
+  --ring: #e86a33;
+  --glow: #e86a33;
+  --ui-card-shadow: 4px 4px 0px #0f172a, 0 0 18px rgba(232, 106, 51, 0.2);
   --ui-heading-shadow: 2px 2px 0 #020617;
   --genre-gold: #facc15;
-  --genre-accent-2: #38bdf8;
+  --genre-accent-2: #14b8a6;
 }
 html[data-genre-theme="shonen"] body,
-html[data-genre-theme="shonen"] .manga-root {
+html[data-genre-theme="shonen"] .manga-root,
+html[data-manga-subtheme="shounen"] body,
+html[data-manga-subtheme="shounen"] .manga-root {
+  background-color: #3898ec;
+  background-image:
+    repeating-linear-gradient(-26deg, rgba(255, 251, 235, 0.12) 0 1px, transparent 1px 28px),
+    linear-gradient(165deg, #3898ec 0%, #7ce0f9 52%, #18a999 100%);
+  background-attachment: fixed;
+}
+html.dark[data-genre-theme="shonen"] body,
+html.dark[data-genre-theme="shonen"] .manga-root {
   background-color: var(--background);
   background-image:
     repeating-linear-gradient(
@@ -2970,9 +2998,10 @@ html[data-genre-theme="shonen"] .manga-root {
       transparent 1px 42px
     );
 }
-html[data-genre-theme="shonen"] .manga-panel {
-  border-left-width: 4px;
-  border-color: var(--border);
+html[data-genre-theme="shonen"] .manga-panel,
+html[data-manga-subtheme="shounen"] .manga-panel {
+  border-width: 2px;
+  border-color: #1e293b;
 }
 
 /* 3. Fantasy (Warm Parchment Backgrounds & Gold Borders) */
@@ -3512,33 +3541,44 @@ html[data-genre-theme]:not([data-genre-theme="manga-ink"]) .manga-panel-hover:ho
   transform: translateX(120%) skewX(-18deg);
 }
 
-/* 2. Shonen: Cel-shaded high-impact glossy plates with diagonal speed gleam */
-html[data-genre-theme="shonen"] {
-  --genre-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --genre-duration: 150ms;
+/* 2. Shounen: Sunlit Frosted Glass plates with crisp 2px ink outline & offset shadow */
+html[data-genre-theme="shonen"],
+html[data-manga-subtheme="shounen"] {
+  --genre-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --genre-duration: 180ms;
 }
 html[data-genre-theme="shonen"] .glass,
-html[data-genre-theme="shonen"] .manga-panel {
-  background: linear-gradient(
-    135deg,
-    color-mix(in oklab, var(--primary) 12%, rgba(255, 255, 255, 0.18)) 0%,
-    color-mix(in oklab, var(--card) 92%, transparent) 42%,
-    color-mix(in oklab, var(--accent) 8%, var(--card)) 100%
-  );
-  backdrop-filter: blur(6px) saturate(135%);
-  -webkit-backdrop-filter: blur(6px) saturate(135%);
-  border-left-width: 4px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    4px 4px 0 var(--foreground),
-    0 0 18px color-mix(in oklab, var(--primary) 18%, transparent);
+html[data-genre-theme="shonen"] .manga-panel,
+html[data-manga-subtheme="shounen"] .glass,
+html[data-manga-subtheme="shounen"] .manga-panel {
+  background: rgba(255, 253, 248, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid #1e293b;
+  box-shadow: 4px 4px 0px #0f172a;
 }
-html[data-genre-theme="shonen"] .manga-panel-hover:hover {
-  transform: translate(-2px, -3px) skewX(-0.5deg);
+html[data-genre-theme="shonen"] .manga-display-title,
+html[data-manga-subtheme="shounen"] .manga-display-title,
+html[data-manga-subtheme="shounen"] h1,
+html[data-manga-subtheme="shounen"] h2 {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+html.dark[data-genre-theme="shonen"] .glass,
+html.dark[data-genre-theme="shonen"] .manga-panel {
+  background: rgba(19, 28, 49, 0.88);
+  border: 2px solid #e86a33;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    6px 6px 0 var(--primary),
-    0 0 24px color-mix(in oklab, var(--accent) 32%, transparent);
+    4px 4px 0px #0f172a,
+    0 0 18px rgba(232, 106, 51, 0.2);
+}
+html[data-genre-theme="shonen"] .manga-panel-hover:hover,
+html[data-manga-subtheme="shounen"] .manga-panel-hover:hover {
+  transform: translate(-2px, -3px);
+  box-shadow:
+    6px 6px 0px #0f172a,
+    0 0 22px rgba(232, 106, 51, 0.28);
 }
 
 /* 3. Fantasy: Arcane Botanical Grimoire (deep forest-charcoal exterior + aged cream parchment inner panels + antique brass & mint-emerald glow) */
@@ -4991,7 +5031,13 @@ html[data-motion="off"] [data-genre-viz] {
 }
 
 .fantasy-emerald-orb {
-  background: radial-gradient(circle at 32% 28%, #9fffe0 0%, #5ce1b8 32%, #1d574b 72%, #11241d 100%);
+  background: radial-gradient(
+    circle at 32% 28%,
+    #9fffe0 0%,
+    #5ce1b8 32%,
+    #1d574b 72%,
+    #11241d 100%
+  );
   box-shadow:
     0 0 22px rgba(92, 225, 184, 0.52),
     inset 0 0 12px rgba(255, 255, 255, 0.35);
@@ -5329,5 +5375,220 @@ html[data-primary-system="minimal"] .glass::after,
   .manga-panel-hover,
   .glass::after {
     animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   High-Budget Anime Studio Aesthetic (Shounen Daylight, Luminous Bloom, Action Cuts)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes shounen-cloud-drift {
+  0% {
+    transform: translate3d(-4%, 0, 0);
+  }
+  50% {
+    transform: translate3d(4%, -4px, 0);
+  }
+  100% {
+    transform: translate3d(-4%, 0, 0);
+  }
+}
+
+@keyframes studio-leaf-wind {
+  0% {
+    transform: translate3d(-40px, -10px, 0) rotate(-14deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.78;
+  }
+  88% {
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate3d(260px, 95px, 0) rotate(220deg);
+    opacity: 0;
+  }
+}
+
+@keyframes studio-mote-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.95);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(14px, -22px, 0) scale(1.22);
+    opacity: 0.85;
+  }
+}
+
+@keyframes shounen-speedline-burst {
+  0% {
+    opacity: 0.92;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes anime-flash-40ms {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes anime-hitstop-shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(-3px, 2px, 0);
+  }
+  45% {
+    transform: translate3d(3px, -2px, 0);
+  }
+  70% {
+    transform: translate3d(-2px, 1px, 0);
+  }
+}
+
+@keyframes anime-action-slash {
+  0% {
+    opacity: 0.95;
+    transform: rotate(-16deg) scaleX(0.35);
+  }
+  45% {
+    opacity: 0.9;
+    transform: rotate(-16deg) scaleX(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-16deg) scaleX(1.25);
+  }
+}
+
+.shounen-cloud-drift {
+  animation: shounen-cloud-drift var(--cloud-dur, 42s) ease-in-out infinite;
+  will-change: transform;
+}
+
+.studio-leaf-wind {
+  animation: studio-leaf-wind 9.5s linear infinite;
+  will-change: transform, opacity;
+}
+
+.studio-mote-dot,
+.studio-mote-drift {
+  animation: studio-mote-drift var(--mote-dur, 7.5s) ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.anime-action-cut-slash {
+  animation: anime-action-slash 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.shounen-speedline-burst {
+  animation: shounen-speedline-burst 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Soft multi-layered luminous post-processing bloom on active energy borders & nodes */
+.studio-bloom-border {
+  box-shadow:
+    0 0 12px color-mix(in oklab, var(--primary) 34%, transparent),
+    0 0 26px color-mix(in oklab, var(--accent) 20%, transparent),
+    inset 0 0 10px rgba(255, 255, 255, 0.12);
+}
+
+.studio-bloom-node {
+  box-shadow:
+    0 0 14px color-mix(in oklab, var(--primary) 42%, transparent),
+    0 0 28px color-mix(in oklab, var(--accent) 26%, transparent),
+    inset 0 0 8px rgba(255, 255, 255, 0.16);
+  transition:
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.studio-bloom-node:hover {
+  box-shadow:
+    0 0 18px color-mix(in oklab, var(--primary) 58%, transparent),
+    0 0 36px color-mix(in oklab, var(--accent) 34%, transparent);
+}
+
+/* Action Cut kinetic camera/panel lunge & 160ms micro-shake */
+html[data-anime-hitstop="lunge"] .manga-page,
+html[data-anime-hitstop="lunge"] .nexus-page {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: scale(1.008);
+}
+
+html[data-anime-hitstop="shake"] .manga-page,
+html[data-anime-hitstop="shake"] .nexus-page {
+  animation: anime-hitstop-shake 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Strict Minimal, FX:OFF, and Reduced-Motion suppression */
+html[data-ui="minimal"] .studio-bloom-border,
+html[data-ui="minimal"] .studio-bloom-node,
+html[data-primary-system="minimal"] .studio-bloom-border,
+html[data-primary-system="minimal"] .studio-bloom-node,
+[data-ui-mode="minimal"] .studio-bloom-border,
+[data-ui-mode="minimal"] .studio-bloom-node,
+html[data-motion="off"] .studio-bloom-border,
+html[data-motion="off"] .studio-bloom-node {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-ui="minimal"] .shounen-cloud-drift,
+html[data-ui="minimal"] .studio-leaf-wind,
+html[data-ui="minimal"] .studio-mote-dot,
+html[data-ui="minimal"] .studio-mote-drift,
+html[data-ui="minimal"] .anime-action-cut-slash,
+html[data-ui="minimal"] .shounen-speedline-burst,
+html[data-primary-system="minimal"] .shounen-cloud-drift,
+html[data-primary-system="minimal"] .studio-leaf-wind,
+html[data-primary-system="minimal"] .studio-mote-dot,
+html[data-primary-system="minimal"] .studio-mote-drift,
+html[data-primary-system="minimal"] .anime-action-cut-slash,
+html[data-primary-system="minimal"] .shounen-speedline-burst,
+[data-ui-mode="minimal"] .shounen-cloud-drift,
+[data-ui-mode="minimal"] .studio-leaf-wind,
+[data-ui-mode="minimal"] .studio-mote-dot,
+[data-ui-mode="minimal"] .studio-mote-drift,
+html[data-motion="off"] .shounen-cloud-drift,
+html[data-motion="off"] .studio-leaf-wind,
+html[data-motion="off"] .studio-mote-dot,
+html[data-motion="off"] .studio-mote-drift,
+html[data-motion="off"] .anime-action-cut-slash,
+html[data-motion="off"] .shounen-speedline-burst,
+html[data-motion="off"] .manga-page,
+html[data-motion="off"] .nexus-page {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shounen-cloud-drift,
+  .studio-leaf-wind,
+  .studio-mote-dot,
+  .studio-mote-drift,
+  .anime-action-cut-slash,
+  .shounen-speedline-burst,
+  html[data-anime-hitstop] .manga-page,
+  html[data-anime-hitstop] .nexus-page {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }

@@ -25,6 +25,33 @@ import {
   disposeObjectTree,
   normalizeThreeColor,
 } from "@/lib/three-stage-utils";
+import { isAnimeMotionAllowed } from "@/lib/anime-animations";
+
+function isShounenDaylightActive(): boolean {
+  if (typeof document === "undefined") return false;
+  const d = document.documentElement.dataset;
+  if (d["primarySystem"] === "minimal" || d["uiMode"] === "minimal") return false;
+  return d["mangaSubtheme"] === "shounen" || d["genreTheme"] === "shonen";
+}
+
+function createSunFlareTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const grad = ctx.createRadialGradient(128, 128, 4, 128, 128, 128);
+  grad.addColorStop(0, "rgba(255, 251, 235, 0.96)");
+  grad.addColorStop(0.22, "rgba(253, 224, 71, 0.72)");
+  grad.addColorStop(0.55, "rgba(232, 106, 51, 0.24)");
+  grad.addColorStop(1, "rgba(232, 106, 51, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 256);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 
 export interface GlbModelViewerProps {
   url: string;
@@ -61,6 +88,9 @@ export function GlbModelViewer({
     "loading",
   );
   const [autoRotate, setAutoRotate] = useState(true);
+  const [shounenMode, setShounenMode] = useState(() => isShounenDaylightActive());
+  const [speedLinesBurst, setSpeedLinesBurst] = useState(false);
+  const firstMountRef = useRef(true);
   const autoRotateRef = useRef(autoRotate);
   autoRotateRef.current = autoRotate;
 
@@ -81,6 +111,33 @@ export function GlbModelViewer({
     resetView: () => void;
     requestRender: () => void;
   } | null>(null);
+
+  useEffect(() => {
+    const syncMode = () => setShounenMode(isShounenDaylightActive());
+    syncMode();
+    window.addEventListener("scu:ui-mode-change", syncMode);
+    window.addEventListener("scu:genre-theme-change", syncMode);
+    window.addEventListener("scu:manga-subtheme-change", syncMode);
+    return () => {
+      window.removeEventListener("scu:ui-mode-change", syncMode);
+      window.removeEventListener("scu:genre-theme-change", syncMode);
+      window.removeEventListener("scu:manga-subtheme-change", syncMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (firstMountRef.current) {
+      firstMountRef.current = false;
+      return;
+    }
+    if (!shounenMode || !isAnimeMotionAllowed()) {
+      setSpeedLinesBurst(false);
+      return;
+    }
+    setSpeedLinesBurst(true);
+    const id = window.setTimeout(() => setSpeedLinesBurst(false), 420);
+    return () => window.clearTimeout(id);
+  }, [url, name, shounenMode]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -155,9 +212,12 @@ export function GlbModelViewer({
 
     const resolvedAccent = normalizeThreeColor(accentColor, "#38bdf8");
 
-    // 3-point warm key + cool Hemisphere fill + rim directional light
+    // 3-point warm key + cool Hemisphere/sky-blue bounce fill + rim directional light
     const hemiLight = new THREE.HemisphereLight(0x9bd2ff, 0x101827, 0.85);
     scene.add(hemiLight);
+
+    const ambientBounce = new THREE.AmbientLight(0x38bdf8, 0);
+    scene.add(ambientBounce);
 
     const keyLight = new THREE.DirectionalLight(0xfff1dc, 2.2);
     keyLight.position.set(3.5, 5.2, 3.8);
@@ -170,6 +230,22 @@ export function GlbModelViewer({
     const rimLight = new THREE.DirectionalLight(resolvedAccent, 1.45);
     rimLight.position.set(-3.4, 2.8, -3.0);
     scene.add(rimLight);
+
+    // Procedural radial golden sun-flare positioned behind character in Shounen daylight
+    const sunTex = createSunFlareTexture();
+    const sunMat = new THREE.SpriteMaterial({
+      ...(sunTex ? { map: sunTex } : {}),
+      color: 0xfffbeb,
+      transparent: true,
+      opacity: 0.86,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const sunSprite = new THREE.Sprite(sunMat);
+    sunSprite.position.set(0, 1.05, -1.65);
+    sunSprite.scale.set(3.4, 3.4, 1);
+    sunSprite.visible = false;
+    scene.add(sunSprite);
 
     // Ground contact pedestal disk
     const floorGeo = new THREE.CircleGeometry(2.6, 48);
@@ -197,6 +273,42 @@ export function GlbModelViewer({
     scene.add(ringMesh);
 
     let modelBounds = { centerY: 0.85, radius: 0.85, height: 1.85 };
+
+    const applyLightingTheme = () => {
+      const daylight = isShounenDaylightActive();
+      if (daylight) {
+        scene.background = new THREE.Color(0x7ce0f9);
+        hemiLight.color.setHex(0x38bdf8);
+        hemiLight.groundColor.setHex(0x18a999);
+        hemiLight.intensity = 1.05;
+        ambientBounce.color.setHex(0x38bdf8);
+        ambientBounce.intensity = 0.45;
+        keyLight.color.setHex(0xfffbeb);
+        keyLight.intensity = 2.2;
+        rimLight.color.setHex(0xfffbeb);
+        rimLight.intensity = 1.85;
+        floorMat.color.setHex(0xd9f4f0);
+        ringMat.color.setHex(0x14b8a6);
+        sunSprite.visible = true;
+        sunSprite.position.set(0, modelBounds.centerY * 1.15, -1.65);
+        const flareScale = Math.max(2.8, modelBounds.height * 1.85);
+        sunSprite.scale.set(flareScale, flareScale, 1);
+      } else {
+        scene.background = new THREE.Color(0x060a14);
+        hemiLight.color.setHex(0x9bd2ff);
+        hemiLight.groundColor.setHex(0x101827);
+        hemiLight.intensity = 0.85;
+        ambientBounce.intensity = 0;
+        keyLight.color.setHex(0xfff1dc);
+        keyLight.intensity = 2.2;
+        rimLight.color.copy(resolvedAccent);
+        rimLight.intensity = 1.45;
+        floorMat.color.setHex(0x0b1220);
+        ringMat.color.copy(normalizeThreeColor(vfxConfigRef.current.primaryHex, "#38bdf8"));
+        sunSprite.visible = false;
+      }
+    };
+    applyLightingTheme();
     let vfxSystem: ModelVfxSystem | null = createModelVfxSystem(vfxConfigRef.current, {
       isSoftwareGl,
       pixelRatio,
@@ -320,6 +432,7 @@ export function GlbModelViewer({
     const handleThemeChange = () => {
       if (disposed) return;
       celConfig = resolveCelThemeConfig();
+      applyLightingTheme();
       if (loadedModel) {
         applyCelShading(loadedModel, celConfig);
       }
@@ -416,6 +529,7 @@ export function GlbModelViewer({
         scene.add(model);
         loadedModel = model;
         celConfig = resolveCelThemeConfig();
+        applyLightingTheme();
         applyCelShading(model, celConfig);
 
         if (gltf.animations && gltf.animations.length > 0 && !isSoftwareGl) {
@@ -478,6 +592,8 @@ export function GlbModelViewer({
       floorMat.dispose();
       ringGeo.dispose();
       ringMat.dispose();
+      sunMat.dispose();
+      sunTex?.dispose();
       envTex?.dispose();
       renderer.dispose();
       container.innerHTML = "";
@@ -502,9 +618,35 @@ export function GlbModelViewer({
       data-model-url={url}
       data-viewer-status={status}
       data-vfx-preset={vfxConfig.preset}
-      className={`relative h-full w-full overflow-hidden bg-[#060a14] ${className}`}
+      data-lighting-mode={shounenMode ? "shounen-daylight" : "studio"}
+      className={`relative h-full w-full overflow-hidden ${
+        shounenMode ? "" : "bg-[#060a14]"
+      } ${className}`}
+      style={
+        shounenMode
+          ? { background: "linear-gradient(165deg, #3898EC 0%, #7CE0F9 56%, #18A999 100%)" }
+          : undefined
+      }
       onClick={(e) => e.stopPropagation()}
     >
+      {shounenMode && (
+        <div
+          aria-hidden="true"
+          data-testid="shounen-sun-flare"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 34%, rgba(255,251,235,0.45) 0%, rgba(253,224,71,0.18) 32%, transparent 66%)",
+          }}
+        />
+      )}
+      {speedLinesBurst && (
+        <div
+          aria-hidden="true"
+          data-testid="shounen-speedlines-burst"
+          className="shounen-speedline-burst pointer-events-none absolute inset-0 z-10"
+        />
+      )}
       {!showFallback ? (
         <div
           ref={mountRef}

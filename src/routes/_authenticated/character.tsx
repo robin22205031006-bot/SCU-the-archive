@@ -30,6 +30,7 @@ import { sfx } from "@/lib/scu-audio";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useUiStyle } from "@/lib/ui-style";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { NexusDossier } from "@/components/nexus-dossier";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { useIsManga } from "@/hooks/use-ui-mode";
@@ -317,7 +318,7 @@ function ClassicDossier() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const ui = useUiToggles();
-  const animOn = useAnimationsEnabled();
+  const { motionActive: animOn } = useAppMotion();
   const [tab, setTab] = useState<Tab>("powers");
   const [openSeries, setOpenSeries] = useState<string | null>(null);
   const [ctxSeason, setCtxSeason] = useState<string | null>(null);

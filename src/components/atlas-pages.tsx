@@ -11,8 +11,9 @@ import {
 import { AtlasOverlay, type AtlasMode } from "@/components/nexus-atlas";
 import { AtlasSimulation } from "@/components/atlas-simulation";
 import { Link, useHydrated } from "@tanstack/react-router";
+import { useAppMotion } from "@/hooks/use-app-motion";
 
-const reveal = {
+const activeReveal = {
   initial: { opacity: 0, y: 32 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-60px" },
@@ -48,6 +49,8 @@ function OpenButtons({
 
 /** /atlas: whole world plus all realms in fit-to-screen proportions. */
 export function WorldAtlasSections() {
+  const { motionActive } = useAppMotion();
+  const reveal = motionActive ? activeReveal : {};
   const [open, setOpen] = useState<{ id: string; mode?: AtlasMode | undefined } | null>(null);
   return (
     <div className="space-y-20">
@@ -172,6 +175,8 @@ export function WorldAtlasSections() {
 
 /** /atlas/$place: one realm with eras, top view and an inline fit-to-screen simulation. */
 export function PlaceAtlasSections({ loc }: { loc: AtlasLocation }) {
+  const { motionActive } = useAppMotion();
+  const reveal = motionActive ? activeReveal : {};
   const hydrated = useHydrated();
   const [open, setOpen] = useState<{ id: string; mode?: AtlasMode | undefined } | null>(null);
   const simEra = loc.eras[loc.eras.length - 1] ?? loc.eras[0]!;

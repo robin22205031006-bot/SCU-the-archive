@@ -139,11 +139,12 @@ export const MANGA_SUBTHEMES: readonly MangaSubThemeMeta[] = [
   {
     id: "shounen",
     genreThemeId: "shonen",
-    label: "Shounen Action",
+    label: "Shounen Daylight Citadel",
     shortLabel: "Shounen",
     jpLabel: "少年熱血",
-    tagline: "High-contrast action speed lines, angled impact cuts & chromatic sparks.",
-    swatches: ["#0B1120", "#F97316", "#FACC15", "#38BDF8"],
+    tagline:
+      "Sunlit European-fantasy sky & turquoise rivers, frosted glass panels, terracotta orange & emerald wind.",
+    swatches: ["#3898EC", "#E86A33", "#14B8A6", "#FFFDF8"],
   },
 ] as const;
 

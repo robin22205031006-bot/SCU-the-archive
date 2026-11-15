@@ -24,6 +24,7 @@ import { AdminCharacterAbilities } from "@/components/admin-character-abilities"
 import { AdminAccordion } from "@/components/admin-accordion";
 import { AdminUiToggles } from "@/components/admin-ui-toggles";
 import { AdminAuditLog } from "@/components/admin-audit-log";
+import { MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -199,8 +200,11 @@ function Admin() {
   };
 
   return (
-    <main className="mx-auto grid w-full max-w-3xl grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-24 pt-28 sm:px-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <MotionPage
+      as="main"
+      className="mx-auto grid w-full max-w-3xl grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-24 pt-28 sm:px-5"
+    >
+      <MotionSection as="header" className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Control room</p>
           <h1 className="mt-2 text-5xl font-medium glow-text">Admin</h1>
@@ -220,7 +224,7 @@ function Admin() {
             </Button>
           </div>
         )}
-      </header>
+      </MotionSection>
 
       <AdminAccordion title="Members Management">
         {isAdmin && (
@@ -377,7 +381,7 @@ function Admin() {
         </AdminAccordion>
       )}
 
-      <section className="glass rounded-2xl p-5">
+      <MotionSection as="section" delay={0.08} className="glass rounded-2xl p-5">
         <h2 className="mb-3 text-2xl">Recent activity</h2>
         <ul className="grid gap-1 text-sm">
           {(data?.log ?? []).map((l) => (
@@ -391,7 +395,7 @@ function Admin() {
             </li>
           ))}
         </ul>
-      </section>
-    </main>
+      </MotionSection>
+    </MotionPage>
   );
 }

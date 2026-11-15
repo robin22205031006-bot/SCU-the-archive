@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { askLore } from "@/lib/ai-box.functions";
 import { useIsManga } from "@/hooks/use-ui-mode";
+import { useAppMotion } from "@/hooks/use-app-motion";
+import { motion } from "framer-motion";
+import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 import { HankoStamp } from "@/components/manga-emblem";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 
@@ -44,6 +47,7 @@ const STARTER_PROMPTS = [
 
 export function LoreChat() {
   const isManga = useIsManga();
+  const { motionActive, spec } = useAppMotion();
   const ask = useServerFn(askLore);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
@@ -130,12 +134,13 @@ export function LoreChat() {
   });
 
   return (
-    <main
+    <MotionPage
+      as="main"
       className={`mx-auto flex h-dvh max-w-3xl flex-col px-4 pb-6 sm:px-5 ${
         isManga ? "pt-6" : "pt-28"
       }`}
     >
-      <div
+      <MotionSection
         className={`flex flex-wrap items-end justify-between gap-3 ${
           isManga ? "manga-panel border-[3px] border-foreground bg-card p-4" : ""
         }`}
@@ -166,10 +171,11 @@ export function LoreChat() {
             <FileText className="h-3 w-3" /> Powered by Gemini &amp; SCU Archives
           </span>
         )}
-      </div>
+      </MotionSection>
 
       {/* Role & Model Controls */}
-      <div
+      <MotionSection
+        delay={0.04}
         className={
           isManga
             ? "mt-4 flex flex-wrap items-center justify-between gap-2 border-[2.5px] border-foreground bg-card p-2.5 text-xs"
@@ -241,7 +247,7 @@ export function LoreChat() {
             </Button>
           )}
         </div>
-      </div>
+      </MotionSection>
 
       {errorMsg && (
         <div
@@ -259,7 +265,8 @@ export function LoreChat() {
       {/* Scrollable Multi-Turn Conversation Thread */}
       <div className="mt-4 flex-1 overflow-y-auto pr-1 space-y-3">
         {msgs.length === 0 && (
-          <div
+          <MotionSection
+            delay={0.08}
             className={
               isManga
                 ? "manga-panel manga-halftone grid place-items-center gap-4 border-[3px] border-foreground bg-card p-8 text-center text-sm text-foreground"
@@ -285,48 +292,87 @@ export function LoreChat() {
                 </button>
               ))}
             </div>
-          </div>
+          </MotionSection>
         )}
 
-        {msgs.map((m, i) => (
-          <div key={i} className="grid gap-1.5">
-            <div
-              className={
-                isManga
-                  ? m.role === "user"
-                    ? "max-w-[85%] justify-self-end whitespace-pre-line border-2 border-foreground bg-foreground px-4 py-2.5 text-sm text-background shadow-[3px_3px_0_#b91c1c]"
-                    : "manga-speech-bubble manga-tail-left max-w-[85%] justify-self-start whitespace-pre-line border-[2.5px] border-foreground bg-card px-4 py-2.5 text-sm text-card-foreground"
-                  : `max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm ${
-                      m.role === "user"
-                        ? "justify-self-end bg-primary text-primary-foreground"
-                        : "glass justify-self-start"
-                    }`
-              }
-            >
-              {m.content}
-            </div>
-            {m.role === "assistant" && (
-              <div className="flex flex-wrap items-center gap-2 justify-self-start pl-1 text-[10px] uppercase tracking-widest text-muted-foreground">
-                {m.model && <span>{m.model}</span>}
-                {m.sources && m.sources.length > 0 && (
-                  <span>· Sources: {m.sources.join(", ")}</span>
+        <MotionPresence initial={false}>
+          {msgs.map((m, i) => {
+            const bubble = (
+              <>
+                <div
+                  className={
+                    isManga
+                      ? m.role === "user"
+                        ? "max-w-[85%] justify-self-end whitespace-pre-line border-2 border-foreground bg-foreground px-4 py-2.5 text-sm text-background shadow-[3px_3px_0_#b91c1c]"
+                        : "manga-speech-bubble manga-tail-left max-w-[85%] justify-self-start whitespace-pre-line border-[2.5px] border-foreground bg-card px-4 py-2.5 text-sm text-card-foreground"
+                      : `max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm ${
+                          m.role === "user"
+                            ? "justify-self-end bg-primary text-primary-foreground"
+                            : "glass justify-self-start"
+                        }`
+                  }
+                >
+                  {m.content}
+                </div>
+                {m.role === "assistant" && (
+                  <div className="flex flex-wrap items-center gap-2 justify-self-start pl-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {m.model && <span>{m.model}</span>}
+                    {m.sources && m.sources.length > 0 && (
+                      <span>· Sources: {m.sources.join(", ")}</span>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {busy && (
-          <div
-            className={
-              isManga
-                ? "manga-thought-box justify-self-start border-2 border-dashed border-foreground bg-card px-4 py-2.5 font-mono text-xs uppercase text-foreground"
-                : "glass justify-self-start rounded-2xl px-4 py-2.5 text-sm text-muted-foreground"
+              </>
+            );
+            if (!motionActive) {
+              return (
+                <div key={i} className="grid gap-1.5">
+                  {bubble}
+                </div>
+              );
             }
-          >
-            Gemini is analyzing the SCU archive…
-          </div>
-        )}
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={spec.transition}
+                className="grid gap-1.5"
+              >
+                {bubble}
+              </motion.div>
+            );
+          })}
+
+          {busy &&
+            (motionActive ? (
+              <motion.div
+                key="lore-chat-busy"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={spec.transition}
+                className={
+                  isManga
+                    ? "manga-thought-box justify-self-start border-2 border-dashed border-foreground bg-card px-4 py-2.5 font-mono text-xs uppercase text-foreground"
+                    : "glass justify-self-start rounded-2xl px-4 py-2.5 text-sm text-muted-foreground"
+                }
+              >
+                Gemini is analyzing the SCU archive…
+              </motion.div>
+            ) : (
+              <div
+                key="lore-chat-busy"
+                className={
+                  isManga
+                    ? "manga-thought-box justify-self-start border-2 border-dashed border-foreground bg-card px-4 py-2.5 font-mono text-xs uppercase text-foreground"
+                    : "glass justify-self-start rounded-2xl px-4 py-2.5 text-sm text-muted-foreground"
+                }
+              >
+                Gemini is analyzing the SCU archive…
+              </div>
+            ))}
+        </MotionPresence>
         <div ref={end} />
       </div>
 
@@ -488,6 +534,6 @@ export function LoreChat() {
           <Send className="h-4 w-4" />
         </Button>
       </form>
-    </main>
+    </MotionPage>
   );
 }

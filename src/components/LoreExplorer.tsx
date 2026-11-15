@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Bookmark, Trash2 } from "lucide-react";
 import { scuCache } from "../services/scuCache";
 import { StatusTooltip } from "@/components/status-tooltip";
+import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 import {
   clearLoreBookmarkEntries,
   readLoreBookmarks,
@@ -316,7 +317,7 @@ export function LoreExplorer({
   );
 
   return (
-    <div className="p-6 bg-gray-900 text-white min-h-screen">
+    <MotionPage className="p-6 bg-gray-900 text-white min-h-screen">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold tracking-wider text-red-500">
           Sentinels Cinematic Universe
@@ -388,40 +389,44 @@ export function LoreExplorer({
         </div>
       )}
 
-      {viewBookmarksOnly && (
-        <section
-          aria-label="Personalized bookmark collection"
-          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-950/25 px-4 py-3 text-sm"
-        >
-          <div className="flex items-center gap-2">
-            <Bookmark className="h-4 w-4 fill-amber-400 text-amber-300" aria-hidden="true" />
-            <span className="font-semibold text-amber-200">Personalized Lore Collection</span>
-            <span className="text-xs text-amber-300/80">
-              ({bookmarks.length} {bookmarks.length === 1 ? "saved entry" : "saved entries"})
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            {bookmarks.length > 0 && (
+      <MotionPresence initial={false}>
+        {viewBookmarksOnly && (
+          <MotionSection
+            key="bookmark-collection-banner"
+            as="section"
+            aria-label="Personalized bookmark collection"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-950/25 px-4 py-3 text-sm"
+          >
+            <div className="flex items-center gap-2">
+              <Bookmark className="h-4 w-4 fill-amber-400 text-amber-300" aria-hidden="true" />
+              <span className="font-semibold text-amber-200">Personalized Lore Collection</span>
+              <span className="text-xs text-amber-300/80">
+                ({bookmarks.length} {bookmarks.length === 1 ? "saved entry" : "saved entries"})
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              {bookmarks.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearBookmarks}
+                  aria-label="Clear all bookmarks"
+                  className="inline-flex items-center gap-1 rounded border border-red-500/40 bg-red-950/40 px-2.5 py-1 text-red-200 hover:bg-red-900/50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  Clear all
+                </button>
+              )}
               <button
                 type="button"
-                onClick={handleClearBookmarks}
-                aria-label="Clear all bookmarks"
-                className="inline-flex items-center gap-1 rounded border border-red-500/40 bg-red-950/40 px-2.5 py-1 text-red-200 hover:bg-red-900/50"
+                onClick={() => setViewBookmarksOnly(false)}
+                className="rounded border border-gray-700 bg-gray-800 px-2.5 py-1 text-gray-200 hover:bg-gray-700"
               >
-                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                Clear all
+                Browse all
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setViewBookmarksOnly(false)}
-              className="rounded border border-gray-700 bg-gray-800 px-2.5 py-1 text-gray-200 hover:bg-gray-700"
-            >
-              Browse all
-            </button>
-          </div>
-        </section>
-      )}
+            </div>
+          </MotionSection>
+        )}
+      </MotionPresence>
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
@@ -496,7 +501,7 @@ export function LoreExplorer({
         )
       ) : (
         <div className="space-y-8">
-          {visibleSectionNames.map((sectionName) => {
+          {visibleSectionNames.map((sectionName, sIdx) => {
             const sectionItems = sectionsMap.get(sectionName) ?? [];
             return (
               <section
@@ -505,14 +510,16 @@ export function LoreExplorer({
                 data-section={sectionName}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between border-b border-gray-800 pb-2">
-                  <h2 className="text-lg font-semibold uppercase tracking-wider text-red-400">
-                    {sectionName}{" "}
-                    <span className="text-sm font-normal text-gray-400">
-                      ({sectionItems.length})
-                    </span>
-                  </h2>
-                </div>
+                <MotionSection delay={Math.min(sIdx * 0.04, 0.2)}>
+                  <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                    <h2 className="text-lg font-semibold uppercase tracking-wider text-red-400">
+                      {sectionName}{" "}
+                      <span className="text-sm font-normal text-gray-400">
+                        ({sectionItems.length})
+                      </span>
+                    </h2>
+                  </div>
+                </MotionSection>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {sectionItems.map((item, idx) => {
@@ -528,8 +535,10 @@ export function LoreExplorer({
                     const isBookmarked = bookmarkedKeySet.has(itemKey);
 
                     return (
-                      <article
+                      <MotionCard
                         key={itemKey}
+                        as="article"
+                        index={idx}
                         data-item-key={itemKey}
                         className="bg-gray-800 border border-gray-700 rounded-lg p-5 shadow-lg flex flex-col justify-between gap-3"
                       >
@@ -631,7 +640,7 @@ export function LoreExplorer({
                             </select>
                           </label>
                         </div>
-                      </article>
+                      </MotionCard>
                     );
                   })}
                 </div>
@@ -640,6 +649,6 @@ export function LoreExplorer({
           })}
         </div>
       )}
-    </div>
+    </MotionPage>
   );
 }

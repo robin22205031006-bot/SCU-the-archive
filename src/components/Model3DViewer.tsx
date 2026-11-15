@@ -16,6 +16,33 @@ import {
   detectWebGLContext,
   normalizeThreeColor,
 } from "@/lib/three-stage-utils";
+import { isAnimeMotionAllowed } from "@/lib/anime-animations";
+
+function isShounenDaylightActive(): boolean {
+  if (typeof document === "undefined") return false;
+  const d = document.documentElement.dataset;
+  if (d["primarySystem"] === "minimal" || d["uiMode"] === "minimal") return false;
+  return d["mangaSubtheme"] === "shounen" || d["genreTheme"] === "shonen";
+}
+
+function createProceduralSunFlareTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const grad = ctx.createRadialGradient(128, 128, 4, 128, 128, 128);
+  grad.addColorStop(0, "rgba(255, 251, 235, 0.96)");
+  grad.addColorStop(0.24, "rgba(253, 224, 71, 0.7)");
+  grad.addColorStop(0.58, "rgba(232, 106, 51, 0.22)");
+  grad.addColorStop(1, "rgba(232, 106, 51, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 256);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 
 export interface Model3DViewerProps extends Omit<GlbModelViewerProps, "url" | "alt"> {
   url?: string | null;
@@ -102,6 +129,9 @@ function ProceduralVfxStage({
   const mountRef = useRef<HTMLDivElement>(null);
   const [webglReady, setWebglReady] = useState(true);
   const [autoRotate, setAutoRotate] = useState(true);
+  const [shounenMode, setShounenMode] = useState(() => isShounenDaylightActive());
+  const [speedLinesBurst, setSpeedLinesBurst] = useState(false);
+  const firstMountRef = useRef(true);
   const autoRotateRef = useRef(autoRotate);
   autoRotateRef.current = autoRotate;
 
@@ -116,6 +146,33 @@ function ProceduralVfxStage({
     rebuildVfx: (cfg: ModelVfxConfig) => void;
     requestRender: () => void;
   } | null>(null);
+
+  useEffect(() => {
+    const syncMode = () => setShounenMode(isShounenDaylightActive());
+    syncMode();
+    window.addEventListener("scu:ui-mode-change", syncMode);
+    window.addEventListener("scu:genre-theme-change", syncMode);
+    window.addEventListener("scu:manga-subtheme-change", syncMode);
+    return () => {
+      window.removeEventListener("scu:ui-mode-change", syncMode);
+      window.removeEventListener("scu:genre-theme-change", syncMode);
+      window.removeEventListener("scu:manga-subtheme-change", syncMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (firstMountRef.current) {
+      firstMountRef.current = false;
+      return;
+    }
+    if (!shounenMode || !isAnimeMotionAllowed()) {
+      setSpeedLinesBurst(false);
+      return;
+    }
+    setSpeedLinesBurst(true);
+    const id = window.setTimeout(() => setSpeedLinesBurst(false), 420);
+    return () => window.clearTimeout(id);
+  }, [name, shounenMode]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -180,10 +237,52 @@ function ProceduralVfxStage({
     controls.autoRotateSpeed = 1.25;
     controls.update();
 
-    scene.add(new THREE.HemisphereLight(0x9bd2ff, 0x101827, 0.85));
+    const hemiLight = new THREE.HemisphereLight(0x9bd2ff, 0x101827, 0.85);
+    scene.add(hemiLight);
+    const ambientBounce = new THREE.AmbientLight(0x38bdf8, 0);
+    scene.add(ambientBounce);
     const keyLight = new THREE.DirectionalLight(0xfff1dc, 2.1);
     keyLight.position.set(3.5, 5.2, 3.8);
     scene.add(keyLight);
+
+    const sunTex = createProceduralSunFlareTexture();
+    const sunMat = new THREE.SpriteMaterial({
+      ...(sunTex ? { map: sunTex } : {}),
+      color: 0xfffbeb,
+      transparent: true,
+      opacity: 0.84,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const sunSprite = new THREE.Sprite(sunMat);
+    sunSprite.position.set(0, 1.05, -1.55);
+    sunSprite.scale.set(3.2, 3.2, 1);
+    sunSprite.visible = false;
+    scene.add(sunSprite);
+
+    const applyLightingTheme = () => {
+      if (isShounenDaylightActive()) {
+        scene.background = new THREE.Color(0x7ce0f9);
+        hemiLight.color.setHex(0x38bdf8);
+        hemiLight.groundColor.setHex(0x18a999);
+        hemiLight.intensity = 1.05;
+        ambientBounce.color.setHex(0x38bdf8);
+        ambientBounce.intensity = 0.45;
+        keyLight.color.setHex(0xfffbeb);
+        keyLight.intensity = 2.2;
+        sunSprite.visible = true;
+      } else {
+        scene.background = new THREE.Color(0x060a14);
+        hemiLight.color.setHex(0x9bd2ff);
+        hemiLight.groundColor.setHex(0x101827);
+        hemiLight.intensity = 0.85;
+        ambientBounce.intensity = 0;
+        keyLight.color.setHex(0xfff1dc);
+        keyLight.intensity = 2.1;
+        sunSprite.visible = false;
+      }
+    };
+    applyLightingTheme();
 
     // Composite 4-part procedural relic core
     const relicGroup = new THREE.Group();
@@ -344,9 +443,18 @@ function ProceduralVfxStage({
       }
     };
 
+    const handleThemeChange = () => {
+      if (disposed) return;
+      applyLightingTheme();
+      scheduleRender();
+    };
+
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("scu:ui-mode-change", handleThemeChange);
+    window.addEventListener("scu:genre-theme-change", handleThemeChange);
+    window.addEventListener("scu:manga-subtheme-change", handleThemeChange);
 
     const ro = new ResizeObserver(() => {
       if (disposed || contextLost) return;
@@ -368,6 +476,9 @@ function ProceduralVfxStage({
       window.clearTimeout(timeoutId);
       ro.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("scu:ui-mode-change", handleThemeChange);
+      window.removeEventListener("scu:genre-theme-change", handleThemeChange);
+      window.removeEventListener("scu:manga-subtheme-change", handleThemeChange);
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
       vfxHooksRef.current = null;
@@ -383,6 +494,8 @@ function ProceduralVfxStage({
       ringGeo.dispose();
       outerRingGeo.dispose();
       ringMat.dispose();
+      sunMat.dispose();
+      sunTex?.dispose();
       envTex?.dispose();
       renderer.dispose();
       container.innerHTML = "";
@@ -401,9 +514,35 @@ function ProceduralVfxStage({
     <div
       data-testid="glb-model-viewer"
       data-vfx-preset={vfxConfig.preset}
-      className={`relative h-full w-full overflow-hidden bg-[#060a14] ${className}`}
+      data-lighting-mode={shounenMode ? "shounen-daylight" : "studio"}
+      className={`relative h-full w-full overflow-hidden ${
+        shounenMode ? "" : "bg-[#060a14]"
+      } ${className}`}
+      style={
+        shounenMode
+          ? { background: "linear-gradient(165deg, #3898EC 0%, #7CE0F9 56%, #18A999 100%)" }
+          : undefined
+      }
       onClick={(e) => e.stopPropagation()}
     >
+      {shounenMode && (
+        <div
+          aria-hidden="true"
+          data-testid="shounen-sun-flare"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 34%, rgba(255,251,235,0.45) 0%, rgba(253,224,71,0.18) 32%, transparent 66%)",
+          }}
+        />
+      )}
+      {speedLinesBurst && (
+        <div
+          aria-hidden="true"
+          data-testid="shounen-speedlines-burst"
+          className="shounen-speedline-burst pointer-events-none absolute inset-0 z-10"
+        />
+      )}
       {webglReady ? (
         <div
           ref={mountRef}

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useAnimationsEnabled } from "@/lib/animations";
+import { useAppMotion } from "@/hooks/use-app-motion";
 
 /** Kinetic typography: spring-staggered letter reveal (stiffness 250, damping 20). */
 export function KineticText({
@@ -11,8 +11,8 @@ export function KineticText({
   className?: string;
   delay?: number;
 }) {
-  const animOn = useAnimationsEnabled();
-  if (!animOn) return <span className={className}>{text}</span>;
+  const { motionActive } = useAppMotion();
+  if (!motionActive) return <span className={className}>{text}</span>;
   return (
     <span className={className} aria-label={text}>
       {text.split("").map((ch, i) => (

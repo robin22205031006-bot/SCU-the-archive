@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { KineticText } from "@/components/kinetic-text";
+import { useAppMotion } from "@/hooks/use-app-motion";
 
 const KEY = "scu-welcomed";
 
 /** Full-screen cinematic welcome shown once per session after sign-in. */
 export function WelcomeVfx() {
+  const { motionActive } = useAppMotion();
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
+    if (!motionActive) return;
     let seen: string | null = null;
     try {
       seen = sessionStorage.getItem(KEY);
@@ -33,9 +36,9 @@ export function WelcomeVfx() {
       clearTimeout(t2);
       setShow(false);
     };
-  }, []);
+  }, [motionActive]);
 
-  if (!show) return null;
+  if (!show || !motionActive) return null;
   return (
     <motion.div
       className="pointer-events-none fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-black/60 backdrop-blur-sm"

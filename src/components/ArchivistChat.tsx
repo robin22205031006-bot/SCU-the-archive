@@ -1,9 +1,13 @@
 import React, { useCallback, useRef, useState } from "react";
 import { Headphones, Mic, MicOff, Square } from "lucide-react";
+import { motion } from "framer-motion";
 import { askLore } from "@/lib/ai-box.functions";
 import { useVoiceInput } from "@/hooks/use-voice-input";
+import { useAppMotion } from "@/hooks/use-app-motion";
+import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export function ArchivistChat() {
+  const { motionActive, spec } = useAppMotion();
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([
     {
       role: "system",
@@ -85,24 +89,54 @@ export function ArchivistChat() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold text-red-500 mb-4 tracking-wide">SCU Archivist AI</h2>
+    <MotionPage className="flex flex-col h-screen bg-gray-950 text-white p-6 max-w-4xl mx-auto">
+      <MotionSection>
+        <h2 className="text-2xl font-bold text-red-500 mb-4 tracking-wide">SCU Archivist AI</h2>
+      </MotionSection>
 
-      <div className="flex-1 overflow-y-auto bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4 mb-4">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`p-3 rounded-lg max-w-[80%] ${msg.role === "user" ? "bg-red-900/40 ml-auto text-right" : "bg-gray-800 mr-auto"}`}
-          >
-            <p className="text-sm text-gray-200">{msg.content}</p>
-          </div>
-        ))}
-        {loading && (
-          <div className="text-xs text-gray-500 animate-pulse">
-            Archivist is analyzing records...
-          </div>
-        )}
-      </div>
+      <MotionSection
+        delay={0.04}
+        className="flex-1 overflow-y-auto bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4 mb-4"
+      >
+        <MotionPresence initial={false}>
+          {messages.map((msg, idx) =>
+            motionActive ? (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={spec.transition}
+                className={`p-3 rounded-lg max-w-[80%] ${msg.role === "user" ? "bg-red-900/40 ml-auto text-right" : "bg-gray-800 mr-auto"}`}
+              >
+                <p className="text-sm text-gray-200">{msg.content}</p>
+              </motion.div>
+            ) : (
+              <div
+                key={idx}
+                className={`p-3 rounded-lg max-w-[80%] ${msg.role === "user" ? "bg-red-900/40 ml-auto text-right" : "bg-gray-800 mr-auto"}`}
+              >
+                <p className="text-sm text-gray-200">{msg.content}</p>
+              </div>
+            ),
+          )}
+          {loading &&
+            (motionActive ? (
+              <motion.div
+                key="archivist-loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-xs text-gray-500 animate-pulse"
+              >
+                Archivist is analyzing records...
+              </motion.div>
+            ) : (
+              <div key="archivist-loading" className="text-xs text-gray-500">
+                Archivist is analyzing records...
+              </div>
+            ))}
+        </MotionPresence>
+      </MotionSection>
 
       {isListening && (
         <div
@@ -231,6 +265,6 @@ export function ArchivistChat() {
           Query
         </button>
       </form>
-    </div>
+    </MotionPage>
   );
 }

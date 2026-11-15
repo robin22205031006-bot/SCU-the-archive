@@ -10,6 +10,7 @@ import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
+import { useAppMotion } from "@/hooks/use-app-motion";
 
 /** Expanded Nexus ability showcase: cel FX, tier and upgrade lineage playback. */
 export function AbilityFxShowcase({
@@ -21,6 +22,7 @@ export function AbilityFxShowcase({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
+  const { motionActive } = useAppMotion();
   const [current, setCurrent] = useState(name);
   const [ascending, setAscending] = useState(false);
   const [boosted, setBoosted] = useState(false);
@@ -64,23 +66,34 @@ export function AbilityFxShowcase({
           )}
         </div>
         <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-card/40">
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={def.key}
-              className="absolute inset-0"
-              initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 1.15, filter: "blur(6px)" }}
-              transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
-            >
+          {motionActive ? (
+            <AnimatePresence mode="popLayout">
+              <motion.div
+                key={def.key}
+                className="absolute inset-0"
+                initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 1.15, filter: "blur(6px)" }}
+                transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
+              >
+                <AbilityFxCanvas
+                  recipe={recipe}
+                  label={`${def.label} animation`}
+                  boosted={boosted}
+                  fps={fps}
+                />
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            <div className="absolute inset-0" data-motion-state="minimal-off">
               <AbilityFxCanvas
                 recipe={recipe}
                 label={`${def.label} animation`}
                 boosted={boosted}
                 fps={fps}
               />
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          )}
           <div className="absolute left-3 top-3 flex items-center gap-2">
             <span
               className="rounded-full border border-border bg-background/80 px-2 py-0.5 text-[10px] uppercase tracking-widest backdrop-blur font-mono"

@@ -20,6 +20,7 @@ import {
 } from "@/integrations/lovable";
 import { useSession } from "@/hooks/use-admin";
 import { syncSessionCache } from "@/lib/session-cache";
+import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { next?: string; banned?: string } => ({
@@ -378,178 +379,197 @@ function AuthPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-8">
-      <h1 className="text-4xl font-medium">{mode === "in" ? "Sign in" : "Create account"}</h1>
+    <MotionPage
+      as="main"
+      className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-8"
+    >
+      <MotionSection>
+        <h1 className="text-4xl font-medium">{mode === "in" ? "Sign in" : "Create account"}</h1>
+      </MotionSection>
 
-      {banned === "1" && (
-        <div
-          role="alert"
-          className="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 px-3.5 py-2.5 text-xs text-destructive"
+      <MotionPresence initial={false}>
+        {banned === "1" && (
+          <MotionSection
+            key="banned-alert"
+            className="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 px-3.5 py-2.5 text-xs text-destructive"
+          >
+            <div role="alert">
+              This account has been suspended and cannot access restricted archive tools.
+            </div>
+          </MotionSection>
+        )}
+      </MotionPresence>
+
+      <MotionSection delay={0.04}>
+        <Button
+          type="button"
+          variant="outline"
+          className="google-sign-in mt-6 w-full"
+          disabled={googleBusy || busy}
+          onClick={signInGoogle}
         >
-          This account has been suspended and cannot access restricted archive tools.
-        </div>
-      )}
-
-      <Button
-        type="button"
-        variant="outline"
-        className="google-sign-in mt-6 w-full"
-        disabled={googleBusy || busy}
-        onClick={signInGoogle}
-      >
-        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path
-            fill="#4285F4"
-            d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"
-          />
-          <path
-            fill="#34A853"
-            d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"
-          />
-          <path
-            fill="#FBBC05"
-            d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"
-          />
-          <path
-            fill="#EA4335"
-            d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"
-          />
-        </svg>
-        {googleBusy ? "Connecting…" : "Continue with Google"}
-      </Button>
-
-      {oauthNotice && (
-        <div
-          role="alert"
-          className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200"
-        >
-          <p>{oauthNotice.message}</p>
-          {oauthNotice.missingSecret && (
-            <p className="mt-1.5 text-[11px] text-amber-300/90">
-              Callback URL:{" "}
-              <code className="break-all font-mono">{getSupabaseBaseUrl()}/auth/v1/callback</code>
-            </p>
-          )}
-          {oauthNotice.fallbackUrl && (
-            <a
-              href={oauthNotice.fallbackUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-block font-medium text-amber-100 underline hover:text-white"
-            >
-              Open Google Sign-In in new tab
-            </a>
-          )}
-        </div>
-      )}
-
-      <form onSubmit={submit} className="mt-8 grid gap-4">
-        {mode === "in" ? (
-          <div className="grid gap-1.5">
-            <Label htmlFor="auth-identifier">Username or email</Label>
-            <Input
-              id="auth-identifier"
-              required
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              autoComplete="username"
+          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"
             />
-          </div>
-        ) : (
-          <>
+            <path
+              fill="#34A853"
+              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"
+            />
+          </svg>
+          {googleBusy ? "Connecting…" : "Continue with Google"}
+        </Button>
+
+        <MotionPresence initial={false}>
+          {oauthNotice && (
+            <MotionSection
+              key="oauth-notice"
+              className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200"
+            >
+              <div role="alert">
+                <p>{oauthNotice.message}</p>
+                {oauthNotice.missingSecret && (
+                  <p className="mt-1.5 text-[11px] text-amber-300/90">
+                    Callback URL:{" "}
+                    <code className="break-all font-mono">
+                      {getSupabaseBaseUrl()}/auth/v1/callback
+                    </code>
+                  </p>
+                )}
+                {oauthNotice.fallbackUrl && (
+                  <a
+                    href={oauthNotice.fallbackUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block font-medium text-amber-100 underline hover:text-white"
+                  >
+                    Open Google Sign-In in new tab
+                  </a>
+                )}
+              </div>
+            </MotionSection>
+          )}
+        </MotionPresence>
+      </MotionSection>
+
+      <MotionSection delay={0.08}>
+        <form onSubmit={submit} className="mt-8 grid gap-4">
+          {mode === "in" ? (
             <div className="grid gap-1.5">
-              <Label htmlFor="auth-username">Username</Label>
+              <Label htmlFor="auth-identifier">Username or email</Label>
               <Input
-                id="auth-username"
+                id="auth-identifier"
                 required
-                minLength={3}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 autoComplete="username"
               />
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="auth-email">Email</Label>
-              <Input
-                id="auth-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
+          ) : (
+            <>
+              <div className="grid gap-1.5">
+                <Label htmlFor="auth-username">Username</Label>
+                <Input
+                  id="auth-username"
+                  required
+                  minLength={3}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="auth-email">Email</Label>
+                <Input
+                  id="auth-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+            </>
+          )}
+          <div className="grid gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="auth-password">Password</Label>
+              <span
+                data-testid="show-pass-status"
+                className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+              >
+                Show pass: {showPassword ? "On" : "Off"}
+              </span>
             </div>
-          </>
-        )}
-        <div className="grid gap-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="auth-password">Password</Label>
-            <span
-              data-testid="show-pass-status"
-              className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
-            >
-              Show pass: {showPassword ? "On" : "Off"}
-            </span>
+            <PasswordInput
+              id="auth-password"
+              showPassword={showPassword}
+              onShowPasswordChange={setShowPassword}
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === "in" ? "current-password" : "new-password"}
+            />
           </div>
-          <PasswordInput
-            id="auth-password"
-            showPassword={showPassword}
-            onShowPasswordChange={setShowPassword}
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={mode === "in" ? "current-password" : "new-password"}
-          />
-        </div>
-        <Button disabled={busy}>{busy ? "…" : mode === "in" ? "Sign in" : "Sign up"}</Button>
-        {mode === "in" && (
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <button
-              type="button"
-              disabled={magicBusy || busy}
-              onClick={sendMagicLink}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-            >
-              <Mail className="h-3.5 w-3.5" />
-              {magicBusy ? "Sending link…" : "Email sign-in link (Gmail)"}
-            </button>
-            <button
-              type="button"
-              className="text-xs text-muted-foreground hover:text-foreground"
-              onClick={async () => {
-                const id = identifier.trim();
-                if (!id) {
-                  toast.error("Enter your username or email first.");
-                  return;
-                }
-                let targetEmail = id.includes("@") ? id : "";
-                if (!targetEmail) {
-                  const { data } = await supabase.rpc("lookup_login_email", { p_username: id });
-                  targetEmail = data ?? "";
-                }
-                if (!targetEmail) {
-                  toast.error("Account not found.");
-                  return;
-                }
-                const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-                  redirectTo: new URL("/auth", window.location.origin).href,
-                });
-                if (error) toast.error(error.message);
-                else toast.success("Password reset link sent — check your email.");
-              }}
-            >
-              Forgot password?
-            </button>
-          </div>
-        )}
-      </form>
+          <Button disabled={busy}>{busy ? "…" : mode === "in" ? "Sign in" : "Sign up"}</Button>
+          {mode === "in" && (
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <button
+                type="button"
+                disabled={magicBusy || busy}
+                onClick={sendMagicLink}
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                {magicBusy ? "Sending link…" : "Email sign-in link (Gmail)"}
+              </button>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground"
+                onClick={async () => {
+                  const id = identifier.trim();
+                  if (!id) {
+                    toast.error("Enter your username or email first.");
+                    return;
+                  }
+                  let targetEmail = id.includes("@") ? id : "";
+                  if (!targetEmail) {
+                    const { data } = await supabase.rpc("lookup_login_email", { p_username: id });
+                    targetEmail = data ?? "";
+                  }
+                  if (!targetEmail) {
+                    toast.error("Account not found.");
+                    return;
+                  }
+                  const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+                    redirectTo: new URL("/auth", window.location.origin).href,
+                  });
+                  if (error) toast.error(error.message);
+                  else toast.success("Password reset link sent — check your email.");
+                }}
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+        </form>
+      </MotionSection>
       <button
         onClick={() => setMode(mode === "in" ? "up" : "in")}
         className="mt-4 text-sm text-muted-foreground hover:text-foreground"
       >
         {mode === "in" ? "First time? Create your account" : "Have an account? Sign in"}
       </button>
-    </main>
+    </MotionPage>
   );
 }

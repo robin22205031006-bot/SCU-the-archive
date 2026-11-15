@@ -18,6 +18,7 @@ import { uploadModel3d } from "@/lib/models-3d";
 import { Sparkles, Layers } from "lucide-react";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
+import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 type Artifact = Tables<"artifacts">;
 export const ARTIFACT_CATEGORIES = {
@@ -223,31 +224,34 @@ function ArsenalPage() {
   });
 
   return (
-    <main
+    <MotionPage
+      as="main"
       className={`mx-auto grid w-full max-w-6xl gap-5 px-4 pb-24 sm:px-6 ${isManga ? "pt-6" : "pt-24"}`}
     >
       {isManga ? (
-        <MangaChapterBanner
-          chapter="CH. 04 // ARSENAL"
-          jp="武装・聖遺物"
-          title="Arsenal & Relics"
-          subtitle="Cursed blades, dimensional engines, and sacred weaponry inked as blueprint plates."
-          stamp="武装"
-          actions={
-            staff && (
-              <Button
-                size="sm"
-                onClick={() => open()}
-                className="manga-ink-btn border-2 border-foreground bg-foreground text-background"
-              >
-                <Plus className="mr-1 size-4" />
-                NEW PLATE
-              </Button>
-            )
-          }
-        />
+        <MotionSection>
+          <MangaChapterBanner
+            chapter="CH. 04 // ARSENAL"
+            jp="武装・聖遺物"
+            title="Arsenal & Relics"
+            subtitle="Cursed blades, dimensional engines, and sacred weaponry inked as blueprint plates."
+            stamp="武装"
+            actions={
+              staff && (
+                <Button
+                  size="sm"
+                  onClick={() => open()}
+                  className="manga-ink-btn border-2 border-foreground bg-foreground text-background"
+                >
+                  <Plus className="mr-1 size-4" />
+                  NEW PLATE
+                </Button>
+              )
+            }
+          />
+        </MotionSection>
       ) : (
-        <header className="flex flex-wrap items-end justify-between gap-3">
+        <MotionSection as="header" className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Arsenal & Relics</h1>
             <p className="text-sm text-muted-foreground">
@@ -260,11 +264,12 @@ function ArsenalPage() {
               Add item
             </Button>
           )}
-        </header>
+        </MotionSection>
       )}
 
       {/* Sub-tab Switcher: Isolated Objects vs Catalog */}
-      <div
+      <MotionSection
+        delay={0.04}
         className={`flex flex-wrap items-center gap-2 pb-3 ${
           isManga ? "border-b-[3px] border-foreground" : "border-b border-border/60"
         }`}
@@ -313,169 +318,187 @@ function ArsenalPage() {
           <Layers className="size-4" />
           <span>{isManga ? "PLATE CATALOG // 04B" : "Archive Catalog (Dossier Cards)"}</span>
         </button>
-      </div>
+      </MotionSection>
 
-      {subTab === "isolated" ? (
-        <ArsenalIsolatedView artifacts={data ?? []} onSelectArtifact={(a) => setFocusId(a.id)} />
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-0 flex-1">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-              <Input
-                className={
-                  isManga
-                    ? "rounded-none border-2 border-foreground pl-8 font-mono text-xs"
-                    : "pl-8"
-                }
-                placeholder="Search name, wielder or lore"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(["all", ...Object.keys(ARTIFACT_CATEGORIES)] as (Cat | "all")[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCat(c)}
+      <MotionPresence mode="wait">
+        {subTab === "isolated" ? (
+          <MotionSection key="isolated">
+            <ArsenalIsolatedView
+              artifacts={data ?? []}
+              onSelectArtifact={(a) => setFocusId(a.id)}
+            />
+          </MotionSection>
+        ) : (
+          <MotionSection key="catalog" className="grid gap-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                <Input
                   className={
                     isManga
-                      ? `border-2 border-foreground px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
-                          cat === c
-                            ? "border-[#b91c1c] bg-[#b91c1c] text-white"
-                            : "bg-background text-foreground hover:bg-secondary"
-                        }`
-                      : `rounded-full border px-3 py-1 text-xs transition ${cat === c ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`
+                      ? "rounded-none border-2 border-foreground pl-8 font-mono text-xs"
+                      : "pl-8"
                   }
-                >
-                  {c === "all" ? "All" : ARTIFACT_CATEGORIES[c]}
-                </button>
-              ))}
-            </div>
-          </div>
-          {edit && (
-            <section
-              className={`grid gap-2 bg-card p-4 sm:grid-cols-2 ${
-                isManga
-                  ? "manga-panel border-[3px] border-foreground"
-                  : "rounded-2xl border border-accent/40"
-              }`}
-            >
-              <div className="flex items-center justify-between sm:col-span-2">
-                <h2 className="font-semibold">{edit.id ? "Edit item" : "New item"}</h2>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Close"
-                  onClick={() => setEdit(null)}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-              <Input placeholder="Name" {...f("name")} />
-              <select
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                {...f("category")}
-              >
-                {Object.entries(ARTIFACT_CATEGORIES).map(([k, l]) => (
-                  <option key={k} value={k}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-              <Input placeholder="Type (sword, katana, relic...)" {...f("weapon_type")} />
-              <Input placeholder="Wielders (comma separated)" {...f("wielders")} />
-              <Input placeholder="Materials" {...f("materials")} />
-              <Input placeholder="Colors" {...f("colors")} />
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                Curse level (0–5)
-                <Input type="number" min={0} max={5} className="w-20" {...f("curse_level")} />
-              </label>
-              <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/25">
-                  <Upload className="size-3.5" />
-                  <span>{uploading3d ? "Uploading…" : "Upload 3D Model (.glb)"}</span>
-                  <input
-                    type="file"
-                    accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
-                    className="sr-only"
-                    disabled={uploading3d}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      e.target.value = "";
-                      if (!file || !edit) return;
-                      setUploading3d(true);
-                      try {
-                        const url = await uploadModel3d(file, "arsenals", edit.v.name || edit.id);
-                        setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: url } });
-                        toast.success(`Uploaded 3D model "${file.name}".`);
-                      } catch (err) {
-                        toast.error(
-                          err instanceof Error ? err.message : "Could not upload 3D model.",
-                        );
-                      } finally {
-                        setUploading3d(false);
-                      }
-                    }}
-                  />
-                </label>
-                <Input
-                  className="min-w-0 flex-1 text-xs"
-                  placeholder="3D model .glb URL (models-3d/arsenals/…)"
-                  {...f("model_3d_url")}
+                  placeholder="Search name, wielder or lore"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
                 />
-                {edit.v.model_3d_url && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: "" } })}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(["all", ...Object.keys(ARTIFACT_CATEGORIES)] as (Cat | "all")[]).map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCat(c)}
+                    className={
+                      isManga
+                        ? `border-2 border-foreground px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                            cat === c
+                              ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                              : "bg-background text-foreground hover:bg-secondary"
+                          }`
+                        : `rounded-full border px-3 py-1 text-xs transition ${cat === c ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`
+                    }
                   >
-                    Clear 3D
-                  </Button>
-                )}
+                    {c === "all" ? "All" : ARTIFACT_CATEGORIES[c]}
+                  </button>
+                ))}
               </div>
-              <Textarea
-                className="sm:col-span-2"
-                placeholder="How it works"
-                {...f("how_it_works")}
-              />
-              <Textarea className="sm:col-span-2" placeholder="Lore" {...f("lore")} />
-              <div className="sm:col-span-2">
-                <Button onClick={save}>Save</Button>
-              </div>
-            </section>
-          )}
-          <div
-            className={`grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
-          >
-            {list.map((a) => (
-              <CardGuard key={a.id} name={a.name}>
-                <ArtifactCard
-                  a={a}
-                  style={style}
-                  motion={motion}
-                  staff={staff}
-                  onEdit={() => open(a)}
-                  onDelete={() => remove(a)}
-                  onOpen={() => setFocusId(a.id)}
-                />
-              </CardGuard>
-            ))}
-            {list.length === 0 &&
-              (isManga ? (
-                <MangaThoughtBox className="sm:col-span-3">Nothing found.</MangaThoughtBox>
-              ) : (
-                <p className="text-sm text-muted-foreground">Nothing found.</p>
+            </div>
+            <MotionPresence>
+              {edit && (
+                <MotionSection
+                  as="section"
+                  className={`grid gap-2 bg-card p-4 sm:grid-cols-2 ${
+                    isManga
+                      ? "manga-panel border-[3px] border-foreground"
+                      : "rounded-2xl border border-accent/40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between sm:col-span-2">
+                    <h2 className="font-semibold">{edit.id ? "Edit item" : "New item"}</h2>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Close"
+                      onClick={() => setEdit(null)}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                  <Input placeholder="Name" {...f("name")} />
+                  <select
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    {...f("category")}
+                  >
+                    {Object.entries(ARTIFACT_CATEGORIES).map(([k, l]) => (
+                      <option key={k} value={k}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                  <Input placeholder="Type (sword, katana, relic...)" {...f("weapon_type")} />
+                  <Input placeholder="Wielders (comma separated)" {...f("wielders")} />
+                  <Input placeholder="Materials" {...f("materials")} />
+                  <Input placeholder="Colors" {...f("colors")} />
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    Curse level (0–5)
+                    <Input type="number" min={0} max={5} className="w-20" {...f("curse_level")} />
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/25">
+                      <Upload className="size-3.5" />
+                      <span>{uploading3d ? "Uploading…" : "Upload 3D Model (.glb)"}</span>
+                      <input
+                        type="file"
+                        accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+                        className="sr-only"
+                        disabled={uploading3d}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file || !edit) return;
+                          setUploading3d(true);
+                          try {
+                            const url = await uploadModel3d(
+                              file,
+                              "arsenals",
+                              edit.v.name || edit.id,
+                            );
+                            setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: url } });
+                            toast.success(`Uploaded 3D model "${file.name}".`);
+                          } catch (err) {
+                            toast.error(
+                              err instanceof Error ? err.message : "Could not upload 3D model.",
+                            );
+                          } finally {
+                            setUploading3d(false);
+                          }
+                        }}
+                      />
+                    </label>
+                    <Input
+                      className="min-w-0 flex-1 text-xs"
+                      placeholder="3D model .glb URL (models-3d/arsenals/…)"
+                      {...f("model_3d_url")}
+                    />
+                    {edit.v.model_3d_url && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: "" } })
+                        }
+                      >
+                        Clear 3D
+                      </Button>
+                    )}
+                  </div>
+                  <Textarea
+                    className="sm:col-span-2"
+                    placeholder="How it works"
+                    {...f("how_it_works")}
+                  />
+                  <Textarea className="sm:col-span-2" placeholder="Lore" {...f("lore")} />
+                  <div className="sm:col-span-2">
+                    <Button onClick={save}>Save</Button>
+                  </div>
+                </MotionSection>
+              )}
+            </MotionPresence>
+            <div
+              className={`grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+            >
+              {list.map((a) => (
+                <CardGuard key={a.id} name={a.name}>
+                  <ArtifactCard
+                    a={a}
+                    style={style}
+                    motion={motion}
+                    staff={staff}
+                    onEdit={() => open(a)}
+                    onDelete={() => remove(a)}
+                    onOpen={() => setFocusId(a.id)}
+                  />
+                </CardGuard>
               ))}
-          </div>
-        </>
-      )}
-      {focus && nexus && (
-        <CardGuard key={"v" + focus.id} name={focus.name}>
-          <NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocusId(null)} />
-        </CardGuard>
-      )}
-    </main>
+              {list.length === 0 &&
+                (isManga ? (
+                  <MangaThoughtBox className="sm:col-span-3">Nothing found.</MangaThoughtBox>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nothing found.</p>
+                ))}
+            </div>
+          </MotionSection>
+        )}
+      </MotionPresence>
+      <MotionPresence>
+        {focus && nexus && (
+          <CardGuard key={"v" + focus.id} name={focus.name}>
+            <NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocusId(null)} />
+          </CardGuard>
+        )}
+      </MotionPresence>
+    </MotionPage>
   );
 }

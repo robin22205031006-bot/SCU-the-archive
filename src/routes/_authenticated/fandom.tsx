@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
+import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/fandom")({
   head: () => ({
@@ -113,23 +114,29 @@ function Fandom() {
   );
 
   return (
-    <main className={`mx-auto max-w-3xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}>
-      {isManga ? (
-        <MangaChapterBanner
-          chapter="CH. 08 // FANDOM"
-          jp="読者投稿欄・考察"
-          title="Fandom"
-          subtitle="Reader mailbag, canon theories, and serialized debate boards."
-          stamp="投書"
-        />
-      ) : (
-        <>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Community</p>
-          <h1 className="mt-2 text-5xl font-medium glow-text">Fandom</h1>
-        </>
-      )}
+    <MotionPage
+      as="main"
+      className={`mx-auto max-w-3xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}
+    >
+      <MotionSection as="header">
+        {isManga ? (
+          <MangaChapterBanner
+            chapter="CH. 08 // FANDOM"
+            jp="読者投稿欄・考察"
+            title="Fandom"
+            subtitle="Reader mailbag, canon theories, and serialized debate boards."
+            stamp="投書"
+          />
+        ) : (
+          <>
+            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Community</p>
+            <h1 className="mt-2 text-5xl font-medium glow-text">Fandom</h1>
+          </>
+        )}
+      </MotionSection>
 
-      <div
+      <MotionSection
+        delay={0.04}
         className={
           isManga
             ? "manga-panel mt-6 grid gap-3 border-[3px] border-foreground bg-card p-4"
@@ -163,7 +170,7 @@ function Fandom() {
         >
           {isManga ? "PUBLISH DISPATCH" : "Post"}
         </Button>
-      </div>
+      </MotionSection>
 
       {nexus ? (
         <div className="mt-8">
@@ -221,8 +228,10 @@ function Fandom() {
       ) : (
         <div className="mt-8 grid gap-4">
           {sorted.map((p, idx) => (
-            <article
+            <MotionCard
+              as="article"
               key={p.id}
+              index={idx}
               className={
                 isManga
                   ? "manga-panel border-[3px] border-foreground bg-card p-4"
@@ -283,10 +292,12 @@ function Fandom() {
                       </button>
                     )}
                   </div>
-                  {openPost === p.id && <Comments postId={p.id} />}
+                  <MotionPresence initial={false}>
+                    {openPost === p.id && <Comments key={p.id} postId={p.id} />}
+                  </MotionPresence>
                 </div>
               </div>
-            </article>
+            </MotionCard>
           ))}
           {posts &&
             !posts.length &&
@@ -301,7 +312,7 @@ function Fandom() {
             ))}
         </div>
       )}
-    </main>
+    </MotionPage>
   );
 }
 

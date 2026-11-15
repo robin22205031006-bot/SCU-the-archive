@@ -10,6 +10,7 @@ import { analyzeLore, applyLore } from "@/lib/ingest.functions";
 import { ingestAdminPdf } from "@/controllers/adminController.js";
 import type { IngestStage } from "@/controllers/adminController.js";
 import { invalidateArchive } from "@/lib/archive-sync";
+import { MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/ingest")({
   head: () => ({
@@ -81,48 +82,52 @@ function Ingest() {
   };
 
   return (
-    <main className="mx-auto max-w-3xl px-5 pb-24 pt-28">
-      <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Admin</p>
-      <h1 className="mt-2 text-5xl font-medium">Lore Ingest</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Upload a story PDF. Names and facts supported by the text are saved automatically. Pictures
-        and fields you edited by hand are never overwritten.
-      </p>
+    <MotionPage as="main" className="mx-auto max-w-3xl px-5 pb-24 pt-28">
+      <MotionSection as="header">
+        <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Admin</p>
+        <h1 className="mt-2 text-5xl font-medium">Lore Ingest</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Upload a story PDF. Names and facts supported by the text are saved automatically.
+          Pictures and fields you edited by hand are never overwritten.
+        </p>
+      </MotionSection>
 
-      <label className="mt-10 flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed bg-card p-6">
-        <FileText className="h-6 w-6 text-muted-foreground" />
-        <span className="flex-1 text-sm">{file ? file.name : "Choose a PDF"}</span>
-        <input
-          ref={input}
-          type="file"
-          accept="application/pdf,.pdf"
-          aria-label="Choose a PDF"
-          className="hidden"
+      <MotionSection delay={0.05}>
+        <label className="mt-10 flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed bg-card p-6">
+          <FileText className="h-6 w-6 text-muted-foreground" />
+          <span className="flex-1 text-sm">{file ? file.name : "Choose a PDF"}</span>
+          <input
+            ref={input}
+            type="file"
+            accept="application/pdf,.pdf"
+            aria-label="Choose a PDF"
+            className="hidden"
+            disabled={stage !== "idle"}
+            onChange={(e) => {
+              const selected = e.target.files?.[0];
+              if (selected) void run(selected);
+            }}
+          />
+        </label>
+        <Button
+          className="mt-4"
           disabled={stage !== "idle"}
-          onChange={(e) => {
-            const selected = e.target.files?.[0];
-            if (selected) void run(selected);
+          onClick={() => {
+            if (retry && file) void run(file);
+            else input.current?.click();
           }}
-        />
-      </label>
-      <Button
-        className="mt-4"
-        disabled={stage !== "idle"}
-        onClick={() => {
-          if (retry && file) void run(file);
-          else input.current?.click();
-        }}
-      >
-        {stage === "reading"
-          ? "Reading PDF…"
-          : stage === "analyzing"
-            ? "Analyzing lore…"
-            : stage === "saving"
-              ? "Saving…"
-              : retry
-                ? "Retry import"
-                : "Upload PDF"}
-      </Button>
-    </main>
+        >
+          {stage === "reading"
+            ? "Reading PDF…"
+            : stage === "analyzing"
+              ? "Analyzing lore…"
+              : stage === "saving"
+                ? "Saving…"
+                : retry
+                  ? "Retry import"
+                  : "Upload PDF"}
+        </Button>
+      </MotionSection>
+    </MotionPage>
   );
 }

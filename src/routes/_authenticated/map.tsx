@@ -10,6 +10,7 @@ import { useIsManga, useActiveGenre } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 import { GenreDiamondMediaFrame } from "@/components/genre-decorations";
 import { FantasyMapSpread } from "@/components/fantasy-map-spread";
+import { MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
@@ -40,75 +41,82 @@ function MapPage() {
   const isFantasy = isManga && activeGenre === "fantasy";
   const sectionStyle = useSectionStyle("timeline");
   return (
-    <main
+    <MotionPage
+      as="main"
       className={`mx-auto max-w-6xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}
       style={sectionStyle}
     >
-      {isManga ? (
-        <MangaChapterBanner
-          chapter="CH. 07 // TACTICAL ATLAS"
-          jp="戦術地図・拠点"
-          title="Tactical Map"
-          subtitle="Known locations, controlling factions, historic battles, and Sentinel deployments across the SCU theater."
-          stamp="地図"
-        />
-      ) : (
-        <header className="mb-8">
-          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Strategic overview</p>
-          <h1 className="mt-2 text-5xl font-medium glow-text">Tactical Map</h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Known locations, controlling factions, historic battles, and Sentinel deployments across
-            the SCU theater.
-          </p>
-        </header>
-      )}
-      {nexus ? (
-        <NexusWorkspace
-          views={[
-            {
-              id: "atlas",
-              title: "Atlas",
-              icon: <Globe2 className="h-4 w-4" />,
-              content: <NexusAtlas />,
-            },
-            {
-              id: "world",
-              title: "World & Eras",
-              icon: <Map className="h-4 w-4" />,
-              content: <LoreLocations />,
-            },
-            {
-              id: "deployments",
-              title: "Deployments",
-              icon: <Radio className="h-4 w-4" />,
-              content: <TacticalMap />,
-            },
-          ]}
-        />
-      ) : isFantasy ? (
-        <FantasyMapSpread />
-      ) : isManga ? (
-        <div className="grid gap-8">
-          <GenreDiamondMediaFrame
-            theme={activeGenre}
-            variant="diamond"
-            leftEmblemLabel="ATLAS"
-            rightEmblemLabel="ERA"
-          >
-            <MangaPanel caption="THEATER ATLAS & ERAS // 勢力圏" badge="LOCATIONS">
-              <LoreLocations />
+      <MotionSection as="header">
+        {isManga ? (
+          <MangaChapterBanner
+            chapter="CH. 07 // TACTICAL ATLAS"
+            jp="戦術地図・拠点"
+            title="Tactical Map"
+            subtitle="Known locations, controlling factions, historic battles, and Sentinel deployments across the SCU theater."
+            stamp="地図"
+          />
+        ) : (
+          <div className="mb-8">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">
+              Strategic overview
+            </p>
+            <h1 className="mt-2 text-5xl font-medium glow-text">Tactical Map</h1>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              Known locations, controlling factions, historic battles, and Sentinel deployments
+              across the SCU theater.
+            </p>
+          </div>
+        )}
+      </MotionSection>
+      <MotionSection delay={0.05}>
+        {nexus ? (
+          <NexusWorkspace
+            views={[
+              {
+                id: "atlas",
+                title: "Atlas",
+                icon: <Globe2 className="h-4 w-4" />,
+                content: <NexusAtlas />,
+              },
+              {
+                id: "world",
+                title: "World & Eras",
+                icon: <Map className="h-4 w-4" />,
+                content: <LoreLocations />,
+              },
+              {
+                id: "deployments",
+                title: "Deployments",
+                icon: <Radio className="h-4 w-4" />,
+                content: <TacticalMap />,
+              },
+            ]}
+          />
+        ) : isFantasy ? (
+          <FantasyMapSpread />
+        ) : isManga ? (
+          <div className="grid gap-8">
+            <GenreDiamondMediaFrame
+              theme={activeGenre}
+              variant="diamond"
+              leftEmblemLabel="ATLAS"
+              rightEmblemLabel="ERA"
+            >
+              <MangaPanel caption="THEATER ATLAS & ERAS // 勢力圏" badge="LOCATIONS">
+                <LoreLocations />
+              </MangaPanel>
+            </GenreDiamondMediaFrame>
+            <MangaPanel caption="DEPLOYMENT BOARD // 配備一覧" badge="FIELD LOGS">
+              <TacticalMap />
             </MangaPanel>
-          </GenreDiamondMediaFrame>
-          <MangaPanel caption="DEPLOYMENT BOARD // 配備一覧" badge="FIELD LOGS">
+          </div>
+        ) : (
+          <>
+            <LoreLocations />
             <TacticalMap />
-          </MangaPanel>
-        </div>
-      ) : (
-        <>
-          <LoreLocations />
-          <TacticalMap />
-        </>
-      )}
-    </main>
+          </>
+        )}
+      </MotionSection>
+    </MotionPage>
   );
 }

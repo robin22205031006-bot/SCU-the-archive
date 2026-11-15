@@ -4,7 +4,9 @@ import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Search } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { NexusSign } from "@/components/nexus-sign";
+import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 
 export type NexusRecord = {
   id: string;
@@ -30,7 +32,8 @@ export function NexusExplorer<T extends NexusRecord>({
   loading?: boolean;
 }) {
   const id = useId();
-  const moving = useNexusMotion();
+  const { motionActive } = useAppMotion();
+  const moving = useNexusMotion() && motionActive;
   const [group, setGroup] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState(initialQuery);
@@ -44,7 +47,7 @@ export function NexusExplorer<T extends NexusRecord>({
   const selected = visible.find((r) => r.id === selectedId);
   const selectedIndex = selected ? visible.indexOf(selected) : -1;
   const transition = moving
-    ? { type: "spring" as const, stiffness: 240, damping: 30, mass: 0.9 }
+    ? { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const }
     : { duration: 0 };
 
   useEffect(() => {
@@ -120,20 +123,25 @@ export function NexusExplorer<T extends NexusRecord>({
                   return (
                     <motion.div
                       key={g}
-                      whileHover={{ y: moving ? -5 : 0, scale: moving ? 1.015 : 1 }}
+                      whileHover={{ y: moving ? -4 : 0, scale: moving ? 1.015 : 1 }}
                       transition={transition}
-                      className="nexus-cluster nexus-card-holo relative overflow-hidden rounded-xl border border-border/80 bg-card/60 backdrop-blur-sm"
+                      className="nexus-cluster nexus-card-holo relative overflow-hidden rounded-xl border border-cyan-400/35 bg-slate-950/60 shadow-[0_0_20px_rgba(56,189,248,0.1)] backdrop-blur-md transition-colors hover:border-amber-400/65"
                     >
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-amber-400/80 shadow-[0_0_6px_#f59e0b]"
+                      />
                       <Button
                         variant="ghost"
-                        className="relative block h-auto min-h-48 w-full whitespace-normal p-4 text-left group"
+                        className="group relative block h-auto min-h-48 w-full whitespace-normal p-4 text-left"
                         onClick={() => {
                           setGroup(g);
                           setSelectedId(null);
+                          triggerAnimeActionCut({ color: "#38bdf8" });
                         }}
                         aria-label={`${g === "all" ? `All ${label.toLowerCase()}` : g}, ${members.length}`}
                       >
-                        <span className="block text-xs font-semibold tracking-wide text-foreground group-hover:text-nexus-glow transition-colors">
+                        <span className="block font-mono text-xs font-semibold tracking-wider text-foreground transition-colors group-hover:text-cyan-300">
                           {g === "all" ? `All ${label.toLowerCase()}` : g}
                         </span>
                         <span className="relative mx-auto my-2 block h-32 w-full max-w-[12rem]">
@@ -217,12 +225,15 @@ export function NexusExplorer<T extends NexusRecord>({
                       <Button
                         variant="ghost"
                         aria-pressed={r.id === selectedId}
-                        className={`nexus-record h-auto min-h-20 w-full justify-start whitespace-normal rounded-xl border px-4 py-3 text-left transition-all duration-200 ${
+                        className={`nexus-record h-auto min-h-20 w-full justify-start whitespace-normal rounded-xl border px-4 py-3 text-left backdrop-blur-md transition-all duration-200 ${
                           r.id === selectedId
-                            ? "border-accent/90 bg-accent/15 shadow-[0_0_20px_rgba(56,189,248,0.25)] scale-[1.015]"
-                            : "border-border/80 bg-card/45 hover:border-nexus-glow/60 hover:bg-card/75 hover:shadow-lg hover:-translate-y-0.5"
+                            ? "scale-[1.015] border-amber-400/80 bg-amber-500/12 shadow-[0_0_22px_rgba(245,158,11,0.24)]"
+                            : "border-cyan-400/30 bg-slate-950/55 hover:-translate-y-0.5 hover:border-cyan-300/75 hover:bg-slate-900/75 hover:shadow-[0_0_18px_rgba(56,189,248,0.2)]"
                         }`}
-                        onClick={() => setSelectedId(r.id)}
+                        onClick={() => {
+                          setSelectedId(r.id);
+                          triggerAnimeActionCut({ color: "#38bdf8", label: r.title });
+                        }}
                       >
                         {r.image ? (
                           <NexusSign symbolName={r.title} className="h-12 w-12 shrink-0">
@@ -263,7 +274,7 @@ export function NexusExplorer<T extends NexusRecord>({
                       animate={{ opacity: 1, x: 0, scale: 1 }}
                       exit={{ opacity: 0, x: moving ? -12 : 0 }}
                       transition={transition}
-                      className="min-w-0 scroll-mt-24 rounded-lg border border-border bg-card/60 p-4 sm:p-6"
+                      className="min-w-0 scroll-mt-24 rounded-lg border border-cyan-400/35 bg-slate-950/65 p-4 shadow-[0_0_26px_rgba(56,189,248,0.12)] backdrop-blur-md sm:p-6"
                       aria-label={`${selected.title} details`}
                     >
                       <div className="mb-5 flex items-center justify-between gap-2 border-b border-border pb-3">

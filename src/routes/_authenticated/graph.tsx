@@ -7,6 +7,7 @@ import { NexusLineage } from "@/components/nexus-lineage";
 import { Network, Castle } from "lucide-react";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
+import { MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/graph")({
   head: () => ({
@@ -33,49 +34,56 @@ function Graph() {
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
   return (
-    <main className={`mx-auto max-w-6xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}>
-      {isManga ? (
-        <MangaChapterBanner
-          chapter="CH. 14 // RELATIONS"
-          jp="人物相関図"
-          title="Relationship Graph"
-          subtitle="The living web of the archive — every bond between sentinels, clans, bloodlines and factions."
-          stamp="相関"
-        />
-      ) : (
-        <header className="mb-8">
-          <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
-          <h1 className="mt-2 text-5xl font-medium glow-text">Relationship Graph</h1>
-          <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            The living web of the archive — every bond between characters and the factions, clans,
-            bloodlines and organizations they serve.
-          </p>
-        </header>
-      )}
-      {nexus ? (
-        <NexusWorkspace
-          views={[
-            {
-              id: "relationships",
-              title: "Relationships",
-              icon: <Network className="h-4 w-4" />,
-              content: <NexusConstellation />,
-            },
-            {
-              id: "lineages",
-              title: "Lineages",
-              icon: <Castle className="h-4 w-4" />,
-              content: <NexusLineage />,
-            },
-          ]}
-        />
-      ) : isManga ? (
-        <MangaPanel caption="CORRELATION WEB // 連関網" badge="GRAPH PLATE">
+    <MotionPage
+      as="main"
+      className={`mx-auto max-w-6xl px-4 pb-24 sm:px-5 ${isManga ? "pt-6" : "pt-28"}`}
+    >
+      <MotionSection as="header">
+        {isManga ? (
+          <MangaChapterBanner
+            chapter="CH. 14 // RELATIONS"
+            jp="人物相関図"
+            title="Relationship Graph"
+            subtitle="The living web of the archive — every bond between sentinels, clans, bloodlines and factions."
+            stamp="相関"
+          />
+        ) : (
+          <div className="mb-8">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Chronicle</p>
+            <h1 className="mt-2 text-5xl font-medium glow-text">Relationship Graph</h1>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              The living web of the archive — every bond between characters and the factions, clans,
+              bloodlines and organizations they serve.
+            </p>
+          </div>
+        )}
+      </MotionSection>
+      <MotionSection delay={0.05}>
+        {nexus ? (
+          <NexusWorkspace
+            views={[
+              {
+                id: "relationships",
+                title: "Relationships",
+                icon: <Network className="h-4 w-4" />,
+                content: <NexusConstellation />,
+              },
+              {
+                id: "lineages",
+                title: "Lineages",
+                icon: <Castle className="h-4 w-4" />,
+                content: <NexusLineage />,
+              },
+            ]}
+          />
+        ) : isManga ? (
+          <MangaPanel caption="CORRELATION WEB // 連関網" badge="GRAPH PLATE">
+            <RelationshipGraph />
+          </MangaPanel>
+        ) : (
           <RelationshipGraph />
-        </MangaPanel>
-      ) : (
-        <RelationshipGraph />
-      )}
-    </main>
+        )}
+      </MotionSection>
+    </MotionPage>
   );
 }

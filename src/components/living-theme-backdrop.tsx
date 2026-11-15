@@ -88,13 +88,13 @@ function paletteForTheme(genre: GenreThemeId, subTheme?: string): BackdropPalett
     case "shounen":
     case "shonen":
       return {
-        foliageA: "#1e1b2e",
-        foliageB: "#f97316",
-        waterA: "#111827",
-        waterB: "#facc15",
-        moteColor: "#fdba74",
-        windSpeed: 1.5,
-        foliageAlpha: 0.28,
+        foliageA: "#047857",
+        foliageB: "#10b981",
+        waterA: "#18a999",
+        waterB: "#7ce0f9",
+        moteColor: "#fffbeb",
+        windSpeed: 1.45,
+        foliageAlpha: 0.34,
       };
     case "manga-ink":
     default:

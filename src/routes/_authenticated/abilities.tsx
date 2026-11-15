@@ -45,7 +45,8 @@ import type { Json } from "@/integrations/supabase/types";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
-import { useAnimationsEnabled } from "@/lib/animations";
+import { useAppMotion } from "@/hooks/use-app-motion";
+import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
 import { GenreCardFrame } from "@/components/genre-decorations";
@@ -125,13 +126,17 @@ function AbilitiesTabs() {
           ))}
         </div>
       </div>
-      {tab === "fx" ? (
-        <AbilityFxPanel />
-      ) : tab === "action" ? (
-        <AbilityActionPanel />
-      ) : (
-        <AbilitiesHub />
-      )}
+      <MotionPresence mode="wait">
+        <MotionPage key={tab}>
+          {tab === "fx" ? (
+            <AbilityFxPanel />
+          ) : tab === "action" ? (
+            <AbilityActionPanel />
+          ) : (
+            <AbilitiesHub />
+          )}
+        </MotionPage>
+      </MotionPresence>
     </>
   );
 }
@@ -270,71 +275,80 @@ function AbilitiesHub() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-5">
-      {isManga ? (
-        <MangaChapterBanner
-          chapter="CH. 03 // POWERS"
-          jp="異能・能力目録"
-          title="Abilities Hub"
-          subtitle="Every innate art, beast trait, and battle classification — cross-referenced to every canon wielder."
-          stamp="異能"
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <SpoilerToggle scope="abilities" />
-              {isAdmin && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowAdd((v) => !v)}
-                  className="manga-ink-btn border-2 border-foreground bg-foreground text-background"
-                >
-                  {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />} ADD ABILITY
-                </Button>
-              )}
+      <MotionSection>
+        {isManga ? (
+          <MangaChapterBanner
+            chapter="CH. 03 // POWERS"
+            jp="異能・能力目録"
+            title="Abilities Hub"
+            subtitle="Every innate art, beast trait, and battle classification — cross-referenced to every canon wielder."
+            stamp="異能"
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <SpoilerToggle scope="abilities" />
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowAdd((v) => !v)}
+                    className="manga-ink-btn border-2 border-foreground bg-foreground text-background"
+                  >
+                    {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />} ADD ABILITY
+                  </Button>
+                )}
+              </div>
+            }
+          />
+        ) : (
+          <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
+              <h1 className="mt-2 flex items-center gap-2 text-5xl font-medium glow-text">
+                <Sparkles className="h-8 w-8 text-accent" /> Abilities Hub
+              </h1>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Every power, beast trait and role — cross-referenced to the characters who wield
+                them.
+              </p>
+              <div className="mt-3">
+                <SpoilerToggle scope="abilities" />
+              </div>
             </div>
-          }
-        />
-      ) : (
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Archive</p>
-            <h1 className="mt-2 flex items-center gap-2 text-5xl font-medium glow-text">
-              <Sparkles className="h-8 w-8 text-accent" /> Abilities Hub
-            </h1>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Every power, beast trait and role — cross-referenced to the characters who wield them.
-            </p>
-            <div className="mt-3">
-              <SpoilerToggle scope="abilities" />
-            </div>
-          </div>
-          {isAdmin && (
-            <Button size="sm" onClick={() => setShowAdd((v) => !v)}>
-              {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />} Add ability
-            </Button>
-          )}
-        </header>
-      )}
+            {isAdmin && (
+              <Button size="sm" onClick={() => setShowAdd((v) => !v)}>
+                {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />} Add ability
+              </Button>
+            )}
+          </header>
+        )}
+      </MotionSection>
 
-      {isAdmin && showAdd && (
-        <AddAbilityForm
-          onSaved={(addedTier) => {
-            setShowAdd(false);
-            if (addedTier && tier !== "all" && tier !== addedTier) setTier(addedTier);
-            void qc.invalidateQueries({ queryKey: ["app-settings"] });
-          }}
-        />
-      )}
-      {isAdmin && editingDef && (
-        <EditAbilityForm
-          key={editingDef.key}
-          def={editingDef}
-          onClose={() => setEditingDef(null)}
-          onSaved={(nextTier) => {
-            setEditingDef(null);
-            if (tier !== "all" && nextTier !== tier) setTier(nextTier);
-            void qc.invalidateQueries({ queryKey: ["app-settings"] });
-          }}
-        />
-      )}
+      <MotionPresence initial={false}>
+        {isAdmin && showAdd && (
+          <MotionSection key="add-ability-form">
+            <AddAbilityForm
+              onSaved={(addedTier) => {
+                setShowAdd(false);
+                if (addedTier && tier !== "all" && tier !== addedTier) setTier(addedTier);
+                void qc.invalidateQueries({ queryKey: ["app-settings"] });
+              }}
+            />
+          </MotionSection>
+        )}
+        {isAdmin && editingDef && (
+          <MotionSection key={`edit-ability-${editingDef.key}`}>
+            <EditAbilityForm
+              key={editingDef.key}
+              def={editingDef}
+              onClose={() => setEditingDef(null)}
+              onSaved={(nextTier) => {
+                setEditingDef(null);
+                if (tier !== "all" && nextTier !== tier) setTier(nextTier);
+                void qc.invalidateQueries({ queryKey: ["app-settings"] });
+              }}
+            />
+          </MotionSection>
+        )}
+      </MotionPresence>
 
       {nexus && defs.length > 0 && <NexusAbilityHero defs={defs} />}
       {nexus ? (
@@ -429,8 +443,13 @@ function AbilitiesHub() {
               <p className="py-16 text-center text-sm text-muted-foreground">No abilities match.</p>
             )
           ) : (
-            presentTiers.map((t) => (
-              <section key={t} className="mb-8">
+            presentTiers.map((t, tIdx) => (
+              <MotionSection
+                key={t}
+                as="section"
+                delay={Math.min(tIdx * 0.04, 0.2)}
+                className="mb-8"
+              >
                 {isManga ? (
                   <h2 className="mb-4 flex items-center justify-between gap-2 border-b-[3px] border-foreground pb-2">
                     <span className="flex items-center gap-2 font-display text-2xl uppercase tracking-wider">
@@ -470,7 +489,7 @@ function AbilitiesHub() {
                     />
                   ))}
                 </div>
-              </section>
+              </MotionSection>
             ))
           )}
         </>
@@ -522,19 +541,19 @@ function AbilityCard({
   const isManga = useIsManga();
   const activeGenre = useActiveGenre();
   const themeCtx = useOptionalThemeContext();
-  const animEnabled = useAnimationsEnabled();
+  const { motionActive } = useAppMotion();
   const isFantasy =
     (themeCtx
       ? themeCtx.primarySystem === "manga" && themeCtx.mangaSubTheme === "fantasy"
       : false) ||
     (isManga && activeGenre === "fantasy");
-  const motionActive = animEnabled && !themeCtx?.isMinimal;
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
   const Icon = def.icon;
   const holdersMasked = useSpoilerMask("abilities");
   return (
-    <div
+    <MotionCard
+      index={index}
       className={
         isFantasy
           ? `manga-panel manga-panel-hover ${motionActive ? "card-idle-breath" : ""} fantasy-mint-aura-hover hover:mint-emerald-aura focus-within:mint-emerald-aura group relative rounded-lg border-2 border-[#c5a869] bg-[#15221b] p-3.5 text-[#f5ebe6]`
@@ -634,55 +653,57 @@ function AbilityCard({
         </p>
       )}
 
-      {open && (
-        <div className="mt-3 border-t border-border pt-3">
-          {holders.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No characters carry this yet — assign it from a character's editor.
-            </p>
-          ) : holdersMasked ? (
-            <p className="text-xs italic text-muted-foreground">
-              Holder names are hidden to avoid spoilers.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {holders.map((e) => (
-                <Link
-                  key={e.id}
-                  to="/reader"
-                  search={{ e: e.id }}
-                  className={
-                    isManga
-                      ? "border border-border bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-primary hover:text-primary-foreground"
-                      : "rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs hover:border-accent hover:text-accent"
-                  }
-                >
-                  {e.name}
-                </Link>
-              ))}
-            </div>
-          )}
-          {isAdmin && (
-            <div className="mt-3 flex items-center gap-3">
-              <button
-                onClick={onEdit}
-                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-accent"
-              >
-                <Pencil className="h-3 w-3" /> Edit ability
-              </button>
-              {isCustom && (
+      <MotionPresence initial={false}>
+        {open && (
+          <MotionSection key="ability-holders" className="mt-3 border-t border-border pt-3">
+            {holders.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No characters carry this yet — assign it from a character's editor.
+              </p>
+            ) : holdersMasked ? (
+              <p className="text-xs italic text-muted-foreground">
+                Holder names are hidden to avoid spoilers.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {holders.map((e) => (
+                  <Link
+                    key={e.id}
+                    to="/reader"
+                    search={{ e: e.id }}
+                    className={
+                      isManga
+                        ? "border border-border bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-primary hover:text-primary-foreground"
+                        : "rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs hover:border-accent hover:text-accent"
+                    }
+                  >
+                    {e.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {isAdmin && (
+              <div className="mt-3 flex items-center gap-3">
                 <button
-                  onClick={onDeleteCustom}
-                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive"
+                  onClick={onEdit}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-accent"
                 >
-                  <Trash2 className="h-3 w-3" /> Remove from registry
+                  <Pencil className="h-3 w-3" /> Edit ability
                 </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+                {isCustom && (
+                  <button
+                    onClick={onDeleteCustom}
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" /> Remove from registry
+                  </button>
+                )}
+              </div>
+            )}
+          </MotionSection>
+        )}
+      </MotionPresence>
+    </MotionCard>
   );
 }
 

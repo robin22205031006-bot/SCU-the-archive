@@ -13,6 +13,7 @@ import {
   type Entity,
   type EntityMembership,
 } from "@/lib/entities";
+import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/reader")({
   validateSearch: (s: Record<string, unknown>): { e?: string } =>
@@ -132,7 +133,7 @@ function Reader() {
     .sort((a, b) => a.other.name.localeCompare(b.other.name));
 
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
+    <MotionPage as="main" className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
       <Link
         to={archiveTo}
         className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
@@ -142,30 +143,32 @@ function Reader() {
 
       <div className="grid gap-8 lg:grid-cols-[14rem_1fr]">
         {/* Table of contents */}
-        {tocOpen && toc.length > 1 && (
-          <aside className="lg:sticky lg:top-28 lg:self-start">
-            <div className="glass rounded-2xl p-4">
-              <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
-                <List className="h-3 w-3" /> Contents
-              </p>
-              <nav className="mt-3 grid gap-1">
-                {toc.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => scrollTo(t.id)}
-                    className="truncate rounded-lg px-2 py-1 text-left text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </aside>
-        )}
+        <MotionPresence initial={false}>
+          {tocOpen && toc.length > 1 && (
+            <MotionSection as="aside" key="toc" className="lg:sticky lg:top-28 lg:self-start">
+              <div className="glass rounded-2xl p-4">
+                <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                  <List className="h-3 w-3" /> Contents
+                </p>
+                <nav className="mt-3 grid gap-1">
+                  {toc.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => scrollTo(t.id)}
+                      className="truncate rounded-lg px-2 py-1 text-left text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </MotionSection>
+          )}
+        </MotionPresence>
 
         {/* Reading column */}
         <article className="min-w-0">
-          <header className="mb-10 border-b border-border pb-8">
+          <MotionSection as="header" className="mb-10 border-b border-border pb-8">
             <p className="text-[11px] uppercase tracking-[0.25em] text-accent">
               {entity.kind} · {entity.status}
             </p>
@@ -177,9 +180,9 @@ function Reader() {
                 {[entity.alias, entity.role, entity.category].filter(Boolean).join(" · ")}
               </p>
             )}
-          </header>
+          </MotionSection>
 
-          <section id="sec-overview" className="mb-12 scroll-mt-28">
+          <MotionSection as="section" id="sec-overview" delay={0.04} className="mb-12 scroll-mt-28">
             <h2 className="mb-4 font-display text-2xl">Overview</h2>
             {entity.description ? (
               <p className="whitespace-pre-line text-lg leading-9 text-foreground/85">
@@ -188,7 +191,7 @@ function Reader() {
             ) : (
               <p className="text-muted-foreground">No description recorded.</p>
             )}
-          </section>
+          </MotionSection>
 
           {stats.length > 0 && (
             <section id="sec-stats" className="mb-12 scroll-mt-28">
@@ -256,6 +259,6 @@ function Reader() {
       >
         <BookOpen className="h-3.5 w-3.5" /> {tocOpen ? "Hide" : "Contents"}
       </Button>
-    </main>
+    </MotionPage>
   );
 }

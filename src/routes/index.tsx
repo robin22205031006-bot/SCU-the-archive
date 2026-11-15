@@ -10,6 +10,7 @@ import { getGenreThemeMeta } from "@/lib/genre-themes";
 import { MANGA_SCALE } from "@/lib/manga-scale";
 import { HankoStamp } from "@/components/manga-emblem";
 import { Button } from "@/components/ui/button";
+import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 import { ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -67,70 +68,75 @@ function Index() {
 
   if (isManga)
     return (
-      <main className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-5">
-        <MangaChapterBanner
-          chapter={`ISSUE #01 // ${genreMeta.shortLabel.toUpperCase()}`}
-          jp={genreMeta.jpLabel}
-          title="Sentinels Cinematic Universe"
-          subtitle="Serialized Index — characters, bloodlines, cursed weapons, and five eras of canon chronology."
-          stamp="第一巻"
-        />
+      <MotionPage as="main" className="mx-auto max-w-6xl px-3 pb-24 pt-5 sm:px-5">
+        <MotionSection>
+          <MangaChapterBanner
+            chapter={`ISSUE #01 // ${genreMeta.shortLabel.toUpperCase()}`}
+            jp={genreMeta.jpLabel}
+            title="Sentinels Cinematic Universe"
+            subtitle="Serialized Index — characters, bloodlines, cursed weapons, and five eras of canon chronology."
+            stamp="第一巻"
+          />
+        </MotionSection>
 
-        <MangaPanel caption="EDITION STYLE // 表示切替" badge="INTERFACE" className="mb-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              Select reading layout:
-            </span>
-            <UiStylePicker />
-          </div>
-        </MangaPanel>
+        <MotionSection delay={0.04}>
+          <MangaPanel caption="EDITION STYLE // 表示切替" badge="INTERFACE" className="mb-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Select reading layout:
+              </span>
+              <UiStylePicker />
+            </div>
+          </MangaPanel>
+        </MotionSection>
 
         <section
           aria-label="Serialized chapter directory"
           className={`grid grid-cols-1 ${MANGA_SCALE.grid} sm:grid-cols-2 lg:grid-cols-3`}
         >
           {sections.map((s, idx) => (
-            <Link
-              key={s.to}
-              to={s.to}
-              className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex flex-col justify-between overflow-hidden border-2 border-border bg-card transition-transform hover:-translate-y-0.5 ${
-                idx % 2 === 1 ? "manga-halftone" : ""
-              }`}
-            >
-              <GenreCardFrame theme={resolvedGenre} compact />
-              <span className="absolute -right-7 top-2.5 rotate-45 border-y border-border bg-primary px-7 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-primary-foreground">
-                CH.{s.n}
-              </span>
-              <div className="relative">
-                <span
-                  className={`inline-block border border-border bg-foreground px-1.5 py-0.5 font-mono ${MANGA_SCALE.meta} font-bold uppercase tracking-widest text-background`}
-                >
-                  PLATE #{s.n}
+            <MotionCard key={s.to} index={idx}>
+              <Link
+                to={s.to}
+                className={`manga-panel manga-panel-hover ${MANGA_SCALE.card} group relative flex h-full flex-col justify-between overflow-hidden border-2 border-border bg-card transition-transform hover:-translate-y-0.5 ${
+                  idx % 2 === 1 ? "manga-halftone" : ""
+                }`}
+              >
+                <GenreCardFrame theme={resolvedGenre} compact />
+                <span className="absolute -right-7 top-2.5 rotate-45 border-y border-border bg-primary px-7 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-primary-foreground">
+                  CH.{s.n}
                 </span>
-                <h2
-                  className={`mt-2 font-display ${MANGA_SCALE.cardTitle} uppercase tracking-wide group-hover:text-primary`}
-                >
-                  {s.t}
-                </h2>
-                <p
-                  className={`mt-1 border-l-2 border-border/50 pl-2 ${MANGA_SCALE.body} text-muted-foreground`}
-                >
-                  {s.d}
-                </p>
-              </div>
-              <div className="relative mt-3 flex items-center justify-between border-t border-border/25 pt-2 font-mono text-[9px] font-bold uppercase tracking-widest">
-                <span>ENTER SECTOR</span>
-                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-              </div>
-            </Link>
+                <div className="relative">
+                  <span
+                    className={`inline-block border border-border bg-foreground px-1.5 py-0.5 font-mono ${MANGA_SCALE.meta} font-bold uppercase tracking-widest text-background`}
+                  >
+                    PLATE #{s.n}
+                  </span>
+                  <h2
+                    className={`mt-2 font-display ${MANGA_SCALE.cardTitle} uppercase tracking-wide group-hover:text-primary`}
+                  >
+                    {s.t}
+                  </h2>
+                  <p
+                    className={`mt-1 border-l-2 border-border/50 pl-2 ${MANGA_SCALE.body} text-muted-foreground`}
+                  >
+                    {s.d}
+                  </p>
+                </div>
+                <div className="relative mt-3 flex items-center justify-between border-t border-border/25 pt-2 font-mono text-[9px] font-bold uppercase tracking-widest">
+                  <span>ENTER SECTOR</span>
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            </MotionCard>
           ))}
         </section>
 
-        <div className="mt-8">
+        <MotionSection delay={0.08} className="mt-8">
           <SeriesPage />
-        </div>
+        </MotionSection>
 
-        <footer className="mt-10 grid gap-4 md:grid-cols-2">
+        <MotionSection as="footer" delay={0.12} className="mt-10 grid gap-4 md:grid-cols-2">
           <MangaPanel caption="COLOPHON & CREDITS // 奥付" badge="STAFF">
             <ul className="space-y-1 font-mono text-xs text-muted-foreground">
               <li>
@@ -163,22 +169,22 @@ function Index() {
               <HankoStamp kanji="五印" label="CANON" tilt={-4} />
             </div>
           </div>
-        </footer>
-      </main>
+        </MotionSection>
+      </MotionPage>
     );
   if (nexus)
     return (
-      <main className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+      <MotionPage as="main" className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
+        <MotionSection className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
           <h2 className="text-sm">UI Style</h2>
           <UiStylePicker />
-        </div>
-        <header className="mb-10">
+        </MotionSection>
+        <MotionSection as="header" delay={0.04} className="mb-10">
           <p className="text-xs text-accent">SCU / NEXUS</p>
           <h1 className="mt-3 break-words text-4xl font-medium sm:text-5xl">
             Sentinels Cinematic Universe
           </h1>
-        </header>
+        </MotionSection>
         <NexusExplorer
           label="Archive sectors"
           records={sections.map((s) => ({
@@ -200,41 +206,48 @@ function Index() {
             </div>
           )}
         />
-        <div className="mt-12">
+        <MotionSection delay={0.08} className="mt-12">
           <SeriesPage />
-        </div>
-      </main>
+        </MotionSection>
+      </MotionPage>
     );
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-5 pb-20 pt-32">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-        <h2 className="text-sm">UI Style</h2>
-        <UiStylePicker />
-      </div>
-      <p className="text-[11px] uppercase tracking-[0.3em] text-accent">The Archive</p>
-      <h1 className="mt-4 text-6xl font-medium leading-[0.95] sm:text-8xl">
-        Sentinels
-        <br />
-        <em className="text-muted-foreground">Cinematic Universe</em>
-      </h1>
+    <MotionPage
+      as="main"
+      className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-5 pb-20 pt-32"
+    >
+      <MotionSection>
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+          <h2 className="text-sm">UI Style</h2>
+          <UiStylePicker />
+        </div>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-accent">The Archive</p>
+        <h1 className="mt-4 text-6xl font-medium leading-[0.95] sm:text-8xl">
+          Sentinels
+          <br />
+          <em className="text-muted-foreground">Cinematic Universe</em>
+        </h1>
+      </MotionSection>
       <div className="mt-16 grid border-t sm:grid-cols-3">
-        {sections.map((s) => (
-          <Link
+        {sections.map((s, idx) => (
+          <MotionCard
             key={s.to}
-            to={s.to}
-            className="group border-b py-6 sm:border-b-0 sm:border-r sm:px-6 sm:first:pl-0 sm:last:border-r-0"
+            index={idx}
+            className="border-b sm:border-b-0 sm:border-r sm:last:border-r-0"
           >
-            <span className="text-xs text-muted-foreground">{s.n}</span>
-            <h2 className="mt-2 text-3xl transition-colors group-hover:text-accent">{s.t}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{s.d}</p>
-          </Link>
+            <Link to={s.to} className="group block py-6 sm:px-6 sm:first:pl-0">
+              <span className="text-xs text-muted-foreground">{s.n}</span>
+              <h2 className="mt-2 text-3xl transition-colors group-hover:text-accent">{s.t}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{s.d}</p>
+            </Link>
+          </MotionCard>
         ))}
       </div>
-      <div className="mt-16">
+      <MotionSection delay={0.08} className="mt-16">
         <SeriesPage />
-      </div>
+      </MotionSection>
 
-      <footer className="mt-20 border-t border-border pt-8">
+      <MotionSection as="footer" delay={0.12} className="mt-20 border-t border-border pt-8">
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <h3 className="text-[11px] uppercase tracking-[0.25em] text-accent">Credits</h3>
@@ -264,7 +277,7 @@ function Index() {
             </p>
           </div>
         </div>
-      </footer>
-    </main>
+      </MotionSection>
+    </MotionPage>
   );
 }

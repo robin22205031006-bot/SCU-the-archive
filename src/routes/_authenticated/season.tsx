@@ -15,6 +15,7 @@ import { invalidateArchive, resolveGroupIds } from "@/lib/archive-sync";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { draftSeasonStory } from "@/lib/season-story.functions";
+import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/season")({
   validateSearch: (s: Record<string, unknown>): { series: string; n: number } => ({
@@ -178,59 +179,64 @@ function SeasonPage() {
   };
 
   return (
-    <main className="mx-auto max-w-4xl px-4 pb-24 pt-28 sm:px-5">
-      <Link to="/archive" className="text-xs text-accent">
-        ← Archive
-      </Link>
-      <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-accent">{series.title}</p>
-      <h1 className="mt-1 break-words text-4xl font-medium glow-text">{name}</h1>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <SpoilerToggle scope="series" />
-        {isStaff && (
-          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-            Edit season roster
-          </Button>
-        )}
-        {isStaff && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!!filling || !roster.length}
-            onClick={fillAll}
-          >
-            {filling ? `Reading PDFs ${filling}…` : "Fill all stories from PDFs"}
-          </Button>
-        )}
-        {isStaff && (
-          <Button size="sm" variant="outline" disabled={syncing} onClick={resync}>
-            {syncing ? "Syncing…" : "Resync everywhere"}
-          </Button>
-        )}
-      </div>
+    <MotionPage as="main" className="mx-auto max-w-4xl px-4 pb-24 pt-28 sm:px-5">
+      <MotionSection as="header">
+        <Link to="/archive" className="text-xs text-accent">
+          ← Archive
+        </Link>
+        <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-accent">{series.title}</p>
+        <h1 className="mt-1 break-words text-4xl font-medium glow-text">{name}</h1>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <SpoilerToggle scope="series" />
+          {isStaff && (
+            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+              Edit season roster
+            </Button>
+          )}
+          {isStaff && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!!filling || !roster.length}
+              onClick={fillAll}
+            >
+              {filling ? `Reading PDFs ${filling}…` : "Fill all stories from PDFs"}
+            </Button>
+          )}
+          {isStaff && (
+            <Button size="sm" variant="outline" disabled={syncing} onClick={resync}>
+              {syncing ? "Syncing…" : "Resync everywhere"}
+            </Button>
+          )}
+        </div>
+      </MotionSection>
       <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-        {roster.map((c) => {
+        {roster.map((c, idx) => {
           const d = readDossier(c.stats)[key] ?? {};
           return (
-            <li key={c.id} className="glass min-w-0 rounded-xl p-4">
-              <Link
-                to="/character"
-                search={{ e: c.id, series: seriesId, season: n }}
-                className="font-medium hover:text-accent"
-              >
-                {c.name}
-              </Link>
-              {c.alias && <p className="text-xs text-muted-foreground">{c.alias}</p>}
-              <div data-spoiler="series" className="mt-2 space-y-1 text-xs">
-                <p>
-                  Role: {c.category || "—"} · Status: {c.status || "—"}
-                </p>
-                {d.story && <p className="line-clamp-4 text-muted-foreground">{d.story}</p>}
-                {(d.bloodline || d.organizations?.length) && (
+            <li key={c.id}>
+              <MotionCard index={idx} interactive className="glass min-w-0 rounded-xl p-4">
+                <Link
+                  to="/character"
+                  search={{ e: c.id, series: seriesId, season: n }}
+                  className="font-medium hover:text-accent"
+                >
+                  {c.name}
+                </Link>
+                {c.alias && <p className="text-xs text-muted-foreground">{c.alias}</p>}
+                <div data-spoiler="series" className="mt-2 space-y-1 text-xs">
                   <p>
-                    Groups: {[d.bloodline, ...(d.organizations ?? [])].filter(Boolean).join(" · ")}
+                    Role: {c.category || "—"} · Status: {c.status || "—"}
                   </p>
-                )}
-              </div>
+                  {d.story && <p className="line-clamp-4 text-muted-foreground">{d.story}</p>}
+                  {(d.bloodline || d.organizations?.length) && (
+                    <p>
+                      Groups:{" "}
+                      {[d.bloodline, ...(d.organizations ?? [])].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                </div>
+              </MotionCard>
             </li>
           );
         })}
@@ -250,6 +256,6 @@ function SeasonPage() {
           label={`${series.title} · ${name}`}
         />
       )}
-    </main>
+    </MotionPage>
   );
 }

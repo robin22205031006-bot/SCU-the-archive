@@ -89,6 +89,28 @@ const SHONEN_STREAKS: readonly SparkleSpec[] = [
   { left: "82%", top: "22%", size: 115, delay: "1.3s", duration: "2.9s" },
 ];
 
+const SHONEN_CLOUDS: readonly {
+  left: string;
+  top: string;
+  width: number;
+  delay: string;
+  duration: string;
+  opacity: number;
+}[] = [
+  { left: "-8%", top: "6%", width: 320, delay: "0s", duration: "42s", opacity: 0.72 },
+  { left: "34%", top: "14%", width: 250, delay: "-14s", duration: "54s", opacity: 0.56 },
+  { left: "68%", top: "4%", width: 360, delay: "-24s", duration: "48s", opacity: 0.68 },
+];
+
+const SHONEN_LEAVES: readonly SparkleSpec[] = [
+  { left: "-4%", top: "18%", size: 14, delay: "0s", duration: "9s" },
+  { left: "12%", top: "8%", size: 11, delay: "2.1s", duration: "10.5s", alt: true },
+  { left: "28%", top: "26%", size: 13, delay: "1.2s", duration: "8.8s" },
+  { left: "48%", top: "12%", size: 10, delay: "3.4s", duration: "11s", alt: true },
+  { left: "64%", top: "22%", size: 14, delay: "0.7s", duration: "9.6s" },
+  { left: "80%", top: "14%", size: 12, delay: "2.8s", duration: "10.2s", alt: true },
+];
+
 const CYBER_STARS: readonly SparkleSpec[] = [
   { left: "9%", top: "16%", size: 11, delay: "0s", duration: "3.8s" },
   { left: "22%", top: "48%", size: 8, delay: "1.1s", duration: "4.6s", alt: true },
@@ -164,6 +186,41 @@ export function GenreBackdrop() {
       {genre === "shonen" && (
         <>
           <div
+            className="absolute inset-0 opacity-75"
+            style={{
+              background:
+                "linear-gradient(165deg, rgba(56, 152, 236, 0.36) 0%, rgba(124, 224, 249, 0.24) 50%, rgba(24, 169, 153, 0.34) 100%)",
+            }}
+          />
+          <div
+            className="absolute -right-16 -top-16 h-96 w-96 rounded-full opacity-55"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(255,251,235,0.85) 0%, rgba(253,224,71,0.35) 38%, transparent 72%)",
+            }}
+          />
+          {SHONEN_CLOUDS.map((c, idx) => (
+            <svg
+              key={`cloud-${idx}`}
+              data-shounen-cloud="true"
+              viewBox="0 0 280 96"
+              className={`absolute ${animOn ? "shounen-cloud-drift" : ""}`}
+              style={
+                {
+                  left: c.left,
+                  top: c.top,
+                  width: `${c.width}px`,
+                  opacity: c.opacity,
+                  animationDelay: c.delay,
+                  animationDuration: c.duration,
+                } as CSSProperties
+              }
+              fill="rgba(255, 253, 248, 0.9)"
+            >
+              <path d="M24 78 C10 78, 4 64, 16 54 C14 34, 38 22, 58 32 C72 8, 114 4, 136 24 C156 12, 194 18, 204 42 C226 38, 252 50, 250 70 C250 76, 244 78, 236 78 Z" />
+            </svg>
+          ))}
+          <div
             className={`genre-shonen-speedlines absolute inset-0 opacity-[0.14] ${
               animOn ? "genre-anim" : ""
             }`}
@@ -200,6 +257,28 @@ export function GenreBackdrop() {
                 } as CSSProperties
               }
             />
+          ))}
+          {SHONEN_LEAVES.map((leaf, idx) => (
+            <svg
+              key={`leaf-${idx}`}
+              data-shounen-leaf="true"
+              viewBox="0 0 24 16"
+              className={`absolute ${animOn ? "studio-leaf-wind" : ""}`}
+              style={
+                {
+                  left: leaf.left,
+                  top: leaf.top,
+                  width: `${leaf.size}px`,
+                  height: `${Math.round(leaf.size * 0.7)}px`,
+                  color: leaf.alt ? "#14b8a6" : "#10b981",
+                  animationDelay: leaf.delay,
+                  animationDuration: leaf.duration,
+                } as CSSProperties
+              }
+              fill="currentColor"
+            >
+              <path d="M2 12 C6 2, 16 1, 22 4 C18 12, 9 15, 2 12 Z" />
+            </svg>
           ))}
         </>
       )}
