@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Tables } from "@/integrations/supabase/types";
+import type { SeasonalWeaponWielder } from "@/lib/artifacts";
 import { artFor, artUrl, type ArsenalArt, type ArsenalForm } from "@/lib/arsenal-art";
 import { ArsenalEmblem } from "@/components/arsenal-emblem";
 import { ArsenalThreeStage } from "@/components/lazy-three";
@@ -327,9 +328,11 @@ function resolveElementForArtifact(
 
 export function ArsenalIsolatedView({
   artifacts,
+  seasonalWieldersByArtifact,
   onSelectArtifact,
 }: {
   artifacts: Artifact[];
+  seasonalWieldersByArtifact?: ReadonlyMap<string, SeasonalWeaponWielder[]> | undefined;
   onSelectArtifact?: (a: Artifact) => void;
 }) {
   const isManga = useIsManga();
@@ -349,15 +352,21 @@ export function ArsenalIsolatedView({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return artifacts;
-    return artifacts.filter(
-      (a) =>
+    return artifacts.filter((a) => {
+      const seasonal = seasonalWieldersByArtifact?.get(a.name.trim().toLowerCase()) ?? [];
+      return (
         a.name.toLowerCase().includes(q) ||
         (a.weapon_type ?? "").toLowerCase().includes(q) ||
-        (a.wielders ?? []).some((w) => w.toLowerCase().includes(q)),
-    );
-  }, [artifacts, search]);
+        (a.wielders ?? []).some((w) => w.toLowerCase().includes(q)) ||
+        seasonal.some((sw) => sw.entityName.toLowerCase().includes(q))
+      );
+    });
+  }, [artifacts, seasonalWieldersByArtifact, search]);
 
   const current = filtered[selectedIdx] ?? filtered[0] ?? artifacts[0];
+  const currentSeasonalWielders = current
+    ? (seasonalWieldersByArtifact?.get(current.name.trim().toLowerCase()) ?? [])
+    : [];
   const art = useMemo(
     () => (current ? artFor(current.name, current.weapon_type, current.category) : null),
     [current],
@@ -817,6 +826,16 @@ export function ArsenalIsolatedView({
                     Wielded by:{" "}
                     <span className="text-foreground font-medium">
                       {current.wielders.join(", ")}
+                    </span>
+                  </p>
+                )}
+                {currentSeasonalWielders.length > 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Equipped in seasons:{" "}
+                    <span className="text-foreground font-medium">
+                      {currentSeasonalWielders
+                        .map((sw) => `${sw.entityName} (${sw.labels.join(", ")})`)
+                        .join(" · ")}
                     </span>
                   </p>
                 )}

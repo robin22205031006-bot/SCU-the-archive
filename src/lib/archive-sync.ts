@@ -28,6 +28,8 @@ export const SHARED_ARCHIVE_KEYS = [
   ["rel-targets"],
   ["entity-relations"],
   ["admin-conflicts"],
+  ["artifacts"],
+  ["app-settings"],
 ] as const;
 
 export function invalidateArchive(qc: QueryClient) {

@@ -6,7 +6,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityGridSkeleton } from "@/components/route-skeleton";
 import { AbilityFxPanel } from "@/components/ability-fx-panel";
 import { AbilityActionPanel } from "@/components/ability-action-panel";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
   Flame,
@@ -26,13 +26,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-admin";
-import { entitiesQuery, type Entity } from "@/lib/entities";
+import { type Entity } from "@/lib/entities";
 import {
   ABILITY_GROUP_LABELS,
   ABILITY_REGISTRY,
   TIER_LABELS,
   TIER_ORDER,
-  abilityDef,
   allAbilityDefs,
   baseAbilityDef,
   getCustomAbilities,
@@ -46,7 +45,12 @@ import {
   type AbilityDef,
   type AbilityTier,
 } from "@/lib/abilities";
-import { hydrateAbilityRegistry, useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
+import {
+  hydrateAbilityRegistry,
+  useAbilityHolders,
+  useAbilityRegistryVersion,
+  useAllHubAbilities,
+} from "@/hooks/use-ability-registry";
 import { AbilityBadge } from "@/components/ability-badge";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
 import { AbilityRankEmblem, AbilityRankProgressionStrip } from "@/components/ability-rank-emblem";
@@ -75,7 +79,6 @@ import { HankoStamp } from "@/components/manga-emblem";
 import { GenreCardFrame } from "@/components/genre-decorations";
 import { IvyDecoration } from "@/components/manga/fantasy/IvyDecoration";
 
-const ALL_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
 const CUSTOM_SETTINGS_KEY = "ability_registry";
 const OVERRIDES_SETTINGS_KEY = "ability_overrides";
 const REGISTRY_KEYS = new Set(ABILITY_REGISTRY.map((a) => a.key));
@@ -177,7 +180,8 @@ function AbilitiesHub() {
   const holdersMasked = useSpoilerMask("abilities");
   const abilityCtx = useOptionalAbilityContext();
   const qc = useQueryClient();
-  const { data: entities, isLoading } = useQuery(entitiesQuery([...ALL_KINDS]));
+  const { holdersMap: holders, isLoading } = useAbilityHolders();
+  const defs = useAllHubAbilities();
   const [q, setQ] = useState("");
   const [tier, setTier] = useState<AbilityTier | "all">("all");
   const [rankFilter, setRankFilter] = useState<AbilityEmblemRank | 0>(0);
@@ -193,44 +197,6 @@ function AbilitiesHub() {
     void hydrateAbilityRegistry(true);
   }, []);
 
-  // Reverse index: ability key -> entities that carry it in abilities/beast_traits.
-  const holders = useMemo(() => {
-    const map = new Map<string, Entity[]>();
-    for (const e of entities ?? []) {
-      const names = [...(e.abilities ?? []), ...(e.beast_traits ?? [])];
-      const seen = new Set<string>();
-      for (const n of names) {
-        const def = abilityDef(n);
-        if (seen.has(def.key)) continue;
-        seen.add(def.key);
-        const arr = map.get(def.key) ?? [];
-        arr.push(e);
-        map.set(def.key, arr);
-      }
-    }
-    return map;
-    // registryVersion forces recompute after admin edits/adds an ability
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entities, registryVersion]);
-
-  // Registry defs + any ad-hoc strings found on entities that aren't registered.
-  const defs = useMemo(() => {
-    const base = allAbilityDefs();
-    const known = new Set(base.map((d) => normalizeAbilityKey(d.key)));
-    const extras: AbilityDef[] = [];
-    for (const e of entities ?? []) {
-      for (const n of [...(e.abilities ?? []), ...(e.beast_traits ?? [])]) {
-        const d = abilityDef(n);
-        if (!known.has(normalizeAbilityKey(d.key))) {
-          known.add(normalizeAbilityKey(d.key));
-          extras.push(d);
-        }
-      }
-    }
-    return [...base, ...extras];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entities, registryVersion]);
-
   useEffect(() => {
     if (tier !== "all" && !isLoading && !defs.some((d) => d.tier === tier)) {
       setTier("all");
@@ -242,9 +208,10 @@ function AbilitiesHub() {
     () =>
       defs.filter((d) => {
         if (tier !== "all" && d.tier !== tier) return false;
+        const entryHolders = holders.get(normalizeAbilityKey(d.key)) ?? holders.get(d.key) ?? [];
         if (rankFilter !== 0) {
           const intrinsicMatches = tierToIntrinsicRank(d.tier) === rankFilter;
-          const holderMatches = (holders.get(d.key) ?? []).some(
+          const holderMatches = entryHolders.some(
             (e) => abilityCtx?.resolveCharacterRank(e.id, d.key) === rankFilter,
           );
           if (!intrinsicMatches && !holderMatches) return false;
@@ -254,8 +221,7 @@ function AbilitiesHub() {
           d.label.toLowerCase().includes(needle) ||
           d.tier.toLowerCase().includes(needle) ||
           ABILITY_GROUP_LABELS[d.group].toLowerCase().includes(needle) ||
-          (!holdersMasked &&
-            (holders.get(d.key) ?? []).some((e) => e.name.toLowerCase().includes(needle)))
+          (!holdersMasked && entryHolders.some((e) => e.name.toLowerCase().includes(needle)))
         );
       }),
     [defs, tier, rankFilter, needle, holders, holdersMasked, abilityCtx],
@@ -422,7 +388,7 @@ function AbilitiesHub() {
               <AbilityFxLauncher name={def.key} />
               <AbilityCard
                 def={def}
-                holders={holders.get(def.key) ?? []}
+                holders={holders.get(normalizeAbilityKey(def.key)) ?? holders.get(def.key) ?? []}
                 open
                 onToggle={() => {}}
                 isAdmin={isAdmin}
@@ -582,7 +548,7 @@ function AbilitiesHub() {
                       index={idx}
                       def={d}
                       previewRank={rankFilter !== 0 ? rankFilter : undefined}
-                      holders={holders.get(d.key) ?? []}
+                      holders={holders.get(normalizeAbilityKey(d.key)) ?? holders.get(d.key) ?? []}
                       open={openKey === d.key}
                       onToggle={() => {
                         sfx.click();

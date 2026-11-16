@@ -58,6 +58,7 @@ export const CHARACTER_STATUSES = [
   "Alive",
   "Dead",
   "Presumed Dead",
+  "Sealed",
   "Retired",
   "Missing",
   "Legend",

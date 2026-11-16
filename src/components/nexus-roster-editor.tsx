@@ -1,11 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { entitiesQuery, type Entity } from "@/lib/entities";
-import { NEXUS_STATS, readDossier, type SeasonDossier } from "@/lib/nexus-season";
-import { NEXUS_ROLES } from "@/lib/nexus-roster";
+import { entitiesQuery, getMergedSecondaryIds, type Entity } from "@/lib/entities";
+import {
+  DOSSIER_GENDERS,
+  DOSSIER_ROLES,
+  DOSSIER_STATUSES,
+  NEXUS_STATS,
+  readDossier,
+  resolveDossierMeta,
+  type SeasonDossier,
+} from "@/lib/nexus-season";
+import { NEXUS_ROLES, projectSeasonRoster } from "@/lib/nexus-roster";
 import { SEASON_STATUSES } from "@/lib/series";
+import { artifactsQuery } from "@/lib/artifacts";
 import { useServerFn } from "@tanstack/react-start";
 import { draftSeasonStory } from "@/lib/season-story.functions";
 import { allAbilityDefs, abilityDef } from "@/lib/abilities";
@@ -16,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, UserPlus } from "lucide-react";
 import { invalidateArchive, resolveGroupIds } from "@/lib/archive-sync";
 
 type Ability = { name: string; level: number; note: string };
@@ -35,20 +44,230 @@ export function NexusRosterEditor({
   season: number;
   label: string;
 }) {
+  const qc = useQueryClient();
   const [selected, setSelected] = useState(entities[0]?.id ?? "");
+  const [quickAddId, setQuickAddId] = useState("");
+  const [quickBusy, setQuickBusy] = useState(false);
+
   const { data: groups = [] } = useQuery(
     entitiesQuery(["organization", "clan", "bloodline", "faction"]),
   );
-  const all = [...entities, ...groups];
+  const { data: seriesChars = [] } = useQuery({
+    queryKey: ["series-characters", seriesId],
+    enabled: open && !!seriesId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("series_characters")
+        .select("*")
+        .eq("series_id", seriesId);
+      return data ?? [];
+    },
+  });
+
+  const all = useMemo(() => [...entities, ...groups], [entities, groups]);
   const entity = all.find((e) => e.id === selected);
+
+  const rosterChars = useMemo(
+    () => projectSeasonRoster(entities, seriesId, season, seriesChars),
+    [entities, seriesId, season, seriesChars],
+  );
+  const rosterOrgs = useMemo(
+    () => projectSeasonRoster(groups, seriesId, season, []),
+    [groups, seriesId, season],
+  );
+  const rosterIds = useMemo(
+    () => new Set([...rosterChars.map((e) => e.id), ...rosterOrgs.map((e) => e.id)]),
+    [rosterChars, rosterOrgs],
+  );
+  const notInSeason = useMemo(
+    () => all.filter((e) => !rosterIds.has(e.id)).sort((a, b) => a.name.localeCompare(b.name)),
+    [all, rosterIds],
+  );
+
+  useEffect(() => {
+    if (!quickAddId || rosterIds.has(quickAddId)) {
+      setQuickAddId(notInSeason[0]?.id ?? "");
+    }
+  }, [quickAddId, notInSeason, rosterIds]);
+
+  const setRosterMembership = async (target: Entity, inSeason: boolean) => {
+    setQuickBusy(true);
+    try {
+      const { data: fresh, error } = await supabase
+        .from("entities")
+        .select("stats,locked_fields,status")
+        .eq("id", target.id)
+        .single();
+      if (error) throw error;
+      const key = `${seriesId}:${season}`;
+      const stats = { ...((fresh.stats as Record<string, unknown>) ?? {}) };
+      const map = { ...readDossier(stats) };
+      map[key] = { ...map[key], roster: inSeason };
+      stats["dossier"] = map;
+      const up = await supabase
+        .from("entities")
+        .update({
+          stats: stats as never,
+          locked_fields: [...new Set([...(fresh.locked_fields ?? []), "stats"])],
+        })
+        .eq("id", target.id);
+      if (up.error) throw up.error;
+
+      if (inSeason && target.kind === "character") {
+        const mergedIds = [target.id, ...getMergedSecondaryIds(target.id)];
+        const { data: existingSc } = await supabase
+          .from("series_characters")
+          .select("id")
+          .eq("series_id", seriesId)
+          .in("character_id", mergedIds)
+          .limit(1);
+        if (!existingSc?.length) {
+          const ins = await supabase.from("series_characters").insert({
+            series_id: seriesId,
+            character_id: target.id,
+            status: fresh.status || "Alive",
+          });
+          if (ins.error) throw ins.error;
+        }
+      }
+
+      await invalidateArchive(qc);
+      if (inSeason) {
+        setSelected(target.id);
+        toast.success(`${target.name} added to ${label}`);
+      } else {
+        toast.success(`${target.name} removed from ${label}`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update season roster");
+    } finally {
+      setQuickBusy(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Season roster · {label}</DialogTitle>
         </DialogHeader>
+
+        {/* Quick-Add Character / Organization to this Season */}
+        <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="grid min-w-[200px] flex-1 gap-1 text-xs">
+              Add Character or Organization to this season
+              <select
+                aria-label="Add character or organization to season"
+                className="h-9 w-full rounded-md border border-input bg-background px-2"
+                value={quickAddId}
+                onChange={(ev) => setQuickAddId(ev.target.value)}
+              >
+                {notInSeason.length === 0 ? (
+                  <option value="">All characters and organizations already in season</option>
+                ) : (
+                  notInSeason.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}
+                      {e.kind !== "character" ? ` · ${e.kind}` : ""}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
+            <Button
+              type="button"
+              size="sm"
+              disabled={quickBusy || !quickAddId}
+              onClick={() => {
+                const target = all.find((x) => x.id === quickAddId);
+                if (target) void setRosterMembership(target, true);
+              }}
+            >
+              <UserPlus className="mr-1 h-3.5 w-3.5" />
+              Add to Season
+            </Button>
+          </div>
+
+          <div className="grid gap-2 text-xs sm:grid-cols-2">
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Characters in this season ({rosterChars.length})
+              </p>
+              <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
+                {rosterChars.length === 0 && (
+                  <span className="text-muted-foreground">None yet</span>
+                )}
+                {rosterChars.map((c) => (
+                  <span
+                    key={c.id}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${
+                      selected === c.id
+                        ? "border-accent bg-accent/20 text-accent"
+                        : "border-border bg-background/70"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelected(c.id)}
+                      className="hover:underline"
+                    >
+                      {c.name}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${c.name} from season`}
+                      disabled={quickBusy}
+                      onClick={() => void setRosterMembership(c, false)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Organizations / Clans / Factions ({rosterOrgs.length})
+              </p>
+              <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
+                {rosterOrgs.length === 0 && <span className="text-muted-foreground">None yet</span>}
+                {rosterOrgs.map((o) => (
+                  <span
+                    key={o.id}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${
+                      selected === o.id
+                        ? "border-accent bg-accent/20 text-accent"
+                        : "border-border bg-background/70"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelected(o.id)}
+                      className="hover:underline"
+                    >
+                      {o.name}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${o.name} from season`}
+                      disabled={quickBusy}
+                      onClick={() => void setRosterMembership(o, false)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <label className="grid gap-1 text-xs">
-          Character / Organization / Bloodline / Cult
+          Edit details for Character / Organization / Bloodline / Cult
           <select
             aria-label="Roster character"
             className="h-10 w-full rounded-md border border-input bg-background px-3"
@@ -90,15 +309,23 @@ function RosterFields({
   const qc = useQueryClient();
   useAbilityRegistryVersion();
   const key = `${seriesId}:${season}`;
-  const [form, setForm] = useState<SeasonDossier>(() => ({
-    roster: true,
-    ...readDossier(entity.stats)[key],
-  }));
+  const [form, setForm] = useState<SeasonDossier>(() => {
+    const meta = resolveDossierMeta(entity, seriesId, season);
+    return {
+      roster: true,
+      ...readDossier(entity.stats)[key],
+      gender: readDossier(entity.stats)[key]?.gender ?? meta.gender,
+      weapons: readDossier(entity.stats)[key]?.weapons ?? meta.weapons,
+    };
+  });
   const [abilities, setAbilities] = useState<Ability[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [profile, setProfile] = useState("");
   const [busy, setBusy] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [weaponChoice, setWeaponChoice] = useState("");
+  const [customWeapon, setCustomWeapon] = useState("");
+  const { data: artifacts = [] } = useQuery(artifactsQuery);
   const runDraft = useServerFn(draftSeasonStory);
   const fillStory = async () => {
     setDrafting(true);
@@ -297,7 +524,9 @@ function RosterFields({
             onChange={(ev) => setForm({ ...form, role: ev.target.value })}
           >
             <option value="">Not recorded</option>
-            {[...new Set([...NEXUS_ROLES, ...(form.role ? [form.role] : [])])].map((r) => (
+            {[
+              ...new Set([...DOSSIER_ROLES, ...NEXUS_ROLES, ...(form.role ? [form.role] : [])]),
+            ].map((r) => (
               <option key={r} value={r}>
                 {r}
               </option>
@@ -313,8 +542,24 @@ function RosterFields({
             onChange={(ev) => setForm({ ...form, status: ev.target.value })}
           >
             <option value="">Not recorded</option>
-            {SEASON_STATUSES.map((s) => (
+            {[...new Set([...DOSSIER_STATUSES, ...SEASON_STATUSES])].map((s) => (
               <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1 text-xs">
+          Gender
+          <select
+            aria-label="Season gender"
+            className="h-9 rounded-md border border-input bg-background px-2"
+            value={form.gender ?? ""}
+            onChange={(ev) => setForm({ ...form, gender: ev.target.value })}
+          >
+            <option value="">Not specified</option>
+            {DOSSIER_GENDERS.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
             ))}
           </select>
         </label>
@@ -349,6 +594,84 @@ function RosterFields({
             ))}
           </select>
         </label>
+        <div className="grid gap-1 text-xs sm:col-span-2">
+          <span>Weapons</span>
+          <div className="flex flex-wrap gap-2">
+            <select
+              aria-label="Season weapon"
+              className="h-9 min-w-[180px] flex-1 rounded-md border border-input bg-background px-2"
+              value={weaponChoice}
+              onChange={(ev) => {
+                const w = ev.target.value.trim();
+                if (w) {
+                  setForm((f) => ({
+                    ...f,
+                    weapons: [...new Set([...(f.weapons ?? []), w])],
+                  }));
+                }
+                setWeaponChoice("");
+              }}
+            >
+              <option value="">Add weapon from archive…</option>
+              {[...new Set(artifacts.map((a) => a.name).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b))
+                .map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+            </select>
+            <Input
+              aria-label="Season custom weapon"
+              placeholder="Or custom weapon…"
+              value={customWeapon}
+              onChange={(ev) => setCustomWeapon(ev.target.value)}
+              className="h-9 flex-1"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const w = customWeapon.trim();
+                if (!w) return;
+                setForm((f) => ({
+                  ...f,
+                  weapons: [...new Set([...(f.weapons ?? []), w])],
+                }));
+                setCustomWeapon("");
+              }}
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Add
+            </Button>
+          </div>
+          {(form.weapons ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {(form.weapons ?? []).map((w) => (
+                <span
+                  key={w}
+                  className="inline-flex items-center gap-1 rounded border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-amber-200"
+                >
+                  {w}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${w}`}
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        weapons: (f.weapons ?? []).filter((x) => x !== w),
+                      }))
+                    }
+                    className="hover:text-destructive"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <fieldset className="grid gap-1 text-xs">
         <legend className="mb-1">Organizations / Cults / Factions</legend>

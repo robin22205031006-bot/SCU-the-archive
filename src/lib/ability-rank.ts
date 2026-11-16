@@ -149,10 +149,15 @@ export interface CharacterAbilityRankRow {
  */
 export function buildAbilityRankMap(
   rows: readonly CharacterAbilityRankRow[],
-  options?: { seriesId?: string | null | undefined; seasonNumber?: number | null | undefined },
+  options?: {
+    seriesId?: string | null | undefined;
+    seasonNumber?: number | null | undefined;
+    includePriorSeasons?: boolean | undefined;
+  },
 ): Record<string, AbilityEmblemRank | undefined> {
   const seriesId = options?.seriesId ?? null;
   const seasonNumber = options?.seasonNumber ?? null;
+  const includePrior = !!options?.includePriorSeasons;
 
   const best = new Map<string, { score: number; rank: AbilityEmblemRank }>();
 
@@ -162,13 +167,17 @@ export function buildAbilityRankMap(
     if (!canon && !rawKey) continue;
 
     if (seriesId && row.series_id && row.series_id !== seriesId) continue;
-    if (seasonNumber !== null && row.season_number != null && row.season_number !== seasonNumber) {
-      continue;
+    if (seasonNumber !== null && row.season_number != null) {
+      if (row.season_number > seasonNumber) continue;
+      if (!includePrior && row.season_number !== seasonNumber) continue;
     }
 
     let score = 1;
     if (seriesId && row.series_id === seriesId) score += 2;
-    if (seasonNumber !== null && row.season_number === seasonNumber) score += 4;
+    if (seasonNumber !== null && row.season_number != null) {
+      if (row.season_number === seasonNumber) score += 4;
+      else if (row.season_number < seasonNumber) score += 1 + row.season_number * 0.01;
+    }
 
     const rank = clampDbAbilityLevel(row.level);
     const prev = best.get(canon);
@@ -212,6 +221,7 @@ export function mergeCharacterAbilityList(
     seriesId?: string | null | undefined;
     seasonNumber?: number | null | undefined;
     allowedKeys?: readonly string[] | null | undefined;
+    includePriorSeasons?: boolean | undefined;
   },
 ): MergedCharacterAbility[] {
   const allowedSet =
@@ -221,6 +231,7 @@ export function mergeCharacterAbilityList(
 
   const seriesId = options?.seriesId ?? null;
   const seasonNumber = options?.seasonNumber ?? null;
+  const includePrior = !!options?.includePriorSeasons;
   const items = new Map<string, MergedCharacterAbility & { score: number }>();
 
   for (const row of rows) {
@@ -228,13 +239,17 @@ export function mergeCharacterAbilityList(
     if (!canon) continue;
     if (allowedSet && !allowedSet.has(canon)) continue;
     if (seriesId && row.series_id && row.series_id !== seriesId) continue;
-    if (seasonNumber !== null && row.season_number != null && row.season_number !== seasonNumber) {
-      continue;
+    if (seasonNumber !== null && row.season_number != null) {
+      if (row.season_number > seasonNumber) continue;
+      if (!includePrior && row.season_number !== seasonNumber) continue;
     }
 
     let score = 1;
     if (seriesId && row.series_id === seriesId) score += 2;
-    if (seasonNumber !== null && row.season_number === seasonNumber) score += 4;
+    if (seasonNumber !== null && row.season_number != null) {
+      if (row.season_number === seasonNumber) score += 4;
+      else if (row.season_number < seasonNumber) score += 1 + row.season_number * 0.01;
+    }
 
     const level = clampDbAbilityLevel(row.level);
     const prev = items.get(canon);

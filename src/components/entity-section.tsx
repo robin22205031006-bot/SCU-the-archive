@@ -95,12 +95,26 @@ import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaEntitySpread, MangaPanel } from "./manga-view";
 import { GroupGenreEmblem } from "@/components/group-emblem";
 
+import {
+  DOSSIER_GENDERS,
+  DOSSIER_ROLES,
+  DOSSIER_STATUSES,
+  resolveDossierMeta,
+} from "@/lib/nexus-season";
+import { projectSeasonRoster } from "@/lib/nexus-roster";
+import { seriesSeasonNames } from "@/lib/series-seasons";
+import { NexusRosterEditor } from "@/components/nexus-roster-editor";
+import { SeasonEditor } from "@/components/nexus-dossier";
+
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
   Active: "text-status-alive",
   Dead: "text-status-dead",
+  Missing: "text-status-legend",
   "Presumed Dead": "text-status-legend",
+  Sealed: "text-amber-300",
   Inactive: "text-status-neutral",
+  Unknown: "text-status-neutral",
   Legend: "text-status-legend",
 };
 
@@ -197,15 +211,31 @@ const Avatar = memo(function Avatar({ e, size }: { e: Entity; size: string }) {
 
 const ALTER_EGOS: Record<string, string> = { ethan: "Elizah", elizah: "Ethan" };
 
-const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: boolean }) {
+const CardBody = memo(function CardBody({
+  e,
+  showKind,
+  seriesId,
+  seasonNumber,
+}: {
+  e: Entity;
+  showKind: boolean;
+  seriesId?: string | undefined;
+  seasonNumber?: number | undefined;
+}) {
   const tier = tierDef(e.character_tier);
   const theme = e.theme_color ?? tier?.color ?? null;
   const [hideSpoilers, setHideSpoilers] = useState(spoilersHidden);
   useEffect(() => onSpoilerChange(() => setHideSpoilers(spoilersHidden())), []);
+  const meta =
+    e.kind === "character"
+      ? resolveDossierMeta(e, seriesId || null, seriesId ? seasonNumber : null)
+      : null;
+  const roleText = meta?.role || e.role;
+  const genderText = meta?.gender;
   return (
     <div className="min-w-0 flex-1 text-left">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <StatusBadge status={e.status} />
+        <StatusBadge status={meta?.status || e.status} />
         {tier && (
           <StatusTooltip label={tier.label}>
             <span
@@ -231,6 +261,14 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
             {e.category ?? e.kind}
           </span>
         ) : null}
+        {!hideSpoilers && genderText && (
+          <span
+            data-spoiler="char"
+            className="rounded border border-border/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+          >
+            {genderText}
+          </span>
+        )}
         {hideSpoilers && (
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
             Role hidden
@@ -244,16 +282,17 @@ const CardBody = memo(function CardBody({ e, showKind }: { e: Entity; showKind: 
         {e.name}
       </h2>
       <p data-spoiler="char" className="truncate text-sm text-muted-foreground">
-        {[e.alias, e.role].filter(Boolean).join(" · ") || "—"}
+        {[meta?.codename || e.alias, roleText].filter(Boolean).join(" · ") || "—"}
       </p>
-      {e.kind === "character" && (e.stats as Record<string, string> | null)?.["bloodline"] && (
-        <p
-          data-spoiler="char"
-          className="truncate text-[11px] uppercase tracking-widest text-accent/80"
-        >
-          {(e.stats as Record<string, string>)["bloodline"]}
-        </p>
-      )}
+      {e.kind === "character" &&
+        (meta?.bloodline || (e.stats as Record<string, string> | null)?.["bloodline"]) && (
+          <p
+            data-spoiler="char"
+            className="truncate text-[11px] uppercase tracking-widest text-accent/80"
+          >
+            {meta?.bloodline || (e.stats as Record<string, string>)["bloodline"]}
+          </p>
+        )}
       {e.kind === "character" && (e.abilities?.length ?? 0) > 0 && (
         <div data-spoiler="char" className="mt-1.5">
           <AbilityBadgeRow abilities={sortAbilities(e.abilities ?? [])} max={3} />
@@ -309,10 +348,21 @@ function DetailOverlay({
   const qc = useQueryClient();
   useAbilityRegistryVersion();
   const { data: notes } = useQuery(notesQuery(e.id));
-  const rawStats = (e.stats as Record<string, string>) ?? {};
-  const stats = Object.entries(rawStats).filter(([k]) => k !== "real_name" && k !== "bloodline");
-  const realName = rawStats["real_name"];
-  const bloodline = rawStats["bloodline"];
+  const rawStats = (e.stats as Record<string, unknown>) ?? {};
+  const meta = resolveDossierMeta(e);
+  const stats = Object.entries(rawStats).filter(
+    ([k, v]) =>
+      k !== "real_name" &&
+      k !== "bloodline" &&
+      k !== "dossier" &&
+      k !== "weapons" &&
+      k !== "gender" &&
+      (typeof v === "string" || typeof v === "number"),
+  ) as [string, string | number][];
+  const realName = typeof rawStats["real_name"] === "string" ? rawStats["real_name"] : undefined;
+  const bloodline = meta.bloodline || undefined;
+  const gender = meta.gender || undefined;
+  const weapons = meta.weapons;
   // Ethan and Elizah are alter egos of each other — the only cards with a switch.
   const alterName = ALTER_EGOS[e.name.toLowerCase()];
   const { data: alterEntity } = useQuery({
@@ -353,7 +403,10 @@ function DetailOverlay({
       return data ?? [];
     },
   });
-  const abilityRankMap = useMemo(() => buildAbilityRankMap(charAbilities ?? []), [charAbilities]);
+  const abilityRankMap = useMemo(
+    () => buildAbilityRankMap(charAbilities ?? [], { includePriorSeasons: true }),
+    [charAbilities],
+  );
   const { data: allChars } = useQuery({
     ...entitiesQuery(["character"]),
     enabled: e.kind === "character" && dossierTab === "progress",
@@ -788,42 +841,68 @@ function DetailOverlay({
               </button>
             ))}
           </div>
-          {e.kind === "character" && (e.alias || bloodline || realName || alterEntity) && (
-            <div className="relative grid gap-2 rounded-xl border border-white/10 bg-black/75 p-4 sm:grid-cols-3">
-              {e.alias && (
-                <div>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    Title / Known as / Codename
+          {e.kind === "character" &&
+            (e.alias || bloodline || realName || gender || weapons.length > 0 || alterEntity) && (
+              <div className="relative grid gap-2 rounded-xl border border-white/10 bg-black/75 p-4 sm:grid-cols-3">
+                {e.alias && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Title / Known as / Codename
+                    </div>
+                    <div className="font-medium">{e.alias}</div>
                   </div>
-                  <div className="font-medium">{e.alias}</div>
-                </div>
-              )}
-              {bloodline && (
-                <div data-spoiler="char">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    Bloodline
+                )}
+                {gender && (
+                  <div data-spoiler="char">
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Gender
+                    </div>
+                    <div className="font-medium">{gender}</div>
                   </div>
-                  <div className="font-medium">{bloodline}</div>
-                </div>
-              )}
-              {realName && (
-                <div>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    Real name
+                )}
+                {bloodline && (
+                  <div data-spoiler="char">
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Bloodline
+                    </div>
+                    <div className="font-medium">{bloodline}</div>
                   </div>
-                  <div className="font-medium">{realName}</div>
-                </div>
-              )}
-              {alterEntity && (
-                <button
-                  onClick={() => onOpen(alterEntity)}
-                  className="sm:col-span-3 mt-1 inline-flex items-center justify-center gap-2 rounded-full border border-accent/60 bg-accent/15 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-accent shadow-[0_0_18px_var(--accent)] transition hover:bg-accent hover:text-accent-foreground"
-                >
-                  ⇄ Switch to alter ego: {alterEntity.name}
-                </button>
-              )}
-            </div>
-          )}
+                )}
+                {realName && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Real name
+                    </div>
+                    <div className="font-medium">{realName}</div>
+                  </div>
+                )}
+                {weapons.length > 0 && (
+                  <div data-spoiler="char" className="sm:col-span-3">
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Equipped Weapons
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {weapons.map((w) => (
+                        <span
+                          key={w}
+                          className="rounded border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200"
+                        >
+                          {w}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {alterEntity && (
+                  <button
+                    onClick={() => onOpen(alterEntity)}
+                    className="sm:col-span-3 mt-1 inline-flex items-center justify-center gap-2 rounded-full border border-accent/60 bg-accent/15 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-accent shadow-[0_0_18px_var(--accent)] transition hover:bg-accent hover:text-accent-foreground"
+                  >
+                    ⇄ Switch to alter ego: {alterEntity.name}
+                  </button>
+                )}
+              </div>
+            )}
           <SketchGallery images={e.sketches} name={e.name} />
           {/* Season-scoped intel — role, status, abilities, scoped notes for selected season */}
           {seasonIdx >= 0 &&
@@ -1497,6 +1576,8 @@ export function EntitySection({
   categories,
   initialQuery = "",
   openId,
+  initialSeries = "",
+  initialSeason = 1,
   view,
 }: {
   kinds: Entity["kind"][];
@@ -1505,6 +1586,8 @@ export function EntitySection({
   categories: string[];
   initialQuery?: string;
   openId?: string | undefined;
+  initialSeries?: string;
+  initialSeason?: number;
   view?: "characters" | "organizations";
 }) {
   const isAdmin = useIsAdmin();
@@ -1517,14 +1600,30 @@ export function EntitySection({
   const { motionActive, spec } = useAppMotion();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(entitiesQuery(kinds));
+  const { data: allSeriesList = [] } = useQuery(seriesQuery);
+  const { data: allCharEntities = [] } = useQuery({
+    ...entitiesQuery(["character"]),
+    enabled: view !== "characters",
+  });
+  const { data: allGroupEntities = [] } = useQuery({
+    ...entitiesQuery(["organization", "clan", "bloodline", "faction"]),
+    enabled: view === "characters",
+  });
   const [open, setOpen] = useState<{ id: string; rect: DOMRect | null } | null>(null);
   const [editing, setEditing] = useState<Entity | null | undefined>(undefined);
+  const [seasonEditing, setSeasonEditing] = useState<Entity | null>(null);
+  const [rosterOpen, setRosterOpen] = useState(false);
   const [deleting, setDeleting] = useState<Entity | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [merging, setMerging] = useState<Entity | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [cat, setCat] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [rosterSeriesId, setRosterSeriesId] = useState(initialSeries);
+  const [rosterSeason, setRosterSeason] = useState(Math.max(1, initialSeason || 1));
   const [viewMode, setViewMode] = useState<"grid" | "list" | "showcase">(() => {
     try {
       const v = localStorage.getItem("scu-card-view");
@@ -1535,11 +1634,85 @@ export function EntitySection({
   });
   const [q, setQ] = useState(initialQuery);
   useEffect(() => setQ((prev) => (prev === initialQuery ? prev : initialQuery)), [initialQuery]);
+  useEffect(() => {
+    if (initialSeries) {
+      setRosterSeriesId(initialSeries);
+      setRosterSeason(Math.max(1, initialSeason || 1));
+    }
+  }, [initialSeries, initialSeason]);
 
-  const list = useMemo(
-    () => (data ?? []).filter((e) => (cat === "all" || e.category === cat) && matchesSearch(e, q)),
-    [data, cat, q],
+  const { data: seriesCharRows = [] } = useQuery({
+    queryKey: ["series-characters", rosterSeriesId],
+    enabled: !!rosterSeriesId,
+    queryFn: async () => {
+      const { data: scRows } = await supabase
+        .from("series_characters")
+        .select("*")
+        .eq("series_id", rosterSeriesId);
+      return scRows ?? [];
+    },
+  });
+
+  const activeSeriesObj = useMemo(
+    () => allSeriesList.find((s) => s.id === rosterSeriesId) ?? null,
+    [allSeriesList, rosterSeriesId],
   );
+  const activeSeasonNames = useMemo(
+    () => (activeSeriesObj ? seriesSeasonNames(activeSeriesObj) : []),
+    [activeSeriesObj],
+  );
+  const activeSeasonLabel = activeSeriesObj
+    ? `${activeSeriesObj.title} · ${activeSeasonNames[rosterSeason - 1] ?? `Season ${rosterSeason}`}`
+    : "";
+
+  const rosterCharsPool = useMemo(
+    () => (view === "characters" ? (data ?? []) : allCharEntities),
+    [view, data, allCharEntities],
+  );
+  const rosterOrgsPool = useMemo(
+    () => (view === "characters" ? allGroupEntities : (data ?? [])),
+    [view, allGroupEntities, data],
+  );
+  const seasonCharacters = useMemo(
+    () =>
+      rosterSeriesId
+        ? projectSeasonRoster(rosterCharsPool, rosterSeriesId, rosterSeason, seriesCharRows)
+        : [],
+    [rosterCharsPool, rosterSeriesId, rosterSeason, seriesCharRows],
+  );
+  const seasonOrganizations = useMemo(
+    () =>
+      rosterSeriesId ? projectSeasonRoster(rosterOrgsPool, rosterSeriesId, rosterSeason, []) : [],
+    [rosterOrgsPool, rosterSeriesId, rosterSeason],
+  );
+
+  const projectedBase = useMemo(() => {
+    const raw = data ?? [];
+    if (!rosterSeriesId) return raw;
+    return projectSeasonRoster(
+      raw,
+      rosterSeriesId,
+      rosterSeason,
+      view === "characters" ? seriesCharRows : [],
+    );
+  }, [data, rosterSeriesId, rosterSeason, view, seriesCharRows]);
+
+  const list = useMemo(() => {
+    return projectedBase.filter((e) => {
+      if (cat !== "all" && e.category !== cat) return false;
+      const meta =
+        e.kind === "character"
+          ? resolveDossierMeta(e, rosterSeriesId || null, rosterSeriesId ? rosterSeason : null)
+          : null;
+      const effStatus = (meta?.status || e.status || "").toLowerCase();
+      const effRole = (meta?.role || e.role || e.category || "").toLowerCase();
+      const effGender = (meta?.gender || "").toLowerCase();
+      if (statusFilter !== "all" && effStatus !== statusFilter.toLowerCase()) return false;
+      if (roleFilter !== "all" && effRole !== roleFilter.toLowerCase()) return false;
+      if (genderFilter !== "all" && effGender !== genderFilter.toLowerCase()) return false;
+      return matchesSearch(e, q);
+    });
+  }, [projectedBase, cat, statusFilter, roleFilter, genderFilter, q, rosterSeriesId, rosterSeason]);
   const openedInList = (data ?? []).find((e) => e.id === open?.id);
   // Load full entity details (description, sketches, theme audio) lazily when opened.
   const { data: openedFetched } = useQuery({
@@ -1581,7 +1754,13 @@ export function EntitySection({
 
   // Character/organization count: total in the archive, plus how many are showing now.
   const total = data?.length ?? 0;
-  const isFiltered = cat !== "all" || q.trim().length > 0;
+  const isFiltered =
+    cat !== "all" ||
+    statusFilter !== "all" ||
+    roleFilter !== "all" ||
+    genderFilter !== "all" ||
+    !!rosterSeriesId ||
+    q.trim().length > 0;
   const countWord = total === 1 ? title.toLowerCase().replace(/s$/, "") : title.toLowerCase();
 
   useWebMCP({
@@ -1663,7 +1842,13 @@ export function EntitySection({
             isAdmin={isAdmin}
             onSelect={(e) => {
               if (e.kind === "character") {
-                void nav({ to: "/character", search: { e: e.id } });
+                void nav({
+                  to: "/character",
+                  search: {
+                    e: e.id,
+                    ...(rosterSeriesId ? { series: rosterSeriesId, season: rosterSeason } : {}),
+                  },
+                });
               } else {
                 setOpen({ id: e.id, rect: null });
               }
@@ -1684,26 +1869,86 @@ export function EntitySection({
                   caption="ARCHIVE EDITION & EDITION STYLE // 書式設定"
                   badge={`${total} ${countWord.toUpperCase()}`}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {["all", ...allCategories].map((k) => (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => setCat(k)}
-                          className={`border-2 border-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
-                            cat === k
-                              ? "bg-foreground text-background"
-                              : "bg-background text-foreground hover:bg-secondary"
-                          }`}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {["all", ...allCategories].map((k) => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => setCat(k)}
+                            className={`border-2 border-foreground px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                              cat === k
+                                ? "bg-foreground text-background"
+                                : "bg-background text-foreground hover:bg-secondary"
+                            }`}
+                          >
+                            {k === "all" ? "ALL ROLES" : k}
+                          </button>
+                        ))}
+                      </div>
+                      <div role="group" aria-label="Interface style">
+                        <UiStylePicker />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 border-t border-foreground/20 pt-2 font-mono text-[11px]">
+                      <select
+                        aria-label="Manga series roster filter"
+                        value={rosterSeriesId}
+                        onChange={(ev) => {
+                          setRosterSeriesId(ev.target.value);
+                          setRosterSeason(1);
+                        }}
+                        className="h-8 border-2 border-foreground bg-background px-2"
+                      >
+                        <option value="">ALL SERIES ROSTER</option>
+                        {allSeriesList.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.title}
+                          </option>
+                        ))}
+                      </select>
+                      {rosterSeriesId && (
+                        <select
+                          aria-label="Manga season roster filter"
+                          value={rosterSeason}
+                          onChange={(ev) => setRosterSeason(Number(ev.target.value))}
+                          className="h-8 border-2 border-foreground bg-background px-2"
                         >
-                          {k === "all" ? "ALL ROLES" : k}
-                        </button>
-                      ))}
+                          {activeSeasonNames.map((label, idx) => (
+                            <option key={idx} value={idx + 1}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {isAdmin && allSeriesList.length > 0 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="ml-auto h-8 rounded-none border-2 border-foreground"
+                          onClick={() => {
+                            if (!rosterSeriesId && allSeriesList[0]) {
+                              setRosterSeriesId(allSeriesList[0].id);
+                              setRosterSeason(1);
+                            }
+                            setRosterOpen(true);
+                          }}
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          SEASON ROSTER
+                        </Button>
+                      )}
                     </div>
-                    <div role="group" aria-label="Interface style">
-                      <UiStylePicker />
-                    </div>
+                    {rosterSeriesId && (
+                      <div className="border border-foreground/30 bg-secondary/40 p-2 font-mono text-[11px]">
+                        <span className="font-bold">CHARS ({seasonCharacters.length}):</span>{" "}
+                        {seasonCharacters.map((c) => c.name).join(", ") || "—"} ·{" "}
+                        <span className="font-bold">ORGS ({seasonOrganizations.length}):</span>{" "}
+                        {seasonOrganizations.map((o) => o.name).join(", ") || "—"}
+                      </div>
+                    )}
                   </div>
                 </MangaPanel>
               ) : undefined
@@ -1797,6 +2042,150 @@ export function EntitySection({
                   className="glass h-11 rounded-full pl-10"
                 />
               </div>
+
+              {/* Series & Season Roster + Status/Role/Gender Filters */}
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border/70 bg-secondary/20 p-3 text-xs">
+                <label className="flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Series Roster
+                  </span>
+                  <select
+                    aria-label="Filter by series roster"
+                    value={rosterSeriesId}
+                    onChange={(ev) => {
+                      setRosterSeriesId(ev.target.value);
+                      setRosterSeason(1);
+                    }}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                  >
+                    <option value="">All Series</option>
+                    {allSeriesList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {rosterSeriesId && (
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Season
+                    </span>
+                    <select
+                      aria-label="Filter by season roster"
+                      value={rosterSeason}
+                      onChange={(ev) => setRosterSeason(Number(ev.target.value))}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      {activeSeasonNames.map((label, idx) => (
+                        <option key={idx} value={idx + 1}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                {view === "characters" && (
+                  <>
+                    <select
+                      aria-label="Filter by status"
+                      value={statusFilter}
+                      onChange={(ev) => setStatusFilter(ev.target.value)}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="all">All Statuses</option>
+                      {DOSSIER_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="Filter by role"
+                      value={roleFilter}
+                      onChange={(ev) => setRoleFilter(ev.target.value)}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="all">All Roles</option>
+                      {DOSSIER_ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="Filter by gender"
+                      value={genderFilter}
+                      onChange={(ev) => setGenderFilter(ev.target.value)}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="all">All Genders</option>
+                      {DOSSIER_GENDERS.map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+
+                {isAdmin && allSeriesList.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto h-8 text-xs"
+                    onClick={() => {
+                      if (!rosterSeriesId && allSeriesList[0]) {
+                        setRosterSeriesId(allSeriesList[0].id);
+                        setRosterSeason(1);
+                      }
+                      setRosterOpen(true);
+                    }}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Season Roster (Add Character / Org)
+                  </Button>
+                )}
+              </div>
+
+              {rosterSeriesId && (
+                <div className="mb-4 rounded-xl border border-accent/30 bg-accent/5 p-3 text-xs">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold uppercase tracking-wider text-accent">
+                      Roster · {activeSeasonLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setRosterSeriesId("")}
+                      className="text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      Clear season filter
+                    </button>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Characters ({seasonCharacters.length}):
+                      </span>{" "}
+                      {seasonCharacters.length > 0
+                        ? seasonCharacters.map((c) => c.name).join(", ")
+                        : "None recorded yet"}
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Organizations ({seasonOrganizations.length}):
+                      </span>{" "}
+                      {seasonOrganizations.length > 0
+                        ? seasonOrganizations.map((o) => o.name).join(", ")
+                        : "None recorded yet"}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div data-no-swipe className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
                 {["all", ...allCategories].map((k) => (
                   <button
@@ -1859,11 +2248,14 @@ export function EntitySection({
                       e={e}
                       index={i}
                       showKind={kinds.length > 1}
+                      seriesId={rosterSeriesId || undefined}
+                      seasonNumber={rosterSeriesId ? rosterSeason : undefined}
                       motionActive={motionActive}
                       specTransition={spec.transition}
                       cardVariants={spec.cardVariants}
                       isAdmin={isAdmin}
                       onEdit={setEditing}
+                      onSeasonEdit={setSeasonEditing}
                       onMerge={setMerging}
                       onDelete={setDeleting}
                     />
@@ -1908,6 +2300,41 @@ export function EntitySection({
           }}
         />
       )}
+      {isAdmin && rosterOpen && (rosterSeriesId || allSeriesList[0]) && (
+        <NexusRosterEditor
+          open
+          onClose={() => setRosterOpen(false)}
+          entities={rosterCharsPool}
+          seriesId={rosterSeriesId || allSeriesList[0]!.id}
+          season={rosterSeason}
+          label={activeSeasonLabel || `${allSeriesList[0]!.title} · Season ${rosterSeason}`}
+        />
+      )}
+      {isAdmin && seasonEditing && (
+        <SeasonEditor
+          open
+          onClose={() => setSeasonEditing(null)}
+          entity={seasonEditing}
+          seasonKey={rosterSeriesId ? `${rosterSeriesId}:${rosterSeason}` : null}
+          seasonLabel={activeSeasonLabel || "All seasons"}
+          seriesCards={allSeriesList.map((s) => ({
+            id: s.id,
+            title: s.title,
+            seasons: seriesSeasonNames(s),
+          }))}
+          onSeasonChange={(next) => {
+            if (next) {
+              setRosterSeriesId(next.seriesId);
+              setRosterSeason(next.n);
+            } else {
+              setRosterSeriesId("");
+            }
+          }}
+          onSaved={() => {
+            void invalidateArchive(qc);
+          }}
+        />
+      )}
       {merging && (
         <MergeEntityDialog open onOpenChange={(o) => !o && setMerging(null)} entity={merging} />
       )}
@@ -1929,22 +2356,28 @@ const EntityGridCard = memo(function EntityGridCard({
   e,
   index,
   showKind,
+  seriesId,
+  seasonNumber,
   motionActive,
   specTransition,
   cardVariants,
   isAdmin,
   onEdit,
+  onSeasonEdit,
   onMerge,
   onDelete,
 }: {
   e: Entity;
   index: number;
   showKind: boolean;
+  seriesId?: string | undefined;
+  seasonNumber?: number | undefined;
   motionActive: boolean;
   specTransition: ReturnType<typeof useAppMotion>["spec"]["transition"];
   cardVariants: ReturnType<typeof useAppMotion>["spec"]["cardVariants"];
   isAdmin: boolean;
   onEdit: (e: Entity) => void;
+  onSeasonEdit: (e: Entity) => void;
   onMerge: (e: Entity) => void;
   onDelete: (e: Entity) => void;
 }) {
@@ -1963,9 +2396,16 @@ const EntityGridCard = memo(function EntityGridCard({
         theme={e.card_theme}
         className="pointer-events-none absolute inset-0 h-full w-full opacity-30 transition-opacity group-hover:opacity-60"
       />
-      <Link to="/character" search={{ e: e.id }} className="relative flex min-w-0 flex-1 gap-4">
+      <Link
+        to="/character"
+        search={{
+          e: e.id,
+          ...(seriesId ? { series: seriesId, season: seasonNumber ?? 1 } : {}),
+        }}
+        className="relative flex min-w-0 flex-1 gap-4"
+      >
         <Avatar e={e} size="h-16 w-16" />
-        <CardBody e={e} showKind={showKind} />
+        <CardBody e={e} showKind={showKind} seriesId={seriesId} seasonNumber={seasonNumber} />
       </Link>
       {e.theme_song_url && <ThemeSongButton url={e.theme_song_url} />}
       {isAdmin && (
@@ -1979,6 +2419,18 @@ const EntityGridCard = memo(function EntityGridCard({
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
+          {e.kind === "character" && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-accent active:scale-90"
+              aria-label="Edit season dossier"
+              title="Edit Season Dossier & Abilities"
+              onClick={() => onSeasonEdit(e)}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button
             size="icon"
             variant="ghost"

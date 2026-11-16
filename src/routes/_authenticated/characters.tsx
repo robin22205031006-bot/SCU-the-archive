@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/characters")({
 });
 
 function Characters() {
-  const { q, open } = Route.useSearch();
+  const { q, open, series, season } = Route.useSearch();
   const isManga = useIsManga();
   return (
     <div className="relative">
@@ -47,6 +47,8 @@ function Characters() {
         categories={CHARACTER_CATEGORIES}
         initialQuery={q ?? ""}
         openId={open}
+        initialSeries={series ?? ""}
+        initialSeason={season ?? 1}
         view="characters"
         title="Characters"
         subtitle="Protagonists, antagonists, anti-heroes, anti-villains and support."

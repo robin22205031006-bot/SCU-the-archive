@@ -14,7 +14,7 @@ import {
   nexusDotRole,
   projectSeasonRoster,
 } from "@/lib/nexus-roster";
-import { readDossier } from "@/lib/nexus-season";
+import { readDossier, resolveDossierMeta } from "@/lib/nexus-season";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
@@ -159,166 +159,171 @@ export function NexusView({
         }}
       />
       <div className="relative mb-5 flex flex-wrap items-end gap-3">
-          <label className="grid min-w-0 flex-1 gap-1 text-xs">
-            Series
-            <select
-              aria-label="Character series"
-              value={seriesId}
-              onChange={(ev) => {
-                setCluster(null);
-                setSelectedId(null);
-                void navigate({
-                  search: (prev) => ({
-                    ...prev,
-                    series: ev.target.value || undefined,
-                    season: undefined,
-                  }),
-                });
-              }}
-              className="h-10 w-full rounded-md border border-border bg-background px-3"
-            >
-              <option value="">All series</option>
-              {series.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
+        <label className="grid min-w-0 flex-1 gap-1 text-xs">
+          Series
+          <select
+            aria-label="Character series"
+            value={seriesId}
+            onChange={(ev) => {
+              setCluster(null);
+              setSelectedId(null);
+              void navigate({
+                search: (prev) => ({
+                  ...prev,
+                  series: ev.target.value || undefined,
+                  season: undefined,
+                }),
+              });
+            }}
+            className="h-10 w-full rounded-md border border-border bg-background px-3"
+          >
+            <option value="">All series</option>
+            {series.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid min-w-0 flex-1 gap-1 text-xs">
+          Season
+          <select
+            aria-label="Character season"
+            disabled={!seriesId}
+            value={seasonNumber ?? ""}
+            onChange={(ev) => {
+              setCluster(null);
+              setSelectedId(null);
+              void navigate({
+                search: (prev) => ({
+                  ...prev,
+                  season: ev.target.value ? Number(ev.target.value) : undefined,
+                }),
+              });
+            }}
+            className="h-10 w-full rounded-md border border-border bg-background px-3"
+          >
+            <option value="">All seasons</option>
+            {seriesId &&
+              seasonNames.map((s, i) => (
+                <option key={i} value={i + 1}>
+                  {s}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="grid min-w-0 flex-1 gap-1 text-xs">
-            Season
-            <select
-              aria-label="Character season"
-              disabled={!seriesId}
-              value={seasonNumber ?? ""}
-              onChange={(ev) => {
-                setCluster(null);
-                setSelectedId(null);
-                void navigate({
-                  search: (prev) => ({
-                    ...prev,
-                    season: ev.target.value ? Number(ev.target.value) : undefined,
-                  }),
-                });
-              }}
-              className="h-10 w-full rounded-md border border-border bg-background px-3"
-            >
-              <option value="">All seasons</option>
-              {seriesId &&
-                seasonNames.map((s, i) => (
-                  <option key={i} value={i + 1}>
-                    {s}
-                  </option>
-                ))}
-            </select>
-          </label>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              disabled={!seriesId || !seasonNumber}
-              onClick={() => setRosterOpen(true)}
-            >
-              Season roster
-            </Button>
-          )}
-        </div>
-        <AnimatePresence mode="sync" initial={false}>
-          {cluster === null ? (
-            <motion.div
-              key="clusters"
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.22, ease: EASE }}
-              className="relative"
-            >
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {clusters.map((c, i) => {
-                  const members = c === "all" ? data : data.filter((e) => e.category === c);
-                  const label = c === "all" ? "All characters" : masked ? `Cluster ${i}` : c;
-                  return (
-                    <motion.div
-                      key={c}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                        transition: { delay: Math.min(i * 0.03, 0.2), ease: EASE },
+          </select>
+        </label>
+        {seriesId && seasonNumber && (
+          <span className="rounded-md border border-nexus-glow/25 bg-nexus-bg/60 px-2.5 py-2 text-xs text-nexus-muted">
+            {data.length} chars · {seasonGroups.length} orgs
+          </span>
+        )}
+        {isAdmin && (
+          <Button
+            variant="outline"
+            disabled={!seriesId || !seasonNumber}
+            onClick={() => setRosterOpen(true)}
+          >
+            Season roster
+          </Button>
+        )}
+      </div>
+      <AnimatePresence mode="sync" initial={false}>
+        {cluster === null ? (
+          <motion.div
+            key="clusters"
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: EASE }}
+            className="relative"
+          >
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {clusters.map((c, i) => {
+                const members = c === "all" ? data : data.filter((e) => e.category === c);
+                const label = c === "all" ? "All characters" : masked ? `Cluster ${i}` : c;
+                return (
+                  <motion.div
+                    key={c}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      transition: { delay: Math.min(i * 0.03, 0.2), ease: EASE },
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group relative overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-fg/[0.03] text-left"
+                  >
+                    <Button
+                      variant="ghost"
+                      className="block h-auto min-h-40 w-full whitespace-normal p-3 text-left hover:bg-transparent"
+                      onClick={() => {
+                        sfx.tierReveal?.(null);
+                        setSelectedId(null);
+                        setCluster(c);
                       }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="group relative overflow-hidden rounded-2xl border border-nexus-glow/20 bg-nexus-fg/[0.03] text-left"
+                      aria-label={`${label}, ${members.length}`}
                     >
-                      <Button
-                        variant="ghost"
-                        className="block h-auto min-h-40 w-full whitespace-normal p-3 text-left hover:bg-transparent"
-                        onClick={() => {
-                          sfx.tierReveal?.(null);
-                          setSelectedId(null);
-                          setCluster(c);
-                        }}
-                        aria-label={`${label}, ${members.length}`}
-                      >
-                        <span className="text-[11px] font-medium">{label}</span>
-                        <MiniConstellation
-                          members={members}
-                          color={c === "all" ? null : colorOf(c)}
-                          colorOf={colorOf}
-                        />
-                        <span className="absolute bottom-2 right-3 font-display text-lg text-nexus-glow">
-                          {members.length}
-                        </span>
-                      </Button>
-                    </motion.div>
-                  );
-                })}
+                      <span className="text-[11px] font-medium">{label}</span>
+                      <MiniConstellation
+                        members={members}
+                        color={c === "all" ? null : colorOf(c)}
+                        colorOf={colorOf}
+                      />
+                      <span className="absolute bottom-2 right-3 font-display text-lg text-nexus-glow">
+                        {members.length}
+                      </span>
+                    </Button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="sphere"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: EASE }}
+          >
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => {
+                  setCluster(null);
+                  setSelectedId(null);
+                }}
+                className="inline-flex items-center gap-1 rounded-full border border-nexus-glow/25 px-3 py-1 text-xs hover:bg-nexus-fg/5"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" /> Back
+              </button>
+              <div className="relative ml-auto w-full max-w-xs sm:w-60">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-nexus-muted" />
+                <input
+                  value={q}
+                  onChange={(ev) => setQ(ev.target.value)}
+                  placeholder="Search for character"
+                  className="h-9 w-full rounded-full border border-nexus-glow/20 bg-nexus-fg/5 pl-9 pr-3 text-xs text-nexus-fg outline-none placeholder:text-nexus-muted focus:border-nexus-glow/60"
+                />
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="sphere"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.22, ease: EASE }}
-            >
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => {
-                    setCluster(null);
-                    setSelectedId(null);
-                  }}
-                  className="inline-flex items-center gap-1 rounded-full border border-nexus-glow/25 px-3 py-1 text-xs hover:bg-nexus-fg/5"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back
-                </button>
-                <div className="relative ml-auto w-full max-w-xs sm:w-60">
-                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-nexus-muted" />
-                  <input
-                    value={q}
-                    onChange={(ev) => setQ(ev.target.value)}
-                    placeholder="Search for character"
-                    className="h-9 w-full rounded-full border border-nexus-glow/20 bg-nexus-fg/5 pl-9 pr-3 text-xs text-nexus-fg outline-none placeholder:text-nexus-muted focus:border-nexus-glow/60"
-                  />
-                </div>
-              </div>
-              <Sphere
-                cluster={cluster}
-                members={cluster === "all" ? data : data.filter((e) => e.category === cluster)}
-                all={data}
-                query={q}
-                colorOf={colorOf}
-                masked={masked}
-                isAdmin={isAdmin}
-                onEdit={onEdit}
-                seriesId={seriesId}
-                seasonNumber={seasonNumber}
-                selectedId={selectedId}
-                onSelectId={setSelectedId}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+            <Sphere
+              cluster={cluster}
+              members={cluster === "all" ? data : data.filter((e) => e.category === cluster)}
+              all={data}
+              query={q}
+              colorOf={colorOf}
+              masked={masked}
+              isAdmin={isAdmin}
+              onEdit={onEdit}
+              seriesId={seriesId}
+              seasonNumber={seasonNumber}
+              selectedId={selectedId}
+              onSelectId={setSelectedId}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       {!data.length && (
         <p className="relative py-8 text-center text-sm text-muted-foreground">
           No characters recorded for this selection.
@@ -748,17 +753,20 @@ const DossierPanel = memo(function DossierPanel({
 }) {
   const { data: full } = useQuery(entityByIdQuery(summary.id));
   const e = full ?? summary;
+  const meta = resolveDossierMeta(e, seriesId || null, seasonNumber);
   const alterName = ALTER_EGOS[e.name.trim().toLowerCase()];
   const alter = alterName
     ? all.find((x) => x.name.toLowerCase() === alterName.toLowerCase())
     : undefined;
   const rows: [string, string | null, boolean][] = [
-    ["Title / Codename", e.alias, true],
-    ["Bloodline", stat(e, "bloodline"), true],
+    ["Title / Codename", meta.codename || e.alias, true],
+    ["Bloodline", meta.bloodline || stat(e, "bloodline"), true],
     ["Real name", stat(e, "real_name"), false],
-    ["Status", e.status, true],
-    ["Role", e.role, true],
+    ["Gender", meta.gender || null, true],
+    ["Status", meta.status || e.status, true],
+    ["Role", meta.role || e.role, true],
     ["Category", e.category, true],
+    ["Weapons", meta.weapons.length ? meta.weapons.join(", ") : null, true],
   ];
   return (
     <motion.aside

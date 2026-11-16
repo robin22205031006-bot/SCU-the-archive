@@ -29,6 +29,7 @@ export const BADGE_DESCRIPTIONS: Record<string, string> = {
   dead: "Confirmed fallen or killed during canon events.",
   "presumed dead":
     "Believed lost or killed in action, though definitive proof remains unconfirmed.",
+  sealed: "Bound, imprisoned, or locked away outside active play for the current season.",
   retired: "Stepped back from active combat duty or frontline leadership.",
   missing: "Current whereabouts unknown across known realms.",
   inactive: "Dormant, disbanded, or no longer operating openly.",

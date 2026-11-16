@@ -1,8 +1,10 @@
 import { memo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "@tanstack/react-router";
 import { Box, Image as ImageIcon, Pencil, Trash2, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
+import type { SeasonalWeaponWielder } from "@/lib/artifacts";
 import type { UiStyle } from "@/lib/ui-style";
 import { artFor, artUrl, type ArsenalForm, type ArsenalArt } from "@/lib/arsenal-art";
 import { ArsenalFx } from "@/components/arsenal-fx";
@@ -142,7 +144,15 @@ function FormTabs({ art, i, set }: { art: ArsenalArt; i: number; set: (n: number
   );
 }
 
-function Details({ a, form }: { a: Artifact; form: ArsenalForm }) {
+function Details({
+  a,
+  form,
+  seasonalWielders,
+}: {
+  a: Artifact;
+  form: ArsenalForm;
+  seasonalWielders?: SeasonalWeaponWielder[] | undefined;
+}) {
   return (
     <>
       {a.curse_level > 0 && (
@@ -156,11 +166,29 @@ function Details({ a, form }: { a: Artifact; form: ArsenalForm }) {
       )}
       {a.how_it_works && <p className="text-sm text-foreground/90">{a.how_it_works}</p>}
       {a.lore && <p className="text-sm text-muted-foreground">{a.lore}</p>}
-      <dl className="grid gap-0.5 text-xs text-muted-foreground">
+      <dl className="grid gap-1 text-xs text-muted-foreground">
         {a.wielders.length > 0 && (
           <div>
             <dt className="inline font-medium text-foreground">Wielders: </dt>
             <dd className="inline">{a.wielders.join(", ")}</dd>
+          </div>
+        )}
+        {seasonalWielders && seasonalWielders.length > 0 && (
+          <div>
+            <dt className="inline font-medium text-foreground">Equipped in seasons: </dt>
+            <dd className="inline-flex flex-wrap gap-1 align-middle">
+              {seasonalWielders.map((w) => (
+                <Link
+                  key={w.entityId}
+                  to="/character"
+                  search={{ e: w.entityId }}
+                  className="inline-flex items-center gap-1 rounded border border-border/70 bg-background/60 px-1.5 py-0.5 text-[11px] text-foreground hover:border-accent hover:text-accent"
+                >
+                  <span>{w.entityName}</span>
+                  <span className="text-[10px] text-muted-foreground">({w.labels.join(", ")})</span>
+                </Link>
+              ))}
+            </dd>
           </div>
         )}
         {a.materials && (
@@ -186,6 +214,7 @@ export const ArtifactCard = memo(function ArtifactCard({
   motion,
   staff,
   canDelete = false,
+  seasonalWielders,
   onEdit,
   onDelete,
   onOpen,
@@ -195,6 +224,7 @@ export const ArtifactCard = memo(function ArtifactCard({
   motion: boolean;
   staff: boolean;
   canDelete?: boolean;
+  seasonalWielders?: SeasonalWeaponWielder[] | undefined;
   onEdit: () => void;
   onDelete: () => void;
   onOpen: () => void;
@@ -377,7 +407,9 @@ export const ArtifactCard = memo(function ArtifactCard({
         )}
       </div>
       <FormTabs art={art} i={i} set={setI} />
-      {(isManga || style !== "nexus") && <Details a={a} form={form} />}
+      {(isManga || style !== "nexus") && (
+        <Details a={a} form={form} seasonalWielders={seasonalWielders} />
+      )}
       {nexus && <p className="line-clamp-2 text-sm text-muted-foreground">{a.how_it_works}</p>}
     </MotionCard>
   );
@@ -387,10 +419,12 @@ export const ArtifactCard = memo(function ArtifactCard({
 export function NexusArtifactViewer({
   a,
   motion,
+  seasonalWielders,
   onClose,
 }: {
   a: Artifact;
   motion: boolean;
+  seasonalWielders?: SeasonalWeaponWielder[] | undefined;
   onClose: () => void;
 }) {
   const art = artFor(a.name, a.weapon_type, a.category);
@@ -499,7 +533,7 @@ export function NexusArtifactViewer({
             </Button>
           </div>
           <FormTabs art={art} i={i} set={setI} />
-          <Details a={a} form={form} />
+          <Details a={a} form={form} seasonalWielders={seasonalWielders} />
         </div>
       </MotionModalPanel>
     </div>,

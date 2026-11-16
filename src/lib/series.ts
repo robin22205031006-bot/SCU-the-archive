@@ -17,11 +17,20 @@ export const SERIES_STATUSES = [
   "Dead",
   "Missing",
   "Presumed Dead",
+  "Sealed",
   "Realive",
   "Unknown",
 ] as const;
 /** Per-season character status options (admins pick one per season). */
-export const SEASON_STATUSES = ["Alive", "Dead", "Missing", "Presumed Dead", "Realive", "Unknown"];
+export const SEASON_STATUSES = [
+  "Alive",
+  "Dead",
+  "Missing",
+  "Presumed Dead",
+  "Sealed",
+  "Realive",
+  "Unknown",
+];
 export type SeriesStatus = (typeof SERIES_STATUSES)[number];
 
 export const seriesStatusClass: Record<string, string> = {
@@ -29,6 +38,7 @@ export const seriesStatusClass: Record<string, string> = {
   Dead: "text-status-dead",
   Missing: "text-status-legend",
   "Presumed Dead": "text-status-legend",
+  Sealed: "text-amber-300",
   Realive: "text-status-alive",
   Revived: "text-status-alive",
   Unknown: "text-status-neutral",

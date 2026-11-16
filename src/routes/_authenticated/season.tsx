@@ -79,6 +79,7 @@ function SeasonPage() {
   const hasSeason = n >= 1 && n <= seasonNames.length;
   const name = seasonNames[n - 1] ?? `Season ${n}`;
   const roster = projectSeasonRoster(chars, seriesId, n, members);
+  const orgRoster = projectSeasonRoster(groups, seriesId, n, []);
   const key = `${seriesId}:${n}`;
 
   const handleDeleteSeason = async () => {
@@ -218,7 +219,7 @@ function SeasonPage() {
           <SpoilerToggle scope="series" />
           {isStaff && (
             <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-              Edit season roster
+              Add / Manage Season Roster (Characters &amp; Orgs)
             </Button>
           )}
           {isStaff && (
@@ -249,7 +250,10 @@ function SeasonPage() {
           )}
         </div>
       </MotionSection>
-      <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+      <h2 className="mt-6 text-xs font-semibold uppercase tracking-[0.25em] text-accent">
+        Appearing Characters ({roster.length})
+      </h2>
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
         {roster.map((c, idx) => {
           const d = readDossier(c.stats)[key] ?? {};
           return (
@@ -282,6 +286,40 @@ function SeasonPage() {
         {!roster.length && (
           <p className="text-sm text-muted-foreground">
             No characters recorded for this season yet.
+          </p>
+        )}
+      </ul>
+
+      <h2 className="mt-8 text-xs font-semibold uppercase tracking-[0.25em] text-accent">
+        Appearing Organizations, Clans &amp; Factions ({orgRoster.length})
+      </h2>
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+        {orgRoster.map((g, idx) => {
+          const d = readDossier(g.stats)[key] ?? {};
+          return (
+            <li key={g.id}>
+              <MotionCard index={idx} interactive className="glass min-w-0 rounded-xl p-4">
+                <Link to="/orgs" search={{ open: g.id }} className="font-medium hover:text-accent">
+                  {g.name}
+                </Link>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {g.kind} {g.status ? `· ${g.status}` : ""}
+                </p>
+                {d.story && (
+                  <p
+                    data-spoiler="series"
+                    className="mt-1 line-clamp-3 text-xs text-muted-foreground"
+                  >
+                    {d.story}
+                  </p>
+                )}
+              </MotionCard>
+            </li>
+          );
+        })}
+        {!orgRoster.length && (
+          <p className="text-sm text-muted-foreground">
+            No organizations recorded for this season yet.
           </p>
         )}
       </ul>

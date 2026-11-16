@@ -32,6 +32,7 @@ import { AdminSeries } from "@/components/admin-series";
 import { SeriesOrderEditor } from "@/components/series-order-editor";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { entitiesQuery } from "@/lib/entities";
+import { projectSeasonRoster } from "@/lib/nexus-roster";
 import { SeriesStyleEditor, useSeriesTitleStyle } from "@/lib/series-style";
 import { sfx } from "@/lib/scu-audio";
 import { useIsManga } from "@/hooks/use-ui-mode";
@@ -190,9 +191,25 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
   const { data: series } = useQuery(seriesByIdQuery(seriesId));
   const { data: rows } = useQuery(seriesCharactersQuery(seriesId));
   const { data: members } = useQuery(seriesMembersQuery(rows));
+  const { data: allCharacters = [] } = useQuery(entitiesQuery(["character"]));
+  const { data: allGroups = [] } = useQuery(
+    entitiesQuery(["organization", "clan", "bloodline", "faction"]),
+  );
   const isStaff = useIsStaff();
   const isManga = useIsManga();
   const hide = useSpoilerMask("series") && !isStaff;
+  const [activeSeason, setActiveSeason] = useState(1);
+  const [rosterOpen, setRosterOpen] = useState(false);
+
+  const seasonNames = useMemo(() => (series ? seriesSeasonNames(series) : []), [series]);
+  const seasonCharacters = useMemo(
+    () => (series ? projectSeasonRoster(allCharacters, series.id, activeSeason, rows ?? []) : []),
+    [allCharacters, series, activeSeason, rows],
+  );
+  const seasonOrgs = useMemo(
+    () => (series ? projectSeasonRoster(allGroups, series.id, activeSeason, []) : []),
+    [allGroups, series, activeSeason],
+  );
 
   const memberRows: MemberRow[] = useMemo(() => {
     const byId = new Map((members ?? []).map((e) => [e.id, e]));
@@ -270,6 +287,97 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
             <p className="whitespace-pre-line text-sm text-foreground/85">{series.description}</p>
           )}
           {series && <SeasonList series={series} />}
+          {series && (
+            <div className="space-y-3 rounded-xl border border-border/70 bg-secondary/20 p-3.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold uppercase tracking-widest text-accent">
+                  Season Roster · Characters &amp; Organizations
+                </span>
+                {isStaff && allCharacters.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => setRosterOpen(true)}
+                  >
+                    + Add Character / Org to{" "}
+                    {seasonNames[activeSeason - 1] ?? `Season ${activeSeason}`}
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {seasonNames.map((label, idx) => (
+                  <button
+                    key={label + idx}
+                    type="button"
+                    onClick={() => setActiveSeason(idx + 1)}
+                    className={`rounded-full border px-2.5 py-0.5 transition ${
+                      activeSeason === idx + 1
+                        ? "border-accent bg-accent text-accent-foreground"
+                        : "border-border bg-background/60 hover:border-accent"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Characters ({seasonCharacters.length})
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {seasonCharacters.length === 0 ? (
+                      <span className="text-muted-foreground">None in this season yet</span>
+                    ) : (
+                      seasonCharacters.map((c) => (
+                        <Link
+                          key={c.id}
+                          to="/character"
+                          search={{ e: c.id, series: series.id, season: activeSeason }}
+                          className="rounded-md border border-border bg-background/70 px-2 py-0.5 hover:border-accent hover:text-accent"
+                        >
+                          {c.name}
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Organizations &amp; Factions ({seasonOrgs.length})
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {seasonOrgs.length === 0 ? (
+                      <span className="text-muted-foreground">None in this season yet</span>
+                    ) : (
+                      seasonOrgs.map((o) => (
+                        <Link
+                          key={o.id}
+                          to="/orgs"
+                          search={{ open: o.id }}
+                          className="rounded-md border border-border bg-background/70 px-2 py-0.5 hover:border-accent hover:text-accent"
+                        >
+                          {o.name}
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {isStaff && series && rosterOpen && allCharacters.length > 0 && (
+            <NexusRosterEditor
+              open
+              onClose={() => setRosterOpen(false)}
+              entities={allCharacters}
+              seriesId={series.id}
+              season={activeSeason}
+              label={`${series.title} · ${seasonNames[activeSeason - 1] ?? `Season ${activeSeason}`}`}
+            />
+          )}
           {series && <SeriesStyleEditor seriesId={series.id} />}
           {series && <SeriesTools series={series} onDeleted={onClose} />}
           <div className="grid gap-4">

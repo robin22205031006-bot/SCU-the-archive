@@ -33,10 +33,13 @@ import {
   abilityRankMeta,
   buildAbilityRankMap,
   groupCharacterAbilityProgression,
-  mergeCharacterAbilityList,
   resolveAssignedAbilityRank,
   tierToIntrinsicRank,
 } from "@/lib/ability-rank";
+import { resolveCharacterSeasonAbilities, resolveDossierMeta } from "@/lib/nexus-season";
+import { seriesSeasonNames } from "@/lib/series-seasons";
+import { invalidateArchive } from "@/lib/archive-sync";
+import { SeasonEditor } from "@/components/nexus-dossier";
 import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
 import { readCharacter3dAvatars } from "@/lib/models-3d";
 import { AbilityBadge } from "@/components/ability-badge";
@@ -843,6 +846,7 @@ export function MangaCharacterSpread({
   const [view3d, setView3d] = useState(false);
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [comparing, setComparing] = useState(false);
+  const [editingSeason, setEditingSeason] = useState(false);
   const [, setFavTick] = useState(0);
   const abilityCtx = useOptionalAbilityContext();
   useEffect(() => onFavoritesChange(() => setFavTick((t) => t + 1)), []);
@@ -928,6 +932,16 @@ export function MangaCharacterSpread({
       ),
     [seasons, e?.stats, allSeries],
   );
+  const seriesCards = useMemo(
+    () =>
+      (allSeries ?? []).map((s) => ({
+        id: s.id,
+        title: s.title,
+        cover: s.cover_image_url,
+        seasons: seriesSeasonNames(s),
+      })),
+    [allSeries],
+  );
 
   if (!e) {
     return (
@@ -938,23 +952,70 @@ export function MangaCharacterSpread({
   }
 
   const statsRec = (e.stats ?? {}) as Record<string, string | undefined>;
-  const affiliation = statsRec["affiliation"] || statsRec["bloodline"] || "";
+  const resolvedMeta = resolveDossierMeta(
+    e,
+    activeSeason?.series_id ?? null,
+    seasonNumber,
+    activeSeason ?? null,
+  );
+  const activeStatus = resolvedMeta.status || e.status || "Alive";
+  const activeRole = resolvedMeta.role || e.role || e.category || e.kind;
+  const activeCodename = resolvedMeta.codename || e.alias || "";
+  const activeGender = resolvedMeta.gender || "";
+  const activeWeapons = resolvedMeta.weapons ?? [];
+  const affiliation =
+    resolvedMeta.bloodline || statsRec["affiliation"] || statsRec["bloodline"] || "";
+
+  const seasonKey = activeSeason?.series_id
+    ? `${activeSeason.series_id}:${seasonNumber ?? "all"}`
+    : null;
+  const seasonLabel = activeSeason?.series_id
+    ? `${activeSeason.series?.title ?? "Series"} · ${
+        seasonNumber
+          ? (seriesCards.find((x) => x.id === activeSeason.series_id)?.seasons[seasonNumber - 1] ??
+            `Season ${seasonNumber}`)
+          : "All seasons"
+      }`
+    : "Overview";
+
   const avatars3d = readCharacter3dAvatars(e);
   const activeAvatar = avatars3d[Math.min(avatarIdx, Math.max(0, avatars3d.length - 1))] ?? null;
-  const cs = getCombatStats(e.stats);
+  const baseCs = getCombatStats(e.stats);
+  const sdStats = resolvedMeta.sd.stats;
+  const cs = !sdStats
+    ? baseCs
+    : !baseCs
+      ? {
+          power: Number(sdStats["power"] ?? 0),
+          agility: Number(sdStats["agility"] ?? 0),
+          tactical_iq: Number(sdStats["tactical_iq"] ?? 0),
+          clan_mastery: Number(sdStats["clan_mastery"] ?? 0),
+          weapon_proficiency: Number(sdStats["weapon_proficiency"] ?? 0),
+        }
+      : {
+          power: Number(sdStats["power"] ?? baseCs.power),
+          agility: Number(sdStats["agility"] ?? baseCs.agility),
+          tactical_iq: Number(sdStats["tactical_iq"] ?? baseCs.tactical_iq),
+          clan_mastery: Number(sdStats["clan_mastery"] ?? baseCs.clan_mastery),
+          weapon_proficiency: Number(sdStats["weapon_proficiency"] ?? baseCs.weapon_proficiency),
+        };
   const tier = tierDef(e.character_tier);
   const cleanNotes = (notes ?? []).filter(
     (n) => !/^\[(conflict|merge|Auto-Merged|Auto-Stub|scope|resolved|Merged Info)/i.test(n.text),
   );
-  const mergedEntries = mergeCharacterAbilityList(charAbilities ?? [], e.abilities, {
+  const seasonAbilityResolution = resolveCharacterSeasonAbilities({
+    entityAbilities: e.abilities,
+    rows: charAbilities ?? [],
     seriesId: activeSeason?.series_id ?? null,
     seasonNumber,
+    allowedAbilityKeys: resolvedMeta.sd.abilityKeys,
   });
   const abilityRankMap = buildAbilityRankMap(charAbilities ?? [], {
     seriesId: activeSeason?.series_id ?? null,
     seasonNumber,
+    includePriorSeasons: true,
   });
-  const mergedAbilities = mergedEntries.map((item) => item.key);
+  const mergedAbilities = seasonAbilityResolution.active.map((item) => item.abilityKey);
 
   const handleExportPdf = async (ev?: React.MouseEvent<HTMLElement>) => {
     try {
@@ -1102,21 +1163,43 @@ export function MangaCharacterSpread({
   );
 
   const renderProfileArrangement = () => (
-    <GenreDossierProfilePanels
-      theme={activeGenre}
-      affiliation={affiliation}
-      designation={e.role || e.category || e.kind}
-      alias={e.alias || ""}
-      tierLabel={tier?.label ?? null}
-      status={e.status}
-      combatStats={cs}
-      abilities={mergedAbilities}
-      captionBox={(kicker, value, inverted) => (
-        <MangaCaptionBox key={kicker} kicker={kicker} inverted={!!inverted}>
-          {value}
-        </MangaCaptionBox>
+    <div className="space-y-2.5">
+      <GenreDossierProfilePanels
+        theme={activeGenre}
+        affiliation={affiliation}
+        designation={activeRole}
+        alias={activeCodename}
+        tierLabel={tier?.label ?? null}
+        status={activeStatus}
+        combatStats={cs}
+        abilities={mergedAbilities}
+        captionBox={(kicker, value, inverted) => (
+          <MangaCaptionBox key={kicker} kicker={kicker} inverted={!!inverted}>
+            {value}
+          </MangaCaptionBox>
+        )}
+      />
+      {(activeGender || activeWeapons.length > 0) && (
+        <div
+          data-spoiler="char"
+          className="flex flex-wrap items-center gap-1.5 border border-border/40 bg-background/60 px-2.5 py-2 text-[10px]"
+        >
+          {activeGender && (
+            <span className="border border-border bg-card px-2 py-0.5 font-mono font-bold uppercase">
+              GENDER: {activeGender}
+            </span>
+          )}
+          {activeWeapons.map((w) => (
+            <span
+              key={w}
+              className="border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-mono font-bold uppercase text-amber-300"
+            >
+              ⚔ {w}
+            </span>
+          ))}
+        </div>
       )}
-    />
+    </div>
   );
 
   const activeSeriesMeta = activeSeason
@@ -1501,6 +1584,16 @@ export function MangaCharacterSpread({
 
   const renderActionButtons = (variantClass = "manga-ink-btn") => (
     <div className="flex flex-wrap items-center gap-1.5">
+      {isAdmin && e.kind === "character" && (
+        <button
+          type="button"
+          onClick={() => setEditingSeason(true)}
+          className={`${variantClass} inline-flex items-center gap-1 border border-border bg-card px-2.5 py-1 font-mono text-[10px] font-bold uppercase hover:bg-foreground hover:text-background`}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          EDIT SEASON
+        </button>
+      )}
       {e.kind === "character" && (
         <button
           type="button"
@@ -1601,8 +1694,8 @@ export function MangaCharacterSpread({
       <DossierComponent
         theme={activeGenre}
         name={e.name}
-        status={e.status}
-        roleLabel={(e.role || e.kind).toUpperCase()}
+        status={activeStatus}
+        roleLabel={activeRole.toUpperCase()}
         seriesTitle={activeSeason?.series?.title ?? "MASTER RECORD"}
         tierPipCount={tier ? 4 : 2}
         tabs={DOSSIER_TABS}
@@ -1631,14 +1724,22 @@ export function MangaCharacterSpread({
                 tilt={activeGenre === "shonen" ? -4 : -2}
               />
             )}
-            <StatusTooltip label={e.status}>
+            <StatusTooltip label={activeStatus}>
               <span
                 data-spoiler="char"
                 className="rounded border border-border bg-background/85 px-2 py-0.5 font-mono text-[9px] font-bold uppercase"
               >
-                {e.status}
+                {activeStatus}
               </span>
             </StatusTooltip>
+            {activeGender && (
+              <span
+                data-spoiler="char"
+                className="rounded border border-border bg-background/85 px-2 py-0.5 font-mono text-[9px] font-bold uppercase"
+              >
+                {activeGender}
+              </span>
+            )}
           </>
         }
         stampSlot={
@@ -1762,6 +1863,30 @@ export function MangaCharacterSpread({
 
       {e.kind === "character" && (
         <CompareSentinel open={comparing} onOpenChange={setComparing} entity={e} />
+      )}
+      {isAdmin && editingSeason && (
+        <SeasonEditor
+          open={editingSeason}
+          onClose={() => setEditingSeason(false)}
+          entity={e}
+          seasonKey={seasonKey}
+          seasonLabel={seasonLabel}
+          seriesCards={seriesCards}
+          onSeasonChange={(next) => {
+            if (!next) {
+              setSeasonIdx(-1);
+              setSeasonNumber(null);
+              return;
+            }
+            const idx = seasons.findIndex((s) => s.series_id === next.seriesId);
+            if (idx >= 0) setSeasonIdx(idx);
+            setSeasonNumber(next.n);
+          }}
+          onSaved={() => {
+            setEditingSeason(false);
+            invalidateArchive(qc);
+          }}
+        />
       )}
     </main>
   );

@@ -348,6 +348,7 @@ export function AbilityProvider({
       const map = buildAbilityRankMap(rows, {
         seriesId: seriesId ?? null,
         seasonNumber: seasonNumber ?? null,
+        includePriorSeasons: true,
       });
       return resolveAssignedAbilityRank(key, map);
     },

@@ -17,13 +17,13 @@ export function journeyScore(r: {
   role_in_series?: string | null | undefined;
 }): number {
   const role = `${r.arc_role ?? ""} ${r.role_in_series ?? ""}`.toLowerCase();
-  if (/main\s*protagonist|lead\s*protagonist|main\s*antagonist/.test(role)) return 5;
+  if (/main\s*protagonist|lead\s*protagonist|main\s*lead|main\s*antagonist/.test(role)) return 5;
   if (/impactful|protagonist|legend/.test(role)) return 4;
   if (/anti-?hero|antagonist|anti-?villain|villain/.test(role)) return 3;
   if (/support|mentor|side/.test(role)) return 2;
   if (/cameo/.test(role)) return 1;
   const st = (r.status ?? "").toLowerCase();
-  if (st === "dead" || st === "presumed dead" || st === "missing") return 1;
+  if (st === "dead" || st === "presumed dead" || st === "missing" || st === "sealed") return 1;
   if (st === "alive" || st === "realive") return 3;
   return 2;
 }

@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { stripMerged } from "@/lib/sanitize-lore";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Heart, X } from "lucide-react";
+import { useIsStaff } from "@/hooks/use-admin";
+import { invalidateArchive } from "@/lib/archive-sync";
+import { resolveCharacterSeasonAbilities, resolveDossierMeta } from "@/lib/nexus-season";
+import { seriesSeasonNames } from "@/lib/series-seasons";
+import { ArrowLeft, Heart, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { characterSeriesQuery, seriesQuery } from "@/lib/series";
 import {
@@ -22,7 +26,6 @@ import { abilityDef } from "@/lib/abilities";
 import {
   abilityRankMeta,
   groupCharacterAbilityProgression,
-  mergeCharacterAbilityList,
   tierToIntrinsicRank,
 } from "@/lib/ability-rank";
 import { useOptionalAbilityContext } from "@/context/AbilityContext";
@@ -40,7 +43,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useUiStyle } from "@/lib/ui-style";
 import { useAppMotion } from "@/hooks/use-app-motion";
-import { NexusDossier } from "@/components/nexus-dossier";
+import { NexusDossier, SeasonEditor } from "@/components/nexus-dossier";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaCharacterSpread } from "@/components/manga-view";
@@ -323,10 +326,11 @@ function CharacterDossier() {
 }
 
 function ClassicDossier() {
-  const { e: rawId } = Route.useSearch();
+  const { e: rawId, series: initialSeriesParam, season: initialSeasonParam } = Route.useSearch();
   const id = resolveEntityId(rawId) || rawId;
   const nav = useNavigate();
   const qc = useQueryClient();
+  const isStaff = useIsStaff();
   const ui = useUiToggles();
   const { motionActive: animOn } = useAppMotion();
   const abilityCtx = useOptionalAbilityContext();
@@ -334,7 +338,8 @@ function ClassicDossier() {
   const [openSeries, setOpenSeries] = useState<string | null>(null);
   const [ctxSeason, setCtxSeason] = useState<string | null>(null);
   const [seasonIdx, setSeasonIdx] = useState(-1);
-  const [seasonNum, setSeasonNum] = useState<number | null>(null);
+  const [seasonNum, setSeasonNum] = useState<number | null>(initialSeasonParam ?? null);
+  const [editingSeason, setEditingSeason] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
   const [, setFavTick] = useState(0);
   useEffect(() => onFavoritesChange(() => setFavTick((t) => t + 1)), []);
@@ -407,6 +412,20 @@ function ClassicDossier() {
   });
 
   const seasons = useMemo(() => (memberships ?? []).filter((r) => r.series), [memberships]);
+  useEffect(() => {
+    if (initialSeriesParam && seasons.length > 0 && seasonIdx === -1) {
+      const idx = seasons.findIndex((s) => s.series_id === initialSeriesParam);
+      if (idx >= 0) {
+        setSeasonIdx(idx);
+        const targetTitle = seasons[idx]?.series?.title;
+        if (targetTitle && initialSeasonParam) {
+          setCtxSeason(`${targetTitle} S${initialSeasonParam}`);
+          setSeasonNum(initialSeasonParam);
+        }
+      }
+    }
+  }, [initialSeriesParam, initialSeasonParam, seasons, seasonIdx]);
+
   const journeyRows = useMemo(
     () =>
       seasonJourneyRows(
@@ -448,7 +467,12 @@ function ClassicDossier() {
     const found = allSeries.find((s) => ctxSeason.toLowerCase().startsWith(s.title.toLowerCase()));
     return found?.id ?? null;
   }, [ctxSeason, allSeries]);
-  const activeSeriesId = activeSeason?.series_id ?? matchedCtxSeriesId ?? null;
+  const activeSeriesId =
+    activeSeason?.series_id ?? matchedCtxSeriesId ?? initialSeriesParam ?? null;
+  const resolvedMeta = useMemo(
+    () => (e ? resolveDossierMeta(e, activeSeriesId, seasonNum, activeSeason) : null),
+    [e, activeSeriesId, seasonNum, activeSeason],
+  );
   const seasonHue = seasonIdx >= 0 ? SEASON_HUES[seasonIdx % SEASON_HUES.length] : null;
   const accent = seasonHue ? `hsl(${seasonHue} 85% 60%)` : "var(--accent)";
 
@@ -541,6 +565,16 @@ function ClassicDossier() {
               />
             </span>
           </button>
+          {isStaff && (
+            <button
+              aria-label="Edit season dossier"
+              onClick={() => setEditingSeason(true)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 text-[10px] uppercase tracking-wider text-accent hover:bg-accent/15"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Edit</span>
+            </button>
+          )}
           <button
             aria-label="Favorite"
             onClick={() => {
@@ -746,7 +780,7 @@ function ClassicDossier() {
               {TABS.find(([t]) => t === tab)?.[1]}
             </p>
 
-            {/* Badges — tier, role, alias (all viewports) */}
+            {/* Badges — tier, status, role, gender, alias, weapons */}
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
               {e.character_tier && (
                 <StatusTooltip label={e.character_tier}>
@@ -755,10 +789,20 @@ function ClassicDossier() {
                   </span>
                 </StatusTooltip>
               )}
+              {resolvedMeta?.status && (
+                <StatusTooltip label={resolvedMeta.status}>
+                  <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-foreground">
+                    {resolvedMeta.status}
+                  </span>
+                </StatusTooltip>
+              )}
               {[
-                e.role,
+                resolvedMeta?.role || e.role,
+                resolvedMeta?.gender,
                 e.category,
-                e.alias ?? (e.stats as Record<string, string> | null)?.["alias"],
+                resolvedMeta?.codename ||
+                  e.alias ||
+                  (e.stats as Record<string, string> | null)?.["alias"],
               ]
                 .filter(Boolean)
                 .map((t) => (
@@ -769,6 +813,14 @@ function ClassicDossier() {
                     {t}
                   </span>
                 ))}
+              {(resolvedMeta?.weapons ?? []).map((w) => (
+                <span
+                  key={w}
+                  className="rounded-full border border-amber-400/40 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200"
+                >
+                  {w}
+                </span>
+              ))}
             </div>
 
             {/* Mobile series/season selector — left rail is desktop-only */}
@@ -911,23 +963,31 @@ function ClassicDossier() {
               )}
               {tab === "powers" &&
                 (() => {
-                  const mergedPowers = mergeCharacterAbilityList(charAbilities ?? [], e.abilities, {
+                  const resolved = resolveCharacterSeasonAbilities({
+                    entityAbilities: e.abilities,
+                    rows: charAbilities ?? [],
                     seriesId: activeSeriesId,
                     seasonNumber: seasonNum,
+                    allowedAbilityKeys: resolvedMeta?.sd.abilityKeys,
                   });
                   return (
                     <div className="grid gap-4">
-                      {mergedPowers.length > 0 ? (
+                      {resolved.active.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
-                          {mergedPowers.map((item) => {
-                            const def = abilityDef(item.key);
-                            const effectiveRank = item.isAssigned
+                          {resolved.active.map((item) => {
+                            const def = abilityDef(item.abilityKey);
+                            const isAssigned =
+                              item.hasSeasonOverride ||
+                              item.origin === "carried" ||
+                              item.origin === "newly_acquired" ||
+                              (charAbilities ?? []).length > 0;
+                            const effectiveRank = isAssigned
                               ? item.level
                               : tierToIntrinsicRank(def.tier);
                             const isSelected = abilityCtx?.abilityKey === def.key;
                             return (
                               <button
-                                key={item.key}
+                                key={item.canonKey}
                                 type="button"
                                 onClick={() => {
                                   sfx.pop();
@@ -947,9 +1007,9 @@ function ClassicDossier() {
                                 title={`Inspect ${def.label} (${abilityRankMeta(effectiveRank).label})`}
                               >
                                 <AbilityBadge
-                                  name={item.key}
-                                  level={item.isAssigned ? item.level : undefined}
-                                  showRank={item.isAssigned}
+                                  name={item.abilityKey}
+                                  level={isAssigned ? item.level : undefined}
+                                  showRank={isAssigned}
                                 />
                               </button>
                             );
@@ -1209,6 +1269,42 @@ function ClassicDossier() {
           </nav>
         </div>
       </div>
+      {isStaff && editingSeason && (
+        <SeasonEditor
+          open
+          onClose={() => setEditingSeason(false)}
+          entity={e}
+          seasonKey={activeSeriesId ? `${activeSeriesId}:${seasonNum ?? 1}` : null}
+          seasonLabel={
+            ctxSeason ??
+            (activeSeriesId
+              ? `${seriesTitleMap.get(activeSeriesId) ?? "Series"} · S${seasonNum ?? 1}`
+              : "All seasons")
+          }
+          seriesCards={(allSeries ?? []).map((s) => ({
+            id: s.id,
+            title: s.title,
+            seasons: seriesSeasonNames(s),
+          }))}
+          onSeasonChange={(next) => {
+            if (!next) {
+              setSeasonIdx(-1);
+              setSeasonNum(null);
+              setCtxSeason(null);
+            } else {
+              const idx = seasons.findIndex((s) => s.series_id === next.seriesId);
+              setSeasonIdx(idx);
+              setSeasonNum(next.n);
+              const title = seriesTitleMap.get(next.seriesId) ?? "Series";
+              setCtxSeason(`${title} S${next.n}`);
+            }
+          }}
+          onSaved={() => {
+            void qc.invalidateQueries({ queryKey: ["entity", e.id] });
+            void invalidateArchive(qc);
+          }}
+        />
+      )}
     </div>
   );
 }

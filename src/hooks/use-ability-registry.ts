@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { entitiesQuery, type Entity } from "@/lib/entities";
+import { entitiesQuery, getMergedSecondaryIds, type Entity } from "@/lib/entities";
 import {
   CANON_CHARACTER_ABILITIES,
   abilityDef,
@@ -18,6 +18,26 @@ import {
 const CUSTOM_SETTINGS_KEY = "ability_registry";
 const OVERRIDES_SETTINGS_KEY = "ability_overrides";
 const HUB_ENTITY_KINDS = ["character", "organization", "clan", "bloodline", "faction"] as const;
+
+type HolderAbilityRow = {
+  entity_id: string;
+  ability_key: string;
+  level: number;
+  series_id: string | null;
+  season_number: number | null;
+};
+
+const allHolderAbilityRowsQuery = {
+  queryKey: ["character-abilities", "all-holders"] as const,
+  staleTime: 1000 * 60 * 5,
+  queryFn: async (): Promise<HolderAbilityRow[]> => {
+    const { data, error } = await supabase
+      .from("character_abilities")
+      .select("entity_id, ability_key, level, series_id, season_number");
+    if (error) return [];
+    return (data ?? []) as HolderAbilityRow[];
+  },
+};
 
 let hydrated = false;
 let inflight: Promise<void> | null = null;
@@ -67,11 +87,12 @@ export function useAbilityRegistryVersion(): number {
 
 /**
  * Complete deduplicated ability list matching the Abilities Hub:
- * registry + admin custom/overrides + canon roster + ad-hoc entity abilities/beast traits.
+ * registry + admin custom/overrides + canon roster + ad-hoc entity abilities/beast traits + seasonal character_abilities.
  */
 export function useAllHubAbilities(): AbilityDef[] {
   const registryVersion = useAbilityRegistryVersion();
   const { data: entities } = useQuery(entitiesQuery([...HUB_ENTITY_KINDS]));
+  const { data: charAbilityRows } = useQuery(allHolderAbilityRowsQuery);
 
   return useMemo(() => {
     const base = allAbilityDefs();
@@ -96,9 +117,13 @@ export function useAllHubAbilities(): AbilityDef[] {
       }
     }
 
+    for (const row of charAbilityRows ?? []) {
+      addIfMissing(row.ability_key);
+    }
+
     return merged;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entities, registryVersion]);
+  }, [entities, charAbilityRows, registryVersion]);
 }
 
 export interface AbilityHoldersIndex {
@@ -126,33 +151,59 @@ const CANON_HOLDERS_BY_KEY: Map<string, string[]> = (() => {
 
 /**
  * Shared reverse index from normalized ability key -> live entity wielders + canon character names.
+ * Combines base entity arrays with seasonal/per-series rows in `character_abilities`.
  * Used across Abilities Hub catalog, Ability FX cards/showcase/simulator, and Ability in Action.
  */
 export function useAbilityHolders(): AbilityHoldersIndex {
   const registryVersion = useAbilityRegistryVersion();
-  const { data: entities, isLoading } = useQuery(entitiesQuery([...HUB_ENTITY_KINDS]));
+  const { data: entities, isLoading: entitiesLoading } = useQuery(
+    entitiesQuery([...HUB_ENTITY_KINDS]),
+  );
+  const { data: charAbilityRows, isLoading: abilitiesLoading } =
+    useQuery(allHolderAbilityRowsQuery);
 
   const holdersMap = useMemo(() => {
     const map = new Map<string, Entity[]>();
+    const entityById = new Map<string, Entity>();
+    const seenByAbility = new Map<string, Set<string>>();
+
+    const addHolder = (rawAbility: string, entity: Entity) => {
+      const nk = normalizeAbilityKey(abilityDef(rawAbility).key);
+      if (!nk) return;
+      let seen = seenByAbility.get(nk);
+      if (!seen) {
+        seen = new Set<string>();
+        seenByAbility.set(nk, seen);
+      }
+      if (seen.has(entity.id)) return;
+      seen.add(entity.id);
+      const arr = map.get(nk) ?? [];
+      arr.push(entity);
+      map.set(nk, arr);
+    };
+
     for (const e of entities ?? []) {
-      const names = [...(e.abilities ?? []), ...(e.beast_traits ?? [])];
-      const seen = new Set<string>();
-      for (const n of names) {
-        const nk = normalizeAbilityKey(abilityDef(n).key);
-        if (!nk || seen.has(nk)) continue;
-        seen.add(nk);
-        const arr = map.get(nk) ?? [];
-        arr.push(e);
-        map.set(nk, arr);
+      entityById.set(e.id, e);
+      for (const secId of getMergedSecondaryIds(e.id)) {
+        if (!entityById.has(secId)) entityById.set(secId, e);
+      }
+      for (const n of [...(e.abilities ?? []), ...(e.beast_traits ?? [])]) {
+        addHolder(n, e);
       }
     }
+
+    for (const row of charAbilityRows ?? []) {
+      const entity = entityById.get(row.entity_id);
+      if (entity) addHolder(row.ability_key, entity);
+    }
+
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entities, registryVersion]);
+  }, [entities, charAbilityRows, registryVersion]);
 
   return {
     holdersMap,
     canonNamesMap: CANON_HOLDERS_BY_KEY,
-    isLoading,
+    isLoading: entitiesLoading || abilitiesLoading,
   };
 }

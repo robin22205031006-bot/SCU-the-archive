@@ -1,6 +1,6 @@
 import { Component, Suspense, lazy, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2, Upload, X, Sparkles, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,13 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useUiStyle } from "@/lib/ui-style";
 import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { ArtifactCard } from "@/components/arsenal-card";
-import { artifactsQuery } from "@/lib/artifacts";
+import {
+  artifactsQuery,
+  resolveArtifactSeasonalWielders,
+  type SeasonalWeaponWielder,
+} from "@/lib/artifacts";
+import { entitiesQuery } from "@/lib/entities";
+import { seriesQuery } from "@/lib/series";
 import { uploadModel3d } from "@/lib/models-3d";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
@@ -113,6 +119,8 @@ const EMPTY = {
 
 function ArsenalPage() {
   const { data } = useSuspenseQuery(artifactsQuery);
+  const { data: characters = [] } = useQuery(entitiesQuery(["character"]));
+  const { data: seriesList = [] } = useQuery(seriesQuery);
   const { isStaff: staff, canDelete } = useAdminPermissions();
   const qc = useQueryClient();
   const [subTab, setSubTab] = useState<"catalog" | "isolated">("isolated");
@@ -127,20 +135,35 @@ function ArsenalPage() {
     () => (focusId ? ((data ?? []).find((a) => a.id === focusId) ?? null) : null),
     [data, focusId],
   );
+  const seriesTitleMap = useMemo(
+    () => new Map(seriesList.map((s) => [s.id, s.title])),
+    [seriesList],
+  );
+  const seasonalWieldersByArtifact = useMemo(() => {
+    const map = new Map<string, SeasonalWeaponWielder[]>();
+    for (const a of data ?? []) {
+      map.set(
+        a.name.trim().toLowerCase(),
+        resolveArtifactSeasonalWielders(a.name, characters, seriesTitleMap),
+      );
+    }
+    return map;
+  }, [data, characters, seriesTitleMap]);
   const [edit, setEdit] = useState<{ id?: string; v: typeof EMPTY } | null>(null);
   const [uploading3d, setUploading3d] = useState(false);
   const [deletingArtifact, setDeletingArtifact] = useState<Artifact | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const list = useMemo(
     () =>
-      (data ?? []).filter(
-        (a) =>
-          (cat === "all" || a.category === cat) &&
-          `${a.name} ${(a.wielders ?? []).join(" ")} ${a.lore ?? ""}`
-            .toLowerCase()
-            .includes(q.toLowerCase()),
-      ),
-    [data, q, cat],
+      (data ?? []).filter((a) => {
+        if (cat !== "all" && a.category !== cat) return false;
+        const seasonal = seasonalWieldersByArtifact.get(a.name.trim().toLowerCase()) ?? [];
+        const seasonalText = seasonal.map((s) => `${s.entityName} ${s.labels.join(" ")}`).join(" ");
+        return `${a.name} ${(a.wielders ?? []).join(" ")} ${seasonalText} ${a.lore ?? ""}`
+          .toLowerCase()
+          .includes(q.toLowerCase());
+      }),
+    [data, q, cat, seasonalWieldersByArtifact],
   );
 
   const save = async () => {
@@ -324,6 +347,7 @@ function ArsenalPage() {
           <Suspense fallback={<PanelSkeleton className="min-h-[520px]" />}>
             <ArsenalIsolatedView
               artifacts={data ?? []}
+              seasonalWieldersByArtifact={seasonalWieldersByArtifact}
               onSelectArtifact={(a) => setFocusId(a.id)}
             />
           </Suspense>
@@ -471,6 +495,7 @@ function ArsenalPage() {
                   motion={motion}
                   staff={staff}
                   canDelete={canDelete}
+                  seasonalWielders={seasonalWieldersByArtifact.get(a.name.trim().toLowerCase())}
                   onEdit={() => open(a)}
                   onDelete={() => setDeletingArtifact(a)}
                   onOpen={() => setFocusId(a.id)}
@@ -489,7 +514,12 @@ function ArsenalPage() {
       {focus && nexus && (
         <CardGuard key={"v" + focus.id} name={focus.name}>
           <Suspense fallback={null}>
-            <NexusArtifactViewer a={focus} motion={motion} onClose={() => setFocusId(null)} />
+            <NexusArtifactViewer
+              a={focus}
+              motion={motion}
+              seasonalWielders={seasonalWieldersByArtifact.get(focus.name.trim().toLowerCase())}
+              onClose={() => setFocusId(null)}
+            />
           </Suspense>
         </CardGuard>
       )}
