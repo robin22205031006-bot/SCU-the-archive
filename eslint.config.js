@@ -15,6 +15,8 @@ export default tseslint.config(
       "lore-export/**",
       "public/lore-export/**",
       "drizzle/**",
+      "src/integrations/supabase/types.ts",
+      "src/integrations/supabase/previewAuthStorage.ts",
     ],
   },
   {

@@ -2,7 +2,18 @@ import { memo, useMemo, useState } from "react";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BookMarked, FileText, Pencil, Search, Trash2, Users, X } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  ArrowUpDown,
+  BookMarked,
+  ChevronDown,
+  FileText,
+  Pencil,
+  Search,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -21,7 +32,16 @@ import { useSectionStyle } from "@/hooks/use-typography";
 import { NexusExplorer } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { Button } from "@/components/ui/button";
-import { entitiesQuery, type Entity } from "@/lib/entities";
+import { entitiesQuery, GROUP_LINK_KINDS, type Entity } from "@/lib/entities";
+import { SeriesSummaryChart } from "@/components/series-summary-chart";
+import {
+  SERIES_SORT_OPTIONS,
+  sortSeriesList,
+  summarizeSeriesSagas,
+  type SeriesCharacterCountRow,
+  type SeriesMembershipRow,
+  type SeriesSortMode,
+} from "@/lib/series-summary";
 import { seriesSeasonNames } from "@/lib/series-seasons";
 import { deleteSeason } from "@/lib/series-lore.functions";
 import { invalidateArchive } from "@/lib/archive-sync";
@@ -34,11 +54,11 @@ import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { projectSeasonRoster } from "@/lib/nexus-roster";
 import { SeriesStyleEditor, useSeriesTitleStyle } from "@/lib/series-style";
 import { sfx } from "@/lib/scu-audio";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
 import {
-  MotionCard,
   MotionModalPanel,
   MotionPage,
   MotionPresence,
@@ -553,6 +573,28 @@ function StaffSeriesManager() {
   );
 }
 
+const SERIES_GRID_VARIANTS = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.055,
+      delayChildren: 0.02,
+    },
+  },
+};
+
+const SERIES_CARD_VARIANTS = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.28,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
+  },
+};
+
 const SeriesCard = memo(function SeriesCard({
   s,
   idx,
@@ -566,57 +608,84 @@ const SeriesCard = memo(function SeriesCard({
   count: number;
   onOpen: (id: string) => void;
 }) {
-  return (
-    <MotionCard
-      index={idx}
-      interactive
-      className={
-        isManga
-          ? "manga-panel manga-panel-hover border-[3px] border-foreground bg-card"
-          : "glass rounded-2xl"
-      }
-    >
-      <button onClick={() => onOpen(s.id)} className="group flex w-full gap-4 p-4 text-left">
-        {s.cover_image_url ? (
-          <img
-            src={s.cover_image_url}
-            alt={s.title}
-            loading="lazy"
-            decoding="async"
-            className={`h-16 w-16 shrink-0 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
-          />
-        ) : (
-          <div
-            className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
-          >
-            {isManga ? `#${String(idx + 1).padStart(2, "0")}` : <BookMarked className="h-6 w-6" />}
-          </div>
-        )}
-        <span className="min-w-0 flex-1">
-          <SeriesTitle
-            series={s}
-            className={
-              isManga
-                ? "block truncate font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]"
-                : "block truncate text-xl font-medium"
-            }
-          />
-          <span className="mt-1 flex items-center gap-1.5 font-mono text-[11px] uppercase text-muted-foreground">
-            <Users className="h-3.5 w-3.5" />
-            {count} character{count === 1 ? "" : "s"}
-          </span>
-          {s.description && (
-            <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
-              {s.description}
-            </span>
-          )}
+  const { isMinimal, motionActive, spec } = useAppMotion();
+  const cardClass = isManga
+    ? "manga-panel manga-panel-hover border-[3px] border-foreground bg-card"
+    : "glass rounded-2xl";
+
+  const content = (
+    <button onClick={() => onOpen(s.id)} className="group flex w-full gap-4 p-4 text-left">
+      {s.cover_image_url ? (
+        <img
+          src={s.cover_image_url}
+          alt={s.title}
+          loading="lazy"
+          decoding="async"
+          className={`h-16 w-16 shrink-0 object-cover ${isManga ? "manga-portrait-ink border-2 border-foreground" : "rounded-xl"}`}
+        />
+      ) : (
+        <div
+          className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
+        >
+          {isManga ? `#${String(idx + 1).padStart(2, "0")}` : <BookMarked className="h-6 w-6" />}
+        </div>
+      )}
+      <span className="min-w-0 flex-1">
+        <SeriesTitle
+          series={s}
+          className={
+            isManga
+              ? "block truncate font-display text-2xl uppercase tracking-wide group-hover:text-[#b91c1c] dark:group-hover:text-[#fca5a5]"
+              : "block truncate text-xl font-medium"
+          }
+        />
+        <span className="mt-1 flex items-center gap-1.5 font-mono text-[11px] uppercase text-muted-foreground">
+          <Users className="h-3.5 w-3.5" />
+          {count} character{count === 1 ? "" : "s"}
         </span>
-      </button>
-    </MotionCard>
+        {s.description && (
+          <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
+            {s.description}
+          </span>
+        )}
+      </span>
+    </button>
+  );
+
+  if (!motionActive) {
+    return (
+      <div
+        data-testid="series-card"
+        data-stagger-index={idx}
+        data-motion-state={isMinimal ? "minimal-off" : "paused"}
+        className={cardClass}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      data-testid="series-card"
+      data-stagger-index={idx}
+      data-motion-state="active"
+      variants={{
+        ...SERIES_CARD_VARIANTS,
+        ...(spec.cardVariants["hover"] ? { hover: spec.cardVariants["hover"] } : {}),
+        ...(spec.cardVariants["tap"] ? { tap: spec.cardVariants["tap"] } : {}),
+      }}
+      whileHover="hover"
+      whileTap="tap"
+      className={cardClass}
+    >
+      {content}
+    </motion.div>
   );
 });
 
 export function SeriesPage() {
+  const { isMinimal, motionActive } = useAppMotion();
   const isManga = useIsManga();
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
@@ -625,6 +694,7 @@ export function SeriesPage() {
   const nav = useNavigate();
   const navigate = (o: { search: { s?: string } }) => nav({ to: ".", search: o.search as never });
   const [q, setQ] = useState("");
+  const [sortBy, setSortBy] = useState<SeriesSortMode>("title-asc");
   const { data: series, isLoading } = useQuery(seriesQuery);
   const { data: episodes } = useQuery(episodesQuery);
   const { data: allRows } = useQuery({
@@ -633,27 +703,62 @@ export function SeriesPage() {
     staleTime: 1000 * 60 * 15,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const { data, error } = await supabase.from("series_characters").select("series_id");
-      if (error) return [] as { series_id: string }[];
-      return data ?? [];
+      const { data, error } = await supabase
+        .from("series_characters")
+        .select("series_id, character_id");
+      if (error) return [] as SeriesCharacterCountRow[];
+      return (data ?? []) as SeriesCharacterCountRow[];
+    },
+  });
+  const { data: allCharacters = [] } = useQuery({
+    ...entitiesQuery(["character"]),
+    enabled: !!series?.length,
+  });
+  const { data: allGroups = [] } = useQuery({
+    ...entitiesQuery(GROUP_LINK_KINDS),
+    enabled: !!series?.length,
+  });
+  const { data: allMemberships = [] } = useQuery({
+    queryKey: ["entity-memberships", "all"],
+    enabled: !!series?.length,
+    staleTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("entity_memberships")
+        .select("character_id, group_id");
+      if (error) return [] as SeriesMembershipRow[];
+      return (data ?? []) as SeriesMembershipRow[];
     },
   });
 
-  const counts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const r of allRows ?? []) m.set(r.series_id, (m.get(r.series_id) ?? 0) + 1);
-    return m;
-  }, [allRows]);
+  const summary = useMemo(
+    () =>
+      summarizeSeriesSagas({
+        series: series ?? [],
+        seriesCharacterRows: allRows ?? [],
+        characters: allCharacters,
+        groups: allGroups,
+        memberships: allMemberships,
+      }),
+    [series, allRows, allCharacters, allGroups, allMemberships],
+  );
+  const counts = summary.countsBySeries;
+
+  const sortedSeries = useMemo(
+    () => sortSeriesList(series ?? [], counts, sortBy),
+    [series, counts, sortBy],
+  );
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return (series ?? []).filter(
+    return sortedSeries.filter(
       (x) =>
         !needle ||
         x.title.toLowerCase().includes(needle) ||
         x.description.toLowerCase().includes(needle),
     );
-  }, [series, q]);
+  }, [sortedSeries, q]);
 
   return (
     <MotionPage
@@ -687,11 +792,13 @@ export function SeriesPage() {
         </MotionSection>
       )}
 
+      <SeriesSummaryChart summary={summary} isManga={isManga} loading={isLoading} />
+
       {nexus ? (
         <NexusExplorer
           label="Series"
           loading={isLoading}
-          records={(series ?? []).map((s) => ({
+          records={sortedSeries.map((s) => ({
             id: s.id,
             title: s.title,
             group: "Sagas",
@@ -722,18 +829,54 @@ export function SeriesPage() {
         />
       ) : (
         <>
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search series…"
-              className={
-                isManga
-                  ? "h-10 rounded-none border-2 border-foreground bg-background pl-10 font-mono text-xs"
-                  : "glass h-11 rounded-full pl-10"
-              }
-            />
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search series…"
+                aria-label="Search series"
+                className={
+                  isManga
+                    ? "h-10 rounded-none border-2 border-foreground bg-background pl-10 font-mono text-xs"
+                    : "glass h-11 rounded-full pl-10"
+                }
+              />
+            </div>
+            <div className="relative shrink-0 sm:w-64">
+              <ArrowUpDown
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <select
+                aria-label="Sort series"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SeriesSortMode)}
+                className={
+                  isManga
+                    ? "h-10 w-full cursor-pointer appearance-none rounded-none border-2 border-foreground bg-background pl-9 pr-9 font-mono text-xs font-bold uppercase text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    : "glass h-11 w-full cursor-pointer appearance-none rounded-full border border-border/70 bg-background/80 pl-9 pr-9 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                }
+              >
+                {SERIES_SORT_OPTIONS.map((opt) => (
+                  <option
+                    key={opt.value}
+                    value={opt.value}
+                    className="bg-background text-foreground"
+                  >
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              />
+            </div>
           </div>
 
           {!q.trim() && (
@@ -758,8 +901,31 @@ export function SeriesPage() {
                   : "No series defined yet — an admin can add them from the Admin panel."}
               </p>
             )
+          ) : motionActive ? (
+            <motion.div
+              key={`${q.trim().toLowerCase()}::${sortBy}`}
+              data-testid="series-card-grid"
+              data-motion-state="active"
+              variants={SERIES_GRID_VARIANTS}
+              initial="hidden"
+              animate="visible"
+              className={`scu-card-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${isManga ? "manga-spread-grid" : ""}`}
+            >
+              {list.map((s, idx) => (
+                <SeriesCard
+                  key={s.id}
+                  s={s}
+                  idx={idx}
+                  isManga={isManga}
+                  count={counts.get(s.id) ?? 0}
+                  onOpen={(id) => navigate({ search: { s: id } })}
+                />
+              ))}
+            </motion.div>
           ) : (
             <div
+              data-testid="series-card-grid"
+              data-motion-state={isMinimal ? "minimal-off" : "paused"}
               className={`scu-card-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${isManga ? "manga-spread-grid" : ""}`}
             >
               {list.map((s, idx) => (
