@@ -83,6 +83,17 @@ const MENU: Array<{ key: Menu; label: string; icon: typeof BookOpen }> = [
 
 type SeriesCard = { id: string; title: string; cover: string | null; seasons: string[] };
 
+/** Maps a free-text season status to a lighting tone for the dossier. */
+export function nexusStatusTone(status: string | null | undefined) {
+  const s = (status ?? "").toLowerCase();
+  if (s.includes("presumed")) return "presumed";
+  if (s.includes("dead") || s.includes("deceased")) return "dead";
+  if (s.includes("seal")) return "sealed";
+  if (s.includes("missing") || s.includes("unknown")) return "missing";
+  if (s.includes("alive") || s.includes("active")) return "alive";
+  return "neutral";
+}
+
 export function NexusDossier({
   e,
   initialSeason = null,
@@ -263,6 +274,7 @@ export function NexusDossier({
     >
       <div
         data-role={roleTone}
+        data-nx-status={nexusStatusTone(status)}
         className="nexus-dossier relative min-h-dvh overflow-x-hidden bg-background text-foreground"
       >
         <AnimatePresence initial={false}>
@@ -285,6 +297,7 @@ export function NexusDossier({
           }}
         />
 
+        <div aria-hidden className="nx-status-field pointer-events-none fixed inset-0" />
         {/* ═════ TOP: hero + stat wheel + series cards ═════ */}
         <section className="relative mx-auto max-w-6xl px-4 pt-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -364,6 +377,14 @@ export function NexusDossier({
                   {codename}
                 </p>
               )}
+              <p
+                data-spoiler="char"
+                aria-hidden
+                className="nx-telemetry mt-2 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
+              >
+                STATUS // {status || "UNKNOWN"}
+                {season ? ` · SERIES // S${String(season.n).padStart(2, "0")}` : ""}
+              </p>
               <p
                 data-spoiler="char"
                 className="mt-3 flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground"
