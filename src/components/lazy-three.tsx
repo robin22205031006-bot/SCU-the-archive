@@ -16,6 +16,18 @@ const CelCombatLazy = lazy(() =>
   import("./cel-combat-stage").then((m) => ({ default: m.CelCombatStage })),
 );
 
+const VersusClashLazy = lazy(() =>
+  import("./versus-clash-stage").then((m) => ({ default: m.VersusClashStage })),
+);
+
+export function VersusClashStage(p: ComponentProps<typeof VersusClashLazy>) {
+  return (
+    <Suspense fallback={null}>
+      <VersusClashLazy {...p} />
+    </Suspense>
+  );
+}
+
 export function GlbModelViewer(p: ComponentProps<typeof GlbLazy>) {
   return (
     <Suspense fallback={null}>

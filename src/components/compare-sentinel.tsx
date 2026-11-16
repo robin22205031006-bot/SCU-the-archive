@@ -4,6 +4,7 @@ import { GitCompareArrows } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { StatRadar } from "@/components/stat-radar";
+import { VersusClashPanel } from "@/components/versus-clash-panel";
 import { entitiesQuery, matchesSearch, type Entity } from "@/lib/entities";
 import { COMBAT_STATS, getCombatStats, type CombatStats } from "@/lib/combat-stats";
 
@@ -106,6 +107,15 @@ export function CompareSentinel({
               <p className="px-3 py-2 text-sm text-muted-foreground">No characters found.</p>
             )}
           </div>
+
+          {other && (
+            <VersusClashPanel
+              nameA={entity.name}
+              nameB={other.name}
+              statsA={statsA}
+              statsB={statsB}
+            />
+          )}
 
           {other && statsA && statsB ? (
             <div className="grid gap-5">
