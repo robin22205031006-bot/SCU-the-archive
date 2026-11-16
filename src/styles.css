@@ -6253,12 +6253,124 @@ html[data-manga-subtheme="shounen"] ::-webkit-scrollbar-thumb {
     cubic-bezier(0.16, 1, 0.3, 1) 1;
 }
 
+/* Legendary Rank 5 post-confetti main-page screen-shake */
+@keyframes scu-legendary-page-shake {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  12% {
+    transform: translate3d(-6px, 3px, 0) rotate(-0.35deg);
+  }
+  26% {
+    transform: translate3d(6px, -4px, 0) rotate(0.32deg);
+  }
+  42% {
+    transform: translate3d(-4px, -2px, 0) rotate(-0.22deg);
+  }
+  58% {
+    transform: translate3d(4px, 3px, 0) rotate(0.18deg);
+  }
+  74% {
+    transform: translate3d(-2px, 1px, 0) rotate(-0.1deg);
+  }
+  88% {
+    transform: translate3d(1px, -1px, 0) rotate(0.05deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+.scu-legendary-page-shake {
+  animation: scu-legendary-page-shake 520ms cubic-bezier(0.36, 0.07, 0.19, 0.97) 1;
+  will-change: transform;
+}
+
+/* Ability emblem transition to 'floating' inspection mode */
+@keyframes scu-emblem-enter-float {
+  0% {
+    opacity: 0.72;
+    transform: translate3d(0, 12px, 0) scale(calc(var(--emblem-scale, 1) * 0.84)) rotate(-6deg);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(0, -8px, 0) scale(calc(var(--emblem-scale, 1) * 1.1)) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, -5px, 0) scale(calc(var(--emblem-scale, 1) * 1.04)) rotate(0deg);
+  }
+}
+
+@keyframes scu-emblem-float-hover {
+  0%,
+  100% {
+    transform: translate3d(0, -5px, 0) scale(calc(var(--emblem-scale, 1) * 1.04)) rotate(-1deg);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0) scale(calc(var(--emblem-scale, 1) * 1.07)) rotate(1.2deg);
+  }
+}
+
+@keyframes scu-emblem-float-shadow-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scaleX(0.92) scaleY(0.95);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scaleX(0.76) scaleY(0.85);
+  }
+}
+
+.scu-emblem-inspect[data-emblem-inspection-mode="transitioning"] {
+  animation: scu-emblem-enter-float 440ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.scu-emblem-inspect[data-emblem-inspection-mode="floating"] {
+  animation: scu-emblem-float-hover 3.1s ease-in-out infinite;
+  will-change: transform;
+}
+
+.scu-emblem-inspect-shadow {
+  transition:
+    opacity 380ms ease,
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scu-emblem-inspect-shadow[data-emblem-inspection-shadow="transitioning"] {
+  opacity: 0.55;
+  transform: scaleX(0.92);
+}
+
+.scu-emblem-inspect-shadow[data-emblem-inspection-shadow="floating"] {
+  animation: scu-emblem-float-shadow-pulse 3.1s ease-in-out infinite;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-emblem-inspection-mode="transitioning"][data-rank-transition="idle"] {
+  animation: scu-emblem-enter-float 440ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-emblem-inspection-mode="floating"][data-rank-transition="idle"] {
+  animation: scu-emblem-float-hover 3.1s ease-in-out infinite;
+  will-change: transform;
+}
+
 .scu-rank-emblem[data-emblem-animated="off"],
 .scu-rank-emblem[data-emblem-animated="off"] *,
 html[data-motion="off"] .scu-rank-emblem,
 html[data-motion="off"] .scu-rank-emblem *,
 html[data-ui="minimal"] .scu-rank-emblem,
-html[data-ui="minimal"] .scu-rank-emblem * {
+html[data-ui="minimal"] .scu-rank-emblem *,
+html[data-motion="off"] .scu-emblem-inspect,
+html[data-ui="minimal"] .scu-emblem-inspect,
+html[data-motion="off"] .scu-emblem-inspect-shadow,
+html[data-ui="minimal"] .scu-emblem-inspect-shadow,
+html[data-motion="off"] .scu-legendary-page-shake,
+html[data-ui="minimal"] .scu-legendary-page-shake {
   animation: none !important;
   transition: none !important;
 }
@@ -6294,6 +6406,9 @@ html[data-motion="off"] .scu-tactile:active {
   [role="tab"]:active,
   .scu-rank-emblem,
   .scu-rank-emblem *,
+  .scu-emblem-inspect,
+  .scu-emblem-inspect-shadow,
+  .scu-legendary-page-shake,
   html[data-tier-hitstop="true"] body::before {
     animation: none !important;
     transition: none !important;

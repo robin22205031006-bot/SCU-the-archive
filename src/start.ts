@@ -1,5 +1,6 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
+import { isClientAbortError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,10 +17,13 @@ const attachFreshAuth = createMiddleware({ type: "function" }).client(async ({ n
   return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
 });
 
-const errorMiddleware = createMiddleware().server(async ({ next }) => {
+const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
   try {
     return await next();
   } catch (error) {
+    if (request.signal?.aborted || isClientAbortError(error)) {
+      return new Response(null, { status: 499, statusText: "Client Closed Request" });
+    }
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }

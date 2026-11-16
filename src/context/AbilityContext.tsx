@@ -29,6 +29,16 @@ import type { Entity } from "@/lib/entities";
 import { seriesQuery } from "@/lib/series";
 import { useAbilityHolders, useAllHubAbilities } from "@/hooks/use-ability-registry";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
+import {
+  ABILITY_USAGE_EVENT,
+  canonicalAbilityUsageKey,
+  getAllAbilityUsageCounts,
+  recordAbilityUsage,
+} from "@/lib/ability-benefits";
+import {
+  triggerAbilityRankUpHaptic,
+  triggerLegendaryRankUpConfetti,
+} from "@/lib/ability-celebration";
 
 export interface CharacterAbilityAssignment extends CharacterAbilityRankRow {
   id: string;
@@ -86,6 +96,9 @@ export interface AbilityContextValue {
   characterAbilityRankMap: Map<string, AbilityEmblemRank>;
   selectedProgression: AbilitySeasonStep[];
   abilityImpact: AbilityImpactState | null;
+  usageCounts: Record<string, number>;
+  getUsageCount: (key: string) => number;
+  recordAbilityUse: (key: string, amount?: number) => number;
   selectAbility: (
     key: string,
     opts?: {
@@ -94,13 +107,25 @@ export interface AbilityContextValue {
       seriesId?: string | null | undefined;
       seasonNumber?: number | null | undefined;
       triggerImpact?: boolean | undefined;
+      trackUsage?: boolean | undefined;
     },
   ) => void;
-  setRank: (rank: AbilityEmblemRank, opts?: { triggerImpact?: boolean | undefined }) => void;
+  setRank: (
+    rank: AbilityEmblemRank,
+    opts?: {
+      triggerImpact?: boolean | undefined;
+      celebrateOnApex?: boolean | undefined;
+      originElement?: HTMLElement | null | undefined;
+    },
+  ) => void;
   setCharacterAbilityRank: (
     key: string,
     rank: AbilityEmblemRank,
-    opts?: { triggerImpact?: boolean | undefined },
+    opts?: {
+      triggerImpact?: boolean | undefined;
+      celebrateOnApex?: boolean | undefined;
+      originElement?: HTMLElement | null | undefined;
+    },
   ) => void;
   getActiveAbilityRank: (key: string) => AbilityEmblemRank | undefined;
   selectWielder: (
@@ -222,6 +247,34 @@ export function AbilityProvider({
     readInitialPerformanceMode(initialPerformanceMode),
   );
   const [abilityImpact, setAbilityImpact] = useState<AbilityImpactState | null>(null);
+  const [usageCounts, setUsageCounts] = useState<Record<string, number>>(() =>
+    getAllAbilityUsageCounts(),
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncUsage = () => setUsageCounts(getAllAbilityUsageCounts());
+    window.addEventListener(ABILITY_USAGE_EVENT, syncUsage);
+    window.addEventListener("storage", syncUsage);
+    return () => {
+      window.removeEventListener(ABILITY_USAGE_EVENT, syncUsage);
+      window.removeEventListener("storage", syncUsage);
+    };
+  }, []);
+
+  const getUsageCount = useCallback(
+    (key: string) => {
+      const canon = canonicalAbilityUsageKey(key);
+      return usageCounts[canon] ?? 0;
+    },
+    [usageCounts],
+  );
+
+  const recordAbilityUse = useCallback((key: string, amount = 1) => {
+    const next = recordAbilityUsage(key, amount);
+    setUsageCounts(getAllAbilityUsageCounts());
+    return next;
+  }, []);
 
   const setPerformanceMode = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
     setPerformanceModeState((prev) => {
@@ -480,6 +533,10 @@ export function AbilityProvider({
         overrides?.force === true || isHighTierAbility(targetDef.tier, targetRank) || boosted;
       if (!shouldFire) return;
 
+      if (overrides?.force || overrides?.reason === "manual") {
+        recordAbilityUse(targetDef.key, 1);
+      }
+
       if (impactTimerRef.current !== null) {
         window.clearTimeout(impactTimerRef.current);
       }
@@ -511,7 +568,7 @@ export function AbilityProvider({
         }, IMPACT_DURATION_MS);
       }
     },
-    [abilityKey, rank, boosted, selectedEntity?.name],
+    [abilityKey, rank, boosted, selectedEntity?.name, recordAbilityUse],
   );
 
   const selectAbility = useCallback(
@@ -523,6 +580,7 @@ export function AbilityProvider({
         seriesId?: string | null | undefined;
         seasonNumber?: number | null | undefined;
         triggerImpact?: boolean | undefined;
+        trackUsage?: boolean | undefined;
       },
     ) => {
       const nextDef = abilityDef(key);
@@ -553,6 +611,10 @@ export function AbilityProvider({
       if (opts?.seasonNumber !== undefined) setSelectedSeasonNumber(opts.seasonNumber);
       setRankState(nextRank);
 
+      if (opts?.trackUsage !== false) {
+        recordAbilityUse(nextDef.key, 1);
+      }
+
       if (opts?.triggerImpact !== false && isHighTierAbility(nextDef.tier, nextRank)) {
         const holderName = resolvedEntityId
           ? (holdersMap
@@ -575,12 +637,21 @@ export function AbilityProvider({
       holdersMap,
       resolveCharacterRank,
       triggerAbilityImpact,
+      recordAbilityUse,
     ],
   );
 
   const setRank = useCallback(
-    (nextRank: AbilityEmblemRank, opts?: { triggerImpact?: boolean | undefined }) => {
+    (
+      nextRank: AbilityEmblemRank,
+      opts?: {
+        triggerImpact?: boolean | undefined;
+        celebrateOnApex?: boolean | undefined;
+        originElement?: HTMLElement | null | undefined;
+      },
+    ) => {
       const clamped = clampDbAbilityLevel(nextRank);
+      const prevRank = rank;
       setRankState(clamped);
       const scopeKey = makeOverrideScopeKey(
         selectedEntityId,
@@ -591,6 +662,19 @@ export function AbilityProvider({
       setSessionRankOverrides((prev) =>
         prev[scopeKey] === clamped ? prev : { ...prev, [scopeKey]: clamped },
       );
+      if (clamped > prevRank) {
+        recordAbilityUse(abilityKey, 1);
+        triggerAbilityRankUpHaptic(clamped, {
+          previousRank: prevRank,
+          abilityKey,
+        });
+      }
+      if (opts?.celebrateOnApex !== false && prevRank < 5 && clamped === 5) {
+        triggerLegendaryRankUpConfetti({
+          originElement: opts?.originElement,
+          accentColor: activeDef.color,
+        });
+      }
       if (opts?.triggerImpact || clamped >= 4) {
         triggerAbilityImpact({
           abilityKey,
@@ -601,11 +685,14 @@ export function AbilityProvider({
       }
     },
     [
+      rank,
       abilityKey,
+      activeDef.color,
       selectedEntityId,
       selectedSeriesId,
       selectedSeasonNumber,
       makeOverrideScopeKey,
+      recordAbilityUse,
       triggerAbilityImpact,
     ],
   );
@@ -614,7 +701,11 @@ export function AbilityProvider({
     (
       targetKey: string,
       nextRank: AbilityEmblemRank,
-      opts?: { triggerImpact?: boolean | undefined },
+      opts?: {
+        triggerImpact?: boolean | undefined;
+        celebrateOnApex?: boolean | undefined;
+        originElement?: HTMLElement | null | undefined;
+      },
     ) => {
       const resolvedDef = abilityDef(targetKey);
       const clamped = clampDbAbilityLevel(nextRank);
@@ -624,6 +715,10 @@ export function AbilityProvider({
         selectedSeriesId,
         selectedSeasonNumber,
       );
+      const prevKnownRank =
+        sessionRankOverrides[scopeKey] ??
+        getActiveAbilityRank(resolvedDef.key) ??
+        tierToIntrinsicRank(resolvedDef.tier);
       setSessionRankOverrides((prev) =>
         prev[scopeKey] === clamped ? prev : { ...prev, [scopeKey]: clamped },
       );
@@ -632,6 +727,19 @@ export function AbilityProvider({
         resolveAbilityAliasPure(resolvedDef.key) === resolveAbilityAliasPure(activeDef.key)
       ) {
         setRankState(clamped);
+      }
+      if (clamped > prevKnownRank) {
+        recordAbilityUse(resolvedDef.key, 1);
+        triggerAbilityRankUpHaptic(clamped, {
+          previousRank: prevKnownRank,
+          abilityKey: resolvedDef.key,
+        });
+      }
+      if (opts?.celebrateOnApex !== false && prevKnownRank < 5 && clamped === 5) {
+        triggerLegendaryRankUpConfetti({
+          originElement: opts?.originElement,
+          accentColor: resolvedDef.color,
+        });
       }
       if (opts?.triggerImpact || clamped >= 4) {
         triggerAbilityImpact({
@@ -648,6 +756,9 @@ export function AbilityProvider({
       selectedSeriesId,
       selectedSeasonNumber,
       makeOverrideScopeKey,
+      sessionRankOverrides,
+      getActiveAbilityRank,
+      recordAbilityUse,
       triggerAbilityImpact,
     ],
   );
@@ -749,6 +860,9 @@ export function AbilityProvider({
       characterAbilityRankMap,
       selectedProgression,
       abilityImpact,
+      usageCounts,
+      getUsageCount,
+      recordAbilityUse,
       selectAbility,
       setRank,
       setCharacterAbilityRank,
@@ -782,6 +896,9 @@ export function AbilityProvider({
       characterAbilityRankMap,
       selectedProgression,
       abilityImpact,
+      usageCounts,
+      getUsageCount,
+      recordAbilityUse,
       selectAbility,
       setRank,
       setCharacterAbilityRank,

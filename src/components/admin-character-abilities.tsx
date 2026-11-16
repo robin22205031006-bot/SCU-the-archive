@@ -21,6 +21,10 @@ import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { invalidateArchive } from "@/lib/archive-sync";
 import { seriesQuery } from "@/lib/series";
 import { sfx } from "@/lib/scu-audio";
+import {
+  triggerAbilityRankUpHaptic,
+  triggerLegendaryRankUpConfetti,
+} from "@/lib/ability-celebration";
 
 /** Admin panel: assign abilities to characters scoped by series/season with emblem rank 1-5. */
 export function AdminCharacterAbilities() {
@@ -130,13 +134,26 @@ export function AdminCharacterAbilities() {
 
   const updateRank = async (id: string, nextRank: number) => {
     const clamped = clampDbAbilityLevel(nextRank);
+    const existingRow = (rows ?? []).find((r) => r.id === id);
+    const prevRank = existingRow ? clampDbAbilityLevel(existingRow.level) : 1;
     const { error } = await supabase
       .from("character_abilities")
       .update({ level: clamped })
       .eq("id", id);
     if (error) toast.error(error.message);
     else {
-      sfx.pop();
+      sfx.rankTransition(clamped, clamped >= prevRank ? "ascending" : "descending");
+      if (clamped > prevRank) {
+        triggerAbilityRankUpHaptic(clamped, {
+          previousRank: prevRank,
+          abilityKey: existingRow?.ability_key,
+        });
+      }
+      if (prevRank < 5 && clamped === 5) {
+        triggerLegendaryRankUpConfetti({
+          accentColor: existingRow ? abilityDef(existingRow.ability_key).color : undefined,
+        });
+      }
       toast.success(`Updated emblem rank to ${abilityRankMeta(clamped).label}`);
       void invalidateArchive(qc);
     }
@@ -268,6 +285,7 @@ export function AdminCharacterAbilities() {
               rank={level}
               size="sm"
               showProgressionLabel
+              onRankChange={(nextRank) => setLevel(nextRank)}
             />
             <AbilityBadge name={abilityKey.trim()} level={level} />
           </div>

@@ -6,11 +6,34 @@ const { url, key, projectId: pid } = resolveArchiveBackend(process.env);
 // Runtime server credentials are managed by Cloud; do not overwrite them with
 // browser build-time values or a preview proxy URL.
 
+function isProxyAbortError(err: unknown, aborted: boolean): boolean {
+  if (aborted) return true;
+  if (!err || typeof err !== "object") return false;
+  const e = err as { name?: unknown; message?: unknown; code?: unknown };
+  return (
+    e.name === "AbortError" ||
+    e.code === "ECONNRESET" ||
+    e.code === "ERR_STREAM_PREMATURE_CLOSE" ||
+    e.message === "aborted"
+  );
+}
+
 function supabaseProxyPlugin(targetOrigin: string): Plugin {
   return {
     name: "supabase-proxy",
     configureServer(server) {
       server.middlewares.use("/_supabase", async (req, res) => {
+        const controller = new AbortController();
+        const abortProxy = () => {
+          if (!controller.signal.aborted) {
+            controller.abort();
+          }
+        };
+        req.once("aborted", abortProxy);
+        res.once("close", () => {
+          if (!res.writableEnded) abortProxy();
+        });
+
         try {
           const reqUrl = req.url || "/";
           const fullTargetUrl = `${targetOrigin}${reqUrl}`;
@@ -27,6 +50,7 @@ function supabaseProxyPlugin(targetOrigin: string): Plugin {
           if (req.method !== "GET" && req.method !== "HEAD") {
             const chunks: Buffer[] = [];
             for await (const chunk of req) {
+              if (controller.signal.aborted) return;
               chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
             }
             if (chunks.length > 0) {
@@ -34,11 +58,16 @@ function supabaseProxyPlugin(targetOrigin: string): Plugin {
             }
           }
 
+          if (controller.signal.aborted || res.destroyed || res.writableEnded) return;
+
           const response = await fetch(fullTargetUrl, {
             method: req.method ?? "GET",
             headers,
+            signal: controller.signal,
             ...(body ? { body: new Uint8Array(body), duplex: "half" } : {}),
           });
+
+          if (controller.signal.aborted || res.destroyed || res.writableEnded) return;
 
           res.statusCode = response.status;
           response.headers.forEach((value, name) => {
@@ -52,8 +81,15 @@ function supabaseProxyPlugin(targetOrigin: string): Plugin {
             }
           });
           const arrayBuffer = await response.arrayBuffer();
+          if (controller.signal.aborted || res.destroyed || res.writableEnded) return;
           res.end(Buffer.from(arrayBuffer));
         } catch (err: unknown) {
+          if (isProxyAbortError(err, controller.signal.aborted || req.destroyed || res.destroyed)) {
+            if (!res.writableEnded && !res.destroyed) {
+              res.end();
+            }
+            return;
+          }
           const cause =
             err && typeof err === "object" && "cause" in err
               ? (err as { cause?: unknown }).cause

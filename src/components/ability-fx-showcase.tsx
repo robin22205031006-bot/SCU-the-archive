@@ -25,6 +25,10 @@ import { useAbilityHolders, useAbilityRegistryVersion } from "@/hooks/use-abilit
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import {
+  triggerAbilityRankUpHaptic,
+  triggerLegendaryRankUpConfetti,
+} from "@/lib/ability-celebration";
+import {
   isHighTierAbility,
   useOptionalAbilityContext,
   type AbilityImpactState,
@@ -132,6 +136,7 @@ export function AbilityFxShowcase({
         rank: nextRank,
         entityId: null,
         triggerImpact: isHighTierAbility(defInit.tier, nextRank),
+        trackUsage: false,
       });
     } else if (isHighTierAbility(defInit.tier, nextRank)) {
       triggerLocalOrCtxImpact(defInit.key, nextRank);
@@ -204,11 +209,23 @@ export function AbilityFxShowcase({
   }, [ascending, lineage, def.key, selectStep]);
 
   const handleRankSelect = (nextRank: AbilityEmblemRank) => {
+    const prevRank = activeRank;
     setLocalRank(nextRank);
     if (ctx) {
       ctx.setRank(nextRank, { triggerImpact: nextRank >= 4 });
-    } else if (nextRank >= 4 || isHighTierAbility(def.tier, nextRank)) {
-      triggerLocalOrCtxImpact(def.key, nextRank);
+    } else {
+      if (nextRank > prevRank) {
+        triggerAbilityRankUpHaptic(nextRank, {
+          previousRank: prevRank,
+          abilityKey: def.key,
+        });
+      }
+      if (prevRank < 5 && nextRank === 5) {
+        triggerLegendaryRankUpConfetti({ accentColor: def.color });
+      }
+      if (nextRank >= 4 || isHighTierAbility(def.tier, nextRank)) {
+        triggerLocalOrCtxImpact(def.key, nextRank);
+      }
     }
   };
 
@@ -218,7 +235,13 @@ export function AbilityFxShowcase({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] w-[min(96vw,44rem)] max-w-none overflow-y-auto border-accent/40 bg-background/95 p-4 sm:p-6">
         <DialogTitle className="flex flex-wrap items-center gap-2.5 text-xl">
-          <AbilityRankEmblem ability={def.key} rank={activeRank} size="sm" showRankCorner />
+          <AbilityRankEmblem
+            ability={def.key}
+            rank={activeRank}
+            size="sm"
+            showRankCorner
+            onRankChange={handleRankSelect}
+          />
           <span>{def.label}</span>
           <AbilityRankPips rank={activeRank} showLabel className="ml-auto" />
         </DialogTitle>
@@ -338,7 +361,10 @@ export function AbilityFxShowcase({
                           type="button"
                           onClick={() => {
                             ctx?.setSeasonScope(step.seriesId, step.seasonNumber);
-                            ctx?.setRank(step.level, { triggerImpact: step.level >= 4 });
+                            ctx?.setRank(step.level, {
+                              triggerImpact: step.level >= 4,
+                              celebrateOnApex: false,
+                            });
                           }}
                           className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
                             isActiveStep

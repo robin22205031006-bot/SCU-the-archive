@@ -18,11 +18,20 @@ import {
 import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
 import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { AbilityRankTooltipCard } from "@/components/ability-rank-tooltip";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
+import { useIsMinimal } from "@/hooks/use-ui-mode";
 import { useUiStyle } from "@/lib/ui-style";
+import { sfx } from "@/lib/scu-audio";
+import {
+  EMBLEM_FLOAT_TRANSITION_MS,
+  isReducedMotionOrMinimal,
+  triggerAbilityRankUpHaptic,
+} from "@/lib/ability-celebration";
 import { useOptionalAbilityContext } from "@/context/AbilityContext";
+import { AbilityBenefitsModal } from "@/components/ability-benefits-modal";
 
 export type EmblemRankTransitionEffect =
   "initiate-seal" | "adept-surge" | "veteran-attune" | "master-ascend" | "legendary-aura";
@@ -402,6 +411,16 @@ export interface AbilityRankEmblemProps {
   masked?: boolean | undefined;
   /** Optional click handler (renders accessible button semantics when provided). */
   onClick?: (() => void) | undefined;
+  /** Opens the expandable ability benefits & rank comparison modal when clicked (default: true when no custom onClick is supplied and not masked). */
+  enableBenefitsModal?: boolean | undefined;
+  /** Plays subtle rank-specific Web Audio transition cues when rank changes (default: true). */
+  playRankAudio?: boolean | undefined;
+  /** Show subtle context-aware hover tooltip displaying the rank level name (default: true when unmasked). */
+  showTooltip?: boolean | undefined;
+  /** Custom context subtitle displayed in the hover rank tooltip. */
+  tooltipContext?: string | undefined;
+  /** Notifies parent callers when the user upgrades or changes rank inside the benefits modal. */
+  onRankChange?: ((nextRank: AbilityEmblemRank) => void) | undefined;
   className?: string | undefined;
 }
 
@@ -425,18 +444,35 @@ export function AbilityRankEmblem({
   animated = true,
   masked = false,
   onClick,
+  enableBenefitsModal,
+  playRankAudio = true,
+  showTooltip = true,
+  tooltipContext,
+  onRankChange,
   className = "",
 }: AbilityRankEmblemProps) {
   useAbilityRegistryVersion();
   const uid = useId();
+  const tooltipId = useId();
   const uiStyle = useUiStyle();
+  const isMinimal = useIsMinimal();
   const { motionActive } = useAppMotion();
   const ctx = useOptionalAbilityContext();
   const [failedUrls, setFailedUrls] = useState<Record<string, true>>({});
+  const [benefitsOpen, setBenefitsOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [modalRankOverride, setModalRankOverride] = useState<AbilityEmblemRank | undefined>(
+    undefined,
+  );
 
   const def = useMemo(() => abilityDef(ability), [ability]);
 
+  useEffect(() => {
+    setModalRankOverride(undefined);
+  }, [rank, def.key]);
+
   const resolvedRank: AbilityEmblemRank = useMemo(() => {
+    if (modalRankOverride) return modalRankOverride;
     const explicit = parseAbilityRank(rank);
     if (explicit) return explicit;
     if (ctx && entityId) {
@@ -446,7 +482,7 @@ export function AbilityRankEmblem({
     const ctxRank = ctx?.getActiveAbilityRank(def.key);
     if (ctxRank) return ctxRank;
     return tierToIntrinsicRank(def.tier);
-  }, [rank, ctx, entityId, def.key, def.tier]);
+  }, [modalRankOverride, rank, ctx, entityId, def.key, def.tier]);
 
   const rankTokens = EMBLEM_RANK_STYLE_TOKENS[resolvedRank];
   const prevRankRef = useRef<AbilityEmblemRank>(resolvedRank);
@@ -456,12 +492,28 @@ export function AbilityRankEmblem({
     const prev = prevRankRef.current;
     if (prev === resolvedRank) return;
     prevRankRef.current = resolvedRank;
-    setRankTransition(resolvedRank > prev ? "ascending" : "descending");
+    const direction = resolvedRank > prev ? "ascending" : "descending";
+    setRankTransition(direction);
+    if (playRankAudio && !masked && !isMinimal) {
+      sfx.rankTransition(resolvedRank, direction);
+    }
+    if (direction === "ascending" && !masked) {
+      triggerAbilityRankUpHaptic(resolvedRank, {
+        previousRank: prev,
+        abilityKey: def.key,
+      });
+    }
     const timer = window.setTimeout(() => {
       setRankTransition("idle");
     }, rankTokens.transitionDurationMs);
     return () => window.clearTimeout(timer);
-  }, [resolvedRank, rankTokens.transitionDurationMs]);
+  }, [resolvedRank, rankTokens.transitionDurationMs, playRankAudio, masked, isMinimal, def.key]);
+
+  useEffect(() => {
+    if (benefitsOpen || masked || !showTooltip) {
+      setTooltipOpen(false);
+    }
+  }, [benefitsOpen, masked, showTooltip]);
 
   const rankMeta = abilityRankMeta(resolvedRank);
   const effectiveMode: AbilityRankEmblemMode =
@@ -486,6 +538,26 @@ export function AbilityRankEmblem({
 
   const Icon = def.icon;
   const shouldAnimate = animated && motionActive;
+  const [inspectionMode, setInspectionMode] = useState<
+    "idle" | "transitioning" | "floating" | "static"
+  >("idle");
+
+  useEffect(() => {
+    if (!benefitsOpen) {
+      setInspectionMode("idle");
+      return;
+    }
+    if (!shouldAnimate || isReducedMotionOrMinimal()) {
+      setInspectionMode("static");
+      return;
+    }
+    setInspectionMode("transitioning");
+    const timer = window.setTimeout(() => {
+      setInspectionMode("floating");
+    }, EMBLEM_FLOAT_TRANSITION_MS);
+    return () => window.clearTimeout(timer);
+  }, [benefitsOpen, shouldAnimate]);
+
   const impactActive = Boolean(
     ctx?.abilityImpact?.active && ctx.abilityImpact.abilityKey === def.key,
   );
@@ -543,6 +615,12 @@ export function AbilityRankEmblem({
     coreTint,
   ]);
 
+  const modalEnabled = !onClick && !masked && enableBenefitsModal !== false;
+  const tooltipEnabled = showTooltip && !masked && !benefitsOpen;
+  const resolvedTooltipContext =
+    tooltipContext ??
+    (modalEnabled ? `${def.label} · Click to inspect` : `${def.label} · ${rankMeta.tagline}`);
+
   const innerContent = (
     <div
       data-ability-rank-emblem={def.key}
@@ -553,9 +631,10 @@ export function AbilityRankEmblem({
       data-emblem-animated={shouldAnimate ? "on" : "off"}
       data-rank-transition={rankTransition}
       data-rank-transition-effect={transitionEffect}
+      data-emblem-inspection-mode={inspectionMode}
       data-legendary-aura={legendaryAuraActive ? "active" : "inactive"}
       data-ability-impact={impactActive ? "active" : "idle"}
-      title={labelText}
+      title={tooltipEnabled ? undefined : labelText}
       className={`scu-rank-emblem relative inline-flex shrink-0 items-center justify-center rounded-full select-none ${SIZE_CLASSES[size]} ${
         impactActive ? "ring-2 ring-accent/80" : ""
       }`}
@@ -677,23 +756,98 @@ export function AbilityRankEmblem({
               Rank {rankMeta.roman} · {rankMeta.shortTitle}
             </span>
           )}
-          {showPips && <AbilityRankPips rank={resolvedRank} compact />}
+          {showPips && <AbilityRankPips rank={resolvedRank} compact showTooltip={false} />}
         </span>
       </span>
     ) : (
       <span className={`inline-flex items-center ${className}`}>{innerContent}</span>
     );
 
+  const tooltipNode =
+    tooltipEnabled && tooltipOpen ? (
+      <AbilityRankTooltipCard id={tooltipId} rank={resolvedRank} context={resolvedTooltipContext} />
+    ) : null;
+
   if (onClick) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={labelText}
-        className="group inline-flex items-center rounded-xl text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      <span
+        className="relative inline-flex items-center"
+        onMouseEnter={tooltipEnabled ? () => setTooltipOpen(true) : undefined}
+        onMouseLeave={tooltipEnabled ? () => setTooltipOpen(false) : undefined}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setTooltipOpen(false);
+            onClick();
+          }}
+          onFocus={tooltipEnabled ? () => setTooltipOpen(true) : undefined}
+          onBlur={tooltipEnabled ? () => setTooltipOpen(false) : undefined}
+          aria-label={labelText}
+          aria-describedby={tooltipEnabled && tooltipOpen ? tooltipId : undefined}
+          className="group inline-flex cursor-pointer items-center rounded-xl text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {wrappedBody}
+        </button>
+        {tooltipNode}
+      </span>
+    );
+  }
+
+  if (modalEnabled) {
+    return (
+      <span
+        className="relative inline-flex items-center"
+        onMouseEnter={tooltipEnabled ? () => setTooltipOpen(true) : undefined}
+        onMouseLeave={tooltipEnabled ? () => setTooltipOpen(false) : undefined}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setTooltipOpen(false);
+            setBenefitsOpen(true);
+          }}
+          onFocus={tooltipEnabled ? () => setTooltipOpen(true) : undefined}
+          onBlur={tooltipEnabled ? () => setTooltipOpen(false) : undefined}
+          aria-label={`Inspect ${labelText} benefits`}
+          aria-haspopup="dialog"
+          aria-expanded={benefitsOpen}
+          aria-describedby={tooltipEnabled && tooltipOpen ? tooltipId : undefined}
+          className="group inline-flex cursor-pointer items-center rounded-xl text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {wrappedBody}
+        </button>
+        {tooltipNode}
+        {benefitsOpen && (
+          <AbilityBenefitsModal
+            ability={def.key}
+            rank={resolvedRank}
+            open={benefitsOpen}
+            onOpenChange={setBenefitsOpen}
+            playRankAudio={false}
+            onRankChange={(next) => {
+              setModalRankOverride(next);
+              onRankChange?.(next);
+            }}
+          />
+        )}
+      </span>
+    );
+  }
+
+  if (tooltipEnabled) {
+    return (
+      <span
+        className="relative inline-flex items-center"
+        onMouseEnter={() => setTooltipOpen(true)}
+        onMouseLeave={() => setTooltipOpen(false)}
+        onFocus={() => setTooltipOpen(true)}
+        onBlur={() => setTooltipOpen(false)}
+        aria-describedby={tooltipOpen ? tooltipId : undefined}
       >
         {wrappedBody}
-      </button>
+        {tooltipNode}
+      </span>
     );
   }
 
@@ -739,6 +893,50 @@ export function AbilityRankProgressionStrip({
         const meta = abilityRankMeta(stepRank);
         const isCurrent = stepRank === active;
         const isUnlocked = stepRank <= active;
+        const stepContext = isCurrent
+          ? "Current active rank"
+          : isUnlocked
+            ? "Unlocked mastery rank"
+            : onSelectRank
+              ? "Locked — click to preview"
+              : "Locked progression stage";
+        const sharedClassName = `group flex flex-col items-center gap-1 rounded-xl border px-2 py-1.5 transition ${
+          isCurrent
+            ? "bg-accent/15 text-foreground"
+            : isUnlocked
+              ? "border-border/70 bg-card/50 text-foreground/85 hover:border-accent/60"
+              : "border-border/40 bg-background/40 text-muted-foreground opacity-65 hover:opacity-100"
+        } ${onSelectRank ? "cursor-pointer" : "cursor-default"}`;
+        const sharedStyle = isCurrent
+          ? {
+              borderColor: meta.ringColor,
+              boxShadow: `0 0 10px ${meta.ringColor}44`,
+            }
+          : undefined;
+        const stepContent = (
+          <>
+            <AbilityRankEmblem
+              ability={ability}
+              rank={stepRank}
+              size={size}
+              mode={mode}
+              assetsByRank={assetsByRank}
+              baseAssetUrl={baseAssetUrl}
+              overlaysByRank={overlaysByRank}
+              showRankCorner={false}
+              animated={isCurrent}
+              enableBenefitsModal={false}
+              playRankAudio={false}
+              tooltipContext={stepContext}
+            />
+            <span
+              className="whitespace-nowrap font-mono text-[9px] font-bold uppercase tracking-wider"
+              style={isCurrent ? { color: meta.ringColor } : undefined}
+            >
+              {meta.roman} · {meta.shortTitle}
+            </span>
+          </>
+        );
         return (
           <div key={stepRank} className="inline-flex items-center gap-1.5">
             {idx > 0 && (
@@ -746,46 +944,22 @@ export function AbilityRankProgressionStrip({
                 →
               </span>
             )}
-            <button
-              type="button"
-              disabled={!onSelectRank}
-              onClick={onSelectRank ? () => onSelectRank(stepRank) : undefined}
-              aria-pressed={onSelectRank ? isCurrent : undefined}
-              title={meta.label}
-              className={`group flex flex-col items-center gap-1 rounded-xl border px-2 py-1.5 transition ${
-                isCurrent
-                  ? "bg-accent/15 text-foreground"
-                  : isUnlocked
-                    ? "border-border/70 bg-card/50 text-foreground/85 hover:border-accent/60"
-                    : "border-border/40 bg-background/40 text-muted-foreground opacity-65 hover:opacity-100"
-              } ${onSelectRank ? "cursor-pointer" : "cursor-default"}`}
-              style={
-                isCurrent
-                  ? {
-                      borderColor: meta.ringColor,
-                      boxShadow: `0 0 10px ${meta.ringColor}44`,
-                    }
-                  : undefined
-              }
-            >
-              <AbilityRankEmblem
-                ability={ability}
-                rank={stepRank}
-                size={size}
-                mode={mode}
-                assetsByRank={assetsByRank}
-                baseAssetUrl={baseAssetUrl}
-                overlaysByRank={overlaysByRank}
-                showRankCorner={false}
-                animated={isCurrent}
-              />
-              <span
-                className="whitespace-nowrap font-mono text-[9px] font-bold uppercase tracking-wider"
-                style={isCurrent ? { color: meta.ringColor } : undefined}
+            {onSelectRank ? (
+              <button
+                type="button"
+                onClick={() => onSelectRank(stepRank)}
+                aria-pressed={isCurrent}
+                aria-label={meta.label}
+                className={sharedClassName}
+                style={sharedStyle}
               >
-                {meta.roman} · {meta.shortTitle}
-              </span>
-            </button>
+                {stepContent}
+              </button>
+            ) : (
+              <div aria-label={meta.label} className={sharedClassName} style={sharedStyle}>
+                {stepContent}
+              </div>
+            )}
           </div>
         );
       })}

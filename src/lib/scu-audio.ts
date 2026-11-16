@@ -659,6 +659,102 @@ export const sfx = {
     });
   },
 
+  /** Subtle Rank 1 (Initiate) matte seal settle cue. */
+  rankInitiate() {
+    if (fileOverride("rank-1")) return;
+    ready(() => {
+      tone({ freq: 330, freqEnd: 277.18, type: "triangle", dur: 0.09, vol: 0.018, attack: 0.006 });
+      noise({ dur: 0.025, vol: 0.008, freq: 2400, q: 1.8 });
+    });
+  },
+
+  /** Subtle Rank 2 (Adept) nimble ascending sky pulse cue. */
+  rankAdept() {
+    if (fileOverride("rank-2")) return;
+    ready(() => {
+      tone({ freq: 392, freqEnd: 523.25, type: "sine", dur: 0.12, vol: 0.022, attack: 0.006 });
+      tone({ freq: 783.99, type: "triangle", dur: 0.1, vol: 0.014, delay: 0.045, attack: 0.005 });
+    });
+  },
+
+  /** Subtle Rank 3 (Veteran) harmonic arcane attunement chord cue. */
+  rankVeteran() {
+    if (fileOverride("rank-3")) return;
+    ready(() => {
+      tone({ freq: 440, type: "sine", dur: 0.18, vol: 0.022, attack: 0.008 });
+      tone({ freq: 659.25, type: "triangle", dur: 0.2, vol: 0.018, delay: 0.04, attack: 0.008 });
+      noise({ dur: 0.08, vol: 0.01, freq: 3200, q: 2.2, delay: 0.02, type: "bandpass" });
+    });
+  },
+
+  /** Subtle Rank 4 (Master) gilded kinetic ascend triad cue. */
+  rankMaster() {
+    if (fileOverride("rank-4")) return;
+    ready(() => {
+      [523.25, 659.25, 783.99].forEach((freq, i) =>
+        tone({
+          freq,
+          type: i === 2 ? "triangle" : "sine",
+          dur: 0.22,
+          vol: 0.024 - i * 0.002,
+          delay: i * 0.045,
+          attack: 0.008,
+        }),
+      );
+      noise({ dur: 0.1, vol: 0.012, freq: 4400, q: 2.6, delay: 0.04, type: "highpass" });
+    });
+  },
+
+  /** Subtle Rank 5 (Apex / Legendary) luminous octave resonance chime cue. */
+  rankLegendary() {
+    if (fileOverride("rank-5")) return;
+    ready(() => {
+      [523.25, 783.99, 1046.5, 1567.98].forEach((freq, i) =>
+        tone({
+          freq,
+          type: i >= 2 ? "triangle" : "sine",
+          dur: 0.34,
+          vol: 0.028 - i * 0.003,
+          delay: i * 0.052,
+          attack: 0.01,
+        }),
+      );
+      tone({ freq: 261.63, type: "sine", dur: 0.42, vol: 0.018, attack: 0.02 });
+      noise({ dur: 0.16, vol: 0.012, freq: 5200, q: 2.8, delay: 0.05, type: "highpass" });
+    });
+  },
+
+  /** Plays a subtle, rank-specific audio cue matched to emblem progression transitions (1–5). */
+  rankTransition(rank: 1 | 2 | 3 | 4 | 5, direction: "ascending" | "descending" = "ascending") {
+    if (direction === "descending") {
+      if (fileOverride(`rank-down-${rank}`)) return;
+      ready(() => {
+        const baseFreq = 260 + rank * 55;
+        tone({
+          freq: baseFreq * 1.18,
+          freqEnd: baseFreq,
+          type: "sine",
+          dur: 0.12,
+          vol: 0.016,
+          attack: 0.006,
+        });
+      });
+      return;
+    }
+    switch (rank) {
+      case 1:
+        return this.rankInitiate();
+      case 2:
+        return this.rankAdept();
+      case 3:
+        return this.rankVeteran();
+      case 4:
+        return this.rankMaster();
+      case 5:
+        return this.rankLegendary();
+    }
+  },
+
   /** Soft cinematic HUD boot tone — played once per session on first interaction. */
   welcome() {
     ready(() => {

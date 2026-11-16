@@ -48,10 +48,8 @@ import {
 import { hydrateAbilityRegistry, useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityBadge } from "@/components/ability-badge";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
-import { AbilityRankProgressionStrip } from "@/components/ability-rank-emblem";
-import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
+import { AbilityRankEmblem, AbilityRankProgressionStrip } from "@/components/ability-rank-emblem";
 import { AbilityHoldersChips } from "@/components/ability-holders-chips";
-import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
 import {
   ABILITY_RANKS,
   abilityRankMeta,
@@ -655,15 +653,10 @@ const AbilityCard = memo(function AbilityCard({
       ? themeCtx.primarySystem === "manga" && themeCtx.mangaSubTheme === "fantasy"
       : false) ||
     (isManga && activeGenre === "fantasy");
-  const uiStyle = useUiStyle();
-  const nexus = !isManga && uiStyle === "nexus";
-  const Icon = def.icon;
   const intrinsicRank = tierToIntrinsicRank(def.tier);
   const displayRank = previewRank ?? intrinsicRank;
-  const customEmblem = !nexus
-    ? resolveCustomAbilityEmblem(`${def.key} ${def.label}`, def.description)
-    : null;
   const holdersMasked = useSpoilerMask("abilities");
+  const effectiveCardRank = abilityCtx?.getActiveAbilityRank(def.key) ?? displayRank;
   return (
     <MotionCard
       index={index}
@@ -684,40 +677,17 @@ const AbilityCard = memo(function AbilityCard({
     >
       {isManga && <GenreCardFrame theme={activeGenre ?? "manga-ink"} compact />}
       {isFantasy && <IvyDecoration variant="card" />}
-      <button onClick={onToggle} className="relative flex w-full items-start gap-3 text-left">
-        <span
-          className={
-            isFantasy
-              ? "grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#c5a869] bg-[#2e5a52]/80 text-[#5ce1b8] shadow-[0_0_12px_rgba(92,225,184,0.45)]"
-              : isManga
-                ? "grid h-9 w-9 shrink-0 place-items-center border-2 border-border bg-foreground text-background"
-                : "grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+      <div className="relative flex w-full items-start gap-3">
+        <AbilityRankEmblem
+          ability={def.key}
+          rank={effectiveCardRank}
+          size="sm"
+          className="shrink-0"
+          onRankChange={(nextRank) =>
+            abilityCtx?.setCharacterAbilityRank(def.key, nextRank, { celebrateOnApex: false })
           }
-          style={
-            isFantasy || isManga
-              ? undefined
-              : {
-                  background: `${def.color}1f`,
-                  color: def.color,
-                  boxShadow: `0 0 10px ${def.color}44`,
-                }
-          }
-        >
-          {nexus ? (
-            <NexusAbilitySymbol
-              name={def.key}
-              label={def.label}
-              description={def.description}
-              rank={displayRank}
-              className="h-10 w-10"
-            />
-          ) : customEmblem ? (
-            <AbilityCustomEmblem kind={customEmblem} rank={displayRank} className="h-5 w-5" />
-          ) : (
-            <Icon className="h-5 w-5" />
-          )}
-        </span>
-        <span className="min-w-0 flex-1">
+        />
+        <button onClick={onToggle} className="min-w-0 flex-1 text-left">
           <span className="flex items-center justify-between gap-2">
             <span
               className={
@@ -759,10 +729,10 @@ const AbilityCard = memo(function AbilityCard({
             <span>
               {holders.length} {holders.length === 1 ? "holder" : "holders"}
             </span>
-            <AbilityRankPips rank={displayRank} showLabel compact className="ml-auto" />
+            <AbilityRankPips rank={effectiveCardRank} showLabel compact className="ml-auto" />
           </span>
-        </span>
-      </button>
+        </button>
+      </div>
       {def.description && (
         <p
           className={
@@ -819,7 +789,19 @@ const AbilityCard = memo(function AbilityCard({
               <p className="mb-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
                 Rank progression (I–V)
               </p>
-              <AbilityRankProgressionStrip ability={def.key} currentRank={displayRank} size="xs" />
+              <AbilityRankProgressionStrip
+                ability={def.key}
+                currentRank={effectiveCardRank}
+                onSelectRank={
+                  abilityCtx
+                    ? (nextRank) =>
+                        abilityCtx.setCharacterAbilityRank(def.key, nextRank, {
+                          triggerImpact: nextRank >= 4,
+                        })
+                    : undefined
+                }
+                size="xs"
+              />
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <Link

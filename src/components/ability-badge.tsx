@@ -128,6 +128,7 @@ export function AbilityBadge({
             e.stopPropagation();
             abilityCtx?.selectAbility(def.key, {
               ...(resolvedRank ? { rank: resolvedRank } : {}),
+              trackUsage: true,
             });
             triggerAnimeActionCut({
               color: def.color,

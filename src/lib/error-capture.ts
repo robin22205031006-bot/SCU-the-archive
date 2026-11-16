@@ -45,8 +45,52 @@ function safeStringify(value: unknown): string {
   }
 }
 
+export function isClientAbortError(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+  for (let depth = 0; depth < CAUSE_DEPTH_LIMIT && current != null; depth++) {
+    if (seen.has(current)) break;
+    seen.add(current);
+    if (typeof current !== "object") break;
+
+    const record = current as {
+      name?: unknown;
+      message?: unknown;
+      code?: unknown;
+      cause?: unknown;
+    };
+    const name = typeof record.name === "string" ? record.name : "";
+    const message = typeof record.message === "string" ? record.message : "";
+    const code = typeof record.code === "string" ? record.code : "";
+
+    if (
+      name === "AbortError" ||
+      code === "ERR_STREAM_PREMATURE_CLOSE" ||
+      code === "ABORT_ERR" ||
+      message === "aborted" ||
+      message === "The request was aborted." ||
+      message === "The user aborted a request." ||
+      message === "The operation was aborted."
+    ) {
+      return true;
+    }
+    current = record.cause;
+  }
+  return false;
+}
+
 function isErrorLike(value: unknown): value is Error {
   return value instanceof Error;
+}
+
+function hasClientAbortArg(args: unknown[]): boolean {
+  return args.some((arg) => {
+    if (isClientAbortError(arg)) return true;
+    if (typeof arg === "object" && arg !== null && "cause" in arg) {
+      return isClientAbortError((arg as { cause?: unknown }).cause);
+    }
+    return false;
+  });
 }
 
 // Wrap console.error so errors logged by any layer — including h3's internal
@@ -54,6 +98,9 @@ function isErrorLike(value: unknown): value is Error {
 // recorded for consumeLastCapturedError and expanded before serialization.
 const originalConsoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
+  if (args.length > 0 && hasClientAbortArg(args)) {
+    return;
+  }
   const expanded = args.map((arg) => {
     if (!isErrorLike(arg)) return arg;
     record(arg);
@@ -63,10 +110,14 @@ console.error = (...args: unknown[]) => {
 };
 
 if (typeof globalThis.addEventListener === "function") {
-  globalThis.addEventListener("error", (event) => record((event as ErrorEvent).error ?? event));
-  globalThis.addEventListener("unhandledrejection", (event) =>
-    record((event as PromiseRejectionEvent).reason),
-  );
+  globalThis.addEventListener("error", (event) => {
+    const err = (event as ErrorEvent).error ?? event;
+    if (!isClientAbortError(err)) record(err);
+  });
+  globalThis.addEventListener("unhandledrejection", (event) => {
+    const reason = (event as PromiseRejectionEvent).reason;
+    if (!isClientAbortError(reason)) record(reason);
+  });
 }
 
 export function consumeLastCapturedError(): unknown {

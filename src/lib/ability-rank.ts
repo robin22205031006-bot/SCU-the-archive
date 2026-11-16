@@ -7,6 +7,7 @@ export interface AbilityRankMetadata {
   roman: "I" | "II" | "III" | "IV" | "V";
   shortTitle: string;
   label: string;
+  tagline: string;
   ringColor: string;
   glowRadiusPx: number;
 }
@@ -17,6 +18,7 @@ export const ABILITY_RANK_META: Record<AbilityEmblemRank, AbilityRankMetadata> =
     roman: "I",
     shortTitle: "Initiate",
     label: "Rank I · Initiate",
+    tagline: "Foundational mastery",
     ringColor: "#94a3b8",
     glowRadiusPx: 0,
   },
@@ -25,6 +27,7 @@ export const ABILITY_RANK_META: Record<AbilityEmblemRank, AbilityRankMetadata> =
     roman: "II",
     shortTitle: "Adept",
     label: "Rank II · Adept",
+    tagline: "Focused refinement",
     ringColor: "#38bdf8",
     glowRadiusPx: 6,
   },
@@ -33,6 +36,7 @@ export const ABILITY_RANK_META: Record<AbilityEmblemRank, AbilityRankMetadata> =
     roman: "III",
     shortTitle: "Veteran",
     label: "Rank III · Veteran",
+    tagline: "Seasoned command",
     ringColor: "#a855f7",
     glowRadiusPx: 10,
   },
@@ -41,6 +45,7 @@ export const ABILITY_RANK_META: Record<AbilityEmblemRank, AbilityRankMetadata> =
     roman: "IV",
     shortTitle: "Master",
     label: "Rank IV · Master",
+    tagline: "High-tier authority",
     ringColor: "#d4af37",
     glowRadiusPx: 14,
   },
@@ -49,6 +54,7 @@ export const ABILITY_RANK_META: Record<AbilityEmblemRank, AbilityRankMetadata> =
     roman: "V",
     shortTitle: "Apex",
     label: "Rank V · Apex",
+    tagline: "Pinnacle sovereignty",
     ringColor: "#ff2d2d",
     glowRadiusPx: 18,
   },

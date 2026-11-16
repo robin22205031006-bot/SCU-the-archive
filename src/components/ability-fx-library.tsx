@@ -43,6 +43,10 @@ import { AbilityRankEmblem } from "@/components/ability-rank-emblem";
 import { AbilityHoldersChips, useAbilityHolderSummary } from "@/components/ability-holders-chips";
 import { AbilityImpactOverlay } from "@/components/ability-impact-overlay";
 import {
+  triggerAbilityRankUpHaptic,
+  triggerLegendaryRankUpConfetti,
+} from "@/lib/ability-celebration";
+import {
   isHighTierAbility,
   useOptionalAbilityContext,
   type AbilityImpactState,
@@ -686,11 +690,21 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
             className={sel}
             value={activeRank}
             onChange={(e) => {
+              const prevRank = activeRank;
               const nextRank = clampDbAbilityLevel(Number(e.target.value));
               setLocalRank(nextRank);
               if (ctx) {
                 ctx.setRank(nextRank, { triggerImpact: nextRank >= 4 });
               } else {
+                if (nextRank > prevRank) {
+                  triggerAbilityRankUpHaptic(nextRank, {
+                    previousRank: prevRank,
+                    abilityKey: k,
+                  });
+                }
+                if (prevRank < 5 && nextRank === 5) {
+                  triggerLegendaryRankUpConfetti({ accentColor: activeDef.color });
+                }
                 fireImpact(k, nextRank);
               }
             }}
@@ -801,7 +815,10 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
                       type="button"
                       onClick={() => {
                         ctx.setSeasonScope(step.seriesId, step.seasonNumber);
-                        ctx.setRank(step.level, { triggerImpact: step.level >= 4 });
+                        ctx.setRank(step.level, {
+                          triggerImpact: step.level >= 4,
+                          celebrateOnApex: false,
+                        });
                       }}
                       className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
                         ctx.selectedSeriesId === step.seriesId &&
@@ -835,7 +852,12 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
         <div className="grid gap-1.5 rounded-2xl border border-border bg-card/40 p-3 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <AbilityRankEmblem ability={activeDef.key} rank={activeRank} size="sm" />
+              <AbilityRankEmblem
+                ability={activeDef.key}
+                rank={activeRank}
+                size="sm"
+                onRankChange={(nextRank) => setLocalRank(nextRank)}
+              />
               <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 {ABILITY_GROUP_LABELS[activeDef.group]}
                 {lineage ? ` · ${lineage.label}` : ""}
