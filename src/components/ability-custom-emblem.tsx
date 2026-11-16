@@ -1,16 +1,21 @@
 import type { AbilityCustomEmblemKind } from "@/lib/ability-emblem-resolver";
+import { parseAbilityRank } from "@/lib/ability-rank";
 
 /**
  * Crisp geometric vector crests for abilities and features resolved by name/description.
+ * Visually upgrades progressively across Ranks 1–5 (clean crest -> outer ring -> cardinal filigree -> apex crown).
  * Styled with `currentColor` so it inherits exact tier/element palette across Classic, Minimal, Manga & Nexus.
  */
 export function AbilityCustomEmblem({
   kind,
+  rank,
   className = "h-5 w-5",
 }: {
   kind: AbilityCustomEmblemKind;
+  rank?: number | undefined;
   className?: string;
 }) {
+  const rk = parseAbilityRank(rank);
   return (
     <svg
       viewBox="0 0 32 32"
@@ -21,8 +26,53 @@ export function AbilityCustomEmblem({
       strokeLinejoin="round"
       aria-hidden="true"
       data-custom-emblem={kind}
+      data-emblem-rank={rk}
       className={className}
     >
+      {rk && rk >= 2 && (
+        <g data-emblem-rank-stage={rk}>
+          <circle
+            cx="16"
+            cy="16"
+            r="14.75"
+            strokeWidth={rk >= 4 ? "1.1" : "0.85"}
+            strokeOpacity={rk >= 4 ? "0.8" : "0.5"}
+            strokeDasharray={rk >= 3 ? undefined : "2.4 2"}
+          />
+          {rk >= 3 && (
+            <path
+              d="M16 0.8v2.2M16 29v2.2M0.8 16h2.2M29 16h2.2"
+              strokeWidth="1.3"
+              strokeOpacity="0.85"
+            />
+          )}
+          {rk >= 4 && (
+            <>
+              <circle cx="16" cy="16" r="12.6" strokeWidth="0.65" strokeOpacity="0.45" />
+              <polygon points="16,0.6 17.5,2.4 16,4.2 14.5,2.4" fill="currentColor" stroke="none" />
+              <polygon
+                points="16,27.8 17.5,29.6 16,31.4 14.5,29.6"
+                fill="currentColor"
+                stroke="none"
+              />
+            </>
+          )}
+          {rk === 5 && (
+            <>
+              <polygon points="0.6,16 2.4,14.5 4.2,16 2.4,17.5" fill="currentColor" stroke="none" />
+              <polygon
+                points="27.8,16 29.6,14.5 31.4,16 29.6,17.5"
+                fill="currentColor"
+                stroke="none"
+              />
+              <circle cx="5.2" cy="5.2" r="1" fill="currentColor" stroke="none" />
+              <circle cx="26.8" cy="5.2" r="1" fill="currentColor" stroke="none" />
+              <circle cx="5.2" cy="26.8" r="1" fill="currentColor" stroke="none" />
+              <circle cx="26.8" cy="26.8" r="1" fill="currentColor" stroke="none" />
+            </>
+          )}
+        </g>
+      )}
       {kind === "ofuda" && (
         <>
           <rect

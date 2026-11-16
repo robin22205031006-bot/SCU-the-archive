@@ -30,13 +30,18 @@ import { stripMerged } from "@/lib/sanitize-lore";
 import { tierDef } from "@/lib/character-tier";
 import { abilityDef } from "@/lib/abilities";
 import {
+  abilityRankMeta,
   buildAbilityRankMap,
+  groupCharacterAbilityProgression,
   mergeCharacterAbilityList,
   resolveAssignedAbilityRank,
+  tierToIntrinsicRank,
 } from "@/lib/ability-rank";
 import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
 import { readCharacter3dAvatars } from "@/lib/models-3d";
 import { AbilityBadge } from "@/components/ability-badge";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { useOptionalAbilityContext } from "@/context/AbilityContext";
 import { StatRadar } from "@/components/stat-radar";
 import { JourneyLine } from "@/components/journey-line";
 import { EntityLinks } from "@/components/entity-links";
@@ -834,10 +839,12 @@ export function MangaCharacterSpread({
 
   const [tab, setTab] = useState<"powers" | "lore" | "bonds" | "progress">("powers");
   const [seasonIdx, setSeasonIdx] = useState(-1);
+  const [seasonNumber, setSeasonNumber] = useState<number | null>(initialSeason ?? null);
   const [view3d, setView3d] = useState(false);
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [comparing, setComparing] = useState(false);
   const [, setFavTick] = useState(0);
+  const abilityCtx = useOptionalAbilityContext();
   useEffect(() => onFavoritesChange(() => setFavTick((t) => t + 1)), []);
   useEffect(() => {
     setAvatarIdx(0);
@@ -900,6 +907,18 @@ export function MangaCharacterSpread({
   }, [initialSeries, initialSeason, seasons, seasonIdx]);
 
   const activeSeason = seasonIdx >= 0 ? seasons[seasonIdx] : null;
+  const seriesTitleMap = useMemo(
+    () => new Map((allSeries ?? []).map((x) => [x.id, x.title])),
+    [allSeries],
+  );
+  const seasonNamesMap = useMemo(
+    () => new Map((allSeries ?? []).map((x) => [x.id, x.season_names ?? []])),
+    [allSeries],
+  );
+  const abilityProgression = useMemo(
+    () => groupCharacterAbilityProgression(charAbilities ?? [], seriesTitleMap, seasonNamesMap),
+    [charAbilities, seriesTitleMap, seasonNamesMap],
+  );
   const journeyRows = useMemo(
     () =>
       seasonJourneyRows(
@@ -929,9 +948,11 @@ export function MangaCharacterSpread({
   );
   const mergedEntries = mergeCharacterAbilityList(charAbilities ?? [], e.abilities, {
     seriesId: activeSeason?.series_id ?? null,
+    seasonNumber,
   });
   const abilityRankMap = buildAbilityRankMap(charAbilities ?? [], {
     seriesId: activeSeason?.series_id ?? null,
+    seasonNumber,
   });
   const mergedAbilities = mergedEntries.map((item) => item.key);
 
@@ -1098,6 +1119,13 @@ export function MangaCharacterSpread({
     />
   );
 
+  const activeSeriesMeta = activeSeason
+    ? (allSeries ?? []).find((s) => s.id === activeSeason.series_id)
+    : null;
+  const activeSeriesSeasonCount = activeSeriesMeta
+    ? Math.max(activeSeriesMeta.season_count ?? 0, activeSeriesMeta.season_names?.length ?? 0, 1)
+    : 0;
+
   const renderSeasonSwitcher = () =>
     seasons.length > 0 ? (
       <div className="relative mt-3 border-t border-border/25 pt-2.5">
@@ -1110,6 +1138,8 @@ export function MangaCharacterSpread({
             onClick={(ev) => {
               triggerInteractionSfx("switch-mode", ev);
               setSeasonIdx(-1);
+              setSeasonNumber(null);
+              abilityCtx?.setSeasonScope(null, null);
             }}
             className={`border border-border px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
               seasonIdx === -1
@@ -1126,6 +1156,8 @@ export function MangaCharacterSpread({
               onClick={(ev) => {
                 triggerInteractionSfx("switch-mode", ev);
                 setSeasonIdx(i);
+                setSeasonNumber(null);
+                abilityCtx?.setSeasonScope(r.series_id ?? null, null);
               }}
               className={`border border-border px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
                 seasonIdx === i
@@ -1137,6 +1169,50 @@ export function MangaCharacterSpread({
             </button>
           ))}
         </div>
+        {activeSeason && activeSeriesSeasonCount > 1 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+              SEASON:
+            </span>
+            <button
+              type="button"
+              onClick={(ev) => {
+                triggerInteractionSfx("click", ev);
+                setSeasonNumber(null);
+                abilityCtx?.setSeasonScope(activeSeason.series_id ?? null, null);
+              }}
+              className={`border border-border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
+                seasonNumber === null
+                  ? "bg-foreground text-background"
+                  : "bg-background hover:bg-secondary"
+              }`}
+            >
+              ALL
+            </button>
+            {Array.from({ length: activeSeriesSeasonCount }, (_, idx) => {
+              const num = idx + 1;
+              const sLabel = activeSeriesMeta?.season_names?.[idx] || `S${num}`;
+              return (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={(ev) => {
+                    triggerInteractionSfx("click", ev);
+                    setSeasonNumber(num);
+                    abilityCtx?.setSeasonScope(activeSeason.series_id ?? null, num);
+                  }}
+                  className={`border border-border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${
+                    seasonNumber === num
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-background hover:bg-secondary"
+                  }`}
+                >
+                  {sLabel}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     ) : null;
 
@@ -1175,13 +1251,22 @@ export function MangaCharacterSpread({
                     {...(isFantasyGenre && motionActive
                       ? { style: { animationDelay: `${(idx % 4) * 0.55}s` } }
                       : {})}
-                    onClick={() =>
+                    onClick={() => {
+                      const assigned = resolveAssignedAbilityRank(ab, abilityRankMap);
+                      const effRank = assigned ?? tierToIntrinsicRank(def.tier);
+                      abilityCtx?.selectAbility(def.key, {
+                        rank: effRank,
+                        entityId: e.id,
+                        seriesId: activeSeason?.series_id ?? null,
+                        seasonNumber,
+                        triggerImpact: true,
+                      });
                       triggerAnimeActionCut({
                         color: def.color,
                         label: def.label,
-                        intensity: def.tier === "Mythic" ? "heavy" : "normal",
-                      })
-                    }
+                        intensity: def.tier === "Mythic" || effRank === 5 ? "heavy" : "normal",
+                      });
+                    }}
                     className={`relative cursor-pointer overflow-hidden p-3 ${
                       !themeCtx?.isMinimal ? "studio-bloom-border " : ""
                     }${
@@ -1302,6 +1387,60 @@ export function MangaCharacterSpread({
             title={`${e.name} — Canon Arc`}
             lines={[{ name: e.name, rows: journeyRows }]}
           />
+          {abilityProgression.length > 0 && (
+            <div className="mt-3 border-t border-border/40 pt-3">
+              <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
+                ABILITY MASTERY JOURNEY // 技量成長
+              </p>
+              <div className="grid gap-2">
+                {abilityProgression.map((group) => {
+                  const def = abilityDef(group.displayKey);
+                  return (
+                    <div
+                      key={group.canonKey}
+                      className="flex flex-wrap items-center justify-between gap-2 border border-border bg-background/80 px-2.5 py-2 text-xs"
+                    >
+                      <span className="font-mono font-bold uppercase">{def.label}</span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {group.steps.map((step, sIdx) => (
+                          <span key={step.id} className="inline-flex items-center gap-1">
+                            {sIdx > 0 && (
+                              <span className="font-mono text-[10px] text-muted-foreground">→</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(ev) => {
+                                triggerInteractionSfx("click", ev);
+                                const idx = seasons.findIndex((s) => s.series_id === step.seriesId);
+                                setSeasonIdx(idx);
+                                setSeasonNumber(step.seasonNumber);
+                                abilityCtx?.selectAbility(def.key, {
+                                  rank: step.level,
+                                  entityId: e.id,
+                                  seriesId: step.seriesId,
+                                  seasonNumber: step.seasonNumber,
+                                  triggerImpact: true,
+                                });
+                              }}
+                              title={`${def.label} — ${step.seriesTitle} ${step.seasonLabel} (${abilityRankMeta(step.level).label})`}
+                              className="inline-flex items-center gap-1 border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] hover:border-primary"
+                            >
+                              <span>
+                                {step.seriesId
+                                  ? `${step.seriesTitle.replace(/^The\s+/i, "")} ${step.seasonLabel}`
+                                  : step.seasonLabel}
+                              </span>
+                              <AbilityRankPips rank={step.level} compact />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {seasons.length > 0 && (
             <div className="mt-3 grid gap-2">
               {seasons.map((r, i) => (

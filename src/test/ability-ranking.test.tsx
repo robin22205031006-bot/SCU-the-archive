@@ -14,7 +14,12 @@ import { UI_MODE_STORAGE_KEY, UiModeProvider } from "@/hooks/use-ui-mode";
 import { setUiStyle } from "@/lib/ui-style";
 import { setGenreTheme } from "@/lib/genre-themes";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { ABILITY_RANK_META } from "@/lib/ability-rank";
+import {
+  ABILITY_RANK_META,
+  groupCharacterAbilityProgression,
+  mergeCharacterAbilityList,
+} from "@/lib/ability-rank";
+import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 
 function TestShell({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({
@@ -186,5 +191,55 @@ describe("Ability Emblem Ranking 1-5 & Multi-Style Emblems", () => {
     );
     expect(wheelContainer.querySelector('[data-nexus-rank-arc="4"]')).toBeTruthy();
     expect(wheelContainer.querySelector('[data-ability-rank="4"]')).toBeTruthy();
+  });
+
+  it("renders AbilityCustomEmblem with progressive visual SVG stages across Ranks 1..5", () => {
+    const { container: lv1, unmount: u1 } = render(
+      <AbilityCustomEmblem kind="volt-coil" rank={1} />,
+    );
+    expect(lv1.querySelector('[data-emblem-rank="1"]')).toBeTruthy();
+    expect(lv1.querySelector("[data-emblem-rank-stage]")).toBeNull();
+    u1();
+
+    const { container: lv5 } = render(<AbilityCustomEmblem kind="volt-coil" rank={5} />);
+    expect(lv5.querySelector('[data-emblem-rank="5"]')).toBeTruthy();
+    expect(lv5.querySelector('[data-emblem-rank-stage="5"]')).toBeTruthy();
+    expect(
+      lv5.querySelectorAll('[data-emblem-rank-stage="5"] polygon').length,
+    ).toBeGreaterThanOrEqual(4);
+  });
+
+  it("resolves shared ability ranks per character and chronological per-season mastery progression", () => {
+    const dorianRows = [
+      { ability_key: "red_lightning", level: 5, series_id: null, season_number: null },
+    ];
+    const zaynRows = [
+      { ability_key: "red_lightning", level: 2, series_id: "ser-sentinels", season_number: 3 },
+      { ability_key: "red_lightning", level: 5, series_id: "ser-sentinels", season_number: 5 },
+    ];
+
+    const dorianList = mergeCharacterAbilityList(dorianRows, ["Red Lightning"]);
+    const zaynS3 = mergeCharacterAbilityList(zaynRows, ["Red Lightning"], {
+      seriesId: "ser-sentinels",
+      seasonNumber: 3,
+    });
+    const zaynS5 = mergeCharacterAbilityList(zaynRows, ["Red Lightning"], {
+      seriesId: "ser-sentinels",
+      seasonNumber: 5,
+    });
+
+    expect(dorianList[0]?.level).toBe(5);
+    expect(zaynS3[0]?.level).toBe(2);
+    expect(zaynS5[0]?.level).toBe(5);
+
+    const progression = groupCharacterAbilityProgression(
+      zaynRows,
+      new Map([["ser-sentinels", "The Sentinels"]]),
+    );
+    expect(progression).toHaveLength(1);
+    expect(progression[0]?.steps.map((s) => [s.seasonNumber, s.level])).toEqual([
+      [3, 2],
+      [5, 5],
+    ]);
   });
 });

@@ -341,6 +341,86 @@ function blade(f: PF) {
     arcCycle(c, q, 0, 0, s * 0.35 * amp, -2.4, 2.8, s * 0.08, ink, 9);
     return;
   }
+  if (v === 1) {
+    // Assassin: stealth cloak fade -> single razor-thin crimson iaijutsu line -> sheath spark
+    const stealth = clamp(q < 0.25 ? 1 - q * 3 : q > 0.7 ? (q - 0.7) * 3 : 0.25);
+    c.save();
+    c.globalAlpha = stealth * 0.7;
+    humanoid(c, -s * 0.12, s * GY, s * 0.38, "#05070d", 0.15, 0.8);
+    c.restore();
+    const cutProg = clamp((q - 0.18) * 3.5);
+    if (cutProg > 0 && q < 0.88) {
+      const fadeOut = q > 0.55 ? 1 - (q - 0.55) / 0.33 : 1;
+      const len = s * (0.36 + rk * 0.045) * ease(cutProg);
+      c.save();
+      c.translate(0, -s * 0.05);
+      c.rotate(-0.34);
+      add(c);
+      c.strokeStyle = rgba(ink.core, 0.92 * fadeOut);
+      c.lineWidth = (1.6 + rk * 0.45) * fadeOut;
+      c.beginPath();
+      c.moveTo(-len, 0);
+      c.lineTo(len, 0);
+      c.stroke();
+      c.strokeStyle = rgba("#ffffff", 0.9 * fadeOut);
+      c.lineWidth = Math.max(1, 1.2 * fadeOut);
+      c.beginPath();
+      c.moveTo(-len * 0.85, 0);
+      c.lineTo(len * 0.85, 0);
+      c.stroke();
+      if (rk >= 3) {
+        const secondary = rk - 2;
+        for (let i = 1; i <= secondary; i++) {
+          c.strokeStyle = rgba(ink.mid, 0.55 * fadeOut);
+          c.lineWidth = 1.2;
+          c.beginPath();
+          c.moveTo(-len * 0.65, i * s * 0.028 * (i % 2 ? 1 : -1));
+          c.lineTo(len * 0.65, -i * s * 0.022 * (i % 2 ? 1 : -1));
+          c.stroke();
+        }
+      }
+      glowDot(c, len * 0.9, 0, s * (0.045 + rk * 0.01) * fadeOut, ink.core, fadeOut);
+      norm(c);
+      c.restore();
+    }
+    return;
+  }
+  if (v === 2) {
+    // Swordsman: disciplined single clean crescent slash + fading sword afterimage + guard glint
+    humanoid(c, -s * 0.1, s * GY, s * 0.38, "#0c1018", 0.18, 0.75);
+    arcCycle(
+      c,
+      q,
+      s * 0.03,
+      -s * 0.06,
+      s * (0.29 + rk * 0.022),
+      -2.2,
+      2.7,
+      s * (0.068 + rk * 0.008),
+      ink,
+      22,
+    );
+    if (rk >= 2) {
+      arcCycle(
+        c,
+        fr(q + 0.12),
+        s * 0.03,
+        -s * 0.06,
+        s * (0.25 + rk * 0.018),
+        -2.0,
+        2.3,
+        s * 0.032,
+        { ...ink, mid: shade(ink.mid, 0.35) },
+        23,
+      );
+    }
+    if (q > 0.25 && q < 0.7) {
+      add(c);
+      glowDot(c, s * 0.22, -s * 0.12, s * (0.045 + rk * 0.008), ink.core, 0.85);
+      norm(c);
+    }
+    return;
+  }
   if (v === 3 || v === 4) {
     // Sword Master triple star (v=3) or Twin Blades perpetual figure-8 flurry (v=4)
     const count = v === 3 ? 2 + Math.min(3, Math.ceil(rk / 2)) : 2 + rk;
@@ -411,14 +491,198 @@ function blood(f: PF) {
     swirl(c, t, 0, -s * 0.06, s * (0.24 + rk * 0.025), 1 + Math.ceil(rk / 2), ink, 0.4, 2.2, 0.14);
     return;
   }
-  if (v >= 3 || r.key === "demonic_hemokinesis" || rk >= 3) {
+  if (v === 0) {
+    // Blood Manipulation: suspended orbiting crimson blood spheres + thin steering ribbon streams
+    const orbs = 2 + rk * 2;
+    for (let i = 0; i < orbs; i++) {
+      const a = t * 1.4 + (i / orbs) * TAU;
+      const rad = s * (0.16 + 0.06 * Math.sin(t * 2 + i) + rk * 0.016);
+      const ox = Math.cos(a) * rad;
+      const oy = -s * 0.08 + Math.sin(a) * rad * 0.45;
+      c.fillStyle = ink.edge;
+      c.beginPath();
+      c.arc(ox, oy, s * (0.024 + rk * 0.004), 0, TAU);
+      c.fill();
+      c.fillStyle = ink.mid;
+      c.beginPath();
+      c.arc(ox, oy, s * (0.017 + rk * 0.003), 0, TAU);
+      c.fill();
+      add(c);
+      glowDot(c, ox, oy, s * 0.035, ink.core, 0.5);
+      norm(c);
+    }
+    swirl(c, t, 0, -s * 0.08, s * (0.22 + rk * 0.025), 1 + Math.ceil(rk / 2), ink, 0.42, 1.8, 0.12);
+    return;
+  }
+  if (v === 1) {
+    // Blood Art: sweeping calligraphy ink-blood brush arcs suspended in midair
+    const strokes = 2 + rk;
+    for (let i = 0; i < strokes; i++) {
+      const ph = fr(q + i * (1 / strokes));
+      arcCycle(
+        c,
+        ph,
+        Math.cos(i * 1.8) * s * 0.08,
+        -s * 0.06 + (i - strokes / 2) * s * 0.045,
+        s * (0.18 + rk * 0.024),
+        i * 1.1 + t * 0.4,
+        2.6,
+        s * (0.04 + rk * 0.006),
+        ink,
+        50 + i,
+      );
+    }
     add(c);
-    for (let i = 0; i < 4 + rk * 3; i++) {
-      const k = fr(t * 0.8 + i / (4 + rk * 3)),
-        x = Math.sin(i * 3.1 + v) * s * 0.22;
-      glowDot(c, x, s * GY - k * s * 0.6, s * 0.055 * (1 - k), "#ff1a1a", (1 - k) * 0.7);
+    glowDot(c, 0, -s * 0.06, s * (0.1 + rk * 0.016), ink.mid, 0.45);
+    norm(c);
+    return;
+  }
+  if (v === 2) {
+    // Hemokinesis: sharp arterial crimson needles erupting radially and retracting
+    const needles = 4 + rk * 2;
+    const ext = Math.sin(q * Math.PI);
+    add(c);
+    glowDot(c, 0, s * GY - s * 0.06, s * (0.12 + rk * 0.02), ink.mid, 0.55);
+    norm(c);
+    for (let i = 0; i < needles; i++) {
+      const ang = -Math.PI * 0.88 + (i / (needles - 1 || 1)) * Math.PI * 0.76;
+      const bx = (i / (needles - 1 || 1) - 0.5) * s * 0.38;
+      const len = s * (0.24 + rk * 0.04) * ext;
+      const tx = bx + Math.cos(ang) * len;
+      const ty = s * GY + Math.sin(ang) * len;
+      c.fillStyle = ink.edge;
+      c.beginPath();
+      c.moveTo(bx - s * 0.014, s * GY);
+      c.lineTo(tx, ty);
+      c.lineTo(bx + s * 0.014, s * GY);
+      c.closePath();
+      c.fill();
+      add(c);
+      c.strokeStyle = rgba(i % 2 ? ink.core : ink.mid, 0.9);
+      c.lineWidth = 1.6 + rk * 0.25;
+      c.beginPath();
+      c.moveTo(bx, s * GY);
+      c.lineTo(tx, ty);
+      c.stroke();
+      norm(c);
+    }
+    return;
+  }
+  if (v === 3) {
+    // Sanguine Shift: silhouette dissolves into rising crimson droplets and reforms across the stage
+    const shift = Math.sin(q * TAU) * s * 0.22;
+    const solid = Math.abs(Math.cos(q * Math.PI));
+    c.save();
+    c.globalAlpha = 0.25 + solid * 0.65;
+    humanoid(c, shift, s * GY, s * 0.39, ink.edge, solid * 0.2, 0.8, true);
+    c.restore();
+    add(c);
+    const drops = 10 + rk * 5;
+    for (let i = 0; i < drops; i++) {
+      const life = fr(t * 1.1 + i / drops);
+      const dx = shift + Math.sin(i * 3.1 + t * 4) * s * (0.18 + rk * 0.02) * (1 - solid * 0.5);
+      const dy = s * GY - life * s * 0.56;
+      glowDot(
+        c,
+        dx,
+        dy,
+        s * (0.02 + rk * 0.003) * (1 - life),
+        i % 2 ? ink.mid : ink.core,
+        1 - life,
+      );
     }
     norm(c);
+    return;
+  }
+  if (v === 4) {
+    // Demonic Hemokinesis: twin dark-core orbiting blood scythe crescents + rising black-crimson sparks
+    add(c);
+    glowDot(c, 0, -s * 0.05, s * (0.14 + rk * 0.025), "#ff003c", 0.55);
+    norm(c);
+    const scythes = Math.min(4, 1 + Math.ceil(rk / 2));
+    for (let i = 0; i < scythes; i++) {
+      const a0 = t * 2.4 + (i * TAU) / scythes;
+      paintedArc(
+        c,
+        0,
+        -s * 0.06,
+        s * (0.24 + rk * 0.025),
+        a0,
+        2.1,
+        s * (0.065 + rk * 0.008),
+        { edge: "#080002", mid: "#ff003c", core: "#ff99ac" },
+        0.92,
+        0.1,
+        70 + i,
+      );
+    }
+    add(c);
+    for (let i = 0; i < 6 + rk * 3; i++) {
+      const k = fr(t * 0.9 + i / (6 + rk * 3));
+      glowDot(
+        c,
+        Math.sin(i * 2.7 + t * 2) * s * 0.3,
+        s * GY - k * s * 0.65,
+        s * 0.025 * (1 - k),
+        "#ff003c",
+        1 - k,
+      );
+    }
+    norm(c);
+    return;
+  }
+  if (v === 5 || v === 6) {
+    // Vampire (v=5) fanged inward crimson drain; Vampire Hybrid (v=6) drain + triple beast claw swipe
+    const fangOpen = 0.3 + 0.7 * Math.abs(Math.sin(q * Math.PI));
+    add(c);
+    glowDot(c, 0, -s * 0.06, s * (0.16 + rk * 0.02), ink.mid, 0.5);
+    norm(c);
+    for (const sy of [-1, 1]) {
+      const gap = sy * s * (0.06 + fangOpen * 0.07);
+      for (const sx of [-1, 1]) {
+        c.fillStyle = ink.core;
+        c.beginPath();
+        c.moveTo(sx * s * 0.14 - s * 0.015, -s * 0.06 + gap);
+        c.lineTo(sx * s * 0.14, -s * 0.06 + gap - sy * s * (0.065 + rk * 0.01));
+        c.lineTo(sx * s * 0.14 + s * 0.015, -s * 0.06 + gap);
+        c.closePath();
+        c.fill();
+      }
+    }
+    // Inward life-drain streams
+    add(c);
+    const streams = 5 + rk * 2;
+    for (let i = 0; i < streams; i++) {
+      const k = fr(t * 1.1 + i / streams);
+      const a = (i / streams) * TAU + t * 0.8;
+      const dist = s * 0.38 * (1 - k);
+      glowDot(
+        c,
+        Math.cos(a) * dist,
+        -s * 0.06 + Math.sin(a) * dist * 0.55,
+        s * 0.018 * k,
+        ink.core,
+        k,
+      );
+    }
+    if (v === 6) {
+      for (let i = 0; i < 3; i++) {
+        arcCycle(
+          c,
+          fr(q + i * 0.07),
+          0,
+          -s * 0.06,
+          s * (0.24 + rk * 0.02 + i * 0.03),
+          -2.1,
+          2.2,
+          s * 0.035,
+          { ...ink, mid: "#f43f5e" },
+          80 + i,
+        );
+      }
+    }
+    norm(c);
+    return;
   }
   swirl(
     c,
@@ -432,18 +696,6 @@ function blood(f: PF) {
     2.6,
     0.16,
   );
-  groundBurst(c, 0, s * GY, s * (0.62 + rk * 0.08), fr(q * 1.3), ink, "#3a0a0e", 3 + rk);
-  for (let i = 0; i < 4 + rk * 2; i++) {
-    const k = fr(t * 1.4 + i / (4 + rk * 2));
-    glowDot(
-      c,
-      Math.cos(i + v * 0.2) * s * 0.25 * k,
-      -s * 0.1 + k * k * s * 0.35,
-      s * 0.012,
-      "#ff3344",
-      1 - k,
-    );
-  }
 }
 function voidRift(f: PF) {
   const { c, s, t, r, v } = f,
@@ -468,6 +720,114 @@ function voidRift(f: PF) {
     }
     norm(c);
   }
+  if (v === 0) {
+    // Aether: serene luminous orbiting lotus ribbons & hovering stardust motes
+    add(c);
+    glowDot(c, 0, -s * 0.08, s * (0.18 + rk * 0.03), ink.mid, 0.45);
+    swirl(
+      c,
+      t * 0.65,
+      0,
+      -s * 0.08,
+      s * (0.25 + rk * 0.028),
+      2 + Math.ceil(rk / 2),
+      ink,
+      0.46,
+      1.3,
+      0.13,
+    );
+    const motes = 6 + rk * 4;
+    for (let i = 0; i < motes; i++) {
+      const a = t * 0.8 + (i / motes) * TAU;
+      const dist = s * (0.16 + (i % 3) * 0.07);
+      glowDot(
+        c,
+        Math.cos(a) * dist,
+        -s * 0.08 + Math.sin(a) * dist * 0.45,
+        s * 0.016,
+        ink.core,
+        0.85,
+      );
+    }
+    norm(c);
+    return;
+  }
+  if (v === 1) {
+    // Aether Dominion: cosmic black-hole singularity with gravitational lensing crown & spire rays
+    const cy = -s * 0.08;
+    c.save();
+    c.translate(0, cy);
+    add(c);
+    const rays = 4 + rk * 2;
+    for (let i = 0; i < rays; i++) {
+      const ang = t * 0.35 + (i / rays) * TAU;
+      c.strokeStyle = rgba(i % 2 ? ink.mid : ink.core, 0.55);
+      c.lineWidth = 1.5 + rk * 0.35;
+      c.beginPath();
+      c.moveTo(Math.cos(ang) * s * 0.08, Math.sin(ang) * s * 0.08);
+      c.lineTo(Math.cos(ang) * s * (0.3 + rk * 0.035), Math.sin(ang) * s * (0.3 + rk * 0.035));
+      c.stroke();
+    }
+    for (let ringIdx = 0; ringIdx < 1 + Math.ceil(rk / 2); ringIdx++) {
+      c.save();
+      c.rotate(t * (0.5 + ringIdx * 0.3) * (ringIdx % 2 ? -1 : 1));
+      c.scale(1, 0.34);
+      c.strokeStyle = rgba(ringIdx % 2 ? ink.core : ink.mid, 0.82);
+      c.lineWidth = 2.2;
+      c.beginPath();
+      c.arc(0, 0, s * (0.2 + ringIdx * 0.065), 0, TAU);
+      c.stroke();
+      c.restore();
+    }
+    norm(c);
+    c.fillStyle = "#04010a";
+    c.beginPath();
+    c.arc(0, 0, s * (0.085 + rk * 0.01), 0, TAU);
+    c.fill();
+    c.strokeStyle = ink.core;
+    c.lineWidth = 2;
+    c.stroke();
+    c.restore();
+    return;
+  }
+  if (v === 2) {
+    // Qahr Al-Wujud: crushing spatial triangle shards collapsing violently into zero-point
+    const cy = -s * 0.08;
+    const collapse = Math.sin(q * Math.PI);
+    const shards = 6 + rk * 3;
+    add(c);
+    glowDot(c, 0, cy, s * (0.12 + rk * 0.02) * (1 - collapse * 0.4), "#ffffff", 0.7);
+    norm(c);
+    for (let i = 0; i < shards; i++) {
+      const k = fr(q + i / shards);
+      const ang = (i / shards) * TAU + t * 0.5;
+      const dist = s * 0.4 * (1 - ease(k));
+      const px = Math.cos(ang) * dist;
+      const py = cy + Math.sin(ang) * dist;
+      c.save();
+      c.translate(px, py);
+      c.rotate(ang);
+      c.fillStyle = i % 2 ? "#050208" : ink.mid;
+      c.beginPath();
+      c.moveTo(s * 0.03, 0);
+      c.lineTo(-s * 0.02, -s * 0.018);
+      c.lineTo(-s * 0.02, s * 0.018);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = ink.core;
+      c.lineWidth = 1;
+      c.stroke();
+      c.restore();
+    }
+    c.fillStyle = "#020006";
+    c.beginPath();
+    c.arc(0, cy, s * (0.045 + rk * 0.008) * (0.6 + 0.5 * collapse), 0, TAU);
+    c.fill();
+    c.strokeStyle = ink.core;
+    c.lineWidth = 1.8;
+    c.stroke();
+    return;
+  }
   c.save();
   c.translate(0, -s * 0.08);
   c.rotate(-0.35 + (v % 11) * 0.25);
@@ -490,20 +850,6 @@ function voidRift(f: PF) {
   c.lineWidth = 1.2;
   c.stroke();
   c.restore();
-  const motes = 8 + rk * 5;
-  for (let i = 0; i < motes; i++) {
-    const k = fr(t * 0.9 + i / motes),
-      a = i * 2.4 + t + v * 0.2,
-      d = s * 0.48 * (1 - k);
-    glowDot(
-      c,
-      Math.cos(a) * d,
-      -s * 0.08 + Math.sin(a) * d * 0.45,
-      s * 0.014,
-      i % 2 ? ink.mid : ink.core,
-      k,
-    );
-  }
   swirl(c, -t, 0, -s * 0.08, s * (0.26 + rk * 0.03), 1 + Math.ceil(rk / 2), ink, 0.4, -1.4, 0.1);
   norm(c);
 }
@@ -515,7 +861,56 @@ function arcane(f: PF) {
   column(c, s, t, ink, s * (0.38 + rk * 0.06), s * (0.11 + rk * 0.015));
   c.save();
   c.translate(0, -s * 0.15);
-  if (v === 3) {
+  if (v === 1) {
+    // Aldercrest Arcane: triple concentric sacred geometry seal + counter-rotating hexagram star
+    add(c);
+    for (let ringIdx = 0; ringIdx < 3; ringIdx++) {
+      c.strokeStyle = rgba(ringIdx % 2 ? ink.core : ink.mid, 0.65 + rk * 0.06);
+      c.lineWidth = ringIdx === 0 ? 2 : 1.4;
+      c.beginPath();
+      c.arc(0, 0, s * (0.11 + ringIdx * 0.06 + rk * 0.008), 0, TAU);
+      c.stroke();
+    }
+    const tris = rk >= 3 ? 2 : 1;
+    for (let ti = 0; ti < tris; ti++) {
+      c.save();
+      c.rotate(t * (ti === 0 ? 0.6 : -0.6) + ti * Math.PI);
+      c.strokeStyle = rgba(ink.core, 0.82);
+      c.lineWidth = 1.8;
+      c.beginPath();
+      for (let k = 0; k <= 3; k++) {
+        const ang = (k / 3) * TAU;
+        const px = Math.cos(ang) * s * (0.22 + rk * 0.012);
+        const py = Math.sin(ang) * s * (0.22 + rk * 0.012);
+        if (k === 0) c.moveTo(px, py);
+        else c.lineTo(px, py);
+      }
+      c.stroke();
+      c.restore();
+    }
+    norm(c);
+  } else if (v === 2) {
+    // Rune Magic: angular glyph nodes inscribing sequentially around an orbit then igniting
+    const nodes = 4 + rk;
+    const prog = fr(t * 0.7) * nodes;
+    add(c);
+    for (let i = 0; i < nodes; i++) {
+      const ang = (i / nodes) * TAU - Math.PI / 2;
+      const nx = Math.cos(ang) * s * (0.21 + rk * 0.014);
+      const ny = Math.sin(ang) * s * (0.21 + rk * 0.014);
+      const lit = i <= prog;
+      c.strokeStyle = rgba(lit ? ink.core : ink.mid, lit ? 0.95 : 0.3);
+      c.lineWidth = lit ? 2.2 : 1.2;
+      c.save();
+      c.translate(nx, ny);
+      c.rotate(ang);
+      c.strokeRect(-s * 0.022, -s * 0.022, s * 0.044, s * 0.044);
+      c.restore();
+      if (lit) glowDot(c, nx, ny, s * 0.032, ink.core, 0.75);
+    }
+    norm(c);
+  } else if (v === 3) {
+    // Card Magic: spell cards fan out and launch blazing card-dart projectiles
     const cards = 2 + rk;
     for (let i = 0; i < cards; i++) {
       c.save();
@@ -527,7 +922,34 @@ function arcane(f: PF) {
       c.lineWidth = 1.5;
       c.strokeRect(-s * 0.035, -s * 0.055, s * 0.07, s * 0.11);
       c.restore();
+      const dart = fr(t * 1.4 + i / cards);
+      streak(
+        c,
+        lerp(-s * 0.15, s * 0.42, ease(dart)),
+        (i - (cards - 1) / 2) * s * 0.06,
+        s * 0.15,
+        s * 0.018,
+        1,
+        ink,
+        t + i,
+      );
     }
+  } else if (v === 4) {
+    // Ancient Art: monolithic counter-rotating notched gold glyph rings awakening a pillar
+    add(c);
+    for (let ringIdx = 0; ringIdx < 2; ringIdx++) {
+      c.save();
+      c.rotate(t * (ringIdx === 0 ? 0.35 : -0.45));
+      c.strokeStyle = rgba(ringIdx === 0 ? ink.mid : ink.core, 0.88);
+      c.lineWidth = 2.4;
+      c.setLineDash([s * 0.06, s * 0.025]);
+      c.beginPath();
+      c.arc(0, 0, s * (0.17 + ringIdx * 0.075 + rk * 0.01), 0, TAU);
+      c.stroke();
+      c.setLineDash([]);
+      c.restore();
+    }
+    norm(c);
   } else {
     const rings = Math.min(5, 1 + rk);
     for (let i = 0; i < rings; i++) {
@@ -540,8 +962,8 @@ function arcane(f: PF) {
         0,
         0,
         s * (0.16 + i * 0.048),
-        v === 2 ? i * 0.9 : 0,
-        v === 4 ? 5.2 : 3.6,
+        0,
+        3.6,
         s * 0.03,
         ink,
         i + v,
@@ -601,13 +1023,92 @@ function chrono(f: PF) {
   c.stroke();
   norm(c);
   c.restore();
-  swirl(c, -t * (1 + (v % 5) * 0.2), 0, -s * 0.1, s * (0.3 + rk * 0.03), 1 + Math.ceil(rk / 2), ink, 0.8, -1.2, 0.09);
+  swirl(
+    c,
+    -t * (1 + (v % 5) * 0.2),
+    0,
+    -s * 0.1,
+    s * (0.3 + rk * 0.03),
+    1 + Math.ceil(rk / 2),
+    ink,
+    0.8,
+    -1.2,
+    0.09,
+  );
 }
 function chaos(f: PF) {
   const { c, s, t, r, v, step, rnd } = f,
     rk = rankLevel(f),
-    light: Ink = { edge: "#1a1a1a", mid: "#f4f4f4", core: "#ffffff" },
+    light: Ink = { edge: "#1a1a1a", mid: "#f8fafc", core: "#ffffff" },
     dark: Ink = { edge: "#000000", mid: shade(r.palette[0], -0.2), core: r.palette[2] };
+  if (v === 1 || r.key === "chaos_order") {
+    // Chaos & Order: Yin-Yang twin white order & dark/crimson chaos crescents trading halves
+    const cy = -s * 0.08;
+    const rad = s * (0.16 + rk * 0.022);
+    c.save();
+    c.translate(0, cy);
+    c.rotate(t * 1.4);
+    c.fillStyle = "#f8fafc";
+    c.beginPath();
+    c.arc(0, 0, rad, -Math.PI / 2, Math.PI / 2);
+    c.arc(0, rad / 2, rad / 2, Math.PI / 2, -Math.PI / 2, true);
+    c.arc(0, -rad / 2, rad / 2, Math.PI / 2, -Math.PI / 2);
+    c.fill();
+    c.fillStyle = "#0f172a";
+    c.beginPath();
+    c.arc(0, 0, rad, Math.PI / 2, -Math.PI / 2);
+    c.arc(0, -rad / 2, rad / 2, -Math.PI / 2, Math.PI / 2, true);
+    c.arc(0, rad / 2, rad / 2, -Math.PI / 2, Math.PI / 2);
+    c.fill();
+    c.fillStyle = "#ef4444";
+    c.beginPath();
+    c.arc(0, -rad / 2, rad * 0.18, 0, TAU);
+    c.fill();
+    c.fillStyle = "#f8fafc";
+    c.beginPath();
+    c.arc(0, rad / 2, rad * 0.18, 0, TAU);
+    c.fill();
+    c.strokeStyle = "#ef4444";
+    c.lineWidth = 1.6 + rk * 0.25;
+    c.beginPath();
+    c.arc(0, 0, rad, 0, TAU);
+    c.stroke();
+    c.restore();
+    swirl(
+      c,
+      t * 1.2,
+      0,
+      cy,
+      s * (0.26 + rk * 0.025),
+      1 + Math.ceil(rk / 2),
+      [light, dark],
+      0.45,
+      2.2,
+      0.14,
+    );
+    return;
+  }
+  if (v === 2) {
+    // Wild Energy: volatile jagged multi-directional energy starburst fractures
+    add(c);
+    const bolts = 4 + rk * 3;
+    for (let i = 0; i < bolts; i++) {
+      const ang = (i / bolts) * TAU + rnd(step + i) * 0.35;
+      const len = s * (0.22 + rk * 0.04 + rnd(step * 2 + i) * 0.12);
+      const midX = Math.cos(ang + 0.15) * len * 0.5;
+      const midY = -s * 0.08 + Math.sin(ang + 0.15) * len * 0.5;
+      c.strokeStyle = rgba(i % 2 ? r.palette[0] : r.palette[2], 0.85);
+      c.lineWidth = 1.8 + rk * 0.3;
+      c.beginPath();
+      c.moveTo(0, -s * 0.08);
+      c.lineTo(midX, midY);
+      c.lineTo(Math.cos(ang) * len, -s * 0.08 + Math.sin(ang) * len);
+      c.stroke();
+    }
+    glowDot(c, 0, -s * 0.08, s * (0.14 + rk * 0.025), r.palette[2], 0.8);
+    norm(c);
+    return;
+  }
   if (v === 3 || r.key === "errorcore" || rk >= 4) {
     add(c);
     for (let i = 0; i < 3 + rk * 2; i++) {
@@ -625,7 +1126,7 @@ function chaos(f: PF) {
     -s * 0.1,
     s * (0.24 + rk * 0.03),
     2 + rk,
-    r.key === "chaos_order" ? [light, dark] : [dark, inkOf(r.palette)],
+    [dark, inkOf(r.palette)],
     0.7,
     2.8 + (v % 6) * 0.25,
     0.2,
@@ -650,26 +1151,47 @@ function tech(f: PF) {
     rk = rankLevel(f),
     ink = inkOf(r.palette),
     q = cyc(f);
-  if (v === 3 || rk >= 4) {
-    add(c);
-    c.save();
-    c.translate(0, -s * 0.08);
-    c.rotate(t * 2.5);
-    c.strokeStyle = rgba(ink.mid, 0.75);
-    c.lineWidth = 2;
-    c.beginPath();
-    c.moveTo(0, 0);
-    c.lineTo(s * (0.28 + rk * 0.02), 0);
-    c.stroke();
-    c.restore();
-    c.strokeStyle = rgba(ink.core, 0.55);
-    c.lineWidth = 1.5;
-    c.beginPath();
-    c.arc(0, -s * 0.08, s * (0.26 + rk * 0.02), 0, TAU);
-    c.stroke();
-    norm(c);
+  if (v === 0) {
+    // Architect Cube Guardian: 3D isometric wireframe/lit cube lattice shield assembling around caster
+    humanoid(c, 0, s * GY, s * 0.38, "#0c1016", 0, 0.5, true);
+    const cubes = 3 + rk * 2;
+    for (let i = 0; i < cubes; i++) {
+      const a = t * 0.8 + (i / cubes) * TAU;
+      const pulse = 0.82 + 0.18 * Math.sin(t * 2.5 + i);
+      const cx = Math.cos(a) * s * (0.23 + rk * 0.015) * pulse;
+      const cy = -s * 0.06 + Math.sin(a) * s * 0.14 * pulse;
+      const r0 = s * (0.04 + rk * 0.004);
+      c.save();
+      c.translate(cx, cy);
+      c.fillStyle = rgba(ink.mid, 0.24);
+      c.strokeStyle = ink.core;
+      c.lineWidth = 1.5;
+      c.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const ha = (k / 6) * TAU - Math.PI / 6;
+        const px = Math.cos(ha) * r0;
+        const py = Math.sin(ha) * r0;
+        if (k === 0) c.moveTo(px, py);
+        else c.lineTo(px, py);
+      }
+      c.closePath();
+      c.fill();
+      c.stroke();
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.lineTo(0, r0);
+      c.moveTo(0, 0);
+      c.lineTo(Math.cos(-Math.PI / 6) * r0, Math.sin(-Math.PI / 6) * r0);
+      c.moveTo(0, 0);
+      c.lineTo(Math.cos((-5 * Math.PI) / 6) * r0, Math.sin((-5 * Math.PI) / 6) * r0);
+      c.stroke();
+      c.restore();
+    }
+    return;
   }
   if (v === 1) {
+    // Tech Genius: clean blueprint PCB circuit grid + glowing compile nodes
+    humanoid(c, 0, s * GY, s * 0.38, "#0c1016", 0, 0.45);
     add(c);
     c.strokeStyle = rgba(ink.core, 0.85);
     c.lineWidth = 2;
@@ -683,47 +1205,187 @@ function tech(f: PF) {
       c.lineTo(s * 0.24 * ease(q), 0);
       c.lineTo(s * 0.24 * ease(q), s * 0.08 * clamp(q * 2 - 0.5));
       c.stroke();
+      glowDot(c, s * 0.24 * ease(q), s * 0.08 * clamp(q * 2 - 0.5), s * 0.018, ink.core, 0.9);
       c.restore();
     }
     norm(c);
+    return;
   }
-  humanoid(c, 0, s * GY, s * 0.42, "#0c1016", 0, 0.3);
-  const count = 4 + rk * 2;
-  for (let i = 0; i < count; i++) {
-    const k = clamp(q * 1.6 - i * 0.07),
-      a = i * 0.63 + (v % 4) * 0.4,
-      d = s * 0.4 * (1 - ease(k)),
-      x = Math.cos(a) * d * 1.3,
-      y = -s * 0.05 + (i / count - 0.5) * s * 0.35 + Math.sin(a) * d * 0.3;
-    c.save();
-    c.translate(x, y);
-    c.rotate((1 - k) * 3 + v * 0.2);
-    c.fillStyle = ink.edge;
-    c.fillRect(-s * 0.03, -s * 0.02, s * 0.06, s * 0.04);
+  if (v === 2) {
+    // Sentinel Frame Tech: tactical HUD lock-on corner brackets + blue repulsor core
+    humanoid(c, 0, s * GY, s * 0.4, "#0b111d", 0.05, 0.6);
     add(c);
-    c.strokeStyle = ink.core;
-    c.lineWidth = 1.2;
-    c.strokeRect(-s * 0.03, -s * 0.02, s * 0.06, s * 0.04);
+    const box = s * (0.2 + (1 - Math.sin(q * Math.PI) * 0.2) * 0.06);
+    c.strokeStyle = rgba(ink.core, 0.9);
+    c.lineWidth = 2;
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        c.beginPath();
+        c.moveTo(sx * box, -s * 0.06 + sy * (box - s * 0.06));
+        c.lineTo(sx * box, -s * 0.06 + sy * box);
+        c.lineTo(sx * (box - s * 0.06), -s * 0.06 + sy * box);
+        c.stroke();
+      }
+    }
+    glowDot(c, 0, -s * 0.06, s * (0.09 + rk * 0.015), ink.mid, 0.85);
+    glowDot(c, 0, -s * 0.06, s * 0.045, "#ffffff", 0.95);
     norm(c);
-    c.restore();
+    return;
   }
-  add(c);
-  for (let i = 0; i < 1 + Math.ceil(rk / 2); i++) {
-    const k = fr(q * 1.5 + i / (1 + Math.ceil(rk / 2)));
-    c.strokeStyle = rgba(ink.mid, 1 - k);
+  if (v === 3) {
+    // Vanguard-X Protocol: sweeping crosshair reticle + crimson X-shaped laser detonation
+    add(c);
+    const rad = s * (0.22 + rk * 0.02);
+    c.strokeStyle = rgba(ink.mid, 0.85);
+    c.lineWidth = 1.8;
+    c.beginPath();
+    c.arc(0, -s * 0.08, rad, 0, TAU);
+    c.stroke();
+    const xSize = s * (0.24 + rk * 0.03) * (0.5 + 0.5 * Math.sin(q * Math.PI));
+    c.strokeStyle = rgba(ink.core, 0.92);
+    c.lineWidth = 2.5 + rk * 0.5;
+    c.beginPath();
+    c.moveTo(-xSize, -s * 0.08 - xSize);
+    c.lineTo(xSize, -s * 0.08 + xSize);
+    c.moveTo(xSize, -s * 0.08 - xSize);
+    c.lineTo(-xSize, -s * 0.08 + xSize);
+    c.stroke();
+    glowDot(c, 0, -s * 0.08, s * (0.1 + rk * 0.02), ink.mid, 0.8);
+    norm(c);
+    return;
+  }
+  if (v === 4) {
+    // Tech Suits: hexagonal reactor core + hinged armor plates folding inward cleanly
+    humanoid(c, 0, s * GY, s * 0.4, "#0c1016", 0, 0.4);
+    add(c);
+    const coreR = s * (0.08 + rk * 0.01);
+    c.strokeStyle = ink.core;
     c.lineWidth = 2;
     c.beginPath();
-    c.ellipse(0, s * GY, s * 0.45 * k, s * 0.08 * k, 0, 0, TAU);
+    for (let k = 0; k <= 6; k++) {
+      const ang = (k / 6) * TAU + t * 0.4;
+      const px = Math.cos(ang) * coreR;
+      const py = -s * 0.06 + Math.sin(ang) * coreR;
+      if (k === 0) c.moveTo(px, py);
+      else c.lineTo(px, py);
+    }
+    c.stroke();
+    const panels = 2 + rk;
+    for (let i = 0; i < panels; i++) {
+      const a = (i / panels) * TAU + t * 0.5;
+      const d = lerp(s * 0.34, s * 0.14, ease(Math.sin(q * Math.PI)));
+      c.save();
+      c.translate(Math.cos(a) * d, -s * 0.06 + Math.sin(a) * d * 0.7);
+      c.rotate(a);
+      c.fillStyle = ink.edge;
+      c.fillRect(-s * 0.028, -s * 0.018, s * 0.056, s * 0.036);
+      c.strokeStyle = ink.core;
+      c.lineWidth = 1.2;
+      c.strokeRect(-s * 0.028, -s * 0.018, s * 0.056, s * 0.036);
+      c.restore();
+    }
+    norm(c);
+    return;
+  }
+  // Kinetic Suits (v=5) / custom: concentric kinetic shock rings charging & bursting outward
+  humanoid(c, 0, s * GY, s * 0.4, "#121016", 0.1, 0.5);
+  add(c);
+  const charge = q < 0.65 ? q / 0.65 : 1 - (q - 0.65) / 0.35;
+  glowDot(c, 0, -s * 0.06, s * (0.12 + rk * 0.02) * charge, ink.core, 0.85);
+  const waves = 1 + rk;
+  for (let i = 0; i < waves; i++) {
+    const wk = fr(q * 1.4 + i / waves);
+    c.strokeStyle = rgba(ink.mid, 1 - wk);
+    c.lineWidth = 2 + rk * 0.4;
+    c.beginPath();
+    c.arc(0, -s * 0.06, s * (0.12 + wk * (0.28 + rk * 0.03)), 0, TAU);
     c.stroke();
   }
-  for (const sx of [-1, 1])
-    glowDot(c, sx * s * 0.04, s * 0.26, s * (0.04 + rk * 0.008 + 0.02 * Math.sin(t * 30 + v)), ink.core, 0.8);
   norm(c);
 }
 function shadow(f: PF) {
   const { c, s, t, r, v } = f,
     rk = rankLevel(f),
     q = cyc(f, 0.7);
+  if (v === 0) {
+    // Dark Magic: curling black-violet nocturnal smoke tendrils spiraling into a dark hex seal
+    runeCircle(c, s, -t, r.palette[0], r.palette[2], s * (0.24 + rk * 0.025), 0.75);
+    add(c);
+    const coils = 2 + rk;
+    for (let i = 0; i < coils; i++) {
+      const a0 = t * 1.8 + (i / coils) * TAU;
+      arcCycle(
+        c,
+        fr(t * 0.7 + i / coils),
+        0,
+        -s * 0.08,
+        s * (0.14 + i * 0.035),
+        a0,
+        2.5,
+        s * 0.045,
+        { edge: "#040008", mid: r.palette[0], core: r.palette[2] },
+        30 + i,
+      );
+    }
+    norm(c);
+    humanoid(c, 0, s * GY, s * 0.36, "#05010a", 0, 0.7, true);
+    return;
+  }
+  if (v === 1) {
+    // Umbrakinesis: solid jagged obsidian floor shadow blades erupting upward from pool
+    const gy = s * GY;
+    c.fillStyle = "#04010a";
+    c.beginPath();
+    c.ellipse(0, gy, s * (0.3 + rk * 0.03), s * 0.055, 0, 0, TAU);
+    c.fill();
+    const blades = 3 + rk * 2;
+    const grow = Math.sin(q * Math.PI);
+    for (let i = 0; i < blades; i++) {
+      const bx = (i / (blades - 1 || 1) - 0.5) * s * 0.44;
+      const bh = s * (0.24 + 0.14 * ((i % 2) + 0.5) + rk * 0.035) * (0.35 + 0.65 * grow);
+      c.fillStyle = "#04010c";
+      c.beginPath();
+      c.moveTo(bx - s * 0.022, gy);
+      c.lineTo(bx + bx * 0.15, gy - bh);
+      c.lineTo(bx + s * 0.022, gy);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = rgba(i % 2 ? r.palette[2] : r.palette[0], 0.85);
+      c.lineWidth = 1.6;
+      c.stroke();
+    }
+    return;
+  }
+  if (v === 3) {
+    // Demonic: horned infernal shadow entity silhouette with glowing twin horns & ember aura
+    const gy = s * GY;
+    add(c);
+    glowDot(c, 0, gy - s * 0.24, s * (0.26 + rk * 0.04), r.palette[0], 0.5);
+    norm(c);
+    humanoid(c, 0, gy, s * 0.42, "#070102", 0.08, 0.9, true);
+    add(c);
+    for (const sx of [-1, 1]) {
+      c.strokeStyle = r.palette[2];
+      c.lineWidth = 2.5 + rk * 0.4;
+      c.beginPath();
+      c.moveTo(sx * s * 0.035, gy - s * 0.36);
+      c.quadraticCurveTo(sx * s * 0.12, gy - s * 0.46, sx * s * (0.14 + rk * 0.015), gy - s * 0.52);
+      c.stroke();
+    }
+    for (let i = 0; i < 6 + rk * 3; i++) {
+      const k = fr(t * 0.85 + i / (6 + rk * 3));
+      glowDot(
+        c,
+        Math.sin(i * 2.2 + t * 3) * s * 0.28,
+        gy - k * s * 0.62,
+        s * 0.022 * (1 - k),
+        i % 2 ? r.palette[0] : r.palette[2],
+        1 - k,
+      );
+    }
+    norm(c);
+    return;
+  }
   if (v === 4 || r.key === "umbra_control") {
     // Rebuilt Umbra Control: dark ground pool + writhing curved shadow tendrils + silhouette caster + violet embers
     const gy = s * GY;
@@ -775,34 +1437,35 @@ function shadow(f: PF) {
     norm(c);
     return;
   }
+  // Shadow Steps (v=2) / fallback: rapid blink afterimage clones between shadow pools
+  c.fillStyle = "#03020c";
+  c.beginPath();
+  c.ellipse(-s * 0.35, s * GY, s * 0.12, s * 0.03, 0, 0, TAU);
+  c.ellipse(s * 0.3, s * GY, s * 0.12, s * 0.03, 0, 0, TAU);
+  c.fill();
   const clones = 2 + rk;
   for (let i = 0; i < clones; i++) {
-    const x = lerp(-s * 0.4, s * 0.3, ease(clamp(q * 1.5 - i * 0.06)));
+    const x = lerp(-s * 0.36, s * 0.28, ease(clamp(q * 1.5 - i * 0.06)));
     c.globalAlpha = 0.15 + (i / clones) * 0.7;
-    humanoid(c, x, s * GY, s * 0.38, i === clones - 1 ? "#000000" : shade(r.palette[0], -0.6), 0.2, 0.7);
-  }
-  c.globalAlpha = 1;
-  add(c);
-  for (let i = 0; i < 6 + rk * 3; i++) {
-    const k = fr(t + i / (6 + rk * 3));
-    glowDot(
+    humanoid(
       c,
-      lerp(-s * 0.4, s * 0.3, i / (6 + rk * 3)),
-      s * GY - s * 0.2 - k * s * 0.2,
-      s * 0.03 * (1 - k),
-      "#3a2a55",
-      1 - k,
+      x,
+      s * GY,
+      s * 0.38,
+      i === clones - 1 ? "#000000" : shade(r.palette[0], -0.6),
+      0.2,
+      0.7,
     );
   }
-  norm(c);
+  c.globalAlpha = 1;
   if (q > 0.55)
     arcCycle(
       c,
       (q - 0.55) / 0.45,
-      s * 0.32,
+      s * 0.3,
       -s * 0.05,
       s * (0.22 + rk * 0.025),
-      -1.9 - (v % 6) * 0.25,
+      -1.9,
       2.2,
       s * 0.05,
       { edge: "#000000", mid: r.palette[0], core: "#ffffff" },
@@ -862,6 +1525,91 @@ function ghost(f: PF) {
     norm(c);
     return;
   }
+  if (v === 0) {
+    // Ghost 01 Armament: phase-cloaked tactical operative flickering between steel-cyan blade arcs
+    const flick = 0.25 + 0.65 * Math.abs(Math.sin(t * 5));
+    c.save();
+    c.globalAlpha = flick;
+    humanoid(c, Math.sin(t * 3) * s * 0.08, s * GY, s * 0.4, "#0b1420", 0.2, 0.8);
+    c.restore();
+    const slashes = 1 + Math.min(3, Math.ceil(rk / 2));
+    for (let i = 0; i < slashes; i++) {
+      arcCycle(
+        c,
+        fr(t * 1.1 + i * 0.25),
+        s * 0.05,
+        -s * 0.06,
+        s * (0.24 + rk * 0.02),
+        -1.5 + i * 0.9,
+        2.1,
+        s * 0.042,
+        ink,
+        61 + i,
+      );
+    }
+    return;
+  }
+  if (v === 1) {
+    // Azure Revenant State: crowned spectral azure form rising with trailing revenant claws
+    const gy = s * GY;
+    add(c);
+    glowDot(c, 0, gy - s * 0.24, s * (0.24 + rk * 0.035), ink.mid, 0.55);
+    norm(c);
+    humanoid(
+      c,
+      0,
+      gy - Math.sin(t * 2) * s * 0.03,
+      s * 0.42,
+      shade(r.palette[0], 0.25),
+      0.1,
+      0.75,
+      true,
+    );
+    add(c);
+    for (let i = 0; i < 2 + rk; i++) {
+      const a = t * 1.5 + (i / (2 + rk)) * TAU;
+      streak(
+        c,
+        Math.cos(a) * s * 0.25,
+        -s * 0.08 + Math.sin(a) * s * 0.12,
+        s * 0.16,
+        s * 0.02,
+        Math.cos(a) > 0 ? 1 : -1,
+        ink,
+        t + i,
+      );
+    }
+    norm(c);
+    return;
+  }
+  if (v === 2) {
+    // Paleborne Nightmare: hollow-eyed pale nightmare masks orbiting a dread void core
+    const gy = s * GY;
+    add(c);
+    glowDot(c, 0, -s * 0.08, s * (0.14 + rk * 0.025), r.palette[0], 0.45);
+    norm(c);
+    const masks = 2 + rk;
+    for (let i = 0; i < masks; i++) {
+      const a = t * 0.9 + (i / masks) * TAU;
+      const mx = Math.cos(a) * s * (0.22 + rk * 0.02);
+      const my = -s * 0.08 + Math.sin(a) * s * 0.13;
+      c.save();
+      c.translate(mx, my);
+      c.fillStyle = "#e2e8f0";
+      c.beginPath();
+      c.ellipse(0, 0, s * 0.03, s * 0.042, 0, 0, TAU);
+      c.fill();
+      c.fillStyle = "#09090b";
+      c.beginPath();
+      c.arc(-s * 0.01, -s * 0.008, s * 0.006, 0, TAU);
+      c.arc(s * 0.01, -s * 0.008, s * 0.006, 0, TAU);
+      c.ellipse(0, s * 0.018, s * 0.007, s * 0.012, 0, 0, TAU);
+      c.fill();
+      c.restore();
+    }
+    humanoid(c, 0, gy, s * 0.36, "#18181b", 0, 0.5, true);
+    return;
+  }
   const specters = 1 + Math.min(4, rk);
   for (let i = 0; i < specters; i++) {
     const x = Math.sin(t * 1.5 + i * 1.7 + v * 0.3) * s * 0.25,
@@ -870,25 +1618,6 @@ function ghost(f: PF) {
     humanoid(c, x, s * GY, s * 0.4, shade(r.palette[0], 0.3), 0, 0.4, true);
   }
   c.globalAlpha = 1;
-  add(c);
-  for (let i = 0; i < 8 + rk * 3; i++) {
-    const k = fr(t * 0.6 + i / (8 + rk * 3)),
-      x = Math.sin(i * 2.3 + t + v) * s * 0.3;
-    glowDot(c, x, s * GY - k * s * 0.7, s * 0.04 * (1 - k), ink.core, (1 - k) * 0.6);
-  }
-  norm(c);
-  swirl(
-    c,
-    t,
-    0,
-    -s * 0.1,
-    s * (0.22 + rk * 0.025),
-    1 + Math.ceil(rk / 2),
-    { ...ink, edge: "rgba(0,0,0,0)" as string },
-    0.6,
-    1 + (v % 3) * 0.25,
-    0.1,
-  );
 }
 function portal(f: PF) {
   const { c, s, t, r, v } = f,
@@ -912,8 +1641,41 @@ function portal(f: PF) {
     c.save();
     c.translate(px, py);
     c.scale(0.4, 1);
-    arcCycle(c, fr(t * 0.6), 0, 0, s * (0.13 + rk * 0.012), t * 3 * d + gi, 5.2, s * 0.04, ink, 5 + gi);
+    arcCycle(
+      c,
+      fr(t * 0.6),
+      0,
+      0,
+      s * (0.13 + rk * 0.012),
+      t * 3 * d + gi,
+      5.2,
+      s * 0.04,
+      ink,
+      5 + gi,
+    );
     c.restore();
+  }
+  if (v === 1) {
+    // Psychokinetic Daggers: daggers orbit center, align, then dart from entry to exit gate
+    const count = 2 + rk;
+    for (let i = 0; i < count; i++) {
+      const k = fr(q * 1.4 + i / count);
+      const x = lerp(-s * 0.28, s * 0.28, ease(k));
+      const y = -s * 0.06 + (i - (count - 1) / 2) * s * 0.06;
+      c.save();
+      c.translate(x, y);
+      c.fillStyle = ink.core;
+      c.beginPath();
+      c.moveTo(s * 0.045, 0);
+      c.lineTo(-s * 0.035, -s * 0.012);
+      c.lineTo(-s * 0.02, 0);
+      c.lineTo(-s * 0.035, s * 0.012);
+      c.closePath();
+      c.fill();
+      c.restore();
+      streak(c, x - s * 0.02, y, s * 0.1, s * 0.014, 1, ink, t + i);
+    }
+    return;
   }
   for (let i = 0; i < 1 + rk; i++) {
     const k = fr(q * 1.4 + i * 0.16),
@@ -941,7 +1703,18 @@ function heal(f: PF) {
     c.save();
     c.translate(0, (i - (rings - 1) / 2) * s * 0.1);
     c.scale(1, 0.28);
-    arcCycle(c, fr(t * 0.5 + i / rings), 0, 0, s * 0.22, t * 2 + i * 2 + v * 0.4, 4, s * 0.05, ink, i + v);
+    arcCycle(
+      c,
+      fr(t * 0.5 + i / rings),
+      0,
+      0,
+      s * 0.22,
+      t * 2 + i * 2 + v * 0.4,
+      4,
+      s * 0.05,
+      ink,
+      i + v,
+    );
     c.restore();
   }
   c.restore();
@@ -1040,6 +1813,21 @@ function impact(f: PF) {
     rk = rankLevel(f),
     ink = inkOf(r.palette),
     q = cyc(f, 0.6);
+  if (v === 2) {
+    // Super Soldier: kinetic punch shock-cone forward + steel-blue armor glint bursts
+    humanoid(c, -s * 0.16, s * GY, s * 0.36, "#0d1626", 0.28, 0.9);
+    add(c);
+    const cone = s * (0.2 + q * (0.18 + rk * 0.03));
+    c.strokeStyle = rgba(ink.core, (1 - q) * 0.9);
+    c.lineWidth = 2.5 + rk * 0.4;
+    c.beginPath();
+    c.ellipse(s * 0.04 + q * s * 0.14, -s * 0.06, s * 0.05 + q * s * 0.06, cone * 0.45, 0, 0, TAU);
+    c.stroke();
+    streak(c, s * (0.1 + q * 0.22), -s * 0.06, s * (0.24 + rk * 0.03), s * 0.035, 1, ink, t);
+    glowDot(c, -s * 0.12, -s * 0.12, s * (0.045 + rk * 0.008), "#ffffff", 0.75);
+    norm(c);
+    return;
+  }
   if (v === 3) {
     // Combat Specialist: rapid multi-hit directional martial strike cones + stance silhouette
     humanoid(c, -s * 0.14, s * GY, s * 0.34, "#0d0f17", 0.25, 0.85);
@@ -1053,11 +1841,33 @@ function impact(f: PF) {
       c.strokeStyle = rgba(ink.core, (1 - phase) * 0.85);
       c.lineWidth = 2;
       c.beginPath();
-      c.ellipse(sx + s * 0.1, sy, s * 0.03 + phase * s * 0.09, s * 0.08 + phase * s * 0.12, 0, 0, TAU);
+      c.ellipse(
+        sx + s * 0.1,
+        sy,
+        s * 0.03 + phase * s * 0.09,
+        s * 0.08 + phase * s * 0.12,
+        0,
+        0,
+        TAU,
+      );
       c.stroke();
     }
     norm(c);
     return;
+  }
+  if (v === 0) {
+    // Destructive Legendary: jagged seismic fissure lines across ground + crater dome waves
+    const fissures = 3 + rk;
+    c.strokeStyle = rgba(ink.mid, 0.9);
+    c.lineWidth = 2 + rk * 0.35;
+    for (let i = 0; i < fissures; i++) {
+      const side = i - (fissures - 1) / 2;
+      c.beginPath();
+      c.moveTo(0, s * GY);
+      c.lineTo(side * s * 0.07, s * GY - s * 0.03);
+      c.lineTo(side * s * 0.14, s * GY + s * 0.04);
+      c.stroke();
+    }
   }
   groundBurst(c, 0, s * GY, s * (0.72 + rk * 0.08), q, ink, "#a8977a", 3 + rk);
   add(c);
@@ -1076,6 +1886,26 @@ function mind(f: PF) {
   const { c, s, t, r, v } = f,
     rk = rankLevel(f),
     ink = inkOf(r.palette);
+  if (v === 0) {
+    // Manipulation: upper control eye/sigil casting luminous puppet strings down onto swaying silhouette
+    const eyeY = -s * 0.25;
+    const sway = Math.sin(t * 2.2) * s * 0.06;
+    humanoid(c, sway, s * GY, s * 0.34, "#14081c", sway * 0.02, 0.65);
+    add(c);
+    const strings = 2 + rk;
+    for (let i = 0; i < strings; i++) {
+      const tx = sway + (i / (strings - 1 || 1) - 0.5) * s * 0.22;
+      c.strokeStyle = rgba(i % 2 ? ink.core : ink.mid, 0.78);
+      c.lineWidth = 1.4 + rk * 0.2;
+      c.beginPath();
+      c.moveTo(0, eyeY + s * 0.02);
+      c.quadraticCurveTo(tx * 0.5, -s * 0.06, tx, s * 0.05);
+      c.stroke();
+    }
+    glowDot(c, 0, eyeY, s * (0.065 + rk * 0.01), ink.core, 0.9);
+    norm(c);
+    return;
+  }
   if (v === 1) {
     // Rebuilt Jester: stylized dual trickster diamond masks + orbiting chaos cards & spiral ribbons
     const count = 2 + rk;
@@ -1099,7 +1929,34 @@ function mind(f: PF) {
       c.stroke();
       c.restore();
     }
-    swirl(c, t * 1.4, 0, -s * 0.08, s * 0.24, Math.min(4, 1 + Math.ceil(rk / 2)), ink, 0.5, 2.2, 0.08);
+    swirl(
+      c,
+      t * 1.4,
+      0,
+      -s * 0.08,
+      s * 0.24,
+      Math.min(4, 1 + Math.ceil(rk / 2)),
+      ink,
+      0.5,
+      2.2,
+      0.08,
+    );
+  } else if (v === 2) {
+    // Spy: sweeping stealth radar scan wedge + scanline static dissolve
+    add(c);
+    const sweep = t * 2;
+    c.fillStyle = rgba(ink.mid, 0.24 + rk * 0.04);
+    c.beginPath();
+    c.moveTo(0, -s * 0.1);
+    c.arc(0, -s * 0.1, s * (0.28 + rk * 0.025), sweep, sweep + 0.75);
+    c.closePath();
+    c.fill();
+    for (let i = 0; i < 4 + rk * 2; i++) {
+      const y = -s * 0.28 + (i / (4 + rk * 2)) * s * 0.38;
+      c.fillStyle = rgba(ink.core, 0.45);
+      c.fillRect(-s * 0.22 + Math.sin(t * 9 + i) * s * 0.08, y, s * 0.3, 1.5);
+    }
+    norm(c);
   } else if (v === 3) {
     // Rebuilt Tactician: perspective tilted holographic battle grid + sweep radar + linked node lock-ons
     c.save();
@@ -1181,37 +2038,59 @@ function frost(f: PF) {
     rk = rankLevel(f),
     ink = inkOf(r.palette),
     q = cyc(f, 0.8);
-  arcCycle(
-    c,
-    q,
-    -s * 0.05,
-    0,
-    s * (0.25 + rk * 0.025),
-    2.4 - (v % 7) * 0.25,
-    -2.6,
-    s * (0.065 + rk * 0.008),
-    ink,
-    6 + v,
-  );
-  groundBurst(c, s * 0.1, s * GY, s * (0.7 + rk * 0.07), fr(q + 0.3), ink, "#cfe6f2", 3 + rk);
-  if (v >= 20 || rk >= 3) {
-    add(c);
-    c.save();
-    c.translate(0, -s * 0.06);
-    c.rotate(t * 0.6 + v);
-    const pts = 4 + rk;
-    c.strokeStyle = rgba(ink.core, 0.7);
-    c.lineWidth = 2;
-    for (let i = 0; i < pts; i++) {
-      c.rotate(TAU / pts);
-      c.beginPath();
-      c.moveTo(0, 0);
-      c.lineTo(s * (0.18 + rk * 0.025), 0);
-      c.stroke();
+  // Crisp glacial floor circle + 6-fold branched crystalline ice dendrites scaling Lv 1..5
+  add(c);
+  glowDot(c, 0, s * GY - s * 0.04, s * (0.24 + rk * 0.035), ink.mid, 0.35 + rk * 0.06);
+  c.strokeStyle = rgba(ink.core, 0.65);
+  c.lineWidth = 1.6;
+  c.beginPath();
+  c.ellipse(0, s * GY, s * (0.24 + rk * 0.03), s * 0.075, 0, 0, TAU);
+  c.stroke();
+  // Branched crystalline snowflake mandala
+  c.save();
+  c.translate(0, -s * 0.07);
+  c.rotate(t * 0.35 + v * 0.2);
+  const arms = 6;
+  const armLen = s * (0.16 + rk * 0.032) * (0.8 + 0.2 * Math.sin(q * TAU));
+  c.strokeStyle = rgba(ink.core, 0.9);
+  c.lineWidth = 1.8 + rk * 0.25;
+  for (let i = 0; i < arms; i++) {
+    c.rotate(TAU / arms);
+    c.beginPath();
+    c.moveTo(0, 0);
+    c.lineTo(armLen, 0);
+    if (rk >= 2) {
+      c.moveTo(armLen * 0.55, 0);
+      c.lineTo(armLen * 0.78, s * 0.04);
+      c.moveTo(armLen * 0.55, 0);
+      c.lineTo(armLen * 0.78, -s * 0.04);
     }
-    c.restore();
-    norm(c);
+    if (rk >= 4) {
+      c.moveTo(armLen * 0.8, 0);
+      c.lineTo(armLen * 0.95, s * 0.03);
+      c.moveTo(armLen * 0.8, 0);
+      c.lineTo(armLen * 0.95, -s * 0.03);
+    }
+    c.stroke();
   }
+  c.restore();
+  // Rising crystalline ice spires along the ground
+  const spires = 2 + rk * 2;
+  for (let i = 0; i < spires; i++) {
+    const sx = (i / (spires - 1 || 1) - 0.5) * s * 0.44;
+    const h =
+      s *
+      (0.1 + rk * 0.025 + 0.06 * Math.abs(Math.sin(i * 2.1))) *
+      Math.sin(Math.PI * fr(q + i * 0.07));
+    c.fillStyle = rgba(i % 2 ? ink.mid : ink.core, 0.8);
+    c.beginPath();
+    c.moveTo(sx - s * 0.018, s * GY);
+    c.lineTo(sx, s * GY - h);
+    c.lineTo(sx + s * 0.018, s * GY);
+    c.closePath();
+    c.fill();
+  }
+  norm(c);
 }
 function beam(f: PF) {
   const { c, s, t, r, v } = f,
@@ -1292,7 +2171,15 @@ function beam(f: PF) {
       c.strokeStyle = rgba(ink.core, 0.55 * (1 - q));
       c.lineWidth = 1.8;
       c.beginPath();
-      c.ellipse(rx, y + Math.sin(rx * 0.04) * s * 0.02, s * 0.025, s * (0.07 + rk * 0.01), 0, 0, TAU);
+      c.ellipse(
+        rx,
+        y + Math.sin(rx * 0.04) * s * 0.02,
+        s * 0.025,
+        s * (0.07 + rk * 0.01),
+        0,
+        0,
+        TAU,
+      );
       c.stroke();
     }
     norm(c);

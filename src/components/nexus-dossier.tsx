@@ -29,7 +29,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
-import { abilityRankMeta } from "@/lib/ability-rank";
+import {
+  abilityRankMeta,
+  buildAbilityRankMap,
+  clampDbAbilityLevel,
+  groupCharacterAbilityProgression,
+  resolveAbilityAliasPure,
+  resolveAssignedAbilityRank,
+} from "@/lib/ability-rank";
+import { useOptionalAbilityContext } from "@/context/AbilityContext";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { tierDef } from "@/lib/character-tier";
@@ -63,6 +71,7 @@ export function NexusDossier({
   const [editing, setEditing] = useState(false);
   const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
   const moving = useNexusMotion();
+  const abilityCtx = useOptionalAbilityContext();
 
   const { data: memberships } = useQuery(characterSeriesQuery(e.id));
   const { data: allSeries } = useQuery(seriesQuery);
@@ -165,7 +174,7 @@ export function NexusDossier({
   }, [links, groups]);
 
   const allowedAbilityKeys = sd.abilityKeys;
-  // Season-scoped abilities: rows for this series/season; whole-series rows apply to every season.
+  // Season-scoped abilities: exact (series + season) > series-wide; overview takes peak mastery rank.
   const abilities = useMemo(() => {
     void abilityVersion;
     const rows = charAbilities ?? [];
@@ -176,15 +185,51 @@ export function NexusDossier({
             (r.season_number == null || r.season_number === season.n),
         )
       : rows;
-    const m = new Map<string, number>();
-    scoped
-      .filter((r) => allowedAbilityKeys === undefined || allowedAbilityKeys.includes(r.ability_key))
-      .forEach((r) => m.set(r.ability_key, Math.max(m.get(r.ability_key) ?? 0, r.level)));
-    if (!season) (e.abilities ?? []).forEach((a) => !m.has(a) && m.set(a, 1));
-    return [...m.entries()]
-      .map(([name, level]) => ({ name, level, def: abilityDef(name) }))
+    const allowedRows = scoped.filter(
+      (r) => allowedAbilityKeys === undefined || allowedAbilityKeys.includes(r.ability_key),
+    );
+    const rankMap = season
+      ? buildAbilityRankMap(allowedRows, {
+          seriesId: season.seriesId,
+          seasonNumber: season.n,
+        })
+      : undefined;
+    const keysByCanon = new Map<string, { name: string; level: number }>();
+    for (const r of allowedRows) {
+      const canon = resolveAbilityAliasPure(r.ability_key);
+      if (!canon) continue;
+      const lvl = rankMap
+        ? (resolveAssignedAbilityRank(r.ability_key, rankMap) ?? clampDbAbilityLevel(r.level))
+        : Math.max(keysByCanon.get(canon)?.level ?? 0, clampDbAbilityLevel(r.level));
+      if (!keysByCanon.has(canon) || lvl > (keysByCanon.get(canon)?.level ?? 0)) {
+        keysByCanon.set(canon, { name: r.ability_key, level: lvl });
+      }
+    }
+    if (!season) {
+      for (const a of e.abilities ?? []) {
+        const canon = resolveAbilityAliasPure(a);
+        if (canon && !keysByCanon.has(canon)) {
+          keysByCanon.set(canon, { name: a, level: 1 });
+        }
+      }
+    }
+    return [...keysByCanon.values()]
+      .map(({ name, level }) => ({ name, level, def: abilityDef(name) }))
       .sort((a, b) => b.level - a.level);
   }, [charAbilities, season, e.abilities, allowedAbilityKeys, abilityVersion]);
+
+  const seriesTitleMap = useMemo(
+    () => new Map((allSeries ?? []).map((x) => [x.id, x.title])),
+    [allSeries],
+  );
+  const seasonNamesMap = useMemo(
+    () => new Map((allSeries ?? []).map((x) => [x.id, x.season_names ?? []])),
+    [allSeries],
+  );
+  const abilityProgression = useMemo(
+    () => groupCharacterAbilityProgression(charAbilities ?? [], seriesTitleMap, seasonNamesMap),
+    [charAbilities, seriesTitleMap, seasonNamesMap],
+  );
 
   const core = abilities[0];
   const coreColor = core?.def.color ?? "var(--accent)";
@@ -199,6 +244,7 @@ export function NexusDossier({
   const selectSeason = (value: { seriesId: string; n: number } | null) => {
     setSeason(value);
     setSelectedAbility(null);
+    abilityCtx?.setSeasonScope(value?.seriesId ?? null, value?.n ?? null);
     triggerAnimeActionCut({ color: coreColor, label: value ? `SEASON ${value.n}` : "ALL SEASONS" });
   };
 
@@ -353,6 +399,14 @@ export function NexusDossier({
                   setSelectedAbility(name);
                   if (name) {
                     const abDef = abilityDef(name);
+                    const found = abilities.find((a) => a.name === name);
+                    abilityCtx?.selectAbility(abDef.key, {
+                      rank: found ? clampDbAbilityLevel(found.level) : undefined,
+                      entityId: e.id,
+                      seriesId: season?.seriesId ?? null,
+                      seasonNumber: season?.n ?? null,
+                      triggerImpact: true,
+                    });
                     triggerAnimeActionCut({ color: abDef.color, label: abDef.label });
                   }
                 }}
@@ -549,6 +603,37 @@ export function NexusDossier({
                           },
                         ]}
                       />
+                      {abilityProgression.length > 0 && (
+                        <div className="space-y-1.5 rounded-lg border border-border/70 bg-background/40 p-2.5">
+                          <p className="text-[10px] uppercase tracking-[0.25em] text-accent">
+                            Ability mastery across seasons
+                          </p>
+                          {abilityProgression.map((group) => {
+                            const def = abilityDef(group.displayKey);
+                            return (
+                              <div
+                                key={group.canonKey}
+                                className="flex flex-wrap items-center justify-between gap-2 text-xs"
+                              >
+                                <span className="font-medium">{def.label}</span>
+                                <span className="flex flex-wrap items-center gap-1">
+                                  {group.steps.map((step, sIdx) => (
+                                    <span key={step.id} className="inline-flex items-center gap-1">
+                                      {sIdx > 0 && <span className="text-muted-foreground">→</span>}
+                                      <span className="rounded border border-border px-1.5 py-0.5 text-[10px]">
+                                        {step.seriesId
+                                          ? `${step.seriesTitle.replace(/^The\s+/i, "")} ${step.seasonLabel}`
+                                          : step.seasonLabel}{" "}
+                                        {abilityRankMeta(step.level).roman}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                   {menu === "details" && (
@@ -655,30 +740,114 @@ export function NexusDossier({
               onSelect={(name) => {
                 setSelectedAbility(name);
                 const abDef = abilityDef(name);
+                const found = abilities.find((a) => a.name === name);
+                abilityCtx?.selectAbility(abDef.key, {
+                  rank: found ? clampDbAbilityLevel(found.level) : undefined,
+                  entityId: e.id,
+                  seriesId: season?.seriesId ?? null,
+                  seasonNumber: season?.n ?? null,
+                  triggerImpact: true,
+                });
                 triggerAnimeActionCut({
                   color: abDef.color,
                   label: abDef.label,
-                  intensity: abDef.tier === "Mythic" ? "heavy" : "normal",
+                  intensity: abDef.tier === "Mythic" || found?.level === 5 ? "heavy" : "normal",
                 });
               }}
               moving={moving}
             />
             <div className="space-y-2 text-xs">
-              <p className="[font-family:var(--font-display)] text-lg" style={{ color: coreColor }}>
-                {core ? core.def.label : "No abilities"}
-              </p>
-              {core?.def.description && (
-                <p className="text-muted-foreground">{core.def.description}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p
+                  className="[font-family:var(--font-display)] text-lg"
+                  style={{ color: coreColor }}
+                >
+                  {abilitySelection
+                    ? abilityDef(abilitySelection).label
+                    : core
+                      ? core.def.label
+                      : "No abilities"}
+                </p>
+                {core && (
+                  <Link
+                    to="/abilities"
+                    onClick={() => {
+                      const target = abilities.find((a) => a.name === abilitySelection) ?? core;
+                      abilityCtx?.selectAbility(target.def.key, {
+                        rank: clampDbAbilityLevel(target.level),
+                        entityId: e.id,
+                        seriesId: season?.seriesId ?? null,
+                        seasonNumber: season?.n ?? null,
+                        triggerImpact: true,
+                      });
+                    }}
+                    className="text-[10px] uppercase tracking-wider text-accent hover:underline"
+                  >
+                    FX →
+                  </Link>
+                )}
+              </div>
+              {(abilitySelection
+                ? abilityDef(abilitySelection).description
+                : core?.def.description) && (
+                <p className="text-muted-foreground">
+                  {abilitySelection
+                    ? abilityDef(abilitySelection).description
+                    : core?.def.description}
+                </p>
               )}
               {abilities.map((a) => (
-                <div
+                <button
                   key={a.name}
-                  className="flex items-center justify-between gap-2 border-b border-border/60 py-1"
+                  type="button"
+                  onClick={() => {
+                    setSelectedAbility(a.name);
+                    abilityCtx?.selectAbility(a.def.key, {
+                      rank: clampDbAbilityLevel(a.level),
+                      entityId: e.id,
+                      seriesId: season?.seriesId ?? null,
+                      seasonNumber: season?.n ?? null,
+                      triggerImpact: true,
+                    });
+                    triggerAnimeActionCut({
+                      color: a.def.color,
+                      label: a.def.label,
+                      intensity: a.def.tier === "Mythic" || a.level === 5 ? "heavy" : "normal",
+                    });
+                  }}
+                  className={`flex w-full items-center justify-between gap-2 border-b border-border/60 py-1 text-left transition ${
+                    abilitySelection === a.name ? "text-accent" : "hover:text-accent"
+                  }`}
                 >
                   <span className="min-w-0 truncate">{a.def.label}</span>
                   <AbilityRankPips rank={a.level} compact showLabel />
-                </div>
+                </button>
               ))}
+              {abilityProgression.some((g) => g.steps.length > 1) && (
+                <div className="pt-2">
+                  <p className="mb-1 text-[9px] uppercase tracking-[0.25em] text-muted-foreground">
+                    Season evolution
+                  </p>
+                  <div className="space-y-1">
+                    {abilityProgression
+                      .filter((g) => g.steps.length > 1)
+                      .map((g) => {
+                        const def = abilityDef(g.displayKey);
+                        return (
+                          <div key={g.canonKey} className="text-[11px] text-muted-foreground">
+                            <span className="font-medium text-foreground">{def.label}: </span>
+                            {g.steps
+                              .map(
+                                (st) =>
+                                  `${st.seriesId ? st.seasonLabel : "Base"} ${abilityRankMeta(st.level).roman}`,
+                              )
+                              .join(" → ")}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>

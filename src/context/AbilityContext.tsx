@@ -44,6 +44,16 @@ export interface AbilitySeasonStep {
   note?: string | undefined;
 }
 
+export interface ActiveCharacterAbility {
+  abilityKey: string;
+  canonKey: string;
+  def: AbilityDef;
+  rank: AbilityEmblemRank;
+  seriesId: string | null;
+  seasonNumber: number | null;
+  steps: AbilitySeasonStep[];
+}
+
 export interface AbilityImpactState {
   id: number;
   active: boolean;
@@ -67,10 +77,13 @@ export interface AbilityContextValue {
   selectedSeasonNumber: number | null;
   boosted: boolean;
   fps: 24 | 30 | 60;
+  performanceMode: boolean;
   hubAbilities: AbilityDef[];
   holdersMap: Map<string, Entity[]>;
   canonNamesMap: Map<string, string[]>;
   assignments: CharacterAbilityAssignment[];
+  activeCharacterAbilities: ActiveCharacterAbility[];
+  characterAbilityRankMap: Map<string, AbilityEmblemRank>;
   selectedProgression: AbilitySeasonStep[];
   abilityImpact: AbilityImpactState | null;
   selectAbility: (
@@ -84,6 +97,12 @@ export interface AbilityContextValue {
     },
   ) => void;
   setRank: (rank: AbilityEmblemRank, opts?: { triggerImpact?: boolean | undefined }) => void;
+  setCharacterAbilityRank: (
+    key: string,
+    rank: AbilityEmblemRank,
+    opts?: { triggerImpact?: boolean | undefined },
+  ) => void;
+  getActiveAbilityRank: (key: string) => AbilityEmblemRank | undefined;
   selectWielder: (
     entityId: string | null,
     scope?: { seriesId?: string | null | undefined; seasonNumber?: number | null | undefined },
@@ -91,6 +110,7 @@ export interface AbilityContextValue {
   setSeasonScope: (seriesId: string | null, seasonNumber: number | null) => void;
   setBoosted: (next: boolean | ((prev: boolean) => boolean)) => void;
   setFps: (fps: 24 | 30 | 60) => void;
+  setPerformanceMode: (next: boolean | ((prev: boolean) => boolean)) => void;
   triggerAbilityImpact: (overrides?: {
     abilityKey?: string | undefined;
     rank?: AbilityEmblemRank | undefined;
@@ -108,8 +128,54 @@ export interface AbilityContextValue {
   getCharacterSeasonProgression: (entityId: string, key: string) => AbilitySeasonStep[];
 }
 
+export interface PerformanceFxCaps {
+  /** Preserved semantic progression rank (1-5) for colors, milestone bezels, and apex badges. */
+  visualRank: AbilityEmblemRank;
+  /** Complexity budget rank capped at 3 for Ranks 4-5 when performanceMode is active. */
+  complexityRank: AbilityEmblemRank;
+  /** DevicePixelRatio cap (1 in performanceMode, 2 otherwise). */
+  maxDpr: number;
+  /** Target frame rate ceiling (24 in performanceMode, 60 otherwise). */
+  maxFps: number;
+  /** Effective recipe power ceiling (5 in performanceMode, 8 otherwise). */
+  maxPower: number;
+}
+
+export function resolvePerformanceFxCaps(
+  rank: AbilityEmblemRank,
+  performanceMode: boolean,
+): PerformanceFxCaps {
+  if (!performanceMode) {
+    return {
+      visualRank: rank,
+      complexityRank: rank,
+      maxDpr: 2,
+      maxFps: 60,
+      maxPower: 8,
+    };
+  }
+  return {
+    visualRank: rank,
+    complexityRank: (rank > 3 ? 3 : rank) as AbilityEmblemRank,
+    maxDpr: 1,
+    maxFps: 24,
+    maxPower: 5,
+  };
+}
+
 export const CHARACTER_ABILITIES_ALL_QK = ["character-abilities"] as const;
+export const ABILITY_PERFORMANCE_STORAGE_KEY = "scu-ability-performance-mode";
 const IMPACT_DURATION_MS = 1400;
+
+function readInitialPerformanceMode(explicit?: boolean): boolean {
+  if (explicit !== undefined) return explicit;
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(ABILITY_PERFORMANCE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export function isHighTierAbility(tier: AbilityTier, rank: AbilityEmblemRank): boolean {
   return tier === "Mythic" || tier === "Legendary" || rank >= 4;
@@ -120,9 +186,11 @@ const AbilityContext = createContext<AbilityContextValue | null>(null);
 export function AbilityProvider({
   children,
   initialAbility = "red_lightning",
+  initialPerformanceMode,
 }: {
   children: ReactNode;
   initialAbility?: string | undefined;
+  initialPerformanceMode?: boolean | undefined;
 }) {
   const hubAbilities = useAllHubAbilities();
   const { holdersMap, canonNamesMap } = useAbilityHolders();
@@ -150,7 +218,25 @@ export function AbilityProvider({
   const [selectedSeasonNumber, setSelectedSeasonNumber] = useState<number | null>(null);
   const [boosted, setBoosted] = useState<boolean>(false);
   const [fps, setFps] = useState<24 | 30 | 60>(30);
+  const [performanceMode, setPerformanceModeState] = useState<boolean>(() =>
+    readInitialPerformanceMode(initialPerformanceMode),
+  );
   const [abilityImpact, setAbilityImpact] = useState<AbilityImpactState | null>(null);
+
+  const setPerformanceMode = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    setPerformanceModeState((prev) => {
+      const resolved = typeof next === "function" ? next(prev) : next;
+      try {
+        window.localStorage.setItem(ABILITY_PERFORMANCE_STORAGE_KEY, resolved ? "1" : "0");
+      } catch {
+        // ignore storage unavailability
+      }
+      return resolved;
+    });
+  }, []);
+  const [sessionRankOverrides, setSessionRankOverrides] = useState<
+    Record<string, AbilityEmblemRank>
+  >({});
 
   const impactTimerRef = useRef<number | null>(null);
   const impactSeqRef = useRef(0);
@@ -179,6 +265,19 @@ export function AbilityProvider({
     [seriesList],
   );
 
+  const makeOverrideScopeKey = useCallback(
+    (
+      entityId: string | null,
+      key: string,
+      seriesId: string | null,
+      seasonNumber: number | null,
+    ) => {
+      const canon = resolveAbilityAliasPure(abilityDef(key).key);
+      return `${entityId ?? "global"}::${canon}::${seriesId ?? "all"}::${seasonNumber ?? "all"}`;
+    },
+    [],
+  );
+
   const resolveCharacterRank = useCallback(
     (
       entityId: string,
@@ -186,6 +285,11 @@ export function AbilityProvider({
       seriesId?: string | null,
       seasonNumber?: number | null,
     ): AbilityEmblemRank | undefined => {
+      const scopedOverride =
+        sessionRankOverrides[
+          makeOverrideScopeKey(entityId, key, seriesId ?? null, seasonNumber ?? null)
+        ];
+      if (scopedOverride) return scopedOverride;
       const rows = assignments.filter((r) => r.entity_id === entityId);
       if (!rows.length) return undefined;
       const map = buildAbilityRankMap(rows, {
@@ -194,7 +298,7 @@ export function AbilityProvider({
       });
       return resolveAssignedAbilityRank(key, map);
     },
-    [assignments],
+    [assignments, sessionRankOverrides, makeOverrideScopeKey],
   );
 
   const getCharacterSeasonProgression = useCallback(
@@ -202,9 +306,7 @@ export function AbilityProvider({
       const targetCanon = resolveAbilityAliasPure(abilityDef(key).key);
       return assignments
         .filter(
-          (r) =>
-            r.entity_id === entityId &&
-            resolveAbilityAliasPure(r.ability_key) === targetCanon,
+          (r) => r.entity_id === entityId && resolveAbilityAliasPure(r.ability_key) === targetCanon,
         )
         .map((r) => ({
           id: r.id,
@@ -243,9 +345,125 @@ export function AbilityProvider({
   }, [selectedEntityId, holdersMap, activeDef.key]);
 
   const selectedProgression = useMemo(
-    () =>
-      selectedEntityId ? getCharacterSeasonProgression(selectedEntityId, activeDef.key) : [],
+    () => (selectedEntityId ? getCharacterSeasonProgression(selectedEntityId, activeDef.key) : []),
     [selectedEntityId, activeDef.key, getCharacterSeasonProgression],
+  );
+
+  const activeCharacterAbilities = useMemo<ActiveCharacterAbility[]>(() => {
+    const byCanon = new Map<string, ActiveCharacterAbility>();
+
+    if (selectedEntityId) {
+      const charRows = assignments.filter((r) => r.entity_id === selectedEntityId);
+      const seenKeys = new Map<string, string>();
+      for (const row of charRows) {
+        const resolvedDef = abilityDef(row.ability_key);
+        const canon = resolveAbilityAliasPure(resolvedDef.key);
+        if (!seenKeys.has(canon)) {
+          seenKeys.set(canon, resolvedDef.key);
+        }
+      }
+      for (const [canon, repKey] of seenKeys.entries()) {
+        const defObj = abilityDef(repKey);
+        const steps = getCharacterSeasonProgression(selectedEntityId, repKey);
+        const lastStep = steps.length ? steps[steps.length - 1] : undefined;
+        const scopedRank =
+          resolveCharacterRank(selectedEntityId, repKey, selectedSeriesId, selectedSeasonNumber) ??
+          lastStep?.level ??
+          tierToIntrinsicRank(defObj.tier);
+        byCanon.set(canon, {
+          abilityKey: defObj.key,
+          canonKey: canon,
+          def: defObj,
+          rank: scopedRank,
+          seriesId: selectedSeriesId ?? lastStep?.seriesId ?? null,
+          seasonNumber: selectedSeasonNumber ?? lastStep?.seasonNumber ?? null,
+          steps,
+        });
+      }
+    }
+
+    // Include any runtime rank overrides tracked for the active context/character
+    const activeCanon = resolveAbilityAliasPure(activeDef.key);
+    const activeOverrideRank =
+      sessionRankOverrides[
+        makeOverrideScopeKey(
+          selectedEntityId,
+          activeDef.key,
+          selectedSeriesId,
+          selectedSeasonNumber,
+        )
+      ];
+    const effectiveActiveRank = activeOverrideRank ?? rank;
+    const existingActive = byCanon.get(activeCanon);
+    if (existingActive) {
+      byCanon.set(activeCanon, {
+        ...existingActive,
+        rank: effectiveActiveRank,
+      });
+    } else if (selectedEntityId || rank !== tierToIntrinsicRank(activeDef.tier)) {
+      byCanon.set(activeCanon, {
+        abilityKey: activeDef.key,
+        canonKey: activeCanon,
+        def: activeDef,
+        rank: effectiveActiveRank,
+        seriesId: selectedSeriesId,
+        seasonNumber: selectedSeasonNumber,
+        steps: selectedProgression,
+      });
+    }
+
+    return [...byCanon.values()];
+  }, [
+    selectedEntityId,
+    assignments,
+    getCharacterSeasonProgression,
+    resolveCharacterRank,
+    selectedSeriesId,
+    selectedSeasonNumber,
+    activeDef,
+    rank,
+    selectedProgression,
+    sessionRankOverrides,
+    makeOverrideScopeKey,
+  ]);
+
+  const characterAbilityRankMap = useMemo(() => {
+    const map = new Map<string, AbilityEmblemRank>();
+    for (const item of activeCharacterAbilities) {
+      map.set(item.canonKey, item.rank);
+    }
+    map.set(resolveAbilityAliasPure(activeDef.key), rank);
+    return map;
+  }, [activeCharacterAbilities, activeDef.key, rank]);
+
+  const getActiveAbilityRank = useCallback(
+    (key: string): AbilityEmblemRank | undefined => {
+      const targetDef = abilityDef(key);
+      const canon = resolveAbilityAliasPure(targetDef.key);
+      if (targetDef.key === activeDef.key || canon === resolveAbilityAliasPure(activeDef.key)) {
+        return rank;
+      }
+      const tracked = characterAbilityRankMap.get(canon);
+      if (tracked) return tracked;
+      if (selectedEntityId) {
+        return resolveCharacterRank(
+          selectedEntityId,
+          targetDef.key,
+          selectedSeriesId,
+          selectedSeasonNumber,
+        );
+      }
+      return undefined;
+    },
+    [
+      activeDef.key,
+      rank,
+      characterAbilityRankMap,
+      selectedEntityId,
+      resolveCharacterRank,
+      selectedSeriesId,
+      selectedSeasonNumber,
+    ],
   );
 
   const triggerAbilityImpact = useCallback(
@@ -337,8 +555,9 @@ export function AbilityProvider({
 
       if (opts?.triggerImpact !== false && isHighTierAbility(nextDef.tier, nextRank)) {
         const holderName = resolvedEntityId
-          ? (holdersMap.get(normalizeAbilityKey(nextDef.key))?.find((h) => h.id === resolvedEntityId)
-              ?.name ?? undefined)
+          ? (holdersMap
+              .get(normalizeAbilityKey(nextDef.key))
+              ?.find((h) => h.id === resolvedEntityId)?.name ?? undefined)
           : undefined;
         triggerAbilityImpact({
           abilityKey: nextDef.key,
@@ -363,6 +582,15 @@ export function AbilityProvider({
     (nextRank: AbilityEmblemRank, opts?: { triggerImpact?: boolean | undefined }) => {
       const clamped = clampDbAbilityLevel(nextRank);
       setRankState(clamped);
+      const scopeKey = makeOverrideScopeKey(
+        selectedEntityId,
+        abilityKey,
+        selectedSeriesId,
+        selectedSeasonNumber,
+      );
+      setSessionRankOverrides((prev) =>
+        prev[scopeKey] === clamped ? prev : { ...prev, [scopeKey]: clamped },
+      );
       if (opts?.triggerImpact || clamped >= 4) {
         triggerAbilityImpact({
           abilityKey,
@@ -372,7 +600,56 @@ export function AbilityProvider({
         });
       }
     },
-    [abilityKey, triggerAbilityImpact],
+    [
+      abilityKey,
+      selectedEntityId,
+      selectedSeriesId,
+      selectedSeasonNumber,
+      makeOverrideScopeKey,
+      triggerAbilityImpact,
+    ],
+  );
+
+  const setCharacterAbilityRank = useCallback(
+    (
+      targetKey: string,
+      nextRank: AbilityEmblemRank,
+      opts?: { triggerImpact?: boolean | undefined },
+    ) => {
+      const resolvedDef = abilityDef(targetKey);
+      const clamped = clampDbAbilityLevel(nextRank);
+      const scopeKey = makeOverrideScopeKey(
+        selectedEntityId,
+        resolvedDef.key,
+        selectedSeriesId,
+        selectedSeasonNumber,
+      );
+      setSessionRankOverrides((prev) =>
+        prev[scopeKey] === clamped ? prev : { ...prev, [scopeKey]: clamped },
+      );
+      if (
+        resolvedDef.key === activeDef.key ||
+        resolveAbilityAliasPure(resolvedDef.key) === resolveAbilityAliasPure(activeDef.key)
+      ) {
+        setRankState(clamped);
+      }
+      if (opts?.triggerImpact || clamped >= 4) {
+        triggerAbilityImpact({
+          abilityKey: resolvedDef.key,
+          rank: clamped,
+          force: opts?.triggerImpact || clamped >= 4,
+          reason: opts?.triggerImpact ? "manual" : "high-tier",
+        });
+      }
+    },
+    [
+      activeDef.key,
+      selectedEntityId,
+      selectedSeriesId,
+      selectedSeasonNumber,
+      makeOverrideScopeKey,
+      triggerAbilityImpact,
+    ],
   );
 
   const selectWielder = useCallback(
@@ -463,18 +740,24 @@ export function AbilityProvider({
       selectedSeasonNumber,
       boosted,
       fps,
+      performanceMode,
       hubAbilities,
       holdersMap,
       canonNamesMap,
       assignments,
+      activeCharacterAbilities,
+      characterAbilityRankMap,
       selectedProgression,
       abilityImpact,
       selectAbility,
       setRank,
+      setCharacterAbilityRank,
+      getActiveAbilityRank,
       selectWielder,
       setSeasonScope,
       setBoosted,
       setFps,
+      setPerformanceMode,
       triggerAbilityImpact,
       clearAbilityImpact,
       resolveCharacterRank,
@@ -490,18 +773,24 @@ export function AbilityProvider({
       selectedSeasonNumber,
       boosted,
       fps,
+      performanceMode,
       hubAbilities,
       holdersMap,
       canonNamesMap,
       assignments,
+      activeCharacterAbilities,
+      characterAbilityRankMap,
       selectedProgression,
       abilityImpact,
       selectAbility,
       setRank,
+      setCharacterAbilityRank,
+      getActiveAbilityRank,
       selectWielder,
       setSeasonScope,
       setBoosted,
       setFps,
+      setPerformanceMode,
       triggerAbilityImpact,
       clearAbilityImpact,
       resolveCharacterRank,

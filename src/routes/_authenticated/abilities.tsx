@@ -48,7 +48,9 @@ import {
 import { hydrateAbilityRegistry, useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityBadge } from "@/components/ability-badge";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { AbilityRankProgressionStrip } from "@/components/ability-rank-emblem";
 import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
+import { AbilityHoldersChips } from "@/components/ability-holders-chips";
 import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
 import {
   ABILITY_RANKS,
@@ -56,6 +58,7 @@ import {
   tierToIntrinsicRank,
   type AbilityEmblemRank,
 } from "@/lib/ability-rank";
+import { useOptionalAbilityContext } from "@/context/AbilityContext";
 // Route skeletons imported at top for lazy Suspense fallback
 import { sfx } from "@/lib/scu-audio";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
@@ -173,6 +176,7 @@ function AbilitiesHub() {
   const nexus = !isManga && uiStyle === "nexus";
   const isAdmin = useIsAdmin();
   const holdersMasked = useSpoilerMask("abilities");
+  const abilityCtx = useOptionalAbilityContext();
   const qc = useQueryClient();
   const { data: entities, isLoading } = useQuery(entitiesQuery([...ALL_KINDS]));
   const [q, setQ] = useState("");
@@ -237,7 +241,13 @@ function AbilitiesHub() {
     () =>
       defs.filter((d) => {
         if (tier !== "all" && d.tier !== tier) return false;
-        if (rankFilter !== 0 && tierToIntrinsicRank(d.tier) !== rankFilter) return false;
+        if (rankFilter !== 0) {
+          const intrinsicMatches = tierToIntrinsicRank(d.tier) === rankFilter;
+          const holderMatches = (holders.get(d.key) ?? []).some(
+            (e) => abilityCtx?.resolveCharacterRank(e.id, d.key) === rankFilter,
+          );
+          if (!intrinsicMatches && !holderMatches) return false;
+        }
         if (!needle) return true;
         return (
           d.label.toLowerCase().includes(needle) ||
@@ -247,7 +257,7 @@ function AbilitiesHub() {
             (holders.get(d.key) ?? []).some((e) => e.name.toLowerCase().includes(needle)))
         );
       }),
-    [defs, tier, rankFilter, needle, holders, holdersMasked],
+    [defs, tier, rankFilter, needle, holders, holdersMasked, abilityCtx],
   );
 
   const byTier = useMemo(() => {
@@ -563,11 +573,19 @@ function AbilitiesHub() {
                       key={d.key}
                       index={idx}
                       def={d}
+                      previewRank={rankFilter !== 0 ? rankFilter : undefined}
                       holders={holders.get(d.key) ?? []}
                       open={openKey === d.key}
                       onToggle={() => {
                         sfx.click();
-                        setOpenKey(openKey === d.key ? null : d.key);
+                        const nextOpen = openKey === d.key ? null : d.key;
+                        setOpenKey(nextOpen);
+                        if (nextOpen) {
+                          abilityCtx?.selectAbility(d.key, {
+                            rank: rankFilter !== 0 ? rankFilter : tierToIntrinsicRank(d.tier),
+                            triggerImpact: false,
+                          });
+                        }
                       }}
                       isAdmin={isAdmin}
                       isCustom={customKeys.has(d.key)}
@@ -607,6 +625,7 @@ function tierColor(t: AbilityTier): string {
 const AbilityCard = memo(function AbilityCard({
   index = 0,
   def,
+  previewRank,
   holders,
   open,
   onToggle,
@@ -617,6 +636,7 @@ const AbilityCard = memo(function AbilityCard({
 }: {
   index?: number;
   def: AbilityDef;
+  previewRank?: AbilityEmblemRank | undefined;
   holders: Entity[];
   open: boolean;
   onToggle: () => void;
@@ -625,6 +645,7 @@ const AbilityCard = memo(function AbilityCard({
   onDeleteCustom: () => void;
   onEdit: () => void;
 }) {
+  const abilityCtx = useOptionalAbilityContext();
   const isManga = useIsManga();
   const activeGenre = useActiveGenre();
   const themeCtx = useOptionalThemeContext();
@@ -638,6 +659,7 @@ const AbilityCard = memo(function AbilityCard({
   const nexus = !isManga && uiStyle === "nexus";
   const Icon = def.icon;
   const intrinsicRank = tierToIntrinsicRank(def.tier);
+  const displayRank = previewRank ?? intrinsicRank;
   const customEmblem = !nexus
     ? resolveCustomAbilityEmblem(`${def.key} ${def.label}`, def.description)
     : null;
@@ -686,11 +708,11 @@ const AbilityCard = memo(function AbilityCard({
               name={def.key}
               label={def.label}
               description={def.description}
-              rank={intrinsicRank}
+              rank={displayRank}
               className="h-10 w-10"
             />
           ) : customEmblem ? (
-            <AbilityCustomEmblem kind={customEmblem} className="h-5 w-5" />
+            <AbilityCustomEmblem kind={customEmblem} rank={displayRank} className="h-5 w-5" />
           ) : (
             <Icon className="h-5 w-5" />
           )}
@@ -737,7 +759,7 @@ const AbilityCard = memo(function AbilityCard({
             <span>
               {holders.length} {holders.length === 1 ? "holder" : "holders"}
             </span>
-            <AbilityRankPips rank={intrinsicRank} showLabel compact className="ml-auto" />
+            <AbilityRankPips rank={displayRank} showLabel compact className="ml-auto" />
           </span>
         </span>
       </button>
@@ -765,30 +787,66 @@ const AbilityCard = memo(function AbilityCard({
                 Holder names are hidden to avoid spoilers.
               </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {holders.map((e) => (
-                  <Link
-                    key={e.id}
-                    to="/reader"
-                    search={{ e: e.id }}
-                    className={
-                      isManga
-                        ? "border border-border bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-primary hover:text-primary-foreground"
-                        : "rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs hover:border-accent hover:text-accent"
-                    }
-                  >
-                    {e.name}
-                  </Link>
-                ))}
+              <div className="space-y-2">
+                <AbilityHoldersChips abilityKey={def.key} />
+                <div className="flex flex-wrap gap-1.5">
+                  {holders.map((e) => {
+                    const holderRank = abilityCtx?.resolveCharacterRank(e.id, def.key);
+                    return (
+                      <Link
+                        key={e.id}
+                        to="/character"
+                        search={{ e: e.id }}
+                        className={
+                          isManga
+                            ? "border border-border bg-background px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase hover:bg-primary hover:text-primary-foreground"
+                            : "inline-flex items-center gap-1 rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs hover:border-accent hover:text-accent"
+                        }
+                      >
+                        <span>{e.name}</span>
+                        {holderRank && (
+                          <span className="font-mono text-[10px] text-accent">
+                            Lv.{abilityRankMeta(holderRank).roman}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             )}
+            <div className="mt-3 border-t border-border/50 pt-2.5">
+              <p className="mb-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+                Rank progression (I–V)
+              </p>
+              <AbilityRankProgressionStrip ability={def.key} currentRank={displayRank} size="xs" />
+            </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <Link
                 to="/abilities"
                 search={{ tab: "fx", ability: def.key }}
+                onClick={() =>
+                  abilityCtx?.selectAbility(def.key, {
+                    rank: displayRank,
+                    triggerImpact: false,
+                  })
+                }
                 className="flex items-center gap-1 text-[11px] font-medium text-accent hover:underline"
               >
                 <Flame className="h-3 w-3" /> Inspect in Ability FX →
+              </Link>
+              <Link
+                to="/abilities"
+                search={{ tab: "action", ability: def.key }}
+                onClick={() =>
+                  abilityCtx?.selectAbility(def.key, {
+                    rank: displayRank,
+                    triggerImpact: false,
+                  })
+                }
+                className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-accent hover:underline"
+              >
+                <Swords className="h-3 w-3" /> Ability in Action →
               </Link>
               {isAdmin && (
                 <>
@@ -1075,23 +1133,30 @@ function NexusAbilityHero({
   }[];
 }) {
   const moving = useNexusMotion();
-  const members = defs.map((def) => ({
-    id: def.key,
-    title: def.label,
-    group: TIER_LABELS[def.tier],
-    icon: (
-      <span className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-border">
-        <AbilityFxCanvas recipe={abilityFxRecipe(def.key)} label={`${def.label} animation`} />
-        <NexusAbilitySymbol
-          name={def.key}
-          label={def.label}
-          description={def.description}
-          rank={tierToIntrinsicRank(def.tier)}
-          className="relative h-10 w-10 opacity-90"
-        />
-      </span>
-    ),
-  }));
+  const members = defs.map((def) => {
+    const rank = tierToIntrinsicRank(def.tier);
+    return {
+      id: def.key,
+      title: def.label,
+      group: TIER_LABELS[def.tier],
+      icon: (
+        <span className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-border">
+          <AbilityFxCanvas
+            recipe={abilityFxRecipe(def.key, rank)}
+            rank={rank}
+            label={`${def.label} animation`}
+          />
+          <NexusAbilitySymbol
+            name={def.key}
+            label={def.label}
+            description={def.description}
+            rank={rank}
+            className="relative h-10 w-10 opacity-90"
+          />
+        </span>
+      ),
+    };
+  });
   return (
     <section
       aria-label="Ability showcase"

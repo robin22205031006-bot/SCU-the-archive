@@ -13,15 +13,27 @@ export interface PF {
   rnd: (i: number) => number;
   step: number;
   rank?: AbilityEmblemRank | undefined;
+  complexityRank?: AbilityEmblemRank | undefined;
+  performanceMode?: boolean | undefined;
   impact?: number | undefined;
 }
-export function rankLevel(f: PF): AbilityEmblemRank {
+export function progressionRankLevel(f: PF): AbilityEmblemRank {
   if (f.rank && f.rank >= 1 && f.rank <= 5) return f.rank;
   if (f.p <= 2) return 1;
   if (f.p <= 4) return 2;
   if (f.p <= 5) return 3;
   if (f.p <= 6) return 4;
   return 5;
+}
+export function rankLevel(f: PF): AbilityEmblemRank {
+  const base = progressionRankLevel(f);
+  if (f.complexityRank && f.complexityRank >= 1 && f.complexityRank <= 5) {
+    return f.complexityRank;
+  }
+  if (f.performanceMode && base > 3) {
+    return 3;
+  }
+  return base;
 }
 const TAU = Math.PI * 2;
 const fr = (x: number) => x - Math.floor(x);
@@ -443,10 +455,7 @@ function transformation(f: PF, sp: Species) {
   const shaking = ph > 0.78 && ph < 0.95 && rk >= 3;
   c.save();
   if (shaking)
-    c.translate(
-      (rnd(f.step) - 0.5) * s * (0.008 + rk * 0.004),
-      (rnd(f.step + 9) - 0.5) * s * 0.01,
-    );
+    c.translate((rnd(f.step) - 0.5) * s * (0.008 + rk * 0.004), (rnd(f.step + 9) - 0.5) * s * 0.01);
   groundGlow(f, a, 0.4 + rk * 0.14);
   const vort = clamp(1 - Math.abs(ph - 0.35) / 0.16),
     manA = 1 - ease((ph - 0.27) / 0.14),
@@ -614,7 +623,7 @@ function snakes(f: PF) {
       pts.push([
         hx - q * s * 0.55,
         y0 + Math.sin(q * 9 - t * 5 + k) * s * 0.04 * (q + 0.2) - strike * s * 0.06 * (1 - q),
-        s * ((0.022 + rk * 0.002) - q * 0.018),
+        s * (0.022 + rk * 0.002 - q * 0.018),
       ]);
     }
     tube(c, pts, b === "#14532d" ? "#0a1a06" : b, a);
@@ -637,8 +646,10 @@ function dragon(f: PF) {
     const ang = -t * 1.4 + q * TAU * (0.9 + rk * 0.1);
     pts.push([
       Math.cos(ang) * s * (0.2 + rk * 0.015 + q * 0.1),
-      -s * 0.02 + Math.sin(ang) * s * (0.13 + rk * 0.01 + q * 0.06) + Math.sin(q * 12 + t * 3) * s * 0.01,
-      s * ((0.024 + rk * 0.003) - q * 0.02),
+      -s * 0.02 +
+        Math.sin(ang) * s * (0.13 + rk * 0.01 + q * 0.06) +
+        Math.sin(q * 12 + t * 3) * s * 0.01,
+      s * (0.024 + rk * 0.003 - q * 0.02),
     ]);
   }
   tube(c, pts, "#0b1408", b, a);
@@ -671,68 +682,170 @@ function dragon(f: PF) {
 }
 function beastCommand(f: PF) {
   const { c, s, t, r } = f;
+  const rk = rankLevel(f);
   const [a, , hi] = r.palette;
   const gy = s * GY;
-  groundGlow(f, a, 0.8);
+  groundGlow(f, a, 0.45 + rk * 0.14);
   const hd = humanoid(c, 0, gy - s * 0.12, s * 0.32, "#06050b", 0, 0.9);
   add(c);
-  glowDot(c, hd.hx, hd.hy, s * 0.06, a);
+  glowDot(c, hd.hx, hd.hy, s * (0.05 + rk * 0.012), a);
   norm(c);
-  const sp: Species[] = ["wolf", "tiger", "hyena"];
-  sp.forEach((k, i) => {
-    const off = (i - 1) * s * 0.26;
-    const roar = clamp(Math.sin(t * 1.2 + i * 2) * 3 - 2);
+  const pack: Species[] =
+    rk === 1
+      ? ["wolf"]
+      : rk === 2
+        ? ["wolf", "hyena"]
+        : rk >= 5
+          ? ["wolf", "tiger", "lion", "hyena"]
+          : ["wolf", "tiger", "hyena"];
+  pack.forEach((k, i) => {
+    const off = (i - (pack.length - 1) / 2) * s * (pack.length >= 4 ? 0.21 : 0.25);
+    const roar = clamp(Math.sin(t * 1.3 + i * 2) * 3 - 2);
     add(c);
-    glowDot(c, off + s * 0.03, gy - s * 0.08, s * 0.18, a, 0.3);
+    c.strokeStyle = rgba(hi, 0.28 + rk * 0.08);
+    c.lineWidth = 1.2 + rk * 0.25;
+    c.beginPath();
+    c.moveTo(hd.hx, hd.hy + s * 0.04);
+    c.quadraticCurveTo(off * 0.5, gy - s * 0.22, off + s * 0.02, gy - s * 0.06);
+    c.stroke();
+    glowDot(c, off + s * 0.02, gy - s * 0.08, s * (0.14 + rk * 0.02), a, 0.32 + rk * 0.05);
     norm(c);
-    quadruped(c, k, off + s * 0.03, gy + s * 0.02, s * 0.28, t * 6 + i, roar, "#15111c", a, hi, a);
+    quadruped(
+      c,
+      k,
+      off + s * 0.02,
+      gy + s * 0.02,
+      s * (0.24 + rk * 0.02),
+      t * 6 + i,
+      roar,
+      "#15111c",
+      a,
+      hi,
+      a,
+    );
+    if (roar > 0.2 && rk >= 3) {
+      roarWaves(c, off + s * 0.08, gy - s * 0.12, s * 0.65, t, hi, roar, rk);
+    }
   });
 }
 function mimicForm(f: PF) {
   const { c, s, t, r } = f;
+  const rk = rankLevel(f);
   const [a, b, hi] = r.palette;
   const gy = s * GY;
-  groundGlow(f, a, 0.9);
+  groundGlow(f, a, 0.55 + rk * 0.12);
   const forms: Species[] = ["wolf", "tiger", "lion", "hyena"];
-  const idx = Math.floor(t * 1.8);
+  const idx = Math.floor(t * (1.4 + rk * 0.2));
   const cur = forms[idx % 4]!;
   const next = forms[(idx + 1) % 4]!;
-  const blend = ease(fr(t * 1.8));
+  const blend = ease(fr(t * (1.4 + rk * 0.2)));
   add(c);
-  glowDot(c, 0, gy - s * 0.18, s * 0.34, a, 0.45);
+  glowDot(c, 0, gy - s * 0.18, s * (0.26 + rk * 0.035), a, 0.36 + rk * 0.06);
   norm(c);
+  const bodySize = s * (0.46 + rk * 0.03);
   c.globalAlpha = (1 - blend) * 0.55;
-  quadruped(c, cur, s * 0.06, gy, s * 0.54, t * 7, 0.4, "#15111c", a, hi, b);
+  quadruped(c, cur, s * 0.06, gy, bodySize, t * 7, 0.4, "#15111c", a, hi, b);
   c.globalAlpha = 0.45 + 0.55 * blend;
-  quadruped(c, next, s * 0.08, gy, s * 0.58, t * 7.5, 0.75 * blend, "#1c1208", hi, hi, a);
+  quadruped(c, next, s * 0.08, gy, bodySize * 1.06, t * 7.5, 0.75 * blend, "#1c1208", hi, hi, a);
   c.globalAlpha = 1;
-  // Morphing adaptive claw-rake streaks
+  // Morphing adaptive claw-rake streaks scaled by Rank 1..5
   add(c);
-  const k = fr(t * 1.8);
-  for (let i = 0; i < 3; i++) {
-    const off = (i - 1) * s * 0.08;
+  const k = fr(t * (1.4 + rk * 0.2));
+  const streaks = 1 + rk;
+  for (let i = 0; i < streaks; i++) {
+    const off = (i - (streaks - 1) / 2) * s * 0.055;
     c.strokeStyle = rgba(i % 2 ? hi : a, 1 - k * 0.7);
-    c.lineWidth = 4 - i * 0.6;
+    c.lineWidth = Math.max(1.5, 3.8 - i * 0.4);
     c.beginPath();
-    c.arc(s * 0.04, gy - s * 0.24 + off, s * 0.24, -0.7, -0.7 + Math.min(1, k * 2) * 1.5);
+    c.arc(
+      s * 0.04,
+      gy - s * 0.24 + off,
+      s * (0.2 + rk * 0.018),
+      -0.7,
+      -0.7 + Math.min(1, k * 2) * 1.5,
+    );
     c.stroke();
   }
   norm(c);
 }
 function beast(f: PF) {
+  const rk = rankLevel(f);
+  const { c, s, t, r } = f;
+  const [a, , hi] = r.palette;
+  const gy = s * GY;
   switch (f.v) {
     case 0:
       return beastCommand(f);
     case 1: {
       const sp: Species[] = ["wolf", "tiger", "lion", "hyena"];
-      return transformation(f, sp[Math.floor(f.t * 0.2) % 4]!);
+      return transformation(f, sp[Math.floor(t * 0.2) % 4]!);
     }
-    case 2:
-      return transformation(f, "wolf");
-    case 3:
-      return transformation(f, "tiger");
-    case 4:
-      return transformation(f, "lion");
+    case 2: {
+      transformation(f, "wolf");
+      // Wolf: moonlit triple claw slash arc
+      const k = fr(t * 1.1);
+      if (k < 0.7) {
+        add(c);
+        const slashes = 2 + Math.min(3, Math.ceil(rk / 2));
+        for (let i = 0; i < slashes; i++) {
+          c.strokeStyle = rgba(i % 2 ? hi : a, (1 - k / 0.7) * 0.88);
+          c.lineWidth = 2.2 + rk * 0.35;
+          c.beginPath();
+          c.arc(
+            s * 0.05,
+            gy - s * 0.24 + (i - 1) * s * 0.045,
+            s * (0.18 + rk * 0.02),
+            -0.9,
+            -0.9 + Math.min(1, k * 2.5) * 1.65,
+          );
+          c.stroke();
+        }
+        norm(c);
+      }
+      return;
+    }
+    case 3: {
+      transformation(f, "tiger");
+      // Tiger: diagonal striped rake streaks
+      const k = fr(t * 1.3);
+      if (k < 0.75) {
+        add(c);
+        const stripes = 2 + rk;
+        for (let i = 0; i < stripes; i++) {
+          const sx = -s * 0.14 + i * s * 0.065;
+          c.strokeStyle = rgba(i % 2 ? hi : a, (1 - k / 0.75) * 0.85);
+          c.lineWidth = 2.5 + rk * 0.4;
+          c.beginPath();
+          c.moveTo(sx, gy - s * 0.34);
+          c.lineTo(sx + s * 0.18 * ease(k * 1.6), gy - s * 0.08 * ease(k * 1.6));
+          c.stroke();
+        }
+        norm(c);
+      }
+      return;
+    }
+    case 4: {
+      transformation(f, "lion");
+      // Lion: blazing solar mane corona
+      add(c);
+      const rays = 6 + rk * 3;
+      const cx = s * 0.06;
+      const cy = gy - s * 0.24;
+      for (let i = 0; i < rays; i++) {
+        const ang = t * 0.6 + (i / rays) * TAU;
+        c.strokeStyle = rgba(i % 2 ? hi : a, 0.48 + rk * 0.07);
+        c.lineWidth = 2 + rk * 0.3;
+        c.beginPath();
+        c.moveTo(cx + Math.cos(ang) * s * 0.12, cy + Math.sin(ang) * s * 0.12);
+        c.lineTo(
+          cx + Math.cos(ang) * s * (0.22 + rk * 0.03),
+          cy + Math.sin(ang) * s * (0.22 + rk * 0.03),
+        );
+        c.stroke();
+      }
+      norm(c);
+      return;
+    }
     case 5:
       return dragon(f);
     case 6:
@@ -744,15 +857,14 @@ function beast(f: PF) {
     default: {
       const sp = (["wolf", "tiger", "lion", "hyena"] as Species[])[f.v % 4]!;
       transformation(f, sp);
-      const { c, s, t, r, v } = f;
-      const ringCount = 1 + (v % 3);
+      const ringCount = 1 + (f.v % 3);
       add(c);
       for (let i = 0; i < ringCount; i++) {
-        const ang = t * (1.2 + i * 0.4) + (v % 7);
-        c.strokeStyle = rgba(i % 2 ? r.palette[2] : r.palette[0], 0.6);
+        const ang = t * (1.2 + i * 0.4) + (f.v % 7);
+        c.strokeStyle = rgba(i % 2 ? hi : a, 0.6);
         c.lineWidth = 2;
         c.beginPath();
-        c.arc(0, s * GY - s * (0.14 + i * 0.06), s * (0.24 + (v % 5) * 0.02), ang, ang + 1.4);
+        c.arc(0, gy - s * (0.14 + i * 0.06), s * (0.24 + (f.v % 5) * 0.02), ang, ang + 1.4);
         c.stroke();
       }
       norm(c);
@@ -1085,9 +1197,27 @@ function lightning(f: PF) {
     flick = rnd(step) > 0.28;
   switch (v) {
     case 0: {
-      stormCloud(f, a, on && flick ? 0.6 + rk * 0.1 : 0);
-      groundGlow(f, a, on ? 0.5 + rk * 0.13 : 0.25);
-      if (on && flick) {
+      const striking = on && flick;
+      stormCloud(f, a, striking ? 0.65 + rk * 0.09 : 0.2 + rk * 0.04);
+      groundGlow(f, a, striking ? 0.55 + rk * 0.12 : 0.28 + rk * 0.05);
+      // Baseline ambient static crackle so static/paused frames always read as lightning
+      const staticArcs = Math.max(1, Math.ceil(rk / 2));
+      for (let i = 0; i < staticArcs; i++) {
+        const sx = (rnd(step + i * 19) - 0.5) * s * 0.42;
+        strike(
+          f,
+          sx,
+          -s * 0.36,
+          sx + (rnd(step + i * 29) - 0.5) * s * 0.18,
+          gy - s * 0.08,
+          0.7 + rk * 0.15,
+          { glow: a, mid: a, core: hi },
+          step * 7 + i * 41,
+          rk >= 3 ? 1 : 0,
+          s * 0.06,
+        );
+      }
+      if (striking) {
         const boltCount = rk >= 4 ? 2 : 1;
         for (let bIdx = 0; bIdx < boltCount; bIdx++) {
           const sx = (rnd(Math.floor(t * 0.9) + bIdx * 13) - 0.5) * s * 0.34;
@@ -1097,7 +1227,7 @@ function lightning(f: PF) {
             -s * 0.38,
             (bIdx - (boltCount - 1) / 2) * s * 0.1,
             gy,
-            1.4 + rk * 0.3,
+            1.4 + rk * 0.32,
             cols,
             step * 17 + bIdx * 53,
             1 + rk,
@@ -2051,15 +2181,7 @@ function nature(f: PF) {
   add(c);
   glowDot(c, 0, gy - s * 0.12, s * (0.2 + rk * 0.03), a, 0.5);
   norm(c);
-  lotus(
-    c,
-    0,
-    gy - s * 0.02,
-    s * ((v === 0 ? 0.2 : 0.14) + rk * 0.018),
-    ease(ph * 2),
-    a,
-    hi,
-  );
+  lotus(c, 0, gy - s * 0.02, s * ((v === 0 ? 0.2 : 0.14) + rk * 0.018), ease(ph * 2), a, hi);
   const leaves = 8 + rk * 4;
   for (let i = 0; i < leaves; i++) {
     const q = fr(t * 0.35 + rnd(i)),

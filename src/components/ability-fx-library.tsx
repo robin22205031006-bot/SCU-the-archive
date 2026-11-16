@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, Plus, Save, Trash2, X, Zap } from "lucide-react";
+import { ArrowDown, ArrowUp, Gauge, Plus, Save, Trash2, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,7 @@ import {
 import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { AbilityRankEmblem } from "@/components/ability-rank-emblem";
 import { AbilityHoldersChips, useAbilityHolderSummary } from "@/components/ability-holders-chips";
 import { AbilityImpactOverlay } from "@/components/ability-impact-overlay";
 import {
@@ -52,10 +53,12 @@ const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 const FxCard = memo(function FxCard({
   k,
   previewRank,
+  performanceMode,
   onOpen,
 }: {
   k: string;
   previewRank?: AbilityEmblemRank | undefined;
+  performanceMode?: boolean | undefined;
   onOpen: (k: string) => void;
 }) {
   const [hot, setHot] = useState(false);
@@ -79,6 +82,7 @@ const FxCard = memo(function FxCard({
           recipe={recipe}
           rank={displayRank}
           playing={hot}
+          performanceMode={performanceMode}
           label={`${d.label} animation`}
         />
         <span
@@ -127,6 +131,8 @@ export function FxLibrary({
   const [tier, setTier] = useState<"all" | AbilityTier>("all");
   const [group, setGroup] = useState<"all" | AbilityGroup>("all");
   const [previewRank, setPreviewRank] = useState<AbilityEmblemRank | undefined>(undefined);
+  const [localPerformanceMode, setLocalPerformanceMode] = useState(false);
+  const performanceMode = ctx ? ctx.performanceMode : localPerformanceMode;
   const [open, setOpen] = useState<string | null>(() =>
     initialAbility ? abilityDef(initialAbility).key : null,
   );
@@ -230,13 +236,36 @@ export function FxLibrary({
             </option>
           ))}
         </select>
+        <Button
+          type="button"
+          size="sm"
+          variant={performanceMode ? "default" : "outline"}
+          aria-pressed={performanceMode}
+          title="Cap high-rank FX particle/bolt density and FPS for smoother low-end rendering"
+          onClick={() => {
+            if (ctx) {
+              ctx.setPerformanceMode((p) => !p);
+            } else {
+              setLocalPerformanceMode((p) => !p);
+            }
+          }}
+        >
+          <Gauge className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+          {performanceMode ? "Performance Mode: On" : "Performance Mode"}
+        </Button>
         <span className="self-center text-xs text-muted-foreground">
           {defs.length} abilities · hover to play, tap to inspect FX &amp; context
         </span>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {defs.map((d) => (
-          <FxCard key={d.key} k={d.key} previewRank={previewRank} onOpen={handleOpen} />
+          <FxCard
+            key={d.key}
+            k={d.key}
+            previewRank={previewRank}
+            performanceMode={performanceMode}
+            onOpen={handleOpen}
+          />
         ))}
       </div>
       <AbilityFxShowcase
@@ -567,8 +596,7 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
   useEffect(() => {
     if (!initialKey) return;
     const d = abilityDef(initialKey);
-    const nextRank =
-      ctx && ctx.abilityKey === d.key ? ctx.rank : tierToIntrinsicRank(d.tier);
+    const nextRank = ctx && ctx.abilityKey === d.key ? ctx.rank : tierToIntrinsicRank(d.tier);
     setLocalK(d.key);
     setLocalTier(d.tier === "Role" ? "Standard" : d.tier);
     setLocalRank(nextRank);
@@ -577,6 +605,8 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
   const k = ctx ? ctx.abilityKey : localK;
   const activeRank: AbilityEmblemRank = ctx ? ctx.rank : localRank;
   const activeImpact = ctx ? ctx.abilityImpact : localImpact;
+  const [localPerfMode, setLocalPerfMode] = useState(false);
+  const simPerformanceMode = ctx ? ctx.performanceMode : localPerfMode;
   const [tier, setTier] = useState<AbilityTier>(() => {
     const t0 = abilityDef(k).tier;
     return t0 === "Role" ? "Standard" : t0;
@@ -609,9 +639,7 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
         : [],
     [ctx, activeDef.key],
   );
-  const impactOnCanvas = Boolean(
-    activeImpact?.active && activeImpact.abilityKey === activeDef.key,
-  );
+  const impactOnCanvas = Boolean(activeImpact?.active && activeImpact.abilityKey === activeDef.key);
   const reach = 12 + st.range * 0.34,
     dash = st.mobility * 0.3;
 
@@ -683,6 +711,23 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
             <Zap className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
             AbilityImpact
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={simPerformanceMode ? "default" : "outline"}
+            aria-pressed={simPerformanceMode}
+            title="Cap high-rank FX complexity and frame rate for smoother low-end rendering"
+            onClick={() => {
+              if (ctx) {
+                ctx.setPerformanceMode((p) => !p);
+              } else {
+                setLocalPerfMode((p) => !p);
+              }
+            }}
+          >
+            <Gauge className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            {simPerformanceMode ? "Perf Mode: On" : "Perf Mode"}
+          </Button>
         </div>
 
         {!holdersMasked && wielders.length > 0 && ctx && (
@@ -711,6 +756,39 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
                 );
               })}
             </div>
+            {ctx.selectedEntityId && ctx.activeCharacterAbilities.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Active loadout:
+                </span>
+                {ctx.activeCharacterAbilities.map((ab) => {
+                  const isCurrent = ab.abilityKey === activeDef.key;
+                  return (
+                    <button
+                      key={ab.canonKey}
+                      type="button"
+                      onClick={() =>
+                        ctx.selectAbility(ab.abilityKey, {
+                          rank: ab.rank,
+                          entityId: ctx.selectedEntityId,
+                          triggerImpact: ab.rank >= 4,
+                        })
+                      }
+                      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
+                        isCurrent
+                          ? "border-accent bg-accent/20 text-foreground"
+                          : "border-border/80 bg-background/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span>{ab.def.label}</span>
+                      <span className="font-mono text-[10px] opacity-80">
+                        Lv.{ABILITY_RANK_META[ab.rank].roman}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {ctx.selectedEntityId && selectedProgression.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -745,20 +823,24 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
 
         <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-card/40">
           <AbilityFxCanvas
-            key={`${k}-${tier}-${activeRank}`}
             recipe={recipe}
+            abilityKey={activeDef.key}
             rank={activeRank}
             impactActive={impactOnCanvas}
+            performanceMode={simPerformanceMode}
             label={`${activeDef.label} at ${tier} tier`}
           />
           {impactOnCanvas && <AbilityImpactOverlay impact={activeImpact} />}
         </div>
         <div className="grid gap-1.5 rounded-2xl border border-border bg-card/40 p-3 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              {ABILITY_GROUP_LABELS[activeDef.group]}
-              {lineage ? ` · ${lineage.label}` : ""}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <AbilityRankEmblem ability={activeDef.key} rank={activeRank} size="sm" />
+              <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                {ABILITY_GROUP_LABELS[activeDef.group]}
+                {lineage ? ` · ${lineage.label}` : ""}
+              </span>
+            </div>
             <AbilityRankPips rank={activeRank} showLabel compact />
           </div>
           {activeDef.description && <p className="text-foreground">{activeDef.description}</p>}
@@ -780,7 +862,8 @@ export function FxSimulator({ initialKey }: { initialKey?: string | undefined })
       <div className="grid content-start gap-4 rounded-2xl border border-border bg-card/50 p-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Combat role · Rank {ABILITY_RANK_META[activeRank].roman} ({ABILITY_RANK_META[activeRank].shortTitle})
+            Combat role · Rank {ABILITY_RANK_META[activeRank].roman} (
+            {ABILITY_RANK_META[activeRank].shortTitle})
           </p>
           <p className="text-lg font-semibold text-foreground">{st.role}</p>
         </div>

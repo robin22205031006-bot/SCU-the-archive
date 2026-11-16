@@ -261,3 +261,107 @@ export function mergeCharacterAbilityList(
     .sort((a, b) => Number(b.isAssigned) - Number(a.isAssigned) || b.level - a.level)
     .map(({ score: _score, ...rest }) => rest);
 }
+
+export interface AbilityProgressionStep {
+  id: string;
+  seriesId: string | null;
+  seriesTitle: string;
+  seasonNumber: number | null;
+  seasonLabel: string;
+  level: AbilityEmblemRank;
+  note?: string | undefined;
+}
+
+export interface AbilityProgressionGroup {
+  canonKey: string;
+  displayKey: string;
+  steps: AbilityProgressionStep[];
+  minLevel: AbilityEmblemRank;
+  maxLevel: AbilityEmblemRank;
+}
+
+/**
+ * Groups character ability assignments by canonical ability key and sorts each ability's
+ * steps chronologically from Global base -> Series -> Season 1..N so multi-season mastery
+ * growth (e.g. Zayn S3 Lv.II -> S5 Lv.V) renders consistently across all UI modes.
+ */
+export function groupCharacterAbilityProgression(
+  rows: readonly (CharacterAbilityRankRow & { id?: string | undefined })[],
+  seriesTitleMap?: ReadonlyMap<string, string> | Record<string, string>,
+  seasonNamesMap?: ReadonlyMap<string, readonly string[]>,
+): AbilityProgressionGroup[] {
+  const resolveTitle = (seriesId: string | null | undefined): string => {
+    if (!seriesId) return "Base / Global";
+    if (!seriesTitleMap) return "Series";
+    if (seriesTitleMap instanceof Map) return seriesTitleMap.get(seriesId) ?? "Series";
+    const rec = seriesTitleMap as Record<string, string>;
+    return rec[seriesId] ?? "Series";
+  };
+
+  const groups = new Map<string, { displayKey: string; steps: AbilityProgressionStep[] }>();
+
+  rows.forEach((row, idx) => {
+    const canon = resolveAbilityAliasPure(row.ability_key);
+    if (!canon) return;
+    const seriesId = row.series_id ?? null;
+    const seasonNumber = row.season_number ?? null;
+    const seriesTitle = resolveTitle(seriesId);
+    const customSeasonName =
+      seriesId && seasonNumber != null
+        ? seasonNamesMap?.get(seriesId)?.[seasonNumber - 1]
+        : undefined;
+    const seasonLabel = seriesId
+      ? seasonNumber != null
+        ? customSeasonName
+          ? `${customSeasonName} (S${seasonNumber})`
+          : `S${seasonNumber}`
+        : "Series-wide"
+      : "Global";
+
+    const step: AbilityProgressionStep = {
+      id: row.id ?? `${canon}:${seriesId ?? "global"}:${seasonNumber ?? "all"}:${idx}`,
+      seriesId,
+      seriesTitle,
+      seasonNumber,
+      seasonLabel,
+      level: clampDbAbilityLevel(row.level),
+      note: row.note ?? undefined,
+    };
+
+    const existing = groups.get(canon);
+    if (existing) {
+      existing.steps.push(step);
+    } else {
+      groups.set(canon, { displayKey: row.ability_key, steps: [step] });
+    }
+  });
+
+  const out: AbilityProgressionGroup[] = [];
+  for (const [canonKey, group] of groups) {
+    const sorted = [...group.steps].sort((a, b) => {
+      const aScoped = a.seriesId ? 1 : 0;
+      const bScoped = b.seriesId ? 1 : 0;
+      if (aScoped !== bScoped) return aScoped - bScoped;
+      if (a.seriesTitle !== b.seriesTitle) return a.seriesTitle.localeCompare(b.seriesTitle);
+      const aSeason = a.seasonNumber ?? 0;
+      const bSeason = b.seasonNumber ?? 0;
+      if (aSeason !== bSeason) return aSeason - bSeason;
+      return a.level - b.level;
+    });
+    const levels = sorted.map((s) => s.level);
+    out.push({
+      canonKey,
+      displayKey: group.displayKey,
+      steps: sorted,
+      minLevel: Math.min(...levels) as AbilityEmblemRank,
+      maxLevel: Math.max(...levels) as AbilityEmblemRank,
+    });
+  }
+
+  return out.sort(
+    (a, b) =>
+      b.maxLevel - a.maxLevel ||
+      b.steps.length - a.steps.length ||
+      a.canonKey.localeCompare(b.canonKey),
+  );
+}

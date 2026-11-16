@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Zap } from "lucide-react";
+import { Gauge, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ABILITY_GROUP_LABELS, abilityDef, normalizeAbilityKey } from "@/lib/abilities";
@@ -17,9 +17,9 @@ import { useAbilityLineages } from "@/hooks/use-ability-lineages";
 import { Link } from "@tanstack/react-router";
 import { AbilityFxCanvas } from "@/components/ability-fx-canvas";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { AbilityRankEmblem, AbilityRankProgressionStrip } from "@/components/ability-rank-emblem";
 import { AbilityHoldersChips } from "@/components/ability-holders-chips";
 import { AbilityImpactOverlay } from "@/components/ability-impact-overlay";
-import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
 import { useAbilityHolders, useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { useAppMotion } from "@/hooks/use-app-motion";
@@ -61,6 +61,7 @@ export function AbilityFxShowcase({
   const [ascending, setAscending] = useState(false);
   const [localBoosted, setLocalBoosted] = useState(false);
   const [localFps, setLocalFps] = useState<24 | 30 | 60>(30);
+  const [localPerformanceMode, setLocalPerformanceMode] = useState(false);
 
   const impactTimerRef = useRef<number | null>(null);
   const impactSeqRef = useRef(0);
@@ -143,6 +144,7 @@ export function AbilityFxShowcase({
   const activeRank: AbilityEmblemRank = ctx ? ctx.rank : localRank;
   const boosted = ctx ? ctx.boosted : localBoosted;
   const fps = ctx ? ctx.fps : localFps;
+  const performanceMode = ctx ? ctx.performanceMode : localPerformanceMode;
   const selectedEntityId = ctx ? ctx.selectedEntityId : localWielderId;
   const activeImpact = ctx ? ctx.abilityImpact : localImpact;
 
@@ -165,9 +167,7 @@ export function AbilityFxShowcase({
   );
   const selectedProgression = useMemo(
     () =>
-      ctx && selectedEntityId
-        ? ctx.getCharacterSeasonProgression(selectedEntityId, def.key)
-        : [],
+      ctx && selectedEntityId ? ctx.getCharacterSeasonProgression(selectedEntityId, def.key) : [],
     [ctx, selectedEntityId, def.key],
   );
 
@@ -212,21 +212,13 @@ export function AbilityFxShowcase({
     }
   };
 
-  const impactOnThisCanvas = Boolean(
-    activeImpact?.active && activeImpact.abilityKey === def.key,
-  );
+  const impactOnThisCanvas = Boolean(activeImpact?.active && activeImpact.abilityKey === def.key);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] w-[min(96vw,44rem)] max-w-none overflow-y-auto border-accent/40 bg-background/95 p-4 sm:p-6">
-        <DialogTitle className="flex flex-wrap items-center gap-2 text-xl">
-          <NexusAbilitySymbol
-            name={def.key}
-            label={def.label}
-            description={def.description}
-            rank={activeRank}
-            className="h-9 w-9"
-          />
+        <DialogTitle className="flex flex-wrap items-center gap-2.5 text-xl">
+          <AbilityRankEmblem ability={def.key} rank={activeRank} size="sm" showRankCorner />
           <span>{def.label}</span>
           <AbilityRankPips rank={activeRank} showLabel className="ml-auto" />
         </DialogTitle>
@@ -249,40 +241,52 @@ export function AbilityFxShowcase({
           </div>
 
           {/* Interactive Mastery Rank 1-5 morph selector */}
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-card/50 px-3 py-2">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Mastery Rank ({ABILITY_RANK_META[activeRank].shortTitle})
-            </span>
-            <div className="flex items-center gap-1" role="group" aria-label="Mastery rank 1 to 5">
-              {ABILITY_RANKS.map((r) => {
-                const meta = ABILITY_RANK_META[r];
-                const selected = activeRank === r;
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => handleRankSelect(r)}
-                    aria-pressed={selected}
-                    title={meta.label}
-                    className={`rounded-lg border px-2 py-0.5 font-mono text-xs font-bold transition ${
-                      selected
-                        ? "bg-accent/20 text-foreground"
-                        : "border-border/70 text-muted-foreground hover:text-foreground"
-                    }`}
-                    style={
-                      selected
-                        ? {
-                            borderColor: meta.ringColor,
-                            boxShadow: `0 0 10px ${meta.ringColor}66`,
-                          }
-                        : undefined
-                    }
-                  >
-                    {meta.roman}
-                  </button>
-                );
-              })}
+          <div className="grid gap-2 rounded-xl border border-border/80 bg-card/50 px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Mastery Rank ({ABILITY_RANK_META[activeRank].shortTitle})
+              </span>
+              <div
+                className="flex items-center gap-1"
+                role="group"
+                aria-label="Mastery rank 1 to 5"
+              >
+                {ABILITY_RANKS.map((r) => {
+                  const meta = ABILITY_RANK_META[r];
+                  const selected = activeRank === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => handleRankSelect(r)}
+                      aria-pressed={selected}
+                      title={meta.label}
+                      className={`rounded-lg border px-2 py-0.5 font-mono text-xs font-bold transition ${
+                        selected
+                          ? "bg-accent/20 text-foreground"
+                          : "border-border/70 text-muted-foreground hover:text-foreground"
+                      }`}
+                      style={
+                        selected
+                          ? {
+                              borderColor: meta.ringColor,
+                              boxShadow: `0 0 10px ${meta.ringColor}66`,
+                            }
+                          : undefined
+                      }
+                    >
+                      {meta.roman}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+            <AbilityRankProgressionStrip
+              ability={def.key}
+              currentRank={activeRank}
+              onSelectRank={handleRankSelect}
+              size="xs"
+            />
           </div>
 
           {/* Spoiler-guarded wielder & season progression selector */}
@@ -372,6 +376,7 @@ export function AbilityFxShowcase({
                   label={`${def.label} animation`}
                   boosted={boosted}
                   fps={fps}
+                  performanceMode={performanceMode}
                 />
               </motion.div>
             </AnimatePresence>
@@ -384,6 +389,7 @@ export function AbilityFxShowcase({
                 label={`${def.label} animation`}
                 boosted={boosted}
                 fps={fps}
+                performanceMode={performanceMode}
               />
             </div>
           )}
@@ -396,10 +402,11 @@ export function AbilityFxShowcase({
               style={{ color: recipe.palette[0] }}
             >
               Rank {ABILITY_RANK_META[activeRank].roman} · Power {recipe.power}/8
+              {performanceMode && activeRank > 3 ? " · Perf Cap III" : ""}
             </span>
           </div>
 
-          {/* AbilityImpact, Overdrive and FPS overlay controls */}
+          {/* AbilityImpact, Overdrive, Performance Mode and FPS overlay controls */}
           <div className="absolute right-3 top-3 flex flex-wrap items-center justify-end gap-1.5">
             <button
               type="button"
@@ -439,6 +446,27 @@ export function AbilityFxShowcase({
                 className={`size-1.5 rounded-full ${boosted ? "animate-ping bg-amber-400" : "bg-zinc-500"}`}
               />
               <span>{boosted ? "BOOST: OVERDRIVE" : "Boost"}</span>
+            </button>
+
+            <button
+              type="button"
+              aria-pressed={performanceMode}
+              onClick={() => {
+                if (ctx) {
+                  ctx.setPerformanceMode((p) => !p);
+                } else {
+                  setLocalPerformanceMode((p) => !p);
+                }
+              }}
+              title="Cap high-rank FX complexity and frame rate for smoother low-end rendering"
+              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm transition ${
+                performanceMode
+                  ? "border-emerald-400 bg-emerald-500/25 text-emerald-200"
+                  : "border-border/80 bg-background/70 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Gauge className="h-3 w-3" aria-hidden="true" />
+              <span>{performanceMode ? "Perf Mode: On" : "Perf Mode"}</span>
             </button>
 
             <div className="flex items-center rounded-full border border-border/80 bg-background/70 p-0.5 font-mono text-[10px] backdrop-blur-sm">

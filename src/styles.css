@@ -5793,6 +5793,476 @@ html[data-manga-subtheme="shounen"] ::-webkit-scrollbar-thumb {
   border: 1px solid rgba(255, 251, 235, 0.25);
 }
 
+/* Progressive Rank (1-5) Ability Emblem CSS Custom Properties & Per-Rank Transitions */
+.scu-rank-emblem {
+  --emblem-rank: 1;
+  --emblem-saturation: 0.72;
+  --emblem-brightness: 0.94;
+  --emblem-glow-size: 0px;
+  --emblem-glow-opacity: 0.25;
+  --emblem-glow-color: #94a3b8;
+  --emblem-accent-color: #94a3b8;
+  --emblem-scale: 1;
+  --emblem-ring-speed: 14s;
+  --emblem-transition-ms: 480ms;
+  --emblem-aura-spread: 0px;
+  filter: saturate(var(--emblem-saturation)) brightness(var(--emblem-brightness));
+  box-shadow:
+    0 0 var(--emblem-glow-size)
+      color-mix(
+        in oklab,
+        var(--emblem-glow-color) calc(var(--emblem-glow-opacity) * 70%),
+        transparent
+      ),
+    inset 0 0 calc(var(--emblem-glow-size) * 0.55)
+      color-mix(
+        in oklab,
+        var(--emblem-accent-color) calc(var(--emblem-glow-opacity) * 35%),
+        transparent
+      );
+  transform: scale(var(--emblem-scale));
+  transition:
+    filter var(--emblem-transition-ms) cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow var(--emblem-transition-ms) cubic-bezier(0.22, 1, 0.36, 1),
+    transform var(--emblem-transition-ms) cubic-bezier(0.22, 1, 0.36, 1),
+    background var(--emblem-transition-ms) ease;
+}
+
+.scu-rank-emblem-aura {
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity var(--emblem-transition-ms) ease,
+    transform var(--emblem-transition-ms) cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow var(--emblem-transition-ms) ease;
+}
+
+.scu-rank-emblem-core {
+  transition:
+    transform calc(var(--emblem-transition-ms) * 0.85) cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms ease,
+    filter calc(var(--emblem-transition-ms) * 0.85) ease;
+}
+
+.scu-rank-emblem-overlay {
+  transition:
+    transform var(--emblem-transition-ms) cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 320ms ease;
+}
+
+/* Pronounced Rank 5 'Legendary' sustained aura halo + rotating solar corona */
+.scu-rank-emblem[data-legendary-aura="active"] {
+  box-shadow:
+    0 0 calc(var(--emblem-glow-size) + 6px)
+      color-mix(in oklab, var(--emblem-glow-color) 88%, transparent),
+    0 0 calc(var(--emblem-glow-size) + var(--emblem-aura-spread))
+      color-mix(in oklab, #fbbf24 52%, var(--emblem-accent-color)),
+    inset 0 0 18px color-mix(in oklab, #ffffff 28%, var(--emblem-glow-color));
+}
+
+.scu-rank-emblem[data-legendary-aura="active"] .scu-rank-emblem-aura {
+  opacity: 0.92;
+  transform: scale(1.06);
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in oklab, var(--emblem-glow-color) 32%, transparent) 38%,
+    color-mix(in oklab, #fbbf24 28%, transparent) 64%,
+    transparent 82%
+  );
+  box-shadow:
+    0 0 20px color-mix(in oklab, var(--emblem-glow-color) 62%, transparent),
+    0 0 38px color-mix(in oklab, #fbbf24 44%, transparent);
+}
+
+.scu-rank-emblem[data-legendary-aura="active"] .scu-rank-emblem-aura::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in oklab, var(--emblem-glow-color) 90%, transparent),
+    rgba(251, 191, 36, 0.95),
+    rgba(255, 255, 255, 0.95),
+    color-mix(in oklab, var(--emblem-accent-color) 85%, transparent),
+    color-mix(in oklab, var(--emblem-glow-color) 90%, transparent)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.85;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-legendary-aura="active"] .scu-rank-emblem-aura {
+  animation: scu-emblem-legendary-aura-pulse 3.2s ease-in-out infinite;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-legendary-aura="active"]
+  .scu-rank-emblem-aura::before {
+  animation: scu-emblem-legendary-corona-spin 7.5s linear infinite;
+}
+
+@keyframes scu-emblem-aura-breathe {
+  0%,
+  100% {
+    filter: saturate(var(--emblem-saturation)) brightness(var(--emblem-brightness));
+    transform: scale(var(--emblem-scale));
+  }
+  50% {
+    filter: saturate(calc(var(--emblem-saturation) * 1.08))
+      brightness(calc(var(--emblem-brightness) * 1.05));
+    transform: scale(calc(var(--emblem-scale) * 1.03));
+  }
+}
+
+@keyframes scu-emblem-legendary-aura-pulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(1.03);
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.16);
+    filter: brightness(1.18);
+  }
+}
+
+@keyframes scu-emblem-legendary-corona-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Rank 1 (Initiate): Crisp matte seal settle */
+@keyframes scu-emblem-rank-1-transition {
+  0% {
+    transform: scale(1.05);
+    filter: saturate(1.1) brightness(1.06);
+  }
+  100% {
+    transform: scale(var(--emblem-scale));
+    filter: saturate(var(--emblem-saturation)) brightness(var(--emblem-brightness));
+  }
+}
+
+/* Rank 2 (Adept): Nimble sky-blue pulse surge */
+@keyframes scu-emblem-rank-2-transition {
+  0% {
+    transform: scale(0.93);
+    filter: saturate(var(--emblem-saturation)) brightness(1.16);
+    box-shadow: 0 0 14px color-mix(in oklab, var(--emblem-glow-color) 75%, transparent);
+  }
+  55% {
+    transform: scale(1.08);
+    filter: saturate(calc(var(--emblem-saturation) * 1.15)) brightness(1.18);
+  }
+  100% {
+    transform: scale(var(--emblem-scale));
+    filter: saturate(var(--emblem-saturation)) brightness(var(--emblem-brightness));
+  }
+}
+
+/* Rank 3 (Veteran): Harmonic arcane violet attunement */
+@keyframes scu-emblem-rank-3-transition {
+  0% {
+    transform: scale(0.9);
+    filter: saturate(calc(var(--emblem-saturation) * 1.25)) brightness(1.22);
+  }
+  42% {
+    transform: scale(1.12);
+    box-shadow:
+      0 0 22px color-mix(in oklab, var(--emblem-glow-color) 85%, transparent),
+      inset 0 0 12px color-mix(in oklab, var(--emblem-glow-color) 45%, transparent);
+  }
+  72% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(var(--emblem-scale));
+    filter: saturate(var(--emblem-saturation)) brightness(var(--emblem-brightness));
+  }
+}
+
+/* Rank 4 (Master): Gilded kinetic ascend & halo flare */
+@keyframes scu-emblem-rank-4-transition {
+  0% {
+    transform: scale(0.87);
+    filter: saturate(calc(var(--emblem-saturation) * 1.15)) brightness(1.32);
+  }
+  45% {
+    transform: scale(1.15);
+    filter: saturate(calc(var(--emblem-saturation) * 1.32)) brightness(1.36);
+    box-shadow:
+      0 0 30px color-mix(in oklab, var(--emblem-glow-color) 92%, transparent),
+      0 0 12px rgba(255, 255, 255, 0.35);
+  }
+  100% {
+    transform: scale(var(--emblem-scale));
+    filter: saturate(var(--emblem-saturation)) brightness(var(--emblem-brightness));
+  }
+}
+
+/* Rank 5 (Apex / Legendary): Pronounced Legendary Aura awakening burst */
+@keyframes scu-emblem-rank-5-legendary-burst {
+  0% {
+    transform: scale(0.82);
+    filter: saturate(calc(var(--emblem-saturation) * 1.2)) brightness(1.48);
+  }
+  32% {
+    transform: scale(1.22);
+    filter: saturate(calc(var(--emblem-saturation) * 1.45)) brightness(1.56);
+    box-shadow:
+      0 0 36px color-mix(in oklab, var(--emblem-glow-color) 98%, transparent),
+      0 0 64px rgba(251, 191, 36, 0.68),
+      inset 0 0 22px rgba(255, 255, 255, 0.55);
+  }
+  65% {
+    transform: scale(0.98);
+    filter: saturate(calc(var(--emblem-saturation) * 1.2)) brightness(1.26);
+  }
+  100% {
+    transform: scale(var(--emblem-scale));
+    filter: saturate(var(--emblem-saturation)) brightness(var(--emblem-brightness));
+  }
+}
+
+/* Expanding Legendary aura shockwave on rank-up to 5 */
+@keyframes scu-emblem-legendary-shockwave {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.75);
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.9),
+      0 0 24px var(--emblem-glow-color),
+      0 0 42px rgba(251, 191, 36, 0.75);
+  }
+  55% {
+    opacity: 0.85;
+    transform: scale(1.42);
+    box-shadow:
+      0 0 0 4px color-mix(in oklab, #fbbf24 72%, var(--emblem-glow-color)),
+      0 0 40px var(--emblem-glow-color),
+      0 0 68px rgba(251, 191, 36, 0.55);
+  }
+  100% {
+    opacity: 0.92;
+    transform: scale(1.06);
+  }
+}
+
+/* Rank-specific aura ripples for Ranks 2..4 */
+@keyframes scu-emblem-aura-ripple {
+  0% {
+    opacity: 0.72;
+    transform: scale(0.84);
+  }
+  60% {
+    opacity: 0.45;
+    transform: scale(1.26);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.36);
+  }
+}
+
+/* Per-rank overlay geometry entrance choreography */
+@keyframes scu-emblem-overlay-rank-1 {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scu-emblem-overlay-rank-2 {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scu-emblem-overlay-rank-3 {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.86) rotate(-14deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes scu-emblem-overlay-rank-4 {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.82) rotate(-24deg);
+  }
+  58% {
+    opacity: 1;
+    transform: scale(1.1) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes scu-emblem-overlay-rank-5 {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.76) rotate(-36deg);
+    filter: brightness(1.55);
+  }
+  52% {
+    opacity: 1;
+    transform: scale(1.15) rotate(6deg);
+    filter: brightness(1.35);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes scu-emblem-rank-settle {
+  0% {
+    transform: scale(1.04);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(var(--emblem-scale));
+    opacity: 1;
+  }
+}
+
+/* Idle breathing for Veteran (3), Master (4), and Apex/Legendary (5) */
+.scu-rank-emblem[data-emblem-animated="on"][data-emblem-rank="3"],
+.scu-rank-emblem[data-emblem-animated="on"][data-emblem-rank="4"] {
+  animation: scu-emblem-aura-breathe var(--emblem-ring-speed, 8s) ease-in-out infinite;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-emblem-rank="5"] {
+  animation: scu-emblem-aura-breathe var(--emblem-ring-speed, 5.5s) ease-in-out infinite;
+}
+
+/* Distinct CSS transition animations per target rank (1..5) */
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="initiate-seal"] {
+  animation: scu-emblem-rank-1-transition var(--emblem-transition-ms, 400ms)
+    cubic-bezier(0.25, 1, 0.5, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="adept-surge"] {
+  animation: scu-emblem-rank-2-transition var(--emblem-transition-ms, 480ms)
+    cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="veteran-attune"] {
+  animation: scu-emblem-rank-3-transition var(--emblem-transition-ms, 580ms)
+    cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="master-ascend"] {
+  animation: scu-emblem-rank-4-transition var(--emblem-transition-ms, 680ms)
+    cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="legendary-aura"] {
+  animation: scu-emblem-rank-5-legendary-burst var(--emblem-transition-ms, 960ms)
+    cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+/* Descending attenuation polish for Ranks 2-4 */
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition="descending"]:not(
+    [data-emblem-rank="1"]
+  ):not([data-emblem-rank="5"]) {
+  animation-name: scu-emblem-rank-settle;
+}
+
+/* Per-rank aura & overlay transition layers */
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition="ascending"][data-emblem-rank="2"]
+  .scu-rank-emblem-aura,
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition="ascending"][data-emblem-rank="3"]
+  .scu-rank-emblem-aura,
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition="ascending"][data-emblem-rank="4"]
+  .scu-rank-emblem-aura {
+  box-shadow: 0 0 calc(var(--emblem-aura-spread) + 10px)
+    color-mix(in oklab, var(--emblem-glow-color) 68%, transparent);
+  animation: scu-emblem-aura-ripple var(--emblem-transition-ms, 580ms)
+    cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="legendary-aura"]
+  .scu-rank-emblem-aura {
+  animation:
+    scu-emblem-legendary-shockwave var(--emblem-transition-ms, 960ms) cubic-bezier(0.16, 1, 0.3, 1)
+      1,
+    scu-emblem-legendary-aura-pulse 3.2s ease-in-out 960ms infinite;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="initiate-seal"]
+  .scu-rank-emblem-overlay {
+  animation: scu-emblem-overlay-rank-1 var(--emblem-transition-ms, 400ms) ease-out 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="adept-surge"]
+  .scu-rank-emblem-overlay {
+  animation: scu-emblem-overlay-rank-2 var(--emblem-transition-ms, 480ms)
+    cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="veteran-attune"]
+  .scu-rank-emblem-overlay {
+  animation: scu-emblem-overlay-rank-3 var(--emblem-transition-ms, 580ms)
+    cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="master-ascend"]
+  .scu-rank-emblem-overlay {
+  animation: scu-emblem-overlay-rank-4 var(--emblem-transition-ms, 680ms)
+    cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="on"][data-rank-transition-effect="legendary-aura"]
+  .scu-rank-emblem-overlay {
+  animation: scu-emblem-overlay-rank-5 var(--emblem-transition-ms, 960ms)
+    cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+.scu-rank-emblem[data-emblem-animated="off"],
+.scu-rank-emblem[data-emblem-animated="off"] *,
+html[data-motion="off"] .scu-rank-emblem,
+html[data-motion="off"] .scu-rank-emblem *,
+html[data-ui="minimal"] .scu-rank-emblem,
+html[data-ui="minimal"] .scu-rank-emblem * {
+  animation: none !important;
+  transition: none !important;
+}
+
 /* Suppress GPU/tactile/hitstop extras strictly in Minimal & Reduced Motion */
 html[data-ui="minimal"] .scu-tactile,
 html[data-primary-system="minimal"] .scu-tactile,
@@ -5822,6 +6292,8 @@ html[data-motion="off"] .scu-tactile:active {
   [role="tab"],
   .scu-tactile:active,
   [role="tab"]:active,
+  .scu-rank-emblem,
+  .scu-rank-emblem *,
   html[data-tier-hitstop="true"] body::before {
     animation: none !important;
     transition: none !important;

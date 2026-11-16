@@ -1,5 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { abilityFxRecipe, type FxRecipe } from "@/lib/ability-fx";
+import { parseAbilityRank, type AbilityEmblemRank } from "@/lib/ability-rank";
+import { resolvePerformanceFxCaps, useOptionalAbilityContext } from "@/context/AbilityContext";
 import {
   TARGET_X,
   actionStyle,
@@ -83,6 +85,10 @@ function paintAt(
   scale: number,
   alpha: number,
   rnd: (i: number) => number,
+  rank?: AbilityEmblemRank,
+  impact?: number,
+  complexityRank?: AbilityEmblemRank,
+  performanceMode?: boolean,
 ) {
   const painter = ALL_PAINT[r.motif];
   if (alpha <= 0 || !painter) return;
@@ -90,7 +96,20 @@ function paintAt(
   c.globalAlpha = alpha;
   c.translate(x, gy - S * 0.3 * scale);
   c.scale(scale, scale);
-  painter({ c, t, s: S, r, v: r.variant, p: r.power, rnd, step: Math.floor(t * 8) } as PF);
+  painter({
+    c,
+    t,
+    s: S,
+    r,
+    v: r.variant,
+    p: performanceMode ? Math.min(5, r.power) : r.power,
+    rnd,
+    step: Math.floor(t * (performanceMode ? 6 : 8)),
+    ...(rank ? { rank } : {}),
+    ...(complexityRank ? { complexityRank } : {}),
+    ...(performanceMode ? { performanceMode } : {}),
+    ...(impact !== undefined ? { impact } : {}),
+  } as PF);
   c.restore();
   c.globalCompositeOperation = "source-over";
   c.globalAlpha = 1;
@@ -143,6 +162,9 @@ export function AbilityActionCanvas({
   sceneId,
   backdrop = "rooftop",
   frame,
+  rank,
+  impactActive,
+  performanceMode,
 }: {
   name: string;
   gender: Gender;
@@ -154,8 +176,24 @@ export function AbilityActionCanvas({
   sceneId?: CombatSceneId | undefined;
   backdrop?: CombatBackdrop;
   frame?: number | undefined;
+  rank?: number | undefined;
+  impactActive?: boolean | undefined;
+  performanceMode?: boolean | undefined;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const ctx = useOptionalAbilityContext();
+  const baseRecipe = abilityFxRecipe(name);
+  const ctxTrackedRank = ctx?.getActiveAbilityRank(baseRecipe.key);
+  const resolvedRank: AbilityEmblemRank | undefined = parseAbilityRank(rank) ?? ctxTrackedRank;
+  const effectivePerformanceMode = performanceMode ?? ctx?.performanceMode ?? false;
+  const fxCaps = useMemo(
+    () => resolvePerformanceFxCaps(resolvedRank ?? 3, effectivePerformanceMode),
+    [resolvedRank, effectivePerformanceMode],
+  );
+  const selectedEntityId = ctx?.selectedEntityId ?? null;
+  const isImpacting = Boolean(
+    impactActive || (ctx?.abilityImpact?.active && ctx.abilityImpact.abilityKey === baseRecipe.key),
+  );
   const phaseRef = useRef(onPhase);
   phaseRef.current = onPhase;
   const pausedAt = useRef(0);
@@ -164,7 +202,9 @@ export function AbilityActionCanvas({
     const c = cv?.getContext("2d");
     if (!cv || !c) return;
     const scene = characterCombat(sceneId);
-    const r = abilityFxRecipe(name),
+    const r = abilityFxRecipe(name, resolvedRank),
+      rkNum = resolvedRank ?? Math.max(1, Math.min(5, Math.round((r.power / 8) * 5))),
+      rankScale = 0.72 + rkNum * 0.08,
       segs = scene?.beats ?? choreography(name, gender, style),
       ink = inkOf(r.palette),
       weapon = scene?.weapon ?? weaponFor(name, gender),
@@ -191,7 +231,7 @@ export function AbilityActionCanvas({
     const cam = { z: 1, x: 0, y: 0, tilt: 0, yaw: 0, pitch: 0 };
     const start = performance.now() - (pausedAt.current * 1000) / speed;
     const draw = (now: number) => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1),
+      const dpr = Math.min(fxCaps.maxDpr, window.devicePixelRatio || 1),
         W = cv.clientWidth,
         Hh = cv.clientHeight;
       if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(Hh * dpr)) {
@@ -231,7 +271,7 @@ export function AbilityActionCanvas({
       vig.addColorStop(1, "rgba(0,0,0,.45)");
       c.fillStyle = vig;
       c.fillRect(0, 0, W, Hh);
-      // speed lines behind the action while dashing
+      // speed lines behind the action while dashing (halved in performanceMode)
       if (fxs.includes("trail") || (fxs.includes("impact") && st.k < 0.25)) {
         c.save();
         c.globalCompositeOperation = "lighter";
@@ -239,7 +279,8 @@ export function AbilityActionCanvas({
         c.lineWidth = 1.5;
         const cxl = X(st.x),
           cyl = gy - S * 0.25;
-        for (let i = 0; i < 26; i++) {
+        const rayCount = effectivePerformanceMode ? 12 : 26;
+        for (let i = 0; i < rayCount; i++) {
           const a = seed(i + Math.floor(t * 20)) * TAU,
             r0 = S * (0.35 + seed(i + 3) * 0.2);
           c.beginPath();
@@ -281,8 +322,12 @@ export function AbilityActionCanvas({
       );
       if (impact > 0.5)
         c.translate(
-          (seed(Math.floor(t * 30)) - 0.5) * S * (gender === "male" ? 0.03 : 0.015) * impact,
-          (seed(Math.floor(t * 30) + 7) - 0.5) * S * 0.012 * impact,
+          (seed(Math.floor(t * 30)) - 0.5) *
+            S *
+            (gender === "male" ? 0.03 : 0.015) *
+            impact *
+            rankScale,
+          (seed(Math.floor(t * 30) + 7) - 0.5) * S * 0.012 * impact * rankScale,
         );
       c.fillStyle = "rgba(0,0,0,.12)";
       c.fillRect(-W, gy, W * 3, Hh);
@@ -319,21 +364,24 @@ export function AbilityActionCanvas({
           fxPos,
           gy,
           S,
-          0.75,
+          0.72 * rankScale,
           0.85 * Math.sin(Math.min(1, st.k * 1.2 + 0.2) * Math.PI) + 0.15,
           seed,
+          resolvedRank,
+          isImpacting ? 1 : 0,
         );
       if (fxs.includes("charge")) {
-        paintAt(c, r, t, fxPos, gy, S, 0.4, st.k * 0.7, seed);
+        paintAt(c, r, t, fxPos, gy, S, 0.38 * rankScale, st.k * 0.72, seed, resolvedRank);
         c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 30; i++) {
+        const chargeMotes = 18 + rkNum * 6;
+        for (let i = 0; i < chargeMotes; i++) {
           const q = fr(t * 1.6 + seed(i)),
             ang = seed(i + 40) * TAU;
           glowDot(
             c,
             fxPos + Math.cos(ang) * (1 - q) * S * 0.35,
             fy - S * 0.2 + Math.sin(ang) * (1 - q) * S * 0.28,
-            S * 0.011,
+            S * (0.008 + rkNum * 0.0015),
             i % 2 ? r.palette[0] : r.palette[2],
             q,
           );
@@ -503,11 +551,25 @@ export function AbilityActionCanvas({
       }
       if (fxs.includes("wave")) {
         const wx = lerp(fxPos, tx, ease(st.k));
-        groundBurst(c, wx, gy, S * 0.7, fr(st.k * 3), ink);
-        paintAt(c, r, t, wx, gy, S, 0.35, 0.7, seed);
+        groundBurst(c, wx, gy, S * 0.7 * rankScale, fr(st.k * 3), ink);
+        paintAt(
+          c,
+          r,
+          t,
+          wx,
+          gy,
+          S,
+          0.35 * rankScale,
+          0.7,
+          seed,
+          resolvedRank,
+          undefined,
+          fxCaps.complexityRank,
+          effectivePerformanceMode,
+        );
       }
-      if (fxs.includes("impact")) {
-        if (!scene)
+      if (fxs.includes("impact") || isImpacting) {
+        if (!scene && fxs.includes("impact"))
           paintAt(
             c,
             r,
@@ -515,18 +577,37 @@ export function AbilityActionCanvas({
             tx,
             gy,
             S,
-            gender === "male" ? 0.6 : 0.5,
+            (gender === "male" ? 0.58 : 0.48) * rankScale,
             Math.sin(Math.min(1, st.k * 1.3) * Math.PI),
             seed,
+            resolvedRank,
+            impact,
+            fxCaps.complexityRank,
+            effectivePerformanceMode,
           );
-        groundBurst(c, tx, gy, S * (gender === "male" ? 1 : 0.75), st.k, ink);
-        c.save();
-        c.translate(tx, gy - S * 0.2);
-        arcCycle(c, st.k, 0, 0, S * 0.16, -2.4, 4.4, S * 0.05, ink, 11);
-        c.restore();
-        if (st.k < 0.2) {
+        if (fxs.includes("impact")) {
+          groundBurst(c, tx, gy, S * (gender === "male" ? 1 : 0.75) * rankScale, st.k, ink);
+          c.save();
+          c.translate(tx, gy - S * 0.2);
+          arcCycle(c, st.k, 0, 0, S * 0.16 * rankScale, -2.4, 4.4, S * 0.05, ink, 11);
+          c.restore();
+        }
+        if ((fxs.includes("impact") && st.k < 0.25) || isImpacting) {
+          const hitAlpha = isImpacting ? 0.65 : (1 - st.k * 4) * 0.9;
           c.globalCompositeOperation = "lighter";
-          glowDot(c, tx, gy - S * 0.2, S * 0.45, r.palette[2], (1 - st.k * 5) * 0.9);
+          glowDot(
+            c,
+            tx,
+            gy - S * 0.2,
+            S * (0.42 * rankScale),
+            r.palette[2],
+            Math.max(0.15, hitAlpha),
+          );
+          c.strokeStyle = rgba(r.palette[0], Math.max(0.25, hitAlpha));
+          c.lineWidth = 2.5;
+          c.beginPath();
+          c.arc(tx, gy - S * 0.2, S * (0.2 + (isImpacting ? 0.12 : st.k * 0.5)), 0, TAU);
+          c.stroke();
           c.globalCompositeOperation = "source-over";
         }
       }
@@ -562,13 +643,33 @@ export function AbilityActionCanvas({
       image.onload = null;
       cancelAnimationFrame(raf);
     };
-  }, [name, gender, style, speed, playing, caption, sceneId, backdrop, frame]);
+  }, [
+    name,
+    gender,
+    style,
+    speed,
+    playing,
+    caption,
+    sceneId,
+    backdrop,
+    frame,
+    resolvedRank,
+    fxCaps,
+    effectivePerformanceMode,
+    isImpacting,
+    selectedEntityId,
+  ]);
   useEffect(() => {
     pausedAt.current = 0;
   }, [name, gender, style, sceneId]);
   return (
     <canvas
       ref={ref}
+      data-ability-rank={resolvedRank}
+      data-fx-complexity-rank={fxCaps.complexityRank}
+      data-performance-mode={effectivePerformanceMode ? "on" : "off"}
+      data-ability-impact={isImpacting ? "active" : "idle"}
+      data-ability-character={selectedEntityId ?? undefined}
       role="img"
       aria-label={`${gender} fighter using ${name}`}
       className="block h-full w-full"

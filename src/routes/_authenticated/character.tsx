@@ -17,7 +17,15 @@ import {
 } from "@/lib/entities";
 import { AbilityCardCanvas } from "@/components/ability-canvas";
 import { AbilityBadge } from "@/components/ability-badge";
-import { mergeCharacterAbilityList } from "@/lib/ability-rank";
+import { AbilityRankPips } from "@/components/ability-rank-pips";
+import { abilityDef } from "@/lib/abilities";
+import {
+  abilityRankMeta,
+  groupCharacterAbilityProgression,
+  mergeCharacterAbilityList,
+  tierToIntrinsicRank,
+} from "@/lib/ability-rank";
+import { useOptionalAbilityContext } from "@/context/AbilityContext";
 import {
   ElementalWallpaper,
   ELEMENT_LABEL,
@@ -102,8 +110,9 @@ const TABS = [
   ["powers", "Abilities and Role"],
   ["lore", "Story / Lore"],
   ["bonds", "Bonds / Connection"],
+  ["progress", "Journey / Progress"],
 ] as const;
-type Tab = (typeof TABS)[number][0] | "progress";
+type Tab = (typeof TABS)[number][0];
 
 const SERIES_GROUPS: Array<{ key: string; title: string; match: RegExp; seasons: string[] }> = [
   {
@@ -320,10 +329,12 @@ function ClassicDossier() {
   const qc = useQueryClient();
   const ui = useUiToggles();
   const { motionActive: animOn } = useAppMotion();
+  const abilityCtx = useOptionalAbilityContext();
   const [tab, setTab] = useState<Tab>("powers");
   const [openSeries, setOpenSeries] = useState<string | null>(null);
   const [ctxSeason, setCtxSeason] = useState<string | null>(null);
   const [seasonIdx, setSeasonIdx] = useState(-1);
+  const [seasonNum, setSeasonNum] = useState<number | null>(null);
   const [descOpen, setDescOpen] = useState(false);
   const [, setFavTick] = useState(0);
   useEffect(() => onFavoritesChange(() => setFavTick((t) => t + 1)), []);
@@ -420,6 +431,24 @@ function ClassicDossier() {
     });
   }, [notes, e?.description]);
   const activeSeason = seasonIdx >= 0 ? seasons[seasonIdx] : null;
+  const seriesTitleMap = useMemo(
+    () => new Map((allSeries ?? []).map((x) => [x.id, x.title])),
+    [allSeries],
+  );
+  const seasonNamesMap = useMemo(
+    () => new Map((allSeries ?? []).map((x) => [x.id, x.season_names ?? []])),
+    [allSeries],
+  );
+  const abilityProgression = useMemo(
+    () => groupCharacterAbilityProgression(charAbilities ?? [], seriesTitleMap, seasonNamesMap),
+    [charAbilities, seriesTitleMap, seasonNamesMap],
+  );
+  const matchedCtxSeriesId = useMemo(() => {
+    if (!ctxSeason || !allSeries?.length) return null;
+    const found = allSeries.find((s) => ctxSeason.toLowerCase().startsWith(s.title.toLowerCase()));
+    return found?.id ?? null;
+  }, [ctxSeason, allSeries]);
+  const activeSeriesId = activeSeason?.series_id ?? matchedCtxSeriesId ?? null;
   const seasonHue = seasonIdx >= 0 ? SEASON_HUES[seasonIdx % SEASON_HUES.length] : null;
   const accent = seasonHue ? `hsl(${seasonHue} 85% 60%)` : "var(--accent)";
 
@@ -625,18 +654,43 @@ function ClassicDossier() {
                   </button>
                   {open && (
                     <div className="grid gap-0.5 border-t border-white/10 bg-black/30 p-1.5">
-                      {list.map((sn) => (
-                        <button
-                          key={sn}
-                          onClick={() => {
-                            setCtxSeason(`${g.title} ${sn}`);
-                            setSeasonIdx(memberIdx);
-                          }}
-                          className={`rounded px-2 py-1 text-left text-[10px] uppercase tracking-wide ${ctxSeason === `${g.title} ${sn}` ? "bg-accent/20 text-accent" : "text-muted-foreground hover:text-foreground"}`}
-                        >
-                          {g.seasons.length && g.key !== "standalone" ? `${g.title} ${sn}` : sn}
-                        </button>
-                      ))}
+                      <button
+                        onClick={() => {
+                          setCtxSeason(null);
+                          setSeasonIdx(-1);
+                          setSeasonNum(null);
+                          abilityCtx?.setSeasonScope(null, null);
+                        }}
+                        className={`rounded px-2 py-1 text-left text-[10px] uppercase tracking-wide ${!ctxSeason && seasonIdx === -1 ? "bg-accent/20 text-accent" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        Overview (All)
+                      </button>
+                      {list.map((sn, sIdx) => {
+                        const parsedSeason = /^S(\d+)$/i.exec(sn)?.[1];
+                        const nextSeasonNumber = parsedSeason
+                          ? parseInt(parsedSeason, 10)
+                          : g.seasons.length > 1
+                            ? sIdx + 1
+                            : null;
+                        const matchedSeriesId =
+                          (memberIdx >= 0 ? seasons[memberIdx]?.series_id : undefined) ??
+                          dbSeries[0]?.id ??
+                          null;
+                        return (
+                          <button
+                            key={sn}
+                            onClick={() => {
+                              setCtxSeason(`${g.title} ${sn}`);
+                              setSeasonIdx(memberIdx);
+                              setSeasonNum(nextSeasonNumber);
+                              abilityCtx?.setSeasonScope(matchedSeriesId, nextSeasonNumber);
+                            }}
+                            className={`rounded px-2 py-1 text-left text-[10px] uppercase tracking-wide ${ctxSeason === `${g.title} ${sn}` ? "bg-accent/20 text-accent" : "text-muted-foreground hover:text-foreground"}`}
+                          >
+                            {g.seasons.length && g.key !== "standalone" ? `${g.title} ${sn}` : sn}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -721,7 +775,12 @@ function ClassicDossier() {
             {e.kind === "character" && seasons.length > 0 && (
               <div className="mt-3 flex gap-1.5 overflow-x-auto min-[860px]:hidden [scrollbar-width:none]">
                 <button
-                  onClick={() => setSeasonIdx(-1)}
+                  onClick={() => {
+                    setSeasonIdx(-1);
+                    setSeasonNum(null);
+                    setCtxSeason(null);
+                    abilityCtx?.setSeasonScope(null, null);
+                  }}
                   className={`shrink-0 rounded-full px-3 py-1 text-[10px] uppercase ${seasonIdx === -1 ? "bg-accent text-accent-foreground" : "bg-white/10 text-muted-foreground"}`}
                 >
                   Overview
@@ -731,7 +790,9 @@ function ClassicDossier() {
                     key={r.id}
                     onClick={() => {
                       setSeasonIdx(i);
+                      setSeasonNum(null);
                       setCtxSeason(null);
+                      abilityCtx?.setSeasonScope(r.series_id ?? null, null);
                     }}
                     className={`shrink-0 rounded-full px-3 py-1 text-[10px] uppercase ${seasonIdx === i ? "bg-accent text-accent-foreground" : "bg-white/10 text-muted-foreground"}`}
                   >
@@ -851,23 +912,141 @@ function ClassicDossier() {
               {tab === "powers" &&
                 (() => {
                   const mergedPowers = mergeCharacterAbilityList(charAbilities ?? [], e.abilities, {
-                    seriesId: activeSeason?.series_id ?? null,
+                    seriesId: activeSeriesId,
+                    seasonNumber: seasonNum,
                   });
                   return (
-                    <div className="grid gap-3">
+                    <div className="grid gap-4">
                       {mergedPowers.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {mergedPowers.map((item) => (
-                            <AbilityBadge
-                              key={item.key}
-                              name={item.key}
-                              level={item.isAssigned ? item.level : undefined}
-                              showRank={item.isAssigned}
-                            />
-                          ))}
+                        <div className="flex flex-wrap gap-2">
+                          {mergedPowers.map((item) => {
+                            const def = abilityDef(item.key);
+                            const effectiveRank = item.isAssigned
+                              ? item.level
+                              : tierToIntrinsicRank(def.tier);
+                            const isSelected = abilityCtx?.abilityKey === def.key;
+                            return (
+                              <button
+                                key={item.key}
+                                type="button"
+                                onClick={() => {
+                                  sfx.pop();
+                                  abilityCtx?.selectAbility(def.key, {
+                                    rank: effectiveRank,
+                                    entityId: e.id,
+                                    seriesId: activeSeriesId,
+                                    seasonNumber: seasonNum,
+                                    triggerImpact: true,
+                                  });
+                                }}
+                                className={`rounded-full text-left transition ${
+                                  isSelected
+                                    ? "ring-2 ring-accent/70 ring-offset-1 ring-offset-black"
+                                    : ""
+                                }`}
+                                title={`Inspect ${def.label} (${abilityRankMeta(effectiveRank).label})`}
+                              >
+                                <AbilityBadge
+                                  name={item.key}
+                                  level={item.isAssigned ? item.level : undefined}
+                                  showRank={item.isAssigned}
+                                />
+                              </button>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">No abilities recorded.</p>
+                      )}
+
+                      {abilityProgression.length > 0 && (
+                        <div className="rounded-xl border border-white/10 bg-black/40 p-3">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-accent">
+                              Season Mastery Progression
+                            </span>
+                            <Link
+                              to="/abilities"
+                              className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent"
+                            >
+                              Open FX Engine →
+                            </Link>
+                          </div>
+                          <div className="grid gap-2">
+                            {abilityProgression.map((group) => {
+                              const def = abilityDef(group.displayKey);
+                              return (
+                                <div
+                                  key={group.canonKey}
+                                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className="h-2 w-2 shrink-0 rounded-full"
+                                      style={{ background: def.color }}
+                                    />
+                                    <span className="text-xs font-medium text-foreground">
+                                      {def.label}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {group.steps.map((step, sIdx) => {
+                                      const activeStep =
+                                        (step.seriesId ?? null) === activeSeriesId &&
+                                        (step.seasonNumber ?? null) === seasonNum;
+                                      return (
+                                        <span
+                                          key={step.id}
+                                          className="inline-flex items-center gap-1"
+                                        >
+                                          {sIdx > 0 && (
+                                            <span className="text-[10px] text-muted-foreground">
+                                              →
+                                            </span>
+                                          )}
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const idx = seasons.findIndex(
+                                                (s) => s.series_id === step.seriesId,
+                                              );
+                                              setSeasonIdx(idx);
+                                              setSeasonNum(step.seasonNumber);
+                                              setCtxSeason(
+                                                step.seriesId
+                                                  ? `${step.seriesTitle} ${step.seasonLabel}`
+                                                  : null,
+                                              );
+                                              abilityCtx?.selectAbility(def.key, {
+                                                rank: step.level,
+                                                entityId: e.id,
+                                                seriesId: step.seriesId,
+                                                seasonNumber: step.seasonNumber,
+                                                triggerImpact: true,
+                                              });
+                                            }}
+                                            className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] transition ${
+                                              activeStep
+                                                ? "border-accent bg-accent/20 text-accent"
+                                                : "border-white/15 bg-black/40 text-muted-foreground hover:border-white/30 hover:text-foreground"
+                                            }`}
+                                          >
+                                            <span>
+                                              {step.seriesId
+                                                ? `${step.seriesTitle.replace(/^The\s+/i, "")} ${step.seasonLabel}`
+                                                : step.seasonLabel}
+                                            </span>
+                                            <AbilityRankPips rank={step.level} compact />
+                                          </button>
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       )}
                     </div>
                   );
@@ -901,6 +1080,43 @@ function ClassicDossier() {
                   baseRows={journeyRows}
                   others={(allChars ?? []).filter((c) => c.id !== id)}
                 />
+              )}
+              {tab === "progress" && abilityProgression.length > 0 && (
+                <div className="mb-4 rounded-xl border border-white/10 bg-black/40 p-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-accent">
+                    Ability Mastery Across Seasons
+                  </p>
+                  <div className="grid gap-2">
+                    {abilityProgression.map((group) => {
+                      const def = abilityDef(group.displayKey);
+                      return (
+                        <div
+                          key={group.canonKey}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-xs"
+                        >
+                          <span className="font-medium text-foreground">{def.label}</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {group.steps.map((step, sIdx) => (
+                              <span key={step.id} className="inline-flex items-center gap-1">
+                                {sIdx > 0 && (
+                                  <span className="text-[10px] text-muted-foreground">→</span>
+                                )}
+                                <span className="inline-flex items-center gap-1 rounded border border-white/15 bg-black/50 px-1.5 py-0.5 text-[10px]">
+                                  <span>
+                                    {step.seriesId
+                                      ? `${step.seriesTitle.replace(/^The\s+/i, "")} ${step.seasonLabel}`
+                                      : step.seasonLabel}
+                                  </span>
+                                  <AbilityRankPips rank={step.level} compact showLabel />
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
               {tab === "progress" && (
                 <ul className="grid gap-1.5 text-xs">

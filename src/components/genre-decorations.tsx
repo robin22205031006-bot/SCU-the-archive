@@ -1418,7 +1418,7 @@ export function GenreAbilityEmblem({
 
   const renderGlyph = (glyphClass: string) =>
     customEmblem ? (
-      <AbilityCustomEmblem kind={customEmblem} className={glyphClass} />
+      <AbilityCustomEmblem kind={customEmblem} rank={resolvedRank} className={glyphClass} />
     ) : (
       <Icon className={glyphClass} />
     );

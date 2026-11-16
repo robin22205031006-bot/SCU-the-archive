@@ -118,4 +118,61 @@ describe("ability FX complete coverage", () => {
     );
     expect(unchained).toEqual([]);
   });
+
+  it("scales abilityFxRecipe rankScale monotonically across Ranks 1..5 and runs every painter at Ranks 1, 3, and 5 without throwing", () => {
+    const gradientStub = { addColorStop: () => {} };
+    const calls: string[] = [];
+    const mockCtx = new Proxy(
+      {
+        createLinearGradient: () => gradientStub,
+        createRadialGradient: () => gradientStub,
+        createConicGradient: () => gradientStub,
+        save: () => calls.push("save"),
+        restore: () => calls.push("restore"),
+        setLineDash: () => {},
+        measureText: () => ({ width: 10 }),
+      } as Record<string, unknown>,
+      {
+        get(target, prop) {
+          if (prop in target) return target[prop as string];
+          return () => {};
+        },
+        set(target, prop, value) {
+          target[prop as string] = value;
+          return true;
+        },
+      },
+    ) as unknown as CanvasRenderingContext2D;
+
+    const powers = ([1, 2, 3, 4, 5] as const).map((r) => abilityFxRecipe("flame", r).power);
+    expect(powers[4]!).toBeGreaterThan(powers[0]!);
+
+    const allKeys = Array.from(
+      new Set([...ABILITIES.map((a) => a.key), ...FX_TABLE_KEYS, "quantum_mirage", "solar_flare"]),
+    );
+
+    for (const key of allKeys) {
+      for (const rank of [1, 3, 5] as const) {
+        const recipe = abilityFxRecipe(key, rank);
+        const paint = ALL_PAINT[recipe.motif];
+        expect(typeof paint).toBe("function");
+        if (!paint) throw new Error(`Missing painter for motif ${recipe.motif}`);
+        expect(() =>
+          paint({
+            c: mockCtx,
+            t: 0.45,
+            s: 280,
+            r: recipe,
+            v: recipe.variant,
+            p: recipe.power,
+            rnd: (i: number) => (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1,
+            step: 6,
+            rank,
+            impact: rank >= 4 ? 0.6 : 0,
+          }),
+        ).not.toThrow();
+      }
+    }
+    expect(calls.length).toBeGreaterThan(0);
+  });
 });

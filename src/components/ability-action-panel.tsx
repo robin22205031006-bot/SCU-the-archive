@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Layers, Pause, Play, SkipBack, SkipForward, Swords, Zap } from "lucide-react";
+import { Box, Gauge, Layers, Pause, Play, SkipBack, SkipForward, Swords, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ABILITY_GROUP_LABELS, abilityDef, normalizeAbilityKey } from "@/lib/abilities";
 import { abilityFxRecipe, simulateCombat } from "@/lib/ability-fx";
@@ -40,6 +40,7 @@ import {
 } from "@/lib/character-combat";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 import {
+  AbilityProvider,
   isHighTierAbility,
   useOptionalAbilityContext,
   type AbilityImpactState,
@@ -47,7 +48,7 @@ import {
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
-export function AbilityActionPanel({ initialAbility }: { initialAbility?: string | undefined }) {
+function AbilityActionPanelBody({ initialAbility }: { initialAbility?: string | undefined }) {
   const ctx = useOptionalAbilityContext();
   const holdersMasked = useSpoilerMask("abilities");
   const { holdersMap } = useAbilityHolders();
@@ -60,7 +61,9 @@ export function AbilityActionPanel({ initialAbility }: { initialAbility?: string
     initialAbility ? abilityDef(initialAbility).key : (ctx?.abilityKey ?? "crimson_astrapo"),
   );
   const [localRank, setLocalRank] = useState<AbilityEmblemRank>(() => {
-    const startKey = initialAbility ? abilityDef(initialAbility).key : (ctx?.abilityKey ?? "crimson_astrapo");
+    const startKey = initialAbility
+      ? abilityDef(initialAbility).key
+      : (ctx?.abilityKey ?? "crimson_astrapo");
     return ctx && ctx.abilityKey === startKey
       ? ctx.rank
       : tierToIntrinsicRank(abilityDef(startKey).tier);
@@ -80,6 +83,8 @@ export function AbilityActionPanel({ initialAbility }: { initialAbility?: string
   const [backdrop, setBackdrop] = useState<CombatBackdrop>("rooftop");
   const [frame, setFrame] = useState<number | undefined>();
   const [stageMode, setStageMode] = useState<"2d" | "3d">("2d");
+  const [localPerformanceMode, setLocalPerformanceMode] = useState(false);
+  const performanceMode = ctx ? ctx.performanceMode : localPerformanceMode;
 
   const fireImpact = useCallback(
     (key: string, rank: AbilityEmblemRank, force = false) => {
@@ -361,6 +366,22 @@ export function AbilityActionPanel({ initialAbility }: { initialAbility?: string
         </Button>
         <Button
           size="sm"
+          variant={performanceMode ? "default" : "outline"}
+          aria-pressed={performanceMode}
+          title="Cap high-rank FX complexity for smoother rendering on lower-end devices"
+          onClick={() => {
+            if (ctx) {
+              ctx.setPerformanceMode((p) => !p);
+            } else {
+              setLocalPerformanceMode((p) => !p);
+            }
+          }}
+        >
+          <Gauge className="mr-1 h-4 w-4" aria-hidden="true" />
+          {performanceMode ? "Perf Mode: On" : "Perf Mode"}
+        </Button>
+        <Button
+          size="sm"
           variant={stageMode === "3d" ? "default" : "outline"}
           onClick={() => {
             triggerAnimeActionCut({
@@ -465,6 +486,9 @@ export function AbilityActionPanel({ initialAbility }: { initialAbility?: string
             style={fs}
             speed={speed}
             playing={playing}
+            rank={activeRank}
+            impactActive={impactOnStage}
+            performanceMode={performanceMode}
             onPhase={(label, i, n) => setPhase({ label, i, n })}
           />
         )}
@@ -606,5 +630,17 @@ export function AbilityActionPanel({ initialAbility }: { initialAbility?: string
         </div>
       </section>
     </main>
+  );
+}
+
+export function AbilityActionPanel({ initialAbility }: { initialAbility?: string | undefined }) {
+  const existingCtx = useOptionalAbilityContext();
+  if (existingCtx) {
+    return <AbilityActionPanelBody initialAbility={initialAbility} />;
+  }
+  return (
+    <AbilityProvider initialAbility={initialAbility}>
+      <AbilityActionPanelBody initialAbility={initialAbility} />
+    </AbilityProvider>
   );
 }

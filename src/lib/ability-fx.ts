@@ -751,21 +751,30 @@ export const TIER_POWER: Record<AbilityTier, number> = {
   Role: 1,
 };
 const FALLBACK: [RegExp, FxMotif][] = [
-  [/flame|fire|pyro|ember/, "flame"],
-  [/lightning|electro|volt|thunder/, "lightning"],
-  [/blood|hemo|sangu/, "blood"],
-  [/water|hydro|tide/, "water"],
-  [/wind|aero|air|sky/, "wind"],
-  [/ice|cryo|frost/, "frost"],
-  [/earth|stone|geo/, "earth"],
-  [/nature|plant|vine/, "nature"],
-  [/shadow|umbra|dark/, "shadow"],
-  [/heal|regen/, "heal"],
-  [/sword|blade|dagger/, "blade"],
-  [/beast|wolf|tiger|lion|dragon/, "beast"],
-  [/tech|suit|cyber/, "tech"],
-  [/portal|gate/, "portal"],
-  [/time|reality|space/, "chrono"],
+  [/flame|fire|pyro|ember|blaze|ignite/, "flame"],
+  [/lightning|electro|volt|thunder|astrapo|plasma|shock/, "lightning"],
+  [/blood|hemo|sangu|vampir|crimson oath/, "blood"],
+  [/water|hydro|tide|tidal|ocean|aquatic/, "water"],
+  [/wind|aero|air|sky|gale|cyclone|zephyr/, "wind"],
+  [/ice|cryo|frost|glacial|blizzard/, "frost"],
+  [/earth|stone|geo|tectonic|seismic|boulder|terra/, "earth"],
+  [/nature|plant|vine|flora|verdant|forest|thorn/, "nature"],
+  [/shadow|umbra|dark|nightmare|demonic/, "shadow"],
+  [/ghost|spirit|spectral|revenant|shishjutsu|ofuda|talisman|necromanc/, "ghost"],
+  [/heal|regen|vital|restor|lotus/, "heal"],
+  [/sword|blade|dagger|slash|assassin|katana/, "blade"],
+  [/beast|wolf|tiger|lion|dragon|hyena|snake|serpent|predator|feral/, "beast"],
+  [/tech|suit|cyber|sentinel|vanguard|armor|reactor|circuit/, "tech"],
+  [/portal|gate|warp|spatial|teleport/, "portal"],
+  [/chaos|glitch|error|corrupt|entropy|wild/, "chaos"],
+  [/prism|omni|refract|spectral light/, "prism"],
+  [/judg|authority|sovereign|crown|verdict/, "judgement"],
+  [/destruct|impact|super[\s_-]*soldier|combat[\s_-]*specialist|punch|shockwave/, "impact"],
+  [/mind|omen|sight|fate|manipulat|spy|tactic|jester|psychic/, "mind"],
+  [/void|aether|splic|singular/, "void"],
+  [/arcane|rune|card|ancient|sigil|magic|sorcer/, "arcane"],
+  [/beam|overwatch|long[\s_-]*range|speed|velocity|energy|echo|sound/, "beam"],
+  [/time|chrono|reality|domain|space|hourglass/, "chrono"],
 ];
 
 function hash(s: string) {
@@ -796,7 +805,7 @@ export function abilityFxRecipe(name: string, rank?: number | undefined): FxReci
       power,
       note: row[4],
     };
-  const s = `${def.key} ${def.label}`.toLowerCase();
+  const s = `${def.key} ${def.label} ${def.description ?? ""}`.toLowerCase();
   const motif = FALLBACK.find(([re]) => re.test(s))?.[1] ?? "arcane";
   const h = hash(def.key);
   return {

@@ -17,6 +17,7 @@ import { useNexusAdvancedFx } from "@/hooks/use-nexus-advanced-fx";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { AbilityFxShowcase } from "@/components/ability-fx-showcase";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
+import { useOptionalAbilityContext } from "@/context/AbilityContext";
 
 const TIER_RANK: Record<AbilityTier, number> = {
   Mythic: 7,
@@ -49,6 +50,7 @@ export function AbilityBadge({
   const activeGenre = useActiveGenre();
   const advanced = useNexusAdvancedFx();
   const [fxOpen, setFxOpen] = useState(false);
+  const abilityCtx = useOptionalAbilityContext();
   useAbilityRegistryVersion();
   const def = abilityDef(name);
   const Icon = def.icon;
@@ -60,6 +62,9 @@ export function AbilityBadge({
     parseAbilityRank(level) ?? (showRank ? tierToIntrinsicRank(def.tier) : undefined);
   const rankMeta = resolvedRank ? abilityRankMeta(resolvedRank) : null;
   const customEmblem = resolveCustomAbilityEmblem(`${def.key} ${def.label}`, def.description);
+  const impactOnSelf = Boolean(
+    abilityCtx?.abilityImpact?.active && abilityCtx.abilityImpact.abilityKey === def.key,
+  );
   const title = `${def.label} — ${def.tier}${rankMeta ? ` (${rankMeta.label})` : ""}${def.group === "beast" ? " · Beast trait" : ""}${def.description ? `\n${def.description}` : ""}`;
 
   const effectiveRank = resolvedRank ?? tierToIntrinsicRank(def.tier);
@@ -118,8 +123,12 @@ export function AbilityBadge({
           title={title}
           data-ability-rank={resolvedRank}
           data-emblem-stage={effectiveRank}
+          data-ability-impact={impactOnSelf ? "active" : "idle"}
           onClick={(e) => {
             e.stopPropagation();
+            abilityCtx?.selectAbility(def.key, {
+              ...(resolvedRank ? { rank: resolvedRank } : {}),
+            });
             triggerAnimeActionCut({
               color: def.color,
               label: def.label,
@@ -133,7 +142,7 @@ export function AbilityBadge({
               ? { borderColor: stageBorderColor, boxShadow: stageShadow }
               : undefined
           }
-          className={`scu-tactile inline-flex items-center gap-1 border border-border pr-1.5 text-xs text-accent hover:border-accent ${mythic || legendary || effectiveRank >= 4 ? "studio-bloom-node " : ""}${className}`}
+          className={`scu-tactile inline-flex items-center gap-1 border border-border pr-1.5 text-xs text-accent hover:border-accent ${mythic || legendary || effectiveRank >= 4 ? "studio-bloom-node " : ""}${impactOnSelf ? "ring-2 ring-accent/70 " : ""}${className}`}
         >
           <NexusAbilitySymbol
             name={def.key}
@@ -182,7 +191,8 @@ export function AbilityBadge({
       title={title}
       data-ability-rank={resolvedRank}
       data-emblem-stage={effectiveRank}
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${mythic || effectiveRank === 5 ? "animate-pulse " : ""}${mythic || legendary || effectiveRank >= 4 ? "studio-bloom-node " : ""}${className}`}
+      data-ability-impact={impactOnSelf ? "active" : "idle"}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${mythic || effectiveRank === 5 ? "animate-pulse " : ""}${mythic || legendary || effectiveRank >= 4 ? "studio-bloom-node " : ""}${impactOnSelf ? "ring-2 ring-accent/70 " : ""}${className}`}
       style={{
         color: def.color,
         borderColor: stageBorderColor,
@@ -205,7 +215,11 @@ export function AbilityBadge({
       }}
     >
       {isMinimal && customEmblem ? (
-        <AbilityCustomEmblem kind={customEmblem} className="h-3.5 w-3.5 shrink-0" />
+        <AbilityCustomEmblem
+          kind={customEmblem}
+          rank={resolvedRank}
+          className="h-3.5 w-3.5 shrink-0"
+        />
       ) : (
         <Icon className="h-3 w-3 shrink-0" style={{ color: def.color }} />
       )}
