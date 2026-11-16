@@ -9,7 +9,7 @@ import { CrimsonBloodlineTheme } from "@/components/ability-canvas";
 import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
+import { MangaChapterBanner, MangaPanel } from "@/components/manga-primitives";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 import { LoreBreadcrumb, LoreBreadcrumbProvider } from "@/components/lore-breadcrumb";
 

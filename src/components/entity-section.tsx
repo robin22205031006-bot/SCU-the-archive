@@ -83,7 +83,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { animationClass, tierDef } from "@/lib/character-tier";
 import { onSpoilerChange, spoilersHidden } from "@/lib/spoiler";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
-import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
+import type { DossierGroup } from "@/lib/export-dossier";
 import { getCombatStats } from "@/lib/combat-stats";
 import { NexusExplorer } from "./nexus-explorer";
 import { NexusView } from "./nexus-view";
@@ -92,7 +92,8 @@ import { UiStylePicker } from "@/components/ui-style-picker";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaEntitySpread, MangaPanel } from "./manga-view";
+import { MangaEntitySpread } from "./manga-view";
+import { MangaPanel } from "./manga-primitives";
 import { GroupGenreEmblem } from "@/components/group-emblem";
 
 import {
@@ -483,6 +484,7 @@ function DetailOverlay({
       } catch {
         /* memberships table may not exist yet */
       }
+      const { exportDossierPdf } = await import("@/lib/export-dossier");
       await exportDossierPdf(e, groups);
       sfx.add();
     } catch (err) {

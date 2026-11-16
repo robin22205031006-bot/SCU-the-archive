@@ -28,20 +28,33 @@ export const THEME_MOTION_REGISTRY: Record<MotionThemeKey, ThemeMotionSpec> = {
   classic: {
     transition: { duration: 0.28, ease: GPU_BEZIER_STANDARD },
     pageVariants: {
-      initial: { opacity: 0, y: 10 },
-      animate: { opacity: 1, y: 0, transition: { duration: 0.28, ease: GPU_BEZIER_STANDARD } },
-      exit: { opacity: 0, y: -6, transition: { duration: 0.18, ease: GPU_BEZIER_STANDARD } },
-    },
-    cardVariants: {
-      initial: { opacity: 0, y: 12, scale: 0.98 },
+      initial: { opacity: 0, y: 14, scale: 0.995 },
       animate: {
         opacity: 1,
         y: 0,
         scale: 1,
-        transition: { duration: 0.28, ease: GPU_BEZIER_STANDARD },
+        transition: { duration: 0.36, ease: GPU_BEZIER_STANDARD },
       },
-      hover: { y: -3, transition: { duration: 0.2, ease: GPU_BEZIER_STANDARD } },
-      tap: { scale: 0.985, transition: { duration: 0.1 } },
+      exit: { opacity: 0, y: -8, transition: { duration: 0.16, ease: GPU_BEZIER_STANDARD } },
+    },
+    cardVariants: {
+      initial: { opacity: 0, y: 16, scale: 0.97 },
+      animate: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: { duration: 0.34, ease: GPU_BEZIER_STANDARD },
+      },
+      hover: {
+        y: -5,
+        scale: 1.012,
+        transition: { type: "spring", stiffness: 420, damping: 26, mass: 0.6 },
+      },
+      tap: {
+        scale: 0.975,
+        y: -1,
+        transition: { type: "spring", stiffness: 600, damping: 30, mass: 0.5 },
+      },
     },
     tabIndicatorTransition: TAB_INDICATOR_SPRING,
     modalVariants: {
@@ -76,8 +89,15 @@ export const THEME_MOTION_REGISTRY: Record<MotionThemeKey, ThemeMotionSpec> = {
         y: 0,
         transition: { duration: 0.18, ease: GPU_BEZIER_NEXUS },
       },
-      hover: { y: -2, scale: 1.01, transition: { duration: 0.16, ease: GPU_BEZIER_NEXUS } },
-      tap: { scale: 0.98, transition: { duration: 0.08 } },
+      hover: {
+        y: -3,
+        scale: 1.015,
+        transition: { type: "spring", stiffness: 520, damping: 30, mass: 0.55 },
+      },
+      tap: {
+        scale: 0.972,
+        transition: { type: "spring", stiffness: 700, damping: 32, mass: 0.45 },
+      },
     },
     tabIndicatorTransition: { duration: 0.18, ease: GPU_BEZIER_NEXUS },
     modalVariants: {

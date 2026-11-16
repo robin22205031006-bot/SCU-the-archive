@@ -212,27 +212,14 @@ export default defineConfig({
                 if (id.includes("/lore-export/") || id.includes("\\lore-export\\")) {
                   return "lore-export";
                 }
-                if (
-                  id.includes("/node_modules/three/") ||
-                  id.includes("\\node_modules\\three\\") ||
-                  id.includes("/node_modules/@react-three/") ||
-                  id.includes("\\node_modules\\@react-three\\")
-                ) {
-                  return "vendor-three";
-                }
+                // three.js and recharts are intentionally not forced into manual chunks:
+                // shared bundler helpers landed in them and made the entry bundle
+                // download ~1.8 MB of 3D and chart code before first paint.
                 if (
                   id.includes("/node_modules/framer-motion/") ||
                   id.includes("\\node_modules\\framer-motion\\")
                 ) {
                   return "vendor-motion";
-                }
-                if (
-                  id.includes("/node_modules/recharts/") ||
-                  id.includes("\\node_modules\\recharts\\") ||
-                  id.includes("/node_modules/d3-") ||
-                  id.includes("\\node_modules\\d3-")
-                ) {
-                  return "vendor-charts";
                 }
                 return undefined;
               },
@@ -244,6 +231,11 @@ export default defineConfig({
   },
   nitro: {
     preset: "node-server",
+    output: {
+      dir: "dist",
+      serverDir: "dist/server",
+      publicDir: "dist/client",
+    },
   },
   tanstackStart: {
     server: { entry: "server" },

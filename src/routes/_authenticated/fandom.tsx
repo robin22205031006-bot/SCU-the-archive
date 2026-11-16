@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsStaff, useSession } from "@/hooks/use-admin";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
+import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-primitives";
 import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/fandom")({

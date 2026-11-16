@@ -772,7 +772,7 @@ describe("Ability rank audio cues, benefits modal, usage tracking, comparison, a
     expect(mobileVibrate).toHaveBeenLastCalledWith(ABILITY_RANK_UP_VIBRATION_PATTERNS[3]);
 
     // Descending (3 -> 2) does NOT trigger rank-up vibration
-    fireEvent.click(screen.getByRole("button", { name: /Set Red Lightning to Rank II/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Set Red Lightning to Rank II ·/i }));
     expect(mobileVibrate).toHaveBeenCalledTimes(1);
 
     // Identical rank within dedup window is ignored; next upgrade 2 -> 3 -> 4 -> 5 escalates cleanly

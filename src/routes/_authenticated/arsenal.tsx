@@ -22,7 +22,7 @@ import { entitiesQuery } from "@/lib/entities";
 import { seriesQuery } from "@/lib/series";
 import { uploadModel3d } from "@/lib/models-3d";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-primitives";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 import { PanelSkeleton } from "@/components/route-skeleton";
 import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
