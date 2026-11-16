@@ -7,6 +7,7 @@ import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 import { MotionPage, MotionSection } from "@/components/app-motion";
 import { PanelSkeleton } from "@/components/route-skeleton";
+import { LoreBreadcrumb, useLoreBreadcrumbParent } from "@/components/lore-breadcrumb";
 
 const ClanGraph = lazy(() =>
   import("@/components/clan-graph").then((m) => ({ default: m.ClanGraph })),
@@ -49,6 +50,7 @@ export function Clans() {
   const isManga = useIsManga();
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
+  const parentSegments = useLoreBreadcrumbParent();
   return (
     <MotionPage
       as="main"
@@ -74,6 +76,9 @@ export function Clans() {
           </div>
         )}
       </MotionSection>
+      {parentSegments.length > 0 && (
+        <LoreBreadcrumb segments={[{ id: "clans-root", label: "Clan & Lineage Graph" }]} />
+      )}
       <MotionSection delay={0.05}>
         <Suspense fallback={<PanelSkeleton className="min-h-[60vh]" />}>
           {nexus ? (

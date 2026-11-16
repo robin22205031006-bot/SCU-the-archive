@@ -11,6 +11,7 @@ import { useUiStyle } from "@/lib/ui-style";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
+import { LoreBreadcrumb, LoreBreadcrumbProvider } from "@/components/lore-breadcrumb";
 
 const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
 const Clans = lazy(() => import("./clans").then((m) => ({ default: m.Clans })));
@@ -194,20 +195,33 @@ function Archive() {
           </div>
 
           <section aria-label={active.t} data-spoiler="archive">
-            <MotionSection key={`manga-${module}`}>
-              <MangaPanel caption={`FOLIO // ${active.t.toUpperCase()}`} badge="CANON RECORD">
-                <SectionBoundary key={module} label={active.t}>
-                  <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
-                    {module === "series" && <ArchiveSeasons />}
-                    {module === "orgs" && <Orgs />}
-                    {module === "clans" && <Clans />}
-                    {module === "graph" && <RelationshipGraph />}
-                    {module === "timeline" && <Timeline />}
-                    {module === "explorer" && <LoreExplorer />}
-                  </Suspense>
-                </SectionBoundary>
-              </MangaPanel>
-            </MotionSection>
+            <LoreBreadcrumbProvider
+              segments={[
+                {
+                  id: "archive-root",
+                  label: "Archive",
+                  onClick: module !== "orgs" ? () => setModule("orgs") : undefined,
+                },
+              ]}
+            >
+              {(module === "series" || module === "graph" || module === "timeline") && (
+                <LoreBreadcrumb segments={[{ id: `archive-mod-${module}`, label: active.t }]} />
+              )}
+              <MotionSection key={`manga-${module}`}>
+                <MangaPanel caption={`FOLIO // ${active.t.toUpperCase()}`} badge="CANON RECORD">
+                  <SectionBoundary key={module} label={active.t}>
+                    <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+                      {module === "series" && <ArchiveSeasons />}
+                      {module === "orgs" && <Orgs />}
+                      {module === "clans" && <Clans />}
+                      {module === "graph" && <RelationshipGraph />}
+                      {module === "timeline" && <Timeline />}
+                      {module === "explorer" && <LoreExplorer />}
+                    </Suspense>
+                  </SectionBoundary>
+                </MangaPanel>
+              </MotionSection>
+            </LoreBreadcrumbProvider>
           </section>
         </>
       ) : (
@@ -230,22 +244,35 @@ function Archive() {
           </div>
 
           <section aria-label={active.t} data-spoiler="archive">
-            <MotionSection key={`classic-${module}`}>
-              <SectionBoundary key={module} label={active.t}>
-                <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
-                  {module === "series" && <ArchiveSeasons />}
-                  {module === "orgs" && <Orgs />}
-                  {module === "clans" && <Clans />}
-                  {module === "graph" && (
-                    <div className="glass rounded-2xl p-4">
-                      <RelationshipGraph />
-                    </div>
-                  )}
-                  {module === "timeline" && <Timeline />}
-                  {module === "explorer" && <LoreExplorer />}
-                </Suspense>
-              </SectionBoundary>
-            </MotionSection>
+            <LoreBreadcrumbProvider
+              segments={[
+                {
+                  id: "archive-root",
+                  label: "Archive",
+                  onClick: module !== "orgs" ? () => setModule("orgs") : undefined,
+                },
+              ]}
+            >
+              {(module === "series" || module === "graph" || module === "timeline") && (
+                <LoreBreadcrumb segments={[{ id: `archive-mod-${module}`, label: active.t }]} />
+              )}
+              <MotionSection key={`classic-${module}`}>
+                <SectionBoundary key={module} label={active.t}>
+                  <Suspense fallback={<PanelSkeleton className="h-[50vh]" />}>
+                    {module === "series" && <ArchiveSeasons />}
+                    {module === "orgs" && <Orgs />}
+                    {module === "clans" && <Clans />}
+                    {module === "graph" && (
+                      <div className="glass rounded-2xl p-4">
+                        <RelationshipGraph />
+                      </div>
+                    )}
+                    {module === "timeline" && <Timeline />}
+                    {module === "explorer" && <LoreExplorer />}
+                  </Suspense>
+                </SectionBoundary>
+              </MotionSection>
+            </LoreBreadcrumbProvider>
           </section>
         </>
       )}

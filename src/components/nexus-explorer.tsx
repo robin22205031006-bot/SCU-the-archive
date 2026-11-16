@@ -7,6 +7,12 @@ import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { NexusSign } from "@/components/nexus-sign";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
+import {
+  LoreBreadcrumb,
+  LoreBreadcrumbProvider,
+  useLoreBreadcrumbParent,
+  type LoreBreadcrumbSegment,
+} from "@/components/lore-breadcrumb";
 
 export type NexusRecord = {
   id: string;
@@ -70,11 +76,57 @@ export function NexusExplorer<T extends NexusRecord>({
   const reset = () => {
     setSelectedId(null);
     setGroup(null);
+    setQuery("");
   };
+
+  const parentSegments = useLoreBreadcrumbParent();
+  const showBreadcrumb =
+    parentSegments.length > 0 || group !== null || Boolean(selected) || Boolean(needle);
+  const breadcrumbSegments: LoreBreadcrumbSegment[] = showBreadcrumb
+    ? [
+        {
+          id: `nexus-root-${label}`,
+          label,
+          onClick: group !== null || selected || needle ? reset : undefined,
+        },
+        ...(group !== null
+          ? [
+              {
+                id: `nexus-group-${group}`,
+                label: group === "all" ? `All ${label.toLowerCase()}` : group,
+                onClick:
+                  selected || needle
+                    ? () => {
+                        setSelectedId(null);
+                        setQuery("");
+                      }
+                    : undefined,
+              },
+            ]
+          : needle
+            ? [
+                {
+                  id: "nexus-search",
+                  label: `Search: "${query.trim()}"`,
+                  onClick: selected ? () => setSelectedId(null) : undefined,
+                },
+              ]
+            : []),
+        ...(selected
+          ? [
+              {
+                id: `nexus-sel-${selected.id}`,
+                label: selected.title,
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   return (
     <LayoutGroup id={id}>
       <section className="nexus-explorer min-w-0" aria-label={`${label} Nexus browser`}>
+        {showBreadcrumb && <LoreBreadcrumb segments={breadcrumbSegments} />}
         <div className="mb-5 flex flex-wrap items-center gap-3">
           {group !== null && (
             <Button variant="outline" size="sm" onClick={reset}>
@@ -357,7 +409,19 @@ export function NexusWorkspace({
           transition={{ duration: moving ? 0.2 : 0 }}
           className="min-w-0"
         >
-          {view.content}
+          {view.id && (
+            <LoreBreadcrumbProvider
+              segments={[
+                {
+                  id: `ws-${view.id}`,
+                  label: view.title,
+                  onClick: view.id !== views[0]?.id ? () => setActive(views[0]!.id) : undefined,
+                },
+              ]}
+            >
+              {view.content}
+            </LoreBreadcrumbProvider>
+          )}
         </motion.div>
       </AnimatePresence>
     </section>

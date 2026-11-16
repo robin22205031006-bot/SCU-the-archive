@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { stripMerged } from "@/lib/sanitize-lore";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, List } from "lucide-react";
+import { BookOpen, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/lib/entities";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 import { GroupGenreEmblem } from "@/components/group-emblem";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 
 export const Route = createFileRoute("/_authenticated/reader")({
   validateSearch: (s: Record<string, unknown>): { e?: string } =>
@@ -135,12 +136,18 @@ function Reader() {
 
   return (
     <MotionPage as="main" className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
-      <Link
-        to={archiveTo}
-        className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to archive
-      </Link>
+      <LoreBreadcrumb
+        className="mb-6"
+        segments={[
+          { id: "reader-archive", label: "Archive", to: "/archive" },
+          {
+            id: "reader-section",
+            label: entity.kind === "character" ? "Characters" : "Orgs & Bloodlines",
+            to: archiveTo,
+          },
+          { id: `reader-entity-${entity.id}`, label: entity.name },
+        ]}
+      />
 
       <div className="grid gap-8 lg:grid-cols-[14rem_1fr]">
         {/* Table of contents */}

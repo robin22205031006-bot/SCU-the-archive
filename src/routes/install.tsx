@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getInstallGuide } from "@/lib/install-guide.functions";
+import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/install")({
@@ -77,6 +78,9 @@ function InstallPage() {
 
   return (
     <MotionPage className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mb-4 flex items-center justify-end">
+        <HeaderUiModeSelect />
+      </div>
       <MotionSection>
         <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Install</p>
         <h1 className="mt-2 font-serif text-4xl text-foreground">Take the archive with you</h1>

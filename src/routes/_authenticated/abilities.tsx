@@ -78,6 +78,7 @@ import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
 import { GenreCardFrame } from "@/components/genre-decorations";
 import { IvyDecoration } from "@/components/manga/fantasy/IvyDecoration";
+import { LoreBreadcrumb, LoreBreadcrumbProvider } from "@/components/lore-breadcrumb";
 
 const CUSTOM_SETTINGS_KEY = "ability_registry";
 const OVERRIDES_SETTINGS_KEY = "ability_overrides";
@@ -158,6 +159,31 @@ function AbilitiesTabs() {
             </button>
           ))}
         </div>
+        {tab !== "catalog" && (
+          <LoreBreadcrumb
+            className="mt-3 mb-0"
+            segments={[
+              {
+                id: "abilities-hub-root",
+                label: "Abilities Hub",
+                onClick: () => nav({ search: {}, replace: true }),
+              },
+              {
+                id: `abilities-tab-${tab}`,
+                label: tab === "fx" ? "Ability FX & Lineages" : "Ability in Action",
+                onClick: ability ? () => nav({ search: { tab }, replace: true }) : undefined,
+              },
+              ...(ability
+                ? [
+                    {
+                      id: `abilities-sel-${ability}`,
+                      label: baseAbilityDef(ability)?.label ?? ability,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        )}
       </div>
       <div key={tab}>
         {tab === "fx" ? (
@@ -364,43 +390,109 @@ function AbilitiesHub() {
 
       {nexus && defs.length > 0 && <NexusAbilityHero defs={defs} />}
       {nexus ? (
-        <NexusExplorer
-          label="Abilities"
-          loading={isLoading}
-          records={defs.map((def) => ({
-            id: def.key,
-            title: def.label,
-            group: TIER_LABELS[def.tier],
-            subtitle: ABILITY_GROUP_LABELS[def.group],
-            icon: (
-              <NexusAbilitySymbol
-                name={def.key}
-                label={def.label}
-                description={def.description}
-                rank={tierToIntrinsicRank(def.tier)}
-                className="h-10 w-10"
-              />
-            ),
-            def,
-          }))}
-          renderDetail={({ def }) => (
-            <div>
-              <AbilityFxLauncher name={def.key} />
-              <AbilityCard
-                def={def}
-                holders={holders.get(normalizeAbilityKey(def.key)) ?? holders.get(def.key) ?? []}
-                open
-                onToggle={() => {}}
-                isAdmin={isAdmin}
-                isCustom={customKeys.has(def.key)}
-                onEdit={() => setEditingDef(def)}
-                onDeleteCustom={() => setDeletingDef(def)}
-              />
-            </div>
-          )}
-        />
+        <LoreBreadcrumbProvider segments={[{ id: "abilities-hub-root", label: "Abilities Hub" }]}>
+          <NexusExplorer
+            label="Abilities"
+            loading={isLoading}
+            records={defs.map((def) => ({
+              id: def.key,
+              title: def.label,
+              group: TIER_LABELS[def.tier],
+              subtitle: ABILITY_GROUP_LABELS[def.group],
+              icon: (
+                <NexusAbilitySymbol
+                  name={def.key}
+                  label={def.label}
+                  description={def.description}
+                  rank={tierToIntrinsicRank(def.tier)}
+                  className="h-10 w-10"
+                />
+              ),
+              def,
+            }))}
+            renderDetail={({ def }) => (
+              <div>
+                <AbilityFxLauncher name={def.key} />
+                <AbilityCard
+                  def={def}
+                  holders={holders.get(normalizeAbilityKey(def.key)) ?? holders.get(def.key) ?? []}
+                  open
+                  onToggle={() => {}}
+                  isAdmin={isAdmin}
+                  isCustom={customKeys.has(def.key)}
+                  onEdit={() => setEditingDef(def)}
+                  onDeleteCustom={() => setDeletingDef(def)}
+                />
+              </div>
+            )}
+          />
+        </LoreBreadcrumbProvider>
       ) : (
         <>
+          {(tier !== "all" || rankFilter !== 0 || needle.length > 0 || openKey !== null) && (
+            <LoreBreadcrumb
+              segments={[
+                {
+                  id: "abilities-hub-root",
+                  label: "Abilities Hub",
+                  onClick: () => {
+                    setTier("all");
+                    setRankFilter(0);
+                    setQ("");
+                    setOpenKey(null);
+                  },
+                },
+                ...(tier !== "all"
+                  ? [
+                      {
+                        id: `abilities-tier-${tier}`,
+                        label: TIER_LABELS[tier],
+                        onClick:
+                          rankFilter !== 0 || needle.length > 0 || openKey !== null
+                            ? () => {
+                                setRankFilter(0);
+                                setQ("");
+                                setOpenKey(null);
+                              }
+                            : undefined,
+                      },
+                    ]
+                  : []),
+                ...(rankFilter !== 0
+                  ? [
+                      {
+                        id: `abilities-rank-${rankFilter}`,
+                        label: `Rank ${abilityRankMeta(rankFilter).roman}`,
+                        onClick:
+                          needle.length > 0 || openKey !== null
+                            ? () => {
+                                setQ("");
+                                setOpenKey(null);
+                              }
+                            : undefined,
+                      },
+                    ]
+                  : []),
+                ...(needle.length > 0
+                  ? [
+                      {
+                        id: "abilities-search",
+                        label: `Search: "${q.trim()}"`,
+                        onClick: openKey !== null ? () => setOpenKey(null) : undefined,
+                      },
+                    ]
+                  : []),
+                ...(openKey
+                  ? [
+                      {
+                        id: `abilities-open-${openKey}`,
+                        label: defs.find((d) => d.key === openKey)?.label ?? openKey,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          )}
           <div
             className={`mb-6 flex flex-wrap items-center gap-2 ${
               isManga ? "manga-panel border-[3px] border-foreground bg-card p-3" : ""

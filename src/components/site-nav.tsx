@@ -53,6 +53,7 @@ import { ThemeDrawer } from "./theme-drawer";
 import { UniversalSearch } from "./universal-search";
 import { MobileMenu } from "./mobile-menu";
 import { HeaderThemeSelect } from "./header-theme-select";
+import { HeaderUiModeSelect } from "./header-ui-mode-select";
 import { Download } from "lucide-react";
 import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
@@ -327,6 +328,7 @@ export function SiteNav() {
           <Download className="h-3.5 w-3.5" />
         </Link>
         <UniversalSearch />
+        <HeaderUiModeSelect />
         <HeaderThemeSelect className="hidden sm:inline-flex" />
         <ThemeDrawer />
         <button

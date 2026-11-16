@@ -1,4 +1,6 @@
+import { motion } from "framer-motion";
 import { COMBAT_STATS, type CombatStats } from "@/lib/combat-stats";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { useIsManga } from "@/hooks/use-ui-mode";
 
 const CX = 110;
@@ -50,7 +52,11 @@ export function StatRadar({
   size?: number;
 }) {
   const isManga = useIsManga();
+  const { motionActive } = useAppMotion();
   const labelR = R + 20;
+  const pathTransition = motionActive
+    ? { duration: 0.42, ease: [0.16, 1, 0.3, 1] as const }
+    : { duration: 0 };
 
   if (isManga) {
     return (
@@ -101,8 +107,10 @@ export function StatRadar({
             );
           })}
           {b && (
-            <path
-              d={seriesPath(b)}
+            <motion.path
+              initial={false}
+              animate={{ d: seriesPath(b) }}
+              transition={pathTransition}
               fill="var(--primary)"
               fillOpacity={0.14}
               stroke="var(--primary)"
@@ -110,8 +118,10 @@ export function StatRadar({
               strokeDasharray="4 2"
             />
           )}
-          <path
-            d={seriesPath(a)}
+          <motion.path
+            initial={false}
+            animate={{ d: seriesPath(a) }}
+            transition={pathTransition}
             fill="currentColor"
             fillOpacity={0.14}
             stroke="currentColor"
@@ -124,6 +134,8 @@ export function StatRadar({
             };
             const v = a[s.key];
             const vp = point(i, v);
+            const vb = b ? b[s.key] : null;
+            const vbp = vb !== null ? point(i, vb) : null;
             return (
               <g key={s.key}>
                 <text
@@ -137,17 +149,31 @@ export function StatRadar({
                 >
                   {s.label.toUpperCase()}
                 </text>
-                <rect
-                  x={vp.x - 3}
-                  y={vp.y - 3}
+                {vbp && (
+                  <motion.circle
+                    initial={false}
+                    animate={{ cx: vbp.x, cy: vbp.y }}
+                    transition={pathTransition}
+                    r={2.8}
+                    fill="var(--primary)"
+                    stroke="var(--card)"
+                    strokeWidth={1}
+                  >
+                    <title>{`${nameB ?? "Target"} · ${s.label}: ${vb}`}</title>
+                  </motion.circle>
+                )}
+                <motion.rect
+                  initial={false}
+                  animate={{ x: vp.x - 3, y: vp.y - 3 }}
+                  transition={pathTransition}
                   width={6}
                   height={6}
-                  fill="var(--primary)"
+                  fill="var(--foreground)"
                   stroke="var(--card)"
                   strokeWidth={1}
                 >
-                  <title>{`${s.label}: ${v}`}</title>
-                </rect>
+                  <title>{`${nameA ? `${nameA} · ` : ""}${s.label}: ${v}`}</title>
+                </motion.rect>
               </g>
             );
           })}
@@ -156,13 +182,13 @@ export function StatRadar({
         {(nameA || nameB) && (
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-[10px] font-bold uppercase tracking-widest">
             {nameA && (
-              <span className="flex items-center gap-1.5 border border-border px-2 py-0.5">
+              <span className="flex items-center gap-1.5 border border-border px-2 py-0.5 transition-colors duration-200">
                 <span className="h-2 w-2 bg-foreground" />
                 {nameA}
               </span>
             )}
             {nameB && (
-              <span className="flex items-center gap-1.5 border border-primary px-2 py-0.5 text-primary">
+              <span className="flex items-center gap-1.5 border border-primary px-2 py-0.5 text-primary transition-colors duration-200">
                 <span className="h-2 w-2 bg-primary" />
                 {nameB}
               </span>
@@ -206,25 +232,28 @@ export function StatRadar({
           );
         })}
         {b && (
-          <path
-            d={seriesPath(b)}
+          <motion.path
+            initial={false}
+            animate={{ d: seriesPath(b) }}
+            transition={pathTransition}
             fill={SERIES_COLORS[1]}
-            fillOpacity={0.12}
+            fillOpacity={0.14}
             stroke={SERIES_COLORS[1]}
-            strokeWidth={1.6}
+            strokeWidth={1.8}
             strokeLinejoin="round"
           />
         )}
-        <path
-          d={seriesPath(a)}
+        <motion.path
+          initial={false}
+          animate={{ d: seriesPath(a) }}
+          transition={pathTransition}
           fill={SERIES_COLORS[0]}
-          fillOpacity={0.16}
+          fillOpacity={0.18}
           stroke={SERIES_COLORS[0]}
           strokeWidth={2}
           strokeLinejoin="round"
         />
         {COMBAT_STATS.map((s, i) => {
-          const p = point(i, 100);
           const lp = {
             x: CX + Math.cos((Math.PI * 2 * i) / COMBAT_STATS.length - Math.PI / 2) * labelR,
             y: CY + Math.sin((Math.PI * 2 * i) / COMBAT_STATS.length - Math.PI / 2) * labelR,
@@ -244,26 +273,50 @@ export function StatRadar({
             </text>
           );
         })}
+        {b &&
+          COMBAT_STATS.map((s, i) => {
+            const v = b[s.key];
+            const p = point(i, v);
+            return (
+              <motion.circle
+                key={`${s.key}-b`}
+                initial={false}
+                animate={{ cx: p.x, cy: p.y }}
+                transition={pathTransition}
+                r={2.4}
+                fill={SERIES_COLORS[1]}
+              >
+                <title>{`${nameB ?? "Target"} · ${s.label}: ${v}`}</title>
+              </motion.circle>
+            );
+          })}
         {COMBAT_STATS.map((s, i) => {
           const v = a[s.key];
           const p = point(i, v);
           return (
-            <circle key={s.key} cx={p.x} cy={p.y} r={2.4} fill={SERIES_COLORS[0]}>
-              <title>{`${s.label}: ${v}`}</title>
-            </circle>
+            <motion.circle
+              key={s.key}
+              initial={false}
+              animate={{ cx: p.x, cy: p.y }}
+              transition={pathTransition}
+              r={2.5}
+              fill={SERIES_COLORS[0]}
+            >
+              <title>{`${nameA ? `${nameA} · ` : ""}${s.label}: ${v}`}</title>
+            </motion.circle>
           );
         })}
       </svg>
       {(nameA || nameB) && (
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-widest">
           {nameA && (
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 transition-opacity duration-200">
               <span className="h-2 w-2 rounded-full" style={{ background: SERIES_COLORS[0] }} />
               {nameA}
             </span>
           )}
           {nameB && (
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 transition-opacity duration-200">
               <span className="h-2 w-2 rounded-full" style={{ background: SERIES_COLORS[1] }} />
               {nameB}
             </span>

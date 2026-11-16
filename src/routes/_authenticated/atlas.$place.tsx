@@ -1,8 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 import { ATLAS } from "@/lib/nexus-atlas";
 import { PlaceAtlasSections } from "@/components/atlas-pages";
 import { MotionPage, MotionSection } from "@/components/app-motion";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 
 export const Route = createFileRoute("/_authenticated/atlas/$place")({
   loader: ({ params }) => {
@@ -51,13 +51,13 @@ function PlacePage() {
   const loc = ATLAS.find((l) => l.id === id)!;
   return (
     <MotionPage as="main" className="mx-auto max-w-6xl px-4 pb-24 pt-28 sm:px-5">
-      <Link
-        to="/atlas"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        World Atlas
-      </Link>
+      <LoreBreadcrumb
+        className="mb-6"
+        segments={[
+          { id: "atlas-root", label: "World Atlas", to: "/atlas" },
+          { id: `atlas-${loc.id}`, label: loc.name },
+        ]}
+      />
       <MotionSection as="header" className="mb-8">
         <p className="text-[11px] uppercase tracking-[0.25em] text-accent">{loc.epithet}</p>
         <h1 className="mt-2 text-5xl font-medium glow-text">{loc.name}</h1>

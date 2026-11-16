@@ -20,6 +20,11 @@ import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { Button } from "@/components/ui/button";
 import { GroupGenreEmblem } from "@/components/group-emblem";
+import {
+  LoreBreadcrumb,
+  useLoreBreadcrumbParent,
+  type LoreBreadcrumbSegment,
+} from "@/components/lore-breadcrumb";
 const charactersRoute = getRouteApi("/_authenticated/characters");
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -115,6 +120,95 @@ export function NexusView({
   const [cluster, setCluster] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const parentSegments = useLoreBreadcrumbParent();
+  const selectedEntity = useMemo(
+    () => (selectedId ? (data.find((e) => e.id === selectedId) ?? null) : null),
+    [data, selectedId],
+  );
+  const clusterLabel =
+    cluster === null ? null : cluster === "all" ? "All characters" : masked ? "Cluster" : cluster;
+  const showBreadcrumb =
+    parentSegments.length > 0 || Boolean(seriesId) || cluster !== null || Boolean(selectedEntity);
+  const breadcrumbSegments: LoreBreadcrumbSegment[] = showBreadcrumb
+    ? [
+        {
+          id: "nexus-chars-root",
+          label: "Characters",
+          onClick:
+            seriesId || cluster !== null || selectedEntity
+              ? () => {
+                  setCluster(null);
+                  setSelectedId(null);
+                  setQ("");
+                  if (seriesId) {
+                    void navigate({
+                      search: (prev) => ({
+                        ...prev,
+                        series: undefined,
+                        season: undefined,
+                      }),
+                    });
+                  }
+                }
+              : undefined,
+        },
+        ...(selectedSeries
+          ? [
+              {
+                id: `nexus-series-${selectedSeries.id}`,
+                label: selectedSeries.title,
+                onClick:
+                  seasonNumber || cluster !== null || selectedEntity
+                    ? () => {
+                        setCluster(null);
+                        setSelectedId(null);
+                        if (seasonNumber) {
+                          void navigate({
+                            search: (prev) => ({
+                              ...prev,
+                              season: undefined,
+                            }),
+                          });
+                        }
+                      }
+                    : undefined,
+              },
+            ]
+          : []),
+        ...(seriesId && seasonNumber
+          ? [
+              {
+                id: `nexus-season-${seasonNumber}`,
+                label: seasonNames[seasonNumber - 1] ?? `Season ${seasonNumber}`,
+                onClick:
+                  cluster !== null || selectedEntity
+                    ? () => {
+                        setCluster(null);
+                        setSelectedId(null);
+                      }
+                    : undefined,
+              },
+            ]
+          : []),
+        ...(clusterLabel
+          ? [
+              {
+                id: `nexus-cluster-${cluster}`,
+                label: clusterLabel,
+                onClick: selectedEntity ? () => setSelectedId(null) : undefined,
+              },
+            ]
+          : []),
+        ...(selectedEntity
+          ? [
+              {
+                id: `nexus-char-${selectedEntity.id}`,
+                label: selectedEntity.name,
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   const colorOf = useMemo(() => {
     return (c: string | null) => `var(--nexus-dot-${nexusDotRole(c, masked)})`;
@@ -227,6 +321,7 @@ export function NexusView({
           </Button>
         )}
       </div>
+      {showBreadcrumb && <LoreBreadcrumb segments={breadcrumbSegments} />}
       <AnimatePresence mode="sync" initial={false}>
         {cluster === null ? (
           <motion.div

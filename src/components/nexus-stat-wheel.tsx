@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp, Fingerprint } from "lucide-react";
 import { abilityDef } from "@/lib/abilities";
 import { highestStatRadius } from "@/lib/nexus-season";
+import { useNexusMotion } from "@/hooks/use-nexus-motion";
 import { Button } from "@/components/ui/button";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 
@@ -34,6 +35,7 @@ export function NexusStatWheel({
   selected: string | null;
   onSelect: (name: string | null) => void;
 }) {
+  const moving = useNexusMotion();
   const options = [
     { name: null, level: undefined as number | undefined, label: "Character", icon: Fingerprint },
     ...abilities.map((a) => ({
@@ -57,6 +59,15 @@ export function NexusStatWheel({
   );
   const Icon = options[active]?.icon ?? Fingerprint;
   const statStep = 360 / Math.max(1, stats.length);
+  const arcTransition = moving
+    ? { type: "spring" as const, stiffness: 65, damping: 20 }
+    : { duration: 0 };
+  const sectorTransition = moving
+    ? { type: "spring" as const, stiffness: 55, damping: 19 }
+    : { duration: 0 };
+  const ringTransition = moving
+    ? { type: "spring" as const, stiffness: 65, damping: 19 }
+    : { duration: 0 };
   return (
     <div
       className="nexus-stat-wheel relative mx-auto aspect-[460/420] w-full max-w-[400px]"
@@ -82,7 +93,7 @@ export function NexusStatWheel({
           animate={{
             d: sector(115 + activeSlot * step + 1, 115 + (activeSlot + 1) * step - 1, 173, 199),
           }}
-          transition={{ type: "spring", stiffness: 65, damping: 20 }}
+          transition={arcTransition}
           fill="var(--nexus-wheel-blue)"
           fillOpacity="0.65"
           stroke="var(--nexus-wheel-blue)"
@@ -117,10 +128,10 @@ export function NexusStatWheel({
                     32,
                     32 + s.value * 0.66,
                   ),
+                  fillOpacity: 0.45 + s.value / 220,
                 }}
-                transition={{ type: "spring", stiffness: 55, damping: 19 }}
+                transition={sectorTransition}
                 fill="var(--nexus-wheel-blue)"
-                fillOpacity={0.45 + s.value / 220}
               />
               <text
                 x={label.x}
@@ -134,7 +145,14 @@ export function NexusStatWheel({
                     {word}
                   </tspan>
                 ))}
-                <tspan x={label.x} dy="14" fill="var(--foreground)" fontSize="12">
+                <tspan
+                  x={label.x}
+                  dy="14"
+                  fill="var(--foreground)"
+                  fontSize="12"
+                  className="transition-opacity duration-200"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
                   {s.value}
                 </tspan>
               </text>
@@ -148,7 +166,7 @@ export function NexusStatWheel({
           cy={CENTER.y}
           initial={false}
           animate={{ r: highestStatRadius(stats) }}
-          transition={{ type: "spring", stiffness: 65, damping: 19 }}
+          transition={ringTransition}
           fill="none"
           stroke="var(--nexus-wheel-blue)"
           strokeDasharray="1 5"
@@ -167,6 +185,8 @@ export function NexusStatWheel({
           textAnchor="middle"
           fontSize="20"
           fill="var(--foreground)"
+          className="transition-opacity duration-200"
+          style={{ fontVariantNumeric: "tabular-nums" }}
         >
           {average}
         </text>

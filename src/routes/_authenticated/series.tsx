@@ -45,6 +45,7 @@ import {
   MotionPresence,
   MotionSection,
 } from "@/components/app-motion";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 
 /** Series title with the admin-chosen font, colour and effect. */
 function SeriesTitle({ series, className = "" }: { series: Series; className?: string }) {
@@ -283,6 +284,23 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
               <X className="h-4 w-4" />
             </button>
           </div>
+          {series && (
+            <LoreBreadcrumb
+              className="mb-0"
+              segments={[
+                { id: "series-root", label: "Series", onClick: onClose },
+                {
+                  id: `series-${series.id}`,
+                  label: series.title,
+                  onClick: activeSeason !== 1 ? () => setActiveSeason(1) : undefined,
+                },
+                {
+                  id: `series-season-${activeSeason}`,
+                  label: seasonNames[activeSeason - 1] ?? `Season ${activeSeason}`,
+                },
+              ]}
+            />
+          )}
           {series?.description && (
             <p className="whitespace-pre-line text-sm text-foreground/85">{series.description}</p>
           )}

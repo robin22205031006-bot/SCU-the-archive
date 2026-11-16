@@ -4,6 +4,11 @@ import { scuCache } from "../services/scuCache";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { MotionCard, MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 import { LoreCardContextMenu } from "@/components/lore-card-context-menu";
+import {
+  LoreBreadcrumb,
+  useLoreBreadcrumbParent,
+  type LoreBreadcrumbSegment,
+} from "@/components/lore-breadcrumb";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useLoreTts } from "@/hooks/use-lore-tts";
 import { buildLoreSharePayload, executeLoreShare } from "@/lib/lore-card-actions";
@@ -383,6 +388,7 @@ export function LoreExplorer({
   const [contextMenu, setContextMenu] = useState<ActiveContextMenuState | null>(null);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const parentSegments = useLoreBreadcrumbParent();
   const statusTimerRef = useRef<number | null>(null);
   const highlightTimerRef = useRef<number | null>(null);
 
@@ -732,6 +738,64 @@ export function LoreExplorer({
           </div>
         </div>
       </div>
+
+      {(parentSegments.length > 0 ||
+        activeSection !== "all" ||
+        viewBookmarksOnly ||
+        query.length > 0 ||
+        !initialItems) && (
+        <LoreBreadcrumb
+          segments={[
+            {
+              id: "lore-explorer-root",
+              label: "Lore Explorer",
+              onClick:
+                activeSection !== "all" || viewBookmarksOnly || query.length > 0
+                  ? () => {
+                      setViewBookmarksOnly(false);
+                      setActiveSection("all");
+                      setSearch("");
+                    }
+                  : undefined,
+            },
+            {
+              id: viewBookmarksOnly ? "lore-scope-bookmarks" : `lore-scope-${tab}`,
+              label: viewBookmarksOnly
+                ? "Bookmarks"
+                : tab === "characters"
+                  ? "Characters"
+                  : tab === "organizations"
+                    ? "Organizations"
+                    : "Timeline",
+              onClick:
+                activeSection !== "all" || query.length > 0
+                  ? () => {
+                      setActiveSection("all");
+                      setSearch("");
+                    }
+                  : undefined,
+            },
+            ...(activeSection !== "all"
+              ? [
+                  {
+                    id: `lore-sec-${activeSection}`,
+                    label: `${groupBy === "tier" ? "Tier" : "Category"}: ${activeSection}`,
+                    onClick: query.length > 0 ? () => setSearch("") : undefined,
+                  },
+                ]
+              : []),
+            ...(query.length > 0
+              ? [
+                  {
+                    id: "lore-search",
+                    label: `Search: "${search.trim()}"`,
+                  },
+                ]
+              : []),
+          ]}
+          className="border-gray-700 bg-gray-800/80 text-gray-100"
+        />
+      )}
 
       {statusMessage && (
         <div

@@ -25,6 +25,7 @@ import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 import { PanelSkeleton } from "@/components/route-skeleton";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 
 const ArsenalIsolatedView = lazy(() =>
   import("@/components/arsenal-isolated").then((m) => ({ default: m.ArsenalIsolatedView })),
@@ -341,6 +342,68 @@ function ArsenalPage() {
           <span>{isManga ? "PLATE CATALOG // 04B" : "Archive Catalog (Dossier Cards)"}</span>
         </button>
       </MotionSection>
+
+      {(subTab === "catalog" || cat !== "all" || q.trim().length > 0 || focus !== null) && (
+        <LoreBreadcrumb
+          className="mb-0"
+          segments={[
+            {
+              id: "arsenal-root",
+              label: "Arsenal & Relics",
+              onClick: () => {
+                setSubTab("isolated");
+                setCat("all");
+                setQ("");
+                setFocusId(null);
+              },
+            },
+            {
+              id: `arsenal-subtab-${subTab}`,
+              label: subTab === "isolated" ? "Isolated Relics" : "Archive Catalog",
+              onClick:
+                cat !== "all" || q.trim().length > 0 || focus !== null
+                  ? () => {
+                      setCat("all");
+                      setQ("");
+                      setFocusId(null);
+                    }
+                  : undefined,
+            },
+            ...(cat !== "all"
+              ? [
+                  {
+                    id: `arsenal-cat-${cat}`,
+                    label: ARTIFACT_CATEGORIES[cat],
+                    onClick:
+                      q.trim().length > 0 || focus !== null
+                        ? () => {
+                            setQ("");
+                            setFocusId(null);
+                          }
+                        : undefined,
+                  },
+                ]
+              : []),
+            ...(q.trim().length > 0
+              ? [
+                  {
+                    id: "arsenal-search",
+                    label: `Search: "${q.trim()}"`,
+                    onClick: focus !== null ? () => setFocusId(null) : undefined,
+                  },
+                ]
+              : []),
+            ...(focus
+              ? [
+                  {
+                    id: `arsenal-focus-${focus.id}`,
+                    label: focus.name,
+                  },
+                ]
+              : []),
+          ]}
+        />
+      )}
 
       {subTab === "isolated" ? (
         <MotionSection key="isolated">

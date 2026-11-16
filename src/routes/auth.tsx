@@ -21,6 +21,7 @@ import {
 import { useSession } from "@/hooks/use-admin";
 import { useOptionalAuth } from "@/context/AuthContext";
 import { syncSessionCache } from "@/lib/session-cache";
+import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
 import { MotionPage, MotionPresence, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/auth")({
@@ -426,8 +427,11 @@ function AuthPage() {
   return (
     <MotionPage
       as="main"
-      className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-8"
+      className="relative mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-8"
     >
+      <div className="mb-4 flex items-center justify-end">
+        <HeaderUiModeSelect />
+      </div>
       <MotionSection>
         <h1 className="text-4xl font-medium">{mode === "in" ? "Sign in" : "Create account"}</h1>
       </MotionSection>

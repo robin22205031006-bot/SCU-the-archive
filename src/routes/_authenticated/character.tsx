@@ -40,11 +40,15 @@ import { useUiToggles } from "@/lib/ui-toggles";
 import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { sfx } from "@/lib/scu-audio";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useUiStyle } from "@/lib/ui-style";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { NexusDossier, SeasonEditor } from "@/components/nexus-dossier";
+import { SeasonStatCharts } from "@/components/season-stat-charts";
+import { SeasonStatComparison } from "@/components/season-stat-comparison";
 import { StatusTooltip } from "@/components/status-tooltip";
+import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaCharacterSpread } from "@/components/manga-view";
 
@@ -340,6 +344,7 @@ function ClassicDossier() {
   const [seasonIdx, setSeasonIdx] = useState(-1);
   const [seasonNum, setSeasonNum] = useState<number | null>(initialSeasonParam ?? null);
   const [editingSeason, setEditingSeason] = useState(false);
+  const [comparingSeasons, setComparingSeasons] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
   const [, setFavTick] = useState(0);
   useEffect(() => onFavoritesChange(() => setFavTick((t) => t + 1)), []);
@@ -549,6 +554,7 @@ function ClassicDossier() {
           <Link to="/graph" className="text-[10px] uppercase tracking-widest text-accent md:hidden">
             Graph
           </Link>
+          <HeaderUiModeSelect />
           <button
             role="switch"
             aria-checked={animOn}
@@ -595,6 +601,28 @@ function ClassicDossier() {
           </Link>
         </div>
       </header>
+      <div className="relative z-20 border-b border-white/5 bg-black/40 px-4 py-1.5 backdrop-blur-sm">
+        <LoreBreadcrumb
+          className="mb-0 border-0 bg-transparent px-0 py-0"
+          segments={[
+            { id: "chars", label: "Characters", to: "/characters" },
+            ...(activeSeriesId && activeSeason?.series?.title
+              ? [
+                  {
+                    id: "series",
+                    label: activeSeason.series.title,
+                    to: "/characters",
+                    search: { series: activeSeriesId },
+                  },
+                ]
+              : []),
+            ...(ctxSeason && ctxSeason !== "All seasons"
+              ? [{ id: "season", label: ctxSeason, onClick: () => setSeasonNum(null) }]
+              : []),
+            { id: `char-${e.id}`, label: e.name },
+          ]}
+        />
+      </div>
 
       {/* Tactical HUD frame */}
       <div
@@ -1106,6 +1134,60 @@ function ClassicDossier() {
                               );
                             })}
                           </div>
+                        </div>
+                      )}
+                      {e.kind === "character" && (
+                        <div className="space-y-3 pt-1">
+                          <SeasonStatCharts
+                            stats={e.stats}
+                            seasonKey={
+                              activeSeriesId && seasonNum ? `${activeSeriesId}:${seasonNum}` : null
+                            }
+                            seasonLabel={
+                              ctxSeason ??
+                              (activeSeriesId
+                                ? `${seriesTitleMap.get(activeSeriesId) ?? "Series"} · ${
+                                    seasonNum ? `S${seasonNum}` : "All seasons"
+                                  }`
+                                : "Overview")
+                            }
+                            characterName={e.name}
+                            variant="classic"
+                            comparingSeasons={comparingSeasons}
+                            onToggleCompare={() => setComparingSeasons((v) => !v)}
+                          />
+                          <AnimatePresence initial={false}>
+                            {comparingSeasons && (
+                              <motion.div
+                                key="classic-season-stat-comparison"
+                                initial={animOn ? { opacity: 0, height: 0 } : false}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={animOn ? { opacity: 0, height: 0 } : undefined}
+                                transition={{
+                                  duration: animOn ? 0.32 : 0,
+                                  ease: [0.16, 1, 0.3, 1],
+                                }}
+                                className="overflow-hidden"
+                              >
+                                <SeasonStatComparison
+                                  entity={e}
+                                  seriesList={allSeries}
+                                  memberships={memberships}
+                                  activeSeasonKey={
+                                    activeSeriesId && seasonNum
+                                      ? `${activeSeriesId}:${seasonNum}`
+                                      : "all"
+                                  }
+                                  abilities={resolved.active.map((item) => ({
+                                    name: item.abilityKey,
+                                    label: abilityDef(item.abilityKey).label,
+                                  }))}
+                                  variant="nexus"
+                                  onClose={() => setComparingSeasons(false)}
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       )}
                     </div>

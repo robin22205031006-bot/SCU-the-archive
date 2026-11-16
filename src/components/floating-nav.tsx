@@ -36,6 +36,8 @@ import { Button } from "@/components/ui/button";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { ThemeDrawer } from "./theme-drawer";
+import { UiStylePicker } from "./ui-style-picker";
+import { HeaderUiModeSelect } from "./header-ui-mode-select";
 import { useNavHidden } from "@/lib/nav-visibility";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { useVisualMode } from "@/hooks/use-ui-mode";
@@ -163,6 +165,11 @@ export function FloatingNav() {
   const expanded = open && !hidden;
   return (
     <>
+      {!hidden && style !== "manga" && (
+        <div className="fixed right-4 top-4 z-40">
+          <HeaderUiModeSelect variant={style === "nexus" ? "nexus" : "default"} />
+        </div>
+      )}
       <Dialog
         open={expanded}
         onOpenChange={(next) => {
@@ -320,6 +327,9 @@ export function FloatingNav() {
                     </Button>
                     <div className="hud-counter" aria-hidden="true">
                       {String(first + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
+                    </div>
+                    <div className="mt-2 border-t border-border/50 pt-2">
+                      <UiStylePicker />
                     </div>
                   </nav>
                   <Button

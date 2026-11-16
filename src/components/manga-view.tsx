@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
+  BarChart3,
   FileDown,
   GitCompareArrows,
   GitMerge,
@@ -56,16 +57,20 @@ import { CompareSentinel } from "@/components/compare-sentinel";
 import { exportDossierPdf, type DossierGroup } from "@/lib/export-dossier";
 import { isFavorite, toggleFavorite, onFavoritesChange } from "@/lib/favorites";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
+import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { HankoStamp, MangaCategorySeal } from "@/components/manga-emblem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
+import { useAppMotion } from "@/hooks/use-app-motion";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
 import { useAnimationsEnabled } from "@/lib/animations";
 import { useSensoryFeedback } from "@/hooks/use-sensory-feedback";
+import { SeasonStatComparison } from "@/components/season-stat-comparison";
 import { type GenreThemeId } from "@/lib/genre-themes";
 import {
   GenreAbilityEmblem,
@@ -300,27 +305,56 @@ export function MangaPowerMeter({
   max?: number;
   crimson?: boolean;
 }) {
+  const { motionActive } = useAppMotion();
   const clamped = Math.max(0, Math.min(max, value));
   const filledCells = Math.round((clamped / max) * 10);
+  const ratio = max > 0 ? clamped / max : 0;
   return (
     <div className="grid grid-cols-[minmax(80px,auto)_1fr_30px] items-center gap-2 text-xs">
       <span className="truncate font-mono text-[10px] font-bold uppercase tracking-wider">
         {label}
       </span>
-      <div className="grid grid-cols-10 gap-[2px] border border-border bg-background p-[2px]">
-        {Array.from({ length: 10 }, (_, i) => {
-          const active = i < filledCells;
-          return (
-            <span
-              key={i}
-              className={`h-2 transition-colors ${
-                active ? (crimson || i >= 8 ? "bg-primary" : "bg-foreground") : "bg-muted/40"
-              }`}
-            />
-          );
-        })}
+      <div className="space-y-[2px]">
+        <div className="grid grid-cols-10 gap-[2px] border border-border bg-background p-[2px]">
+          {Array.from({ length: 10 }, (_, i) => {
+            const active = i < filledCells;
+            return (
+              <motion.span
+                key={i}
+                initial={false}
+                animate={{
+                  scaleY: active ? 1 : 0.72,
+                  opacity: active ? 1 : 0.45,
+                }}
+                transition={{
+                  duration: motionActive ? 0.28 : 0,
+                  delay: motionActive ? i * 0.018 : 0,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                style={{ transformOrigin: "bottom" }}
+                className={`h-2 ${
+                  active ? (crimson || i >= 8 ? "bg-primary" : "bg-foreground") : "bg-muted/40"
+                }`}
+              />
+            );
+          })}
+        </div>
+        <div className="h-[3px] w-full overflow-hidden bg-muted/40">
+          <motion.div
+            initial={false}
+            animate={{ scaleX: ratio }}
+            transition={{
+              duration: motionActive ? 0.42 : 0,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            style={{ transformOrigin: "left" }}
+            className={`h-full w-full ${crimson ? "bg-primary" : "bg-foreground"}`}
+          />
+        </div>
       </div>
-      <span className="text-right font-mono text-[10px] font-bold tabular-nums">{clamped}</span>
+      <span className="text-right font-mono text-[10px] font-bold tabular-nums transition-colors duration-200">
+        {clamped}
+      </span>
     </div>
   );
 }
@@ -612,6 +646,7 @@ export function MangaEntitySpread({
   search,
   onSearchChange,
   extraControls,
+  breadcrumbSlot,
   spotlightBanner,
   spoilerScope,
 }: {
@@ -633,6 +668,7 @@ export function MangaEntitySpread({
   search: string;
   onSearchChange: (q: string) => void;
   extraControls?: ReactNode | undefined;
+  breadcrumbSlot?: ReactNode | undefined;
   spotlightBanner?: ReactNode | undefined;
   spoilerScope: "characters" | "archive";
 }) {
@@ -716,6 +752,8 @@ export function MangaEntitySpread({
           </div>
         }
       />
+
+      {breadcrumbSlot}
 
       {spotlightBanner && <div className="mb-4">{spotlightBanner}</div>}
 
@@ -846,6 +884,7 @@ export function MangaCharacterSpread({
   const [view3d, setView3d] = useState(false);
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [comparing, setComparing] = useState(false);
+  const [comparingSeasons, setComparingSeasons] = useState(false);
   const [editingSeason, setEditingSeason] = useState(false);
   const [, setFavTick] = useState(0);
   const abilityCtx = useOptionalAbilityContext();
@@ -853,6 +892,7 @@ export function MangaCharacterSpread({
   useEffect(() => {
     setAvatarIdx(0);
     setView3d(false);
+    setComparingSeasons(false);
   }, [id]);
   useEffect(() => {
     if (!motionActive) return;
@@ -1548,9 +1588,12 @@ export function MangaCharacterSpread({
 
   const renderCombatMatrixPanel = () =>
     cs ? (
-      <MangaPanel caption="COMBAT MATRIX // 能力値" badge="METRICS">
+      <MangaPanel
+        caption="COMBAT MATRIX // 能力値"
+        badge={seasonNumber ? `S${seasonNumber} METRICS` : "METRICS"}
+      >
         <div className="mb-3 flex justify-center">
-          <StatRadar a={cs} nameA={e.name} size={198} />
+          <StatRadar a={cs} nameA={`${e.name} · ${seasonLabel}`} size={198} />
         </div>
         <div className="grid gap-1.5 border-t border-border/25 pt-2.5">
           {COMBAT_STATS.map((s) => (
@@ -1592,6 +1635,24 @@ export function MangaCharacterSpread({
         >
           <Pencil className="h-3.5 w-3.5" />
           EDIT SEASON
+        </button>
+      )}
+      {e.kind === "character" && (
+        <button
+          type="button"
+          onClick={(ev) => {
+            triggerInteractionSfx("click", ev);
+            setComparingSeasons((v) => !v);
+          }}
+          aria-expanded={comparingSeasons}
+          className={`${variantClass} inline-flex items-center gap-1 whitespace-nowrap border border-border px-2.5 py-1 font-mono text-[10px] font-bold uppercase ${
+            comparingSeasons
+              ? "border-primary bg-primary text-primary-foreground"
+              : "bg-card hover:bg-foreground hover:text-background"
+          }`}
+        >
+          <BarChart3 className="h-3.5 w-3.5" />
+          COMPARE SEASONS
         </button>
       )}
       {e.kind === "character" && (
@@ -1688,8 +1749,63 @@ export function MangaCharacterSpread({
             ))}
           </select>
         </div>
-        {renderActionButtons()}
+        <div className="flex flex-wrap items-center gap-2">
+          <HeaderUiModeSelect variant="manga" />
+          {renderActionButtons()}
+        </div>
       </div>
+
+      <LoreBreadcrumb
+        segments={[
+          { id: "chars", label: "Characters", to: "/characters" },
+          ...(activeSeason?.series?.title
+            ? [
+                {
+                  id: `series-${activeSeason.series_id}`,
+                  label: activeSeason.series.title,
+                  to: "/characters",
+                  search: { series: activeSeason.series_id },
+                },
+              ]
+            : []),
+          ...(seasonNumber
+            ? [
+                {
+                  id: `season-${seasonNumber}`,
+                  label: seasonLabel,
+                  onClick: () => setSeasonNumber(null),
+                },
+              ]
+            : []),
+          { id: `char-${e.id}`, label: e.name },
+        ]}
+      />
+
+      <AnimatePresence initial={false}>
+        {comparingSeasons && e.kind === "character" && (
+          <motion.div
+            key="manga-season-stat-comparison"
+            initial={motionActive ? { opacity: 0, height: 0 } : false}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={motionActive ? { opacity: 0, height: 0 } : undefined}
+            transition={{ duration: motionActive ? 0.32 : 0, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-5 overflow-hidden"
+          >
+            <SeasonStatComparison
+              entity={e}
+              seriesList={allSeries}
+              memberships={memberships}
+              activeSeasonKey={seasonKey ?? "all"}
+              abilities={mergedAbilities.map((ab) => ({
+                name: ab,
+                label: abilityDef(ab).label,
+              }))}
+              variant="manga"
+              onClose={() => setComparingSeasons(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <DossierComponent
         theme={activeGenre}

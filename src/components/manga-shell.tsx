@@ -11,6 +11,7 @@ import { useNavMode } from "@/lib/nav-mode";
 import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { ThemeDrawer } from "@/components/theme-drawer";
 import { HeaderThemeSelect } from "@/components/header-theme-select";
+import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
 import { NexusNavGlyph } from "@/components/nexus-nav-glyph";
 import { HankoStamp, MangaCornerMarks } from "@/components/manga-emblem";
 import { useActiveGenre } from "@/hooks/use-ui-mode";
@@ -250,6 +251,7 @@ export function MangaChrome({ pageRef }: { pageRef?: RefObject<HTMLDivElement | 
 
             {/* Compact utility stamps */}
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+              <HeaderUiModeSelect variant="manga" />
               <HeaderThemeSelect variant="manga" />
               <button
                 type="button"

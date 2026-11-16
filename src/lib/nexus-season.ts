@@ -76,6 +76,247 @@ export function highestStatRadius(values: { value: number }[]): number {
   return 46 + (52 * Math.max(0, ...values.map((s) => clampStat(s.value)))) / 100;
 }
 
+export interface SeasonCompareOption {
+  key: string;
+  label: string;
+  shortLabel: string;
+  seriesId: string | null;
+  seasonNumber: number | null;
+  hasStats: boolean;
+}
+
+export interface SeasonStatDelta {
+  key: (typeof NEXUS_STATS)[number]["key"];
+  label: string;
+  valueA: number;
+  valueB: number;
+  delta: number;
+}
+
+export interface SeasonStatComparisonResult {
+  statsA: Array<{ key: (typeof NEXUS_STATS)[number]["key"]; label: string; value: number }>;
+  statsB: Array<{ key: (typeof NEXUS_STATS)[number]["key"]; label: string; value: number }>;
+  combatA: Record<(typeof COMBAT_STATS)[number]["key"], number>;
+  combatB: Record<(typeof COMBAT_STATS)[number]["key"], number>;
+  deltas: SeasonStatDelta[];
+  summary: {
+    avgA: number;
+    avgB: number;
+    avgDelta: number;
+    peakGain: SeasonStatDelta | null;
+    peakDrop: SeasonStatDelta | null;
+  };
+}
+
+function hasNumericRecord(rec: unknown): boolean {
+  if (!rec || typeof rec !== "object") return false;
+  return Object.values(rec as Record<string, unknown>).some((v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
+  });
+}
+
+function hasDossierStats(entry: SeasonDossier | undefined): boolean {
+  if (!entry) return false;
+  if (hasNumericRecord(entry.stats)) return true;
+  if (entry.abilityStats && typeof entry.abilityStats === "object") {
+    return Object.values(entry.abilityStats).some((ab) => hasNumericRecord(ab));
+  }
+  return false;
+}
+
+function compactSeriesTitle(title: string): string {
+  const clean = title.replace(/^the\s+/i, "").trim();
+  return clean.length > 16 ? `${clean.slice(0, 15).trimEnd()}…` : clean;
+}
+
+export function buildSeasonCompareOptions({
+  stats,
+  seriesList,
+  memberships,
+}: {
+  stats: unknown;
+  seriesList?: ReadonlyArray<{
+    id: string;
+    title: string;
+    season_count?: number | null;
+    season_names?: string[] | null;
+  }> | null;
+  memberships?: ReadonlyArray<{ series_id?: string | null }> | null;
+}): SeasonCompareOption[] {
+  const dossier = readDossier(stats);
+  const baseStats = getCombatStats(stats);
+  const rootRec = stats && typeof stats === "object" ? (stats as Record<string, unknown>) : {};
+  const hasRootExtra =
+    (Number.isFinite(Number(rootRec["wisdom"])) && Number(rootRec["wisdom"]) > 0) ||
+    (Number.isFinite(Number(rootRec["vitality"])) && Number(rootRec["vitality"]) > 0);
+  const hasAllStats =
+    hasDossierStats(dossier["all"]) ||
+    (!!baseStats && Object.values(baseStats).some((v) => v > 0)) ||
+    hasRootExtra;
+
+  const options: SeasonCompareOption[] = [
+    {
+      key: "all",
+      label: "All seasons (Base)",
+      shortLabel: "Base",
+      seriesId: null,
+      seasonNumber: null,
+      hasStats: hasAllStats,
+    },
+  ];
+  const seenKeys = new Set<string>(["all"]);
+
+  const linkedSeriesIds = new Set(
+    (memberships ?? []).map((m) => m.series_id).filter((id): id is string => !!id),
+  );
+  const dossierKeys = Object.keys(dossier);
+
+  for (const s of seriesList ?? []) {
+    const isLinked =
+      linkedSeriesIds.has(s.id) || dossierKeys.some((key) => key.startsWith(`${s.id}:`));
+    if (!isLinked) continue;
+
+    const names = s.season_names ?? [];
+    const count = Math.max(s.season_count ?? 0, names.length, 1);
+    const shortTitle = compactSeriesTitle(s.title);
+
+    const seriesAllKey = `${s.id}:all`;
+    if (dossier[seriesAllKey] && !seenKeys.has(seriesAllKey)) {
+      seenKeys.add(seriesAllKey);
+      options.push({
+        key: seriesAllKey,
+        label: `${s.title} · All seasons`,
+        shortLabel: `${shortTitle} · All`,
+        seriesId: s.id,
+        seasonNumber: null,
+        hasStats: hasDossierStats(dossier[seriesAllKey]),
+      });
+    }
+
+    for (let n = 1; n <= count; n++) {
+      const key = `${s.id}:${n}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      const seasonName = names[n - 1] || `Season ${n}`;
+      const shortSeason = seasonName.length <= 8 ? seasonName : `S${n}`;
+      options.push({
+        key,
+        label: `${s.title} · ${seasonName}`,
+        shortLabel: `${shortTitle} · ${shortSeason}`,
+        seriesId: s.id,
+        seasonNumber: n,
+        hasStats: hasDossierStats(dossier[key]),
+      });
+    }
+  }
+
+  // Include any dossier-only season keys (e.g. legacy series IDs or standalone test fixtures)
+  const seriesById = new Map((seriesList ?? []).map((s) => [s.id, s]));
+  for (const key of dossierKeys) {
+    if (seenKeys.has(key)) continue;
+    const colon = key.indexOf(":");
+    if (colon <= 0) continue;
+    seenKeys.add(key);
+    const sid = key.slice(0, colon);
+    const part = key.slice(colon + 1);
+    const seriesMeta = seriesById.get(sid);
+    const title = seriesMeta?.title ?? sid;
+    const shortTitle = compactSeriesTitle(title);
+    const num = Number(part);
+    const isNum = part !== "all" && Number.isInteger(num) && num > 0;
+    const seasonName = isNum
+      ? (seriesMeta?.season_names?.[num - 1] ?? `Season ${num}`)
+      : "All seasons";
+    const shortSeason = isNum ? (seasonName.length <= 8 ? seasonName : `S${num}`) : "All";
+    options.push({
+      key,
+      label: `${title} · ${seasonName}`,
+      shortLabel: `${shortTitle} · ${shortSeason}`,
+      seriesId: sid,
+      seasonNumber: isNum ? num : null,
+      hasStats: hasDossierStats(dossier[key]),
+    });
+  }
+
+  return options;
+}
+
+export function resolveSeasonCombatStats(
+  stats: unknown,
+  seasonKey: string | null,
+  ability: string | null = null,
+) {
+  const normalizedKey = !seasonKey || seasonKey === "all" ? null : seasonKey;
+  const resolved = resolveNexusStats(stats, normalizedKey, ability);
+  const byKey = Object.fromEntries(resolved.map((s) => [s.key, s.value])) as Record<string, number>;
+  return {
+    power: byKey["power"] ?? 0,
+    agility: byKey["agility"] ?? 0,
+    tactical_iq: byKey["tactical_iq"] ?? 0,
+    clan_mastery: byKey["clan_mastery"] ?? 0,
+    weapon_proficiency: byKey["weapon_proficiency"] ?? 0,
+  };
+}
+
+export function resolveSeasonStatComparison(
+  stats: unknown,
+  seasonKeyA: string | null,
+  seasonKeyB: string | null,
+  ability: string | null = null,
+): SeasonStatComparisonResult {
+  const keyA = !seasonKeyA || seasonKeyA === "all" ? null : seasonKeyA;
+  const keyB = !seasonKeyB || seasonKeyB === "all" ? null : seasonKeyB;
+  const statsA = resolveNexusStats(stats, keyA, ability);
+  const statsB = resolveNexusStats(stats, keyB, ability);
+  const combatA = resolveSeasonCombatStats(stats, keyA, ability);
+  const combatB = resolveSeasonCombatStats(stats, keyB, ability);
+
+  const deltas: SeasonStatDelta[] = NEXUS_STATS.map((s, i) => {
+    const valueA = statsA[i]?.value ?? 0;
+    const valueB = statsB[i]?.value ?? 0;
+    return {
+      key: s.key,
+      label: s.label,
+      valueA,
+      valueB,
+      delta: valueB - valueA,
+    };
+  });
+
+  const sumA = deltas.reduce((acc, d) => acc + d.valueA, 0);
+  const sumB = deltas.reduce((acc, d) => acc + d.valueB, 0);
+  const avgA = Math.round(sumA / Math.max(1, deltas.length));
+  const avgB = Math.round(sumB / Math.max(1, deltas.length));
+  const avgDelta = avgB - avgA;
+
+  let peakGain: SeasonStatDelta | null = null;
+  let peakDrop: SeasonStatDelta | null = null;
+  for (const d of deltas) {
+    if (d.delta > 0 && (!peakGain || d.delta > peakGain.delta)) {
+      peakGain = d;
+    }
+    if (d.delta < 0 && (!peakDrop || d.delta < peakDrop.delta)) {
+      peakDrop = d;
+    }
+  }
+
+  return {
+    statsA,
+    statsB,
+    combatA,
+    combatB,
+    deltas,
+    summary: {
+      avgA,
+      avgB,
+      avgDelta,
+      peakGain,
+      peakDrop,
+    },
+  };
+}
+
 export function nexusRole(
   role: string,
   masked = false,

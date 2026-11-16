@@ -12,6 +12,8 @@ import { useAnimationsEnabled, setAnimationsEnabled } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { ThemeDrawer } from "@/components/theme-drawer";
 import { HeaderThemeSelect } from "@/components/header-theme-select";
+import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
+import { UiStylePicker } from "@/components/ui-style-picker";
 import { NexusSectionRail } from "@/components/nexus-section-rail";
 import { NexusFxLayer } from "@/components/lazy-three";
 import { useNexusTheme, useNexus3dFxEnabled } from "@/hooks/use-nexus-theme";
@@ -108,6 +110,7 @@ export function NexusChrome() {
           >
             {open ? <X /> : <Compass />}
           </Button>
+          <HeaderUiModeSelect variant="nexus" />
           <HeaderThemeSelect variant="nexus" />
           <Button
             variant="ghost"
@@ -177,6 +180,12 @@ export function NexusChrome() {
             transition={{ duration: moving ? 0.18 : 0, ease: [0.16, 1, 0.3, 1] }}
             className={`fixed inset-x-4 z-50 max-h-[70dvh] overflow-y-auto rounded-2xl border border-cyan-400/40 bg-slate-950/95 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.72)] ${pathname === "/character" ? "bottom-20" : "top-20"}`}
           >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-cyan-400/20 pb-3">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-cyan-300/80">
+                Interface UI
+              </span>
+              <UiStylePicker />
+            </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {tabs.map((t) => (
                 <Button

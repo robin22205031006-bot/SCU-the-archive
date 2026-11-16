@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import {
   ArrowLeft,
+  BarChart3,
   BookOpen,
   ChevronDown,
   Fingerprint,
@@ -52,6 +53,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NexusStatWheel } from "@/components/nexus-stat-wheel";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
+import { SeasonStatCharts } from "@/components/season-stat-charts";
+import { SeasonStatComparison } from "@/components/season-stat-comparison";
+import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
 import {
   ABILITY_RANKS,
@@ -93,6 +98,7 @@ export function NexusDossier({
   const [season, setSeason] = useState<{ seriesId: string; n: number } | null>(initialSeason);
   const [menu, setMenu] = useState<Menu>("story");
   const [editing, setEditing] = useState(false);
+  const [comparingSeasons, setComparingSeasons] = useState(false);
   const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
   const moving = useNexusMotion();
   const abilityCtx = useOptionalAbilityContext();
@@ -281,7 +287,7 @@ export function NexusDossier({
 
         {/* ═════ TOP: hero + stat wheel + series cards ═════ */}
         <section className="relative mx-auto max-w-6xl px-4 pt-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/characters"
               aria-label="Back to characters"
@@ -295,27 +301,49 @@ export function NexusDossier({
             >
               {roleBadge}
             </span>
-            {alter && (
-              <Link
-                to="/character"
-                search={{ e: alter.id }}
-                className="ml-auto rounded-full border border-accent px-3 py-1 text-xs text-accent hover:bg-accent/15"
-              >
-                ⇄ Switch to {alterName}
-              </Link>
-            )}
-            {isStaff && (
-              <Button
-                size="sm"
-                variant="outline"
-                className={alter ? "" : "ml-auto"}
-                onClick={() => setEditing(true)}
-              >
-                <Pencil className="mr-1 h-3.5 w-3.5" />
-                Edit {season ? "this season" : "dossier"}
-              </Button>
-            )}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <HeaderUiModeSelect variant="nexus" />
+              {alter && (
+                <Link
+                  to="/character"
+                  search={{ e: alter.id }}
+                  className="rounded-full border border-accent px-3 py-1 text-xs text-accent hover:bg-accent/15"
+                >
+                  ⇄ Switch to {alterName}
+                </Link>
+              )}
+              {isStaff && (
+                <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                  <Pencil className="mr-1 h-3.5 w-3.5" />
+                  Edit {season ? "this season" : "dossier"}
+                </Button>
+              )}
+            </div>
           </div>
+
+          <LoreBreadcrumb
+            className="mt-3 mb-0"
+            segments={[
+              { id: "chars", label: "Characters", to: "/characters" },
+              ...(season
+                ? [
+                    {
+                      id: `series-${season.seriesId}`,
+                      label: seriesTitleMap.get(season.seriesId) ?? "Series",
+                      to: "/characters",
+                      search: { series: season.seriesId },
+                    },
+                    {
+                      id: `season-${season.n}`,
+                      label:
+                        seasonNamesMap.get(season.seriesId)?.[season.n - 1] ?? `Season ${season.n}`,
+                      onClick: () => selectSeason(null),
+                    },
+                  ]
+                : []),
+              { id: `char-${e.id}`, label: e.name },
+            ]}
+          />
 
           <div className="mt-4 grid items-center gap-6 md:grid-cols-[1fr_1.1fr_1fr]">
             <motion.div
@@ -413,6 +441,19 @@ export function NexusDossier({
                   }
                 }}
               />
+              <div className="mt-2 flex justify-center">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={comparingSeasons ? "secondary" : "outline"}
+                  aria-expanded={comparingSeasons}
+                  onClick={() => setComparingSeasons((v) => !v)}
+                  className="whitespace-nowrap border-cyan-400/35 text-xs uppercase tracking-wider"
+                >
+                  <BarChart3 className="mr-1.5 h-3.5 w-3.5 text-accent" />
+                  {comparingSeasons ? "Hide comparison" : "Compare seasons"}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -508,6 +549,42 @@ export function NexusDossier({
             </AnimatePresence>
           </div>
         </section>
+
+        <div className="relative mx-auto mt-6 max-w-6xl px-4">
+          <SeasonStatCharts
+            stats={e.stats}
+            seasonKey={seasonKey}
+            seasonLabel={seasonLabel}
+            characterName={e.name}
+            selectedAbility={abilitySelection}
+            abilityLabel={abilitySelection ? abilityDef(abilitySelection).label : null}
+            variant="nexus"
+          />
+        </div>
+
+        <AnimatePresence initial={false}>
+          {comparingSeasons && (
+            <motion.section
+              key="season-stat-comparison"
+              initial={moving ? { opacity: 0, height: 0 } : false}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={moving ? { opacity: 0, height: 0 } : undefined}
+              transition={{ duration: moving ? 0.35 : 0, ease: EASE }}
+              className="relative mx-auto mt-6 max-w-6xl overflow-hidden px-4"
+            >
+              <SeasonStatComparison
+                entity={e}
+                seriesList={allSeries}
+                memberships={memberships}
+                activeSeasonKey={seasonKey ?? "all"}
+                abilities={abilities.map((a) => ({ name: a.name, label: a.def.label }))}
+                selectedAbility={abilitySelection}
+                variant="nexus"
+                onClose={() => setComparingSeasons(false)}
+              />
+            </motion.section>
+          )}
+        </AnimatePresence>
 
         {/* ═════ MIDDLE: arc menu · content · identity ═════ */}
         <section className="relative mx-auto mt-10 max-w-6xl px-4">

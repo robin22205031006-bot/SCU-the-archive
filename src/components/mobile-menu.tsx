@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState, type ComponentType } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { UiStylePicker } from "@/components/ui-style-picker";
 import { useUIFeedback } from "@/hooks/use-ui-feedback";
 
 type Tool = {
@@ -90,6 +91,12 @@ export function MobileMenu({
               </button>
             );
           })}
+          <p className="mt-4 px-3 text-xs uppercase tracking-wider text-muted-foreground">
+            Interface UI
+          </p>
+          <div className="px-3 pt-1">
+            <UiStylePicker />
+          </div>
         </nav>
       </SheetContent>
     </Sheet>

@@ -12,6 +12,7 @@ import { sfx } from "@/lib/scu-audio";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
+import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 
 export const Route = createFileRoute("/_authenticated/story")({
   validateSearch: (s: Record<string, unknown>): { ep?: string } =>
@@ -181,6 +182,16 @@ function Story() {
               )}
             </button>
           </div>
+        </div>
+        <div className="mx-auto max-w-2xl px-6 pt-4">
+          <LoreBreadcrumb
+            className="mb-0"
+            segments={[
+              { id: "story-root", label: "Story", to: "/story" },
+              ...(story.series ? [{ id: "story-series", label: story.series, to: "/story" }] : []),
+              { id: `story-ep-${story.id}`, label: story.title },
+            ]}
+          />
         </div>
         <MotionSection
           as="article"

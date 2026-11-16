@@ -105,6 +105,11 @@ import { projectSeasonRoster } from "@/lib/nexus-roster";
 import { seriesSeasonNames } from "@/lib/series-seasons";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { SeasonEditor } from "@/components/nexus-dossier";
+import {
+  LoreBreadcrumb,
+  useLoreBreadcrumbParent,
+  type LoreBreadcrumbSegment,
+} from "@/components/lore-breadcrumb";
 
 const statusClass: Record<string, string> = {
   Alive: "text-status-alive",
@@ -1828,6 +1833,110 @@ export function EntitySection({
     );
   };
 
+  const parentSegments = useLoreBreadcrumbParent();
+  const hasAttrFilter = statusFilter !== "all" || roleFilter !== "all" || genderFilter !== "all";
+  const showEntityBreadcrumb = parentSegments.length > 0 || isFiltered || Boolean(opened);
+  const clearBelowSeries = () => {
+    setCat("all");
+    setStatusFilter("all");
+    setRoleFilter("all");
+    setGenderFilter("all");
+    setQ("");
+    setOpen(null);
+  };
+  const entityBreadcrumbSegments: LoreBreadcrumbSegment[] = showEntityBreadcrumb
+    ? [
+        {
+          id: `ent-root-${view ?? title}`,
+          label: title,
+          onClick:
+            isFiltered || opened
+              ? () => {
+                  setRosterSeriesId("");
+                  setRosterSeason(1);
+                  clearBelowSeries();
+                }
+              : undefined,
+        },
+        ...(activeSeriesObj
+          ? [
+              {
+                id: `ent-series-${activeSeriesObj.id}`,
+                label: activeSeriesObj.title,
+                onClick:
+                  cat !== "all" || hasAttrFilter || q.trim().length > 0 || opened
+                    ? clearBelowSeries
+                    : undefined,
+              },
+              {
+                id: `ent-season-${rosterSeason}`,
+                label: activeSeasonNames[rosterSeason - 1] ?? `Season ${rosterSeason}`,
+                onClick:
+                  cat !== "all" || hasAttrFilter || q.trim().length > 0 || opened
+                    ? clearBelowSeries
+                    : undefined,
+              },
+            ]
+          : []),
+        ...(cat !== "all"
+          ? [
+              {
+                id: `ent-cat-${cat}`,
+                label: cat,
+                onClick:
+                  hasAttrFilter || q.trim().length > 0 || opened
+                    ? () => {
+                        setStatusFilter("all");
+                        setRoleFilter("all");
+                        setGenderFilter("all");
+                        setQ("");
+                        setOpen(null);
+                      }
+                    : undefined,
+              },
+            ]
+          : []),
+        ...(hasAttrFilter
+          ? [
+              {
+                id: "ent-attr-filter",
+                label: [
+                  statusFilter !== "all" ? statusFilter : null,
+                  roleFilter !== "all" ? roleFilter : null,
+                  genderFilter !== "all" ? genderFilter : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+                onClick:
+                  q.trim().length > 0 || opened
+                    ? () => {
+                        setQ("");
+                        setOpen(null);
+                      }
+                    : undefined,
+              },
+            ]
+          : []),
+        ...(q.trim().length > 0
+          ? [
+              {
+                id: "ent-search",
+                label: `Search: "${q.trim()}"`,
+                onClick: opened ? () => setOpen(null) : undefined,
+              },
+            ]
+          : []),
+        ...(opened
+          ? [
+              {
+                id: `ent-open-${opened.id}`,
+                label: opened.name,
+              },
+            ]
+          : []),
+      ]
+    : [];
+
   return (
     <>
       {isManga ? (
@@ -1840,6 +1949,11 @@ export function EntitySection({
             subtitle={subtitle}
             loading={isLoading}
             isAdmin={isAdmin}
+            breadcrumbSlot={
+              showEntityBreadcrumb ? (
+                <LoreBreadcrumb segments={entityBreadcrumbSegments} />
+              ) : undefined
+            }
             onSelect={(e) => {
               if (e.kind === "character") {
                 void nav({
@@ -1995,6 +2109,8 @@ export function EntitySection({
               </Button>
             )}
           </header>
+
+          {!nexus && showEntityBreadcrumb && <LoreBreadcrumb segments={entityBreadcrumbSegments} />}
 
           {nexus ? (
             isLoading ? (
