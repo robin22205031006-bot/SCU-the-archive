@@ -3,8 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { allEpisodesQuery, type Episode } from "@/lib/map";
 import { sfx } from "@/lib/scu-audio";
@@ -40,10 +42,13 @@ function readLocalDraft(): LocalDraft | null {
 
 /** Admin episode/chapter drafting studio with local autosave + Supabase publish. */
 export function AdminEpisodes() {
+  const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const { data: episodes = [], isLoading } = useQuery(allEpisodesQuery);
   const [form, setForm] = useState<FormState | null>(null);
   const [lastSaved, setLastSaved] = useState<number | null>(null);
+  const [deletingEpisode, setDeletingEpisode] = useState<Episode | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
 
   // Restore any unsaved local draft on mount.
   useEffect(() => {
@@ -138,19 +143,26 @@ export function AdminEpisodes() {
     refresh();
   };
 
-  const del = async (ep: Episode) => {
-    const { error } = await supabase.from("episodes").delete().eq("id", ep.id);
-    if (error) {
-      toast.error(error.message);
-      return;
+  const del = async () => {
+    if (!isAdmin || !deletingEpisode || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase.from("episodes").delete().eq("id", deletingEpisode.id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      sfx.remove();
+      toast.success("Episode deleted");
+      if (form?.episodeId === deletingEpisode.id) {
+        setForm(null);
+        clearLocalDraft();
+      }
+      setDeletingEpisode(null);
+      refresh();
+    } finally {
+      setDeletingBusy(false);
     }
-    sfx.remove();
-    toast.success("Episode deleted");
-    if (form?.episodeId === ep.id) {
-      setForm(null);
-      clearLocalDraft();
-    }
-    refresh();
   };
 
   const drafts = useMemo(() => episodes.filter((e) => e.status !== "published"), [episodes]);
@@ -251,17 +263,29 @@ export function AdminEpisodes() {
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
-              <button
-                aria-label="Delete"
-                onClick={() => void del(ep)}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              {isAdmin && (
+                <button
+                  aria-label="Delete"
+                  onClick={() => setDeletingEpisode(ep)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
       )}
+      <DeleteConfirmDialog
+        open={!!deletingEpisode}
+        onOpenChange={(open) => {
+          if (!open) setDeletingEpisode(null);
+        }}
+        title={`Delete "${deletingEpisode?.title ?? "episode"}"?`}
+        description="This permanently deletes this episode draft or published chapter."
+        busy={deletingBusy}
+        onConfirm={del}
+      />
     </section>
   );
 }

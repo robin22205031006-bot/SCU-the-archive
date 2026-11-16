@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { Film, Image as ImageIcon, Link2, Plus, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { fileToDataUrl } from "@/lib/entities";
@@ -54,6 +56,7 @@ function makeSlug(value: string): string {
 
 /** Admin Nexus-only live/static wallpaper manager persisted to app_settings['nexus_wallpapers']. */
 export function AdminNexusWallpapers() {
+  const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const resolvePin = useServerFn(resolvePinterestWallpaper);
   const settings = useNexusWallpaperSettings();
@@ -67,6 +70,7 @@ export function AdminNexusWallpapers() {
   const [sourceUrl, setSourceUrl] = useState("");
   const [resolving, setResolving] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingWallpaper, setDeletingWallpaper] = useState<NexusWallpaperItem | null>(null);
 
   const allWallpapers = mergeNexusWallpapers(settings, true);
   const disabledSet = new Set(settings.disabledIds ?? []);
@@ -225,13 +229,16 @@ export function AdminNexusWallpapers() {
     );
   };
 
-  const removeCustomWallpaper = async (id: string) => {
-    const nextCustom = (settings.custom ?? []).filter((w) => w.id !== id);
-    const nextDefault = settings.defaultWallpaperId === id ? null : settings.defaultWallpaperId;
-    await persist(
+  const removeCustomWallpaper = async () => {
+    if (!isAdmin || !deletingWallpaper || saving) return;
+    const nextCustom = (settings.custom ?? []).filter((w) => w.id !== deletingWallpaper.id);
+    const nextDefault =
+      settings.defaultWallpaperId === deletingWallpaper.id ? null : settings.defaultWallpaperId;
+    const ok = await persist(
       { ...settings, custom: nextCustom, defaultWallpaperId: nextDefault },
       "Custom wallpaper removed.",
     );
+    if (ok) setDeletingWallpaper(null);
   };
 
   const previewUrl = sanitizeWallpaperUrl(mediaUrl);
@@ -479,24 +486,34 @@ export function AdminNexusWallpapers() {
                   >
                     {isDisabled ? "Restore" : "Hide"}
                   </Button>
-                ) : (
+                ) : isAdmin ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
                     aria-label={`Delete ${wp.label}`}
                     disabled={saving}
-                    onClick={() => void removeCustomWallpaper(wp.id)}
+                    onClick={() => setDeletingWallpaper(wp)}
                     className="ml-auto h-7 px-2 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
-                )}
+                ) : null}
               </div>
             </div>
           );
         })}
       </div>
+      <DeleteConfirmDialog
+        open={!!deletingWallpaper}
+        onOpenChange={(open) => {
+          if (!open) setDeletingWallpaper(null);
+        }}
+        title={`Delete "${deletingWallpaper?.label ?? "wallpaper"}"?`}
+        description="This permanently removes this custom Nexus wallpaper from app settings."
+        busy={saving}
+        onConfirm={removeCustomWallpaper}
+      />
     </section>
   );
 }

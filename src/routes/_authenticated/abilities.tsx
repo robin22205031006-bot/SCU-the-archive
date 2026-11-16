@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -183,6 +184,8 @@ function AbilitiesHub() {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingDef, setEditingDef] = useState<AbilityDef | null>(null);
+  const [deletingDef, setDeletingDef] = useState<AbilityDef | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const registryVersion = useAbilityRegistryVersion();
 
   // Refresh admin-defined abilities and overrides from app_settings on visit.
@@ -281,7 +284,10 @@ function AbilitiesHub() {
     [registryVersion],
   );
 
-  const deleteCustom = async (def: AbilityDef) => {
+  const deleteCustom = async () => {
+    if (!isAdmin || !deletingDef || deletingBusy) return;
+    setDeletingBusy(true);
+    const def = deletingDef;
     removeCustomAbility(def.key);
     removeAbilityOverride(def.key);
     if (openKey === def.key) setOpenKey(null);
@@ -304,8 +310,12 @@ function AbilitiesHub() {
       if (error) throw error;
       void qc.invalidateQueries({ queryKey: ["app-settings"] });
       toast.success(`Removed "${def.label}" from the registry.`);
+      setDeletingDef(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Removed locally; cloud sync failed.");
+      setDeletingDef(null);
+    } finally {
+      setDeletingBusy(false);
     }
   };
 
@@ -418,7 +428,7 @@ function AbilitiesHub() {
                 isAdmin={isAdmin}
                 isCustom={customKeys.has(def.key)}
                 onEdit={() => setEditingDef(def)}
-                onDeleteCustom={() => void deleteCustom(def)}
+                onDeleteCustom={() => setDeletingDef(def)}
               />
             </div>
           )}
@@ -588,7 +598,7 @@ function AbilitiesHub() {
                       isAdmin={isAdmin}
                       isCustom={customKeys.has(d.key)}
                       onEdit={() => setEditingDef(d)}
-                      onDeleteCustom={() => void deleteCustom(d)}
+                      onDeleteCustom={() => setDeletingDef(d)}
                     />
                   ))}
                 </div>
@@ -597,6 +607,18 @@ function AbilitiesHub() {
           )}
         </>
       )}
+      <DeleteConfirmDialog
+        open={!!deletingDef}
+        onOpenChange={(open) => {
+          if (!open) setDeletingDef(null);
+        }}
+        title={`Remove "${deletingDef?.label ?? "ability"}" from registry?`}
+        description="This permanently removes this custom ability and any registry overrides."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={deletingBusy}
+        onConfirm={deleteCustom}
+      />
     </main>
   );
 }

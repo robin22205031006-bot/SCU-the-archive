@@ -7,8 +7,9 @@ import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
 import { FAMILY_LABEL, FAMILY_RELS, generations, isFamilyRel, type FamilyRel } from "@/lib/family";
 import { draftFamilyLinks, type FamilyProposal } from "@/lib/family.functions";
 import { invalidateArchive } from "@/lib/archive-sync";
-import { useIsStaff } from "@/hooks/use-admin";
+import { useIsAdmin, useIsStaff } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Trash2 } from "lucide-react";
 import { useIsManga } from "@/hooks/use-ui-mode";
 
@@ -205,12 +206,18 @@ export function FamilyEditor({
   chars: { id: string; name: string }[];
   family: { id: string; source_id: string; target_id: string; rel: string }[];
 }) {
+  const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const [a, setA] = useState("");
   const [rel, setRel] = useState<FamilyRel>("parent");
   const [b, setB] = useState("");
   const [proposals, setProposals] = useState<FamilyProposal[]>([]);
   const [reading, setReading] = useState(false);
+  const [deletingLink, setDeletingLink] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const runDraft = useServerFn(draftFamilyLinks);
   const name = (id: string) => chars.find((c) => c.id === id)?.name ?? "?";
   const add = async (s: string, r: string, t: string, quiet = false) => {
@@ -231,10 +238,20 @@ export function FamilyEditor({
       await invalidateArchive(qc);
     }
   };
-  const remove = async (id: string) => {
-    const { error } = await supabase.from("entity_relations").delete().eq("id", id);
-    if (error) toast.error("Couldn't remove it.");
-    await invalidateArchive(qc);
+  const remove = async () => {
+    if (!isAdmin || !deletingLink || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase.from("entity_relations").delete().eq("id", deletingLink.id);
+      if (error) toast.error("Couldn't remove it.");
+      else {
+        toast.success("Family link removed.");
+        setDeletingLink(null);
+        await invalidateArchive(qc);
+      }
+    } finally {
+      setDeletingBusy(false);
+    }
   };
   const read = async () => {
     setReading(true);
@@ -349,19 +366,42 @@ export function FamilyEditor({
               <span className="min-w-0 flex-1 break-words">
                 {name(f.source_id)} {FAMILY_LABEL[f.rel as FamilyRel]} {name(f.target_id)}
               </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                aria-label="Remove link"
-                onClick={() => remove(f.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              {isAdmin && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  aria-label="Remove link"
+                  onClick={() =>
+                    setDeletingLink({
+                      id: f.id,
+                      label: `${name(f.source_id)} ${FAMILY_LABEL[f.rel as FamilyRel]} ${name(f.target_id)}`,
+                    })
+                  }
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
+      <DeleteConfirmDialog
+        open={!!deletingLink}
+        onOpenChange={(open) => {
+          if (!open) setDeletingLink(null);
+        }}
+        title="Remove family link?"
+        description={
+          deletingLink
+            ? `This permanently removes the family link "${deletingLink.label}".`
+            : "This action cannot be undone."
+        }
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={deletingBusy}
+        onConfirm={remove}
+      />
     </details>
   );
 }

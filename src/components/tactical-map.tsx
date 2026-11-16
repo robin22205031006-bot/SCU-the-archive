@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +44,8 @@ export function TacticalMap() {
   const { data: pins = [], isLoading } = useQuery(mapLocationsQuery);
   const [selected, setSelected] = useState<MapLocation | null>(null);
   const [editing, setEditing] = useState<MapLocation | "new" | null>(null);
+  const [deletingPin, setDeletingPin] = useState<MapLocation | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [f, setF] = useState<PinForm>(EMPTY_PIN);
   const [eraFilter, setEraFilter] = useState<string>("all");
   const eras = [
@@ -113,17 +116,24 @@ export function TacticalMap() {
     refresh();
   };
 
-  const del = async (pin: MapLocation) => {
-    const { error } = await supabase.from("map_locations").delete().eq("id", pin.id);
-    if (error) {
-      toast.error(error.message);
-      return;
+  const del = async () => {
+    if (!isAdmin || !deletingPin || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase.from("map_locations").delete().eq("id", deletingPin.id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      sfx.remove();
+      toast.success(`Removed ${deletingPin.name}`);
+      if (selected?.id === deletingPin.id) setSelected(null);
+      if (editing !== "new" && editing?.id === deletingPin.id) setEditing(null);
+      setDeletingPin(null);
+      refresh();
+    } finally {
+      setDeletingBusy(false);
     }
-    sfx.remove();
-    toast.success(`Removed ${pin.name}`);
-    if (selected?.id === pin.id) setSelected(null);
-    if (editing !== "new" && editing?.id === pin.id) setEditing(null);
-    refresh();
   };
 
   return (
@@ -414,8 +424,13 @@ export function TacticalMap() {
               onChange={(e) => setF({ ...f, sentinels: e.target.value })}
             />
             <div className="flex justify-end gap-2">
-              {editing !== "new" && (
-                <Button size="sm" variant="destructive" onClick={() => del(editing as MapLocation)}>
+              {isAdmin && editing !== "new" && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  aria-label="Delete pin"
+                  onClick={() => setDeletingPin(editing as MapLocation)}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               )}
@@ -498,6 +513,16 @@ export function TacticalMap() {
           </div>
         )}
       </div>
+      <DeleteConfirmDialog
+        open={!!deletingPin}
+        onOpenChange={(open) => {
+          if (!open) setDeletingPin(null);
+        }}
+        title={`Delete pin "${deletingPin?.name ?? "location"}"?`}
+        description="This permanently removes this location marker from the tactical map."
+        busy={deletingBusy}
+        onConfirm={del}
+      />
     </div>
   );
 }

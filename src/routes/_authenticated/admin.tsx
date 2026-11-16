@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin, useIsStaff } from "@/hooks/use-admin";
@@ -45,6 +46,8 @@ function Admin() {
   const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const [word, setWord] = useState("");
+  const [deletingWord, setDeletingWord] = useState<{ id: string; word: string } | null>(null);
+  const [deletingWordBusy, setDeletingWordBusy] = useState(false);
   const [assignTarget, setAssignTarget] = useState("");
   const [newRole, setNewRole] = useState("moderator");
   const [syncing, setSyncing] = useState(false);
@@ -193,10 +196,20 @@ function Admin() {
       refresh();
     }
   };
-  const delWord = async (id: string) => {
-    const { error } = await supabase.from("banned_words").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else refresh();
+  const delWord = async () => {
+    if (!isAdmin || !deletingWord || deletingWordBusy) return;
+    setDeletingWordBusy(true);
+    try {
+      const { error } = await supabase.from("banned_words").delete().eq("id", deletingWord.id);
+      if (error) toast.error(error.message);
+      else {
+        toast.success(`Removed "${deletingWord.word}"`);
+        setDeletingWord(null);
+        refresh();
+      }
+    } finally {
+      setDeletingWordBusy(false);
+    }
   };
 
   return (
@@ -363,9 +376,15 @@ function Admin() {
                 className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm"
               >
                 {w.word}
-                <button aria-label={`Remove ${w.word}`} onClick={() => delWord(w.id)}>
-                  <Trash2 className="h-3 w-3" />
-                </button>
+                {isAdmin && (
+                  <button
+                    aria-label={`Remove ${w.word}`}
+                    onClick={() => setDeletingWord(w)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
               </span>
             ))}
           </div>
@@ -396,6 +415,18 @@ function Admin() {
           ))}
         </ul>
       </MotionSection>
+      <DeleteConfirmDialog
+        open={!!deletingWord}
+        onOpenChange={(open) => {
+          if (!open) setDeletingWord(null);
+        }}
+        title={`Remove banned word "${deletingWord?.word ?? ""}"?`}
+        description="This permanently removes the term from the moderation blocklist."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={deletingWordBusy}
+        onConfirm={delWord}
+      />
     </MotionPage>
   );
 }

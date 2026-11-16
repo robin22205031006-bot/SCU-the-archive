@@ -82,11 +82,27 @@ export function useIsSuperadmin() {
   return useRoles().includes("superadmin");
 }
 
+/** Utility hook returning whether the signed-in user has admin privileges (including superadmin). */
 export function useIsAdmin() {
-  return useRoles().includes("admin");
+  const roles = useRoles();
+  return roles.includes("admin") || roles.includes("superadmin");
 }
 
 export function useIsStaff() {
-  const r = useRoles();
-  return r.includes("admin") || r.includes("moderator");
+  const roles = useRoles();
+  return roles.includes("admin") || roles.includes("superadmin") || roles.includes("moderator");
+}
+
+/** Structured permission flags for conditional admin/delete UI and handler guards. */
+export function useAdminPermissions() {
+  const roles = useRoles();
+  const isSuperadmin = roles.includes("superadmin");
+  const isAdmin = isSuperadmin || roles.includes("admin");
+  const isStaff = isAdmin || roles.includes("moderator");
+  return {
+    isAdmin,
+    isStaff,
+    isSuperadmin,
+    canDelete: isAdmin,
+  };
 }

@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery } from "@/lib/entities";
 import { abilityDef, allAbilityDefs } from "@/lib/abilities";
@@ -29,6 +31,7 @@ import {
 /** Admin panel: assign abilities to characters scoped by series/season with emblem rank 1-5. */
 export function AdminCharacterAbilities() {
   useAbilityRegistryVersion();
+  const isAdmin = useIsAdmin();
   const defs = allAbilityDefs();
   const qc = useQueryClient();
   const [entityId, setEntityId] = useState("");
@@ -37,6 +40,8 @@ export function AdminCharacterAbilities() {
   const [season, setSeason] = useState("");
   const [level, setLevel] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [deletingAssignmentId, setDeletingAssignmentId] = useState<string | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
 
   const { data: entities } = useQuery({ ...entitiesQuery(["character"]), enabled: true });
   const { data: series } = useQuery(seriesQuery);
@@ -159,10 +164,24 @@ export function AdminCharacterAbilities() {
     }
   };
 
-  const remove = async (id: string) => {
-    const { error } = await supabase.from("character_abilities").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else void invalidateArchive(qc);
+  const remove = async () => {
+    if (!isAdmin || !deletingAssignmentId || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase
+        .from("character_abilities")
+        .delete()
+        .eq("id", deletingAssignmentId);
+      if (error) toast.error(error.message);
+      else {
+        sfx.remove();
+        toast.success("Ability assignment removed");
+        setDeletingAssignmentId(null);
+        void invalidateArchive(qc);
+      }
+    } finally {
+      setDeletingBusy(false);
+    }
   };
 
   return (
@@ -392,16 +411,30 @@ export function AdminCharacterAbilities() {
                 </option>
               ))}
             </select>
-            <button
-              aria-label="Remove"
-              onClick={() => remove(r.id)}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            {isAdmin && (
+              <button
+                aria-label="Remove"
+                onClick={() => setDeletingAssignmentId(r.id)}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
           </li>
         ))}
       </ul>
+      <DeleteConfirmDialog
+        open={!!deletingAssignmentId}
+        onOpenChange={(open) => {
+          if (!open) setDeletingAssignmentId(null);
+        }}
+        title="Remove ability assignment?"
+        description="This permanently removes this character's ability rank entry for this series/season."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={deletingBusy}
+        onConfirm={remove}
+      />
     </section>
   );
 }

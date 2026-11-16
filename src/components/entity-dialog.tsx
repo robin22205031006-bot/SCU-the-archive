@@ -4,10 +4,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { sfx } from "@/lib/scu-audio";
@@ -127,8 +129,11 @@ export function EntityDialog({
   const [uploading3d, setUploading3d] = useState(false);
   const [relTarget, setRelTarget] = useState("");
   const [relType, setRelType] = useState<string>(RELATIONSHIP_TYPES[0]);
+  const isAdmin = useIsAdmin();
   const [sketchUrl, setSketchUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingRel, setDeletingRel] = useState<{ id: string; label: string } | null>(null);
+  const [deletingRelBusy, setDeletingRelBusy] = useState(false);
   const isChar = kind === "character";
   const [combat, setCombat] = useState<CombatStats>(
     () =>
@@ -186,10 +191,24 @@ export function EntityDialog({
     qc.invalidateQueries({ queryKey: ["char-relationships"] });
   };
 
-  const removeRelationship = async (id: string) => {
-    const { error } = await supabase.from("character_relationships").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["char-relationships"] });
+  const removeRelationship = async () => {
+    if (!isAdmin || !deletingRel || deletingRelBusy) return;
+    setDeletingRelBusy(true);
+    try {
+      const { error } = await supabase
+        .from("character_relationships")
+        .delete()
+        .eq("id", deletingRel.id);
+      if (error) toast.error(error.message);
+      else {
+        sfx.remove();
+        toast.success("Relationship removed");
+        setDeletingRel(null);
+        qc.invalidateQueries({ queryKey: ["char-relationships"] });
+      }
+    } finally {
+      setDeletingRelBusy(false);
+    }
   };
 
   const set =
@@ -756,13 +775,20 @@ export function EntityDialog({
                         <span className="text-muted-foreground">
                           {RELATIONSHIP_LABELS[r.relationship_type] ?? r.relationship_type}
                         </span>
-                        <button
-                          aria-label="Remove relationship"
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => void removeRelationship(r.id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            aria-label="Remove relationship"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() =>
+                              setDeletingRel({
+                                id: r.id,
+                                label: other?.name ?? otherId.slice(0, 8),
+                              })
+                            }
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
                       </li>
                     );
                   })}
@@ -818,6 +844,18 @@ export function EntityDialog({
           </Button>
         </div>
       </DialogContent>
+      <DeleteConfirmDialog
+        open={!!deletingRel}
+        onOpenChange={(open) => {
+          if (!open) setDeletingRel(null);
+        }}
+        title={`Remove relationship with ${deletingRel?.label ?? "character"}?`}
+        description="This permanently removes this relationship link from the dossier."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={deletingRelBusy}
+        onConfirm={removeRelationship}
+      />
     </Dialog>
   );
 }

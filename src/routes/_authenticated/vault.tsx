@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Database, Download, FileText, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -77,6 +78,12 @@ function Vault() {
   const [ragFile, setRagFile] = useState<File | null>(null);
   const [ragBusy, setRagBusy] = useState(false);
   const [ragProgress, setRagProgress] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "vault"; id: string; path: string; label: string }
+    | { kind: "rag"; doc: PdfVaultDoc }
+    | null
+  >(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const { data: ragDocs } = useQuery({
     queryKey: ["pdf-vault"],
     enabled: isAdmin,
@@ -221,13 +228,16 @@ function Vault() {
   };
 
   const deleteRagDoc = async (d: PdfVaultDoc) => {
+    if (!isAdmin) return false;
     await supabase.storage.from("vault").remove([d.storage_path]);
     const { error } = await supabase.from("pdf_vault").delete().eq("id", d.id);
-    if (error) toast.error(error.message);
-    else {
-      sfx.remove();
-      qc.invalidateQueries({ queryKey: ["pdf-vault"] });
+    if (error) {
+      toast.error(error.message);
+      return false;
     }
+    sfx.remove();
+    qc.invalidateQueries({ queryKey: ["pdf-vault"] });
+    return true;
   };
 
   const open = async (path: string) => {
@@ -246,15 +256,35 @@ function Vault() {
   };
 
   const del = async (id: string, path: string) => {
+    if (!isAdmin) return false;
     const removal = await supabase.storage.from("vault").remove([path]);
     if (removal.error) {
       toast.error(removal.error.message);
-      return;
+      return false;
     }
     const { error } = await supabase.from("vault_documents").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["vault"] });
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    sfx.remove();
+    qc.invalidateQueries({ queryKey: ["vault"] });
     qc.invalidateQueries({ queryKey: ["search-index"] });
+    return true;
+  };
+
+  const confirmDelete = async () => {
+    if (!isAdmin || !pendingDelete || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const ok =
+        pendingDelete.kind === "rag"
+          ? await deleteRagDoc(pendingDelete.doc)
+          : await del(pendingDelete.id, pendingDelete.path);
+      if (ok) setPendingDelete(null);
+    } finally {
+      setDeletingBusy(false);
+    }
   };
 
   return (
@@ -369,14 +399,16 @@ function Vault() {
                   <span className="text-xs text-muted-foreground">
                     {d.status === "ready" ? `${d.chunk_count} chunks` : d.status}
                   </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label="Delete index"
-                    onClick={() => void deleteRagDoc(d)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Delete index"
+                      onClick={() => setPendingDelete({ kind: "rag", doc: d })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -427,7 +459,14 @@ function Vault() {
                   <Button
                     variant="ghost"
                     aria-label="Delete document"
-                    onClick={() => del(d.id, d.file_path)}
+                    onClick={() =>
+                      setPendingDelete({
+                        kind: "vault",
+                        id: d.id,
+                        path: d.file_path,
+                        label: d.title,
+                      })
+                    }
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -507,7 +546,14 @@ function Vault() {
                     size="icon"
                     variant="ghost"
                     aria-label="Delete"
-                    onClick={() => del(d.id, d.file_path)}
+                    onClick={() =>
+                      setPendingDelete({
+                        kind: "vault",
+                        id: d.id,
+                        path: d.file_path,
+                        label: d.title,
+                      })
+                    }
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -517,6 +563,24 @@ function Vault() {
           ))}
         </ul>
       )}
+      <DeleteConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={
+          pendingDelete?.kind === "rag"
+            ? `Delete AI index for "${pendingDelete.doc.file_name}"?`
+            : `Delete "${pendingDelete?.label ?? "document"}"?`
+        }
+        description={
+          pendingDelete?.kind === "rag"
+            ? "This permanently removes the indexed PDF and its AI knowledge chunks from the archive."
+            : "This permanently deletes the PDF file and its vault record."
+        }
+        busy={deletingBusy}
+        onConfirm={confirmDelete}
+      />
     </MotionPage>
   );
 }

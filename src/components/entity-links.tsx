@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,6 +175,8 @@ export function EntityLinks({
   const isCharacter = entity.kind === "character";
   const isGroup = GROUP_LINK_KINDS.includes(entity.kind);
   const [adding, setAdding] = useState(false);
+  const [deletingRow, setDeletingRow] = useState<LinkedRow | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
 
   const charQuery = useQuery({ ...characterLinksQuery(entity.id), enabled: isCharacter });
   const groupQuery = useQuery({ ...groupLinksQuery(entity.id), enabled: isGroup && !isCharacter });
@@ -196,13 +199,23 @@ export function EntityLinks({
     else void invalidateArchive(qc);
   };
 
-  const remove = async (m: EntityMembership) => {
-    const { error } = await supabase.from("entity_memberships").delete().eq("id", m.id);
-    if (error) toast.error(error.message);
-    else {
-      sfx.remove();
-      toast.success("Link removed");
-      void invalidateArchive(qc);
+  const remove = async () => {
+    if (!isAdmin || !deletingRow || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase
+        .from("entity_memberships")
+        .delete()
+        .eq("id", deletingRow.membership.id);
+      if (error) toast.error(error.message);
+      else {
+        sfx.remove();
+        toast.success("Link removed");
+        setDeletingRow(null);
+        void invalidateArchive(qc);
+      }
+    } finally {
+      setDeletingBusy(false);
     }
   };
 
@@ -272,7 +285,7 @@ export function EntityLinks({
               {isAdmin && (
                 <button
                   aria-label={`Remove link to ${linked.name}`}
-                  onClick={() => remove(m)}
+                  onClick={() => setDeletingRow({ membership: m, entity: linked })}
                   className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-destructive"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -290,6 +303,18 @@ export function EntityLinks({
           linkedIds={linkedIds}
         />
       )}
+      <DeleteConfirmDialog
+        open={!!deletingRow}
+        onOpenChange={(open) => {
+          if (!open) setDeletingRow(null);
+        }}
+        title={`Remove link to ${deletingRow?.entity.name ?? "entry"}?`}
+        description="This removes this affiliation membership link from the archive."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={deletingBusy}
+        onConfirm={remove}
+      />
     </div>
   );
 }

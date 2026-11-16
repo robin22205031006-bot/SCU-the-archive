@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GitBranch, Users, X } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   childEntitiesQuery,
@@ -52,6 +53,11 @@ export function CharacterRelationships({
   const qc = useQueryClient();
   const { data: rels } = useQuery(characterRelationshipsQuery(entity.id));
   const { data: targets } = useRelatedEntities(rels, entity.id);
+  const [deletingRel, setDeletingRel] = useState<{
+    rel: CharacterRelationship;
+    otherName: string;
+  } | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
 
   const rows = useMemo(() => {
     const byId = new Map((targets ?? []).map((t) => [t.id, t]));
@@ -73,12 +79,23 @@ export function CharacterRelationships({
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [rows]);
 
-  const remove = async (rel: CharacterRelationship) => {
-    const { error } = await supabase.from("character_relationships").delete().eq("id", rel.id);
-    if (error) toast.error(error.message);
-    else {
-      sfx.remove();
-      qc.invalidateQueries({ queryKey: ["char-relationships"] });
+  const remove = async () => {
+    if (!isAdmin || !deletingRel || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase
+        .from("character_relationships")
+        .delete()
+        .eq("id", deletingRel.rel.id);
+      if (error) toast.error(error.message);
+      else {
+        sfx.remove();
+        toast.success("Relationship removed");
+        setDeletingRel(null);
+        qc.invalidateQueries({ queryKey: ["char-relationships"] });
+      }
+    } finally {
+      setDeletingBusy(false);
     }
   };
 
@@ -110,7 +127,7 @@ export function CharacterRelationships({
                 {isAdmin && (
                   <button
                     aria-label={`Remove relationship with ${other.name}`}
-                    onClick={() => void remove(rel)}
+                    onClick={() => setDeletingRel({ rel, otherName: other.name })}
                     className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-destructive"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -121,6 +138,18 @@ export function CharacterRelationships({
           </div>
         </div>
       ))}
+      <DeleteConfirmDialog
+        open={!!deletingRel}
+        onOpenChange={(open) => {
+          if (!open) setDeletingRel(null);
+        }}
+        title={`Remove relationship with ${deletingRel?.otherName ?? "character"}?`}
+        description="This permanently removes this relationship link from the dossier."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={deletingBusy}
+        onConfirm={remove}
+      />
     </div>
   );
 }

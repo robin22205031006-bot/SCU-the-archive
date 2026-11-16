@@ -27,16 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWebMCP } from "use-webmcp-tool";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -1529,6 +1520,7 @@ export function EntitySection({
   const [open, setOpen] = useState<{ id: string; rect: DOMRect | null } | null>(null);
   const [editing, setEditing] = useState<Entity | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Entity | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [merging, setMerging] = useState<Entity | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -1627,18 +1619,23 @@ export function EntitySection({
   });
 
   const doDelete = async () => {
-    if (!deleting) return;
-    const { error } = await supabase.from("entities").delete().eq("id", deleting.id);
-    if (error) toast.error(error.message);
-    else {
-      sfx.remove();
-      toast.success(`${deleting.name} deleted`);
-      if (open?.id === deleting.id) setOpen(null);
-      void invalidateArchive(qc);
-      qc.invalidateQueries({ queryKey: ["search-index"] });
-      qc.removeQueries({ queryKey: ["notes", deleting.id] });
+    if (!isAdmin || !deleting || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase.from("entities").delete().eq("id", deleting.id);
+      if (error) toast.error(error.message);
+      else {
+        sfx.remove();
+        toast.success(`${deleting.name} deleted`);
+        if (open?.id === deleting.id) setOpen(null);
+        void invalidateArchive(qc);
+        qc.invalidateQueries({ queryKey: ["search-index"] });
+        qc.removeQueries({ queryKey: ["notes", deleting.id] });
+        setDeleting(null);
+      }
+    } finally {
+      setDeletingBusy(false);
     }
-    setDeleting(null);
   };
 
   const compareEntity = useMemo(
@@ -1914,25 +1911,16 @@ export function EntitySection({
       {merging && (
         <MergeEntityDialog open onOpenChange={(o) => !o && setMerging(null)} entity={merging} />
       )}
-      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleting?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes the entry and its lore notes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={doDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={!!deleting}
+        onOpenChange={(o) => {
+          if (!o) setDeleting(null);
+        }}
+        title={`Delete ${deleting?.name ?? "entry"}?`}
+        description="This permanently removes the entry and its lore notes."
+        busy={deletingBusy}
+        onConfirm={doDelete}
+      />
     </>
   );
 }

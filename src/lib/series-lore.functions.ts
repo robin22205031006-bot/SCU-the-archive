@@ -1,26 +1,42 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 import { seriesSeasonNames } from "@/lib/series-seasons";
 import { readDossier } from "@/lib/nexus-season";
 import {
   seasonTitlesInput,
+  deleteSeriesInput,
+  deleteSeasonInput,
   seriesQuestionInput,
   savedSeasonTitles,
+  removeSeasonAt,
+  removeSeasonFromDossier,
+  removeSeriesFromDossier,
+  removeSeriesFromOrder,
+  removeSeriesFromStyles,
   scopeLoreText,
   rankLoreEvidence,
   loreQuestionsBlocked,
   type LoreEvidence,
 } from "@/lib/series-lore";
 
+async function assertSeriesAdmin(
+  context: { supabase: SupabaseClient<Database>; userId: string },
+  message: string,
+) {
+  const { data: admin, error: roleError } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
+  if (roleError || !admin) throw new Error(message);
+}
+
 export const saveSeasonTitles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => seasonTitlesInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: admin, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleError || !admin) throw new Error("Only admins can edit season titles.");
+    await assertSeriesAdmin(context, "Only admins can edit season titles.");
     const { data: series, error: readError } = await context.supabase
       .from("series")
       .select("season_count, season_names")
@@ -40,6 +56,142 @@ export const saveSeasonTitles = createServerFn({ method: "POST" })
       .single();
     if (error || !saved) throw new Error("Season titles could not be saved.");
     return saved;
+  });
+
+export const deleteSeries = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => deleteSeriesInput.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSeriesAdmin(context, "Only admins can delete series.");
+    const sb = context.supabase;
+    const { data: existing, error: readError } = await sb
+      .from("series")
+      .select("id, title")
+      .eq("id", data.seriesId)
+      .maybeSingle();
+    if (readError) throw new Error("Series could not be loaded.");
+    if (!existing) throw new Error("That series was not found in the archive.");
+
+    const { error: abilitiesError } = await sb
+      .from("character_abilities")
+      .delete()
+      .eq("series_id", data.seriesId);
+    if (abilitiesError) throw new Error("Series abilities could not be removed.");
+
+    const { data: entities, error: entitiesError } = await sb.from("entities").select("id, stats");
+    if (entitiesError) throw new Error("Character dossiers could not be checked.");
+    for (const entity of entities ?? []) {
+      const cleaned = removeSeriesFromDossier(entity.stats, data.seriesId);
+      if (!cleaned.changed) continue;
+      const { error: updateError } = await sb
+        .from("entities")
+        .update({ stats: cleaned.nextStats as never })
+        .eq("id", entity.id);
+      if (updateError) throw new Error("Character dossiers could not be cleaned up.");
+    }
+
+    const { data: settings, error: settingsError } = await sb
+      .from("app_settings")
+      .select("key, value")
+      .in("key", ["series_order", "series_styles"]);
+    if (settingsError) throw new Error("Series settings could not be checked.");
+    const now = new Date().toISOString();
+    for (const setting of settings ?? []) {
+      if (setting.key === "series_order") {
+        const nextOrder = removeSeriesFromOrder(setting.value, data.seriesId);
+        if (nextOrder.changed) {
+          const { error } = await sb
+            .from("app_settings")
+            .update({ value: nextOrder.nextValue as never, updated_at: now })
+            .eq("key", "series_order");
+          if (error) throw new Error("Series timeline order could not be updated.");
+        }
+      } else if (setting.key === "series_styles") {
+        const nextStyles = removeSeriesFromStyles(setting.value, data.seriesId);
+        if (nextStyles.changed) {
+          const { error } = await sb
+            .from("app_settings")
+            .update({ value: nextStyles.nextValue as never, updated_at: now })
+            .eq("key", "series_styles");
+          if (error) throw new Error("Series title styles could not be updated.");
+        }
+      }
+    }
+
+    const { error: deleteError } = await sb.from("series").delete().eq("id", data.seriesId);
+    if (deleteError) throw new Error("The series could not be deleted.");
+    return { ok: true, id: existing.id, title: existing.title };
+  });
+
+export const deleteSeason = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => deleteSeasonInput.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSeriesAdmin(context, "Only admins can delete seasons.");
+    const sb = context.supabase;
+    const { data: series, error: readError } = await sb
+      .from("series")
+      .select("id, title, season_count, season_names")
+      .eq("id", data.seriesId)
+      .single();
+    if (readError || !series) throw new Error("Series could not be loaded.");
+
+    const next = removeSeasonAt(series, data.season);
+    if (!next) throw new Error("That season does not exist in this series.");
+
+    const { error: removeAbilitiesError } = await sb
+      .from("character_abilities")
+      .delete()
+      .eq("series_id", data.seriesId)
+      .eq("season_number", data.season);
+    if (removeAbilitiesError) throw new Error("Season abilities could not be removed.");
+
+    const { data: higherAbilities, error: higherError } = await sb
+      .from("character_abilities")
+      .select("id, season_number")
+      .eq("series_id", data.seriesId)
+      .gt("season_number", data.season)
+      .order("season_number", { ascending: true });
+    if (higherError) throw new Error("Remaining season abilities could not be loaded.");
+    for (const row of higherAbilities ?? []) {
+      if (typeof row.season_number !== "number") continue;
+      const { error: shiftError } = await sb
+        .from("character_abilities")
+        .update({ season_number: row.season_number - 1 })
+        .eq("id", row.id);
+      if (shiftError) throw new Error("Remaining season abilities could not be reindexed.");
+    }
+
+    const { data: entities, error: entitiesError } = await sb.from("entities").select("id, stats");
+    if (entitiesError) throw new Error("Season dossiers could not be checked.");
+    for (const entity of entities ?? []) {
+      const cleaned = removeSeasonFromDossier(entity.stats, data.seriesId, data.season);
+      if (!cleaned.changed) continue;
+      const { error: updateError } = await sb
+        .from("entities")
+        .update({ stats: cleaned.nextStats as never })
+        .eq("id", entity.id);
+      if (updateError) throw new Error("Season dossiers could not be updated.");
+    }
+
+    const { data: saved, error: saveError } = await sb
+      .from("series")
+      .update({
+        season_count: next.season_count,
+        season_names: next.season_names,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.seriesId)
+      .select("id, season_count, season_names")
+      .single();
+    if (saveError || !saved) throw new Error("The season could not be deleted.");
+    return {
+      ok: true,
+      id: saved.id,
+      season_count: saved.season_count,
+      season_names: saved.season_names,
+      removedTitle: next.removedTitle,
+    };
   });
 
 export const askSeriesLore = createServerFn({ method: "POST" })

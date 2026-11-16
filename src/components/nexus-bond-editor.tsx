@@ -5,8 +5,9 @@ import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
 import { invalidateArchive } from "@/lib/archive-sync";
-import { useIsStaff } from "@/hooks/use-admin";
+import { useAdminPermissions } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 export const BOND_KINDS = [
   "ally",
@@ -22,7 +23,7 @@ export const BOND_KINDS = [
 
 /** Staff-only editor for character star bonds (entity_relations), shared with the family tree data. */
 export function NexusBondEditor() {
-  const isStaff = useIsStaff();
+  const { isStaff, canDelete } = useAdminPermissions();
   const qc = useQueryClient();
   const { data: chars = [] } = useQuery(entitiesQuery(["character"]));
   const { data: rels = [] } = useQuery(entityRelationsQuery);
@@ -32,6 +33,12 @@ export function NexusBondEditor() {
   const [label, setLabel] = useState("");
   const [filter, setFilter] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deletingBond, setDeletingBond] = useState<{
+    id: string;
+    sourceName: string;
+    rel: string;
+    targetName: string;
+  } | null>(null);
   if (!isStaff) return null;
   const name = (id: string) => chars.find((c) => c.id === id)?.name ?? "?";
   const ids = new Set(chars.map((c) => c.id));
@@ -140,21 +147,24 @@ export function NexusBondEditor() {
                 <b>{name(r.source_id)}</b> <span className="text-accent">{r.rel}</span>{" "}
                 <b>{name(r.target_id)}</b>
               </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                aria-label="Remove bond"
-                onClick={() => {
-                  if (confirm("Remove this bond?"))
-                    void run(
-                      supabase.from("entity_relations").delete().eq("id", r.id),
-                      "Bond removed.",
-                    );
-                }}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              {canDelete && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  aria-label="Remove bond"
+                  onClick={() =>
+                    setDeletingBond({
+                      id: r.id,
+                      sourceName: name(r.source_id),
+                      rel: r.rel,
+                      targetName: name(r.target_id),
+                    })
+                  }
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
             </div>
             <input
               defaultValue={r.label ?? ""}
@@ -174,6 +184,29 @@ export function NexusBondEditor() {
           </li>
         ))}
       </ul>
+      <DeleteConfirmDialog
+        open={!!deletingBond}
+        onOpenChange={(open) => {
+          if (!open) setDeletingBond(null);
+        }}
+        title={
+          deletingBond
+            ? `Remove bond "${deletingBond.sourceName} ${deletingBond.rel} ${deletingBond.targetName}"?`
+            : "Remove this bond?"
+        }
+        description="This permanently removes this relationship bond from the Nexus constellation."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={busy}
+        onConfirm={async () => {
+          if (!canDelete || !deletingBond || busy) return;
+          const ok = await run(
+            supabase.from("entity_relations").delete().eq("id", deletingBond.id),
+            "Bond removed.",
+          );
+          if (ok) setDeletingBond(null);
+        }}
+      />
     </details>
   );
 }

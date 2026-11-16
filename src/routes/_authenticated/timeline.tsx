@@ -10,6 +10,7 @@ const TimelineImpactChart = lazy(() =>
   import("@/components/timeline-impact-chart").then((m) => ({ default: m.TimelineImpactChart })),
 );
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +84,8 @@ export function Timeline() {
   const { data: groups } = useQuery(entitiesQuery(GROUP_LINK_KINDS));
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<TimelineEvent | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<TimelineEvent | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [series, setSeries] = useState("all");
   const [era, setEra] = useState("all");
   const [clan, setClan] = useState("all");
@@ -242,14 +245,20 @@ export function Timeline() {
     refresh();
   };
 
-  const del = async (id: string) => {
-    if (!window.confirm("Delete this event?")) return;
-    const { error } = await supabase.from("timeline_events").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      sfx.remove();
-      toast.success("Event deleted");
-      refresh();
+  const del = async () => {
+    if (!isAdmin || !deletingEvent || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase.from("timeline_events").delete().eq("id", deletingEvent.id);
+      if (error) toast.error(error.message);
+      else {
+        sfx.remove();
+        toast.success("Event deleted");
+        setDeletingEvent(null);
+        refresh();
+      }
+    } finally {
+      setDeletingBusy(false);
     }
   };
 
@@ -542,7 +551,11 @@ export function Timeline() {
                   <Button variant="ghost" aria-label="Move later" onClick={() => move(ev.id, 1)}>
                     <ArrowDown className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" aria-label="Delete event" onClick={() => del(ev.id)}>
+                  <Button
+                    variant="ghost"
+                    aria-label="Delete event"
+                    onClick={() => setDeletingEvent(ev)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -606,7 +619,7 @@ export function Timeline() {
                         </button>
                         <button
                           aria-label="Delete event"
-                          onClick={() => del(ev.id)}
+                          onClick={() => setDeletingEvent(ev)}
                           className="border border-foreground p-1 hover:bg-[#b91c1c] hover:text-white"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -666,7 +679,7 @@ export function Timeline() {
                       </button>
                       <button
                         aria-label="Delete event"
-                        onClick={() => del(ev.id)}
+                        onClick={() => setDeletingEvent(ev)}
                         className="text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -714,6 +727,16 @@ export function Timeline() {
           })}
         </ol>
       )}
+      <DeleteConfirmDialog
+        open={!!deletingEvent}
+        onOpenChange={(open) => {
+          if (!open) setDeletingEvent(null);
+        }}
+        title={`Delete "${deletingEvent?.title ?? "event"}"?`}
+        description="This permanently removes this event from the canon timeline."
+        busy={deletingBusy}
+        onConfirm={del}
+      />
     </main>
   );
 }

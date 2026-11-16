@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery } from "@/lib/entities";
 import { seriesQuery, seriesCharactersQuery } from "@/lib/series";
 import { seriesSeasonNames } from "@/lib/series-seasons";
 import { projectSeasonRoster } from "@/lib/nexus-roster";
 import { readDossier } from "@/lib/nexus-season";
-import { useIsStaff } from "@/hooks/use-admin";
+import { useIsAdmin, useIsStaff } from "@/hooks/use-admin";
 import { useSpoilerMask, SpoilerToggle } from "@/lib/spoiler-mask";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { invalidateArchive, resolveGroupIds } from "@/lib/archive-sync";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { draftSeasonStory } from "@/lib/season-story.functions";
+import { deleteSeason } from "@/lib/series-lore.functions";
+import { sfx } from "@/lib/scu-audio";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 
 export const Route = createFileRoute("/_authenticated/season")({
@@ -43,13 +47,18 @@ export const Route = createFileRoute("/_authenticated/season")({
 
 function SeasonPage() {
   const { series: seriesId, n } = Route.useSearch();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const isStaff = useIsStaff();
+  const isAdmin = useIsAdmin();
   useSpoilerMask("series");
   const [editing, setEditing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [filling, setFilling] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const runDraft = useServerFn(draftSeasonStory);
+  const runDeleteSeason = useServerFn(deleteSeason);
   const { data: allSeries = [] } = useQuery(seriesQuery);
   const { data: chars = [] } = useQuery(entitiesQuery(["character"]));
   const { data: groups = [] } = useQuery(
@@ -66,9 +75,28 @@ function SeasonPage() {
         </Link>
       </main>
     );
-  const name = seriesSeasonNames(series)[n - 1] ?? `Season ${n}`;
+  const seasonNames = seriesSeasonNames(series);
+  const hasSeason = n >= 1 && n <= seasonNames.length;
+  const name = seasonNames[n - 1] ?? `Season ${n}`;
   const roster = projectSeasonRoster(chars, seriesId, n, members);
   const key = `${seriesId}:${n}`;
+
+  const handleDeleteSeason = async () => {
+    if (!isAdmin || deleting) return;
+    setDeleting(true);
+    try {
+      await runDeleteSeason({ data: { seriesId, season: n } });
+      sfx.remove();
+      toast.success(`${name} deleted`);
+      await invalidateArchive(qc);
+      setConfirmDelete(false);
+      void navigate({ to: "/series", search: { s: seriesId } as never });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The season could not be deleted.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   /** Admin manual resync: rebuild memberships and series rows for every character in this season. */
   const resync = async () => {
@@ -208,6 +236,17 @@ function SeasonPage() {
               {syncing ? "Syncing…" : "Resync everywhere"}
             </Button>
           )}
+          {isAdmin && hasSeason && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete season
+            </Button>
+          )}
         </div>
       </MotionSection>
       <ul className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -256,6 +295,15 @@ function SeasonPage() {
           label={`${series.title} · ${name}`}
         />
       )}
+      <DeleteConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={`Delete ${name} from ${series.title}?`}
+        description={`This removes Season ${n} abilities and dossier entries, and shifts later seasons down.`}
+        confirmLabel="Delete season"
+        busy={deleting}
+        onConfirm={handleDeleteSeason}
+      />
     </MotionPage>
   );
 }

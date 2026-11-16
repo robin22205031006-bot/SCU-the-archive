@@ -1,24 +1,17 @@
 import { invalidateArchive } from "@/lib/archive-sync";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { BookMarked, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { entitiesQuery, fileToDataUrl, matchesSearch, type Entity } from "@/lib/entities";
 import {
   SERIES_STATUSES,
@@ -29,6 +22,9 @@ import {
   type Series,
   type SeriesCharacter,
 } from "@/lib/series";
+import { seriesSeasonNames } from "@/lib/series-seasons";
+import { deleteSeason, deleteSeries } from "@/lib/series-lore.functions";
+import { SERIES_ORDER_KEY } from "@/lib/series-order";
 import { CARD_THEMES } from "./ability-canvas";
 import { sfx } from "@/lib/scu-audio";
 
@@ -409,7 +405,10 @@ function AddCharacterDialog({
 
 function SeriesMembers({ series }: { series: Series }) {
   const qc = useQueryClient();
+  const isAdmin = useIsAdmin();
   const [adding, setAdding] = useState(false);
+  const [removing, setRemoving] = useState<{ row: SeriesCharacter; name: string } | null>(null);
+  const [removingBusy, setRemovingBusy] = useState(false);
   const { data: rows } = useQuery(seriesCharactersQuery(series.id));
   const { data: members } = useQuery(seriesMembersQuery(rows));
   const byId = useMemo(() => new Map((members ?? []).map((e) => [e.id, e])), [members]);
@@ -421,13 +420,21 @@ function SeriesMembers({ series }: { series: Series }) {
     else void invalidateArchive(qc);
   };
 
-  const remove = async (row: SeriesCharacter) => {
-    const { error } = await supabase.from("series_characters").delete().eq("id", row.id);
-    if (error) toast.error(error.message);
-    else {
+  const remove = async () => {
+    if (!isAdmin || !removing || removingBusy) return;
+    setRemovingBusy(true);
+    try {
+      const { error } = await supabase.from("series_characters").delete().eq("id", removing.row.id);
+      if (error) throw error;
       sfx.remove();
-      void invalidateArchive(qc);
+      toast.success(`Removed ${removing.name} from ${series.title}`);
+      await invalidateArchive(qc);
       qc.invalidateQueries({ queryKey: ["character-series"] });
+      setRemoving(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove character.");
+    } finally {
+      setRemovingBusy(false);
     }
   };
 
@@ -535,13 +542,15 @@ function SeriesMembers({ series }: { series: Series }) {
                   <option key={r} value={r} />
                 ))}
               </datalist>
-              <button
-                aria-label={`Remove ${c.name} from ${series.title}`}
-                onClick={() => remove(row)}
-                className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              {isAdmin && (
+                <button
+                  aria-label={`Remove ${c.name} from ${series.title}`}
+                  onClick={() => setRemoving({ row, name: c.name })}
+                  className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           );
         })
@@ -554,29 +563,118 @@ function SeriesMembers({ series }: { series: Series }) {
           linkedIds={linkedIds}
         />
       )}
+      <DeleteConfirmDialog
+        open={!!removing}
+        onOpenChange={(open) => !open && setRemoving(null)}
+        title={`Remove ${removing?.name} from ${series.title}?`}
+        description="This removes the character's assignment from this series."
+        confirmLabel="Remove"
+        busyLabel="Removing…"
+        busy={removingBusy}
+        onConfirm={remove}
+      />
+    </div>
+  );
+}
+
+function SeriesSeasons({
+  series,
+  isAdmin,
+  onDeleteSeason,
+}: {
+  series: Series;
+  isAdmin: boolean;
+  onDeleteSeason: (season: number, name: string) => void;
+}) {
+  const seasons = seriesSeasonNames(series);
+  return (
+    <div className="mt-3 grid gap-2 rounded-xl bg-secondary/30 p-3">
+      <p className="text-xs uppercase tracking-widest text-muted-foreground">
+        {seasons.length} season{seasons.length === 1 ? "" : "s"}
+      </p>
+      {seasons.length === 0 ? (
+        <p className="py-1 text-xs text-muted-foreground">No seasons defined.</p>
+      ) : (
+        <ul className="flex flex-wrap gap-2">
+          {seasons.map((name, idx) => (
+            <li
+              key={`${series.id}-s-${idx + 1}`}
+              className="flex items-center gap-1.5 rounded-lg bg-background/50 px-2.5 py-1.5 text-xs"
+            >
+              <span className="font-mono text-[10px] text-muted-foreground">S{idx + 1}</span>
+              <span className="font-medium">{name}</span>
+              {isAdmin && (
+                <button
+                  type="button"
+                  aria-label={`Delete ${name} from ${series.title}`}
+                  onClick={() => onDeleteSeason(idx + 1, name)}
+                  className="ml-0.5 grid h-5 w-5 place-items-center rounded-full text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
 export function AdminSeries() {
   const qc = useQueryClient();
+  const isAdmin = useIsAdmin();
+  const runDeleteSeries = useServerFn(deleteSeries);
+  const runDeleteSeason = useServerFn(deleteSeason);
   const [editing, setEditing] = useState<Series | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Series | null>(null);
+  const [deletingSeason, setDeletingSeason] = useState<{
+    series: Series;
+    season: number;
+    name: string;
+  } | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const { data: series } = useQuery(seriesQuery);
 
   const doDelete = async () => {
-    if (!deleting) return;
-    const { error } = await supabase.from("series").delete().eq("id", deleting.id);
-    if (error) toast.error(error.message);
-    else {
+    if (!isAdmin || !deleting || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      await runDeleteSeries({ data: { seriesId: deleting.id } });
       sfx.remove();
       toast.success(`${deleting.title} deleted`);
-      void invalidateArchive(qc);
-      void invalidateArchive(qc);
-      qc.invalidateQueries({ queryKey: ["character-series"] });
+      if (expanded === deleting.id) setExpanded(null);
+      await Promise.all([
+        invalidateArchive(qc),
+        qc.invalidateQueries({ queryKey: ["character-series"] }),
+        qc.invalidateQueries({ queryKey: ["app-settings", SERIES_ORDER_KEY] }),
+        qc.invalidateQueries({ queryKey: ["app-settings", "series_styles"] }),
+      ]);
+      setDeleting(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The series could not be deleted.");
+    } finally {
+      setDeletingBusy(false);
     }
-    setDeleting(null);
+  };
+
+  const doDeleteSeason = async () => {
+    if (!isAdmin || !deletingSeason || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      await runDeleteSeason({
+        data: { seriesId: deletingSeason.series.id, season: deletingSeason.season },
+      });
+      sfx.remove();
+      toast.success(`${deletingSeason.name} deleted`);
+      await invalidateArchive(qc);
+      setDeletingSeason(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The season could not be deleted.");
+    } finally {
+      setDeletingBusy(false);
+    }
   };
 
   return (
@@ -585,13 +683,15 @@ export function AdminSeries() {
         <div>
           <h2 className="text-2xl">Series</h2>
           <p className="text-xs text-muted-foreground">
-            Story arcs and per-series character statuses.
+            Story arcs, seasons, and per-series character statuses.
           </p>
         </div>
-        <Button size="sm" variant="secondary" onClick={() => setEditing(null)}>
-          <Plus className="h-4 w-4" />
-          New series
-        </Button>
+        {isAdmin && (
+          <Button size="sm" variant="secondary" onClick={() => setEditing(null)}>
+            <Plus className="h-4 w-4" />
+            New series
+          </Button>
+        )}
       </div>
       {(series ?? []).length === 0 ? (
         <p className="py-4 text-sm text-muted-foreground">No series yet.</p>
@@ -626,26 +726,41 @@ export function AdminSeries() {
                     )}
                   </span>
                 </button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 active:scale-90"
-                  aria-label={`Edit ${s.title}`}
-                  onClick={() => setEditing(s)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 text-destructive active:scale-90"
-                  aria-label={`Delete ${s.title}`}
-                  onClick={() => setDeleting(s)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                {isAdmin && (
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 active:scale-90"
+                      aria-label={`Edit ${s.title}`}
+                      onClick={() => setEditing(s)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive active:scale-90"
+                      aria-label={`Delete ${s.title}`}
+                      onClick={() => setDeleting(s)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
               </div>
-              {expanded === s.id && <SeriesMembers series={s} />}
+              {expanded === s.id && (
+                <>
+                  <SeriesSeasons
+                    series={s}
+                    isAdmin={isAdmin}
+                    onDeleteSeason={(season, name) =>
+                      setDeletingSeason({ series: s, season, name })
+                    }
+                  />
+                  <SeriesMembers series={s} />
+                </>
+              )}
             </li>
           ))}
         </ul>
@@ -659,25 +774,24 @@ export function AdminSeries() {
           series={editing}
         />
       )}
-      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleting?.title}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the series and all character assignments in it.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={doDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={`Delete ${deleting?.title}?`}
+        description="This removes the series, its seasons, character assignments, season dossiers, and series-scoped abilities."
+        confirmLabel="Delete series"
+        busy={deletingBusy}
+        onConfirm={doDelete}
+      />
+      <DeleteConfirmDialog
+        open={!!deletingSeason}
+        onOpenChange={(open) => !open && setDeletingSeason(null)}
+        title={`Delete ${deletingSeason?.name} from ${deletingSeason?.series.title}?`}
+        description={`This removes Season ${deletingSeason?.season} abilities and dossier entries, and shifts later seasons down.`}
+        confirmLabel="Delete season"
+        busy={deletingBusy}
+        onConfirm={doDeleteSeason}
+      />
     </section>
   );
 }

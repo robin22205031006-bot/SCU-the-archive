@@ -1,7 +1,10 @@
 import { memo, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { BookMarked, FileText, Search, Users, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { BookMarked, FileText, Pencil, Search, Trash2, Users, X } from "lucide-react";
+import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -20,15 +23,17 @@ import { useUiStyle } from "@/lib/ui-style";
 import { Button } from "@/components/ui/button";
 import type { Entity } from "@/lib/entities";
 import { seriesSeasonNames } from "@/lib/series-seasons";
+import { deleteSeason } from "@/lib/series-lore.functions";
+import { invalidateArchive } from "@/lib/archive-sync";
 import { SeriesTools } from "@/components/series-tools";
 import { SpoilerToggle, useSpoilerMask } from "@/lib/spoiler-mask";
-import { useIsStaff } from "@/hooks/use-admin";
+import { useIsAdmin, useIsStaff } from "@/hooks/use-admin";
 import { AdminSeries } from "@/components/admin-series";
 import { SeriesOrderEditor } from "@/components/series-order-editor";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { entitiesQuery } from "@/lib/entities";
 import { SeriesStyleEditor, useSeriesTitleStyle } from "@/lib/series-style";
-import { Pencil } from "lucide-react";
+import { sfx } from "@/lib/scu-audio";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
 import { HankoStamp } from "@/components/manga-emblem";
@@ -56,16 +61,41 @@ function SeriesTitle({ series, className = "" }: { series: Series; className?: s
   );
 }
 
-/** Season buttons for readers plus a per-season roster editor for admins/mods (all UI styles). */
+/** Season buttons for readers plus per-season roster editor (staff) and delete action (admin). */
 function SeasonList({ series }: { series: Series }) {
   const isStaff = useIsStaff();
+  const isAdmin = useIsAdmin();
   const isManga = useIsManga();
+  const qc = useQueryClient();
+  const runDeleteSeason = useServerFn(deleteSeason);
   const [editing, setEditing] = useState<number | null>(null);
+  const [deletingSeason, setDeletingSeason] = useState<{ season: number; name: string } | null>(
+    null,
+  );
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const { data: characters = [] } = useQuery({
     ...entitiesQuery(["character"]),
     enabled: isStaff && editing !== null,
   });
   const names = seriesSeasonNames(series);
+
+  const confirmDeleteSeason = async () => {
+    if (!isAdmin || !deletingSeason || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      await runDeleteSeason({ data: { seriesId: series.id, season: deletingSeason.season } });
+      sfx.remove();
+      toast.success(`${deletingSeason.name} deleted`);
+      if (editing !== null && editing >= deletingSeason.season) setEditing(null);
+      await invalidateArchive(qc);
+      setDeletingSeason(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The season could not be deleted.");
+    } finally {
+      setDeletingBusy(false);
+    }
+  };
+
   return (
     <div className="grid gap-2 sm:grid-cols-2" aria-label={`${series.title} seasons`}>
       {names.map((name, i) => (
@@ -92,6 +122,17 @@ function SeasonList({ series }: { series: Series }) {
               <Pencil className="h-4 w-4" />
             </Button>
           )}
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-auto min-h-12 w-10 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              aria-label={`Delete ${name} from ${series.title}`}
+              onClick={() => setDeletingSeason({ season: i + 1, name })}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ))}
       {isStaff && editing !== null && characters.length > 0 && (
@@ -104,6 +145,15 @@ function SeasonList({ series }: { series: Series }) {
           label={`${series.title} · ${names[editing - 1] ?? ""}`}
         />
       )}
+      <DeleteConfirmDialog
+        open={!!deletingSeason}
+        onOpenChange={(open) => !open && setDeletingSeason(null)}
+        title={`Delete ${deletingSeason?.name} from ${series.title}?`}
+        description={`This removes Season ${deletingSeason?.season} abilities and dossier entries, and shifts later seasons down.`}
+        confirmLabel="Delete season"
+        busy={deletingBusy}
+        onConfirm={confirmDeleteSeason}
+      />
     </div>
   );
 }
@@ -167,10 +217,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
   }, [memberRows, hide]);
 
   return (
-    <div
-      className="fixed inset-0 z-30 overflow-y-auto bg-background/94"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-30 overflow-y-auto bg-background/94" onClick={onClose}>
       <div
         className="mx-auto max-w-3xl px-4 pb-16 pt-24 sm:px-6"
         onClick={(e) => e.stopPropagation()}
@@ -224,7 +271,7 @@ function SeriesDetail({ seriesId, onClose }: { seriesId: string; onClose: () => 
           )}
           {series && <SeasonList series={series} />}
           {series && <SeriesStyleEditor seriesId={series.id} />}
-          {series && <SeriesTools series={series} />}
+          {series && <SeriesTools series={series} onDeleted={onClose} />}
           <div className="grid gap-4">
             {grouped.length === 0 ? (
               <p className="text-sm text-muted-foreground">No characters assigned yet.</p>
@@ -385,17 +432,20 @@ function SeriesHero({
 
 function StaffSeriesManager() {
   const isStaff = useIsStaff();
+  const isAdmin = useIsAdmin();
   if (!isStaff) return null;
   return (
     <>
-      <details className="glass mt-4 rounded-2xl p-4">
-        <summary className="cursor-pointer text-sm font-medium">
-          Manage series (add, rename, seasons)
-        </summary>
-        <div className="mt-3 min-w-0">
-          <AdminSeries />
-        </div>
-      </details>
+      {isAdmin && (
+        <details className="glass mt-4 rounded-2xl p-4">
+          <summary className="cursor-pointer text-sm font-medium">
+            Manage series (add, rename, delete, seasons)
+          </summary>
+          <div className="mt-3 min-w-0">
+            <AdminSeries />
+          </div>
+        </details>
+      )}
       <SeriesOrderEditor />
     </>
   );
@@ -424,10 +474,7 @@ const SeriesCard = memo(function SeriesCard({
           : "glass rounded-2xl"
       }
     >
-      <button
-        onClick={() => onOpen(s.id)}
-        className="group flex w-full gap-4 p-4 text-left"
-      >
+      <button onClick={() => onOpen(s.id)} className="group flex w-full gap-4 p-4 text-left">
         {s.cover_image_url ? (
           <img
             src={s.cover_image_url}
@@ -440,11 +487,7 @@ const SeriesCard = memo(function SeriesCard({
           <div
             className={`grid h-16 w-16 shrink-0 place-items-center bg-secondary text-muted-foreground ${isManga ? "border-2 border-foreground font-mono text-xs font-bold" : "rounded-xl"}`}
           >
-            {isManga ? (
-              `#${String(idx + 1).padStart(2, "0")}`
-            ) : (
-              <BookMarked className="h-6 w-6" />
-            )}
+            {isManga ? `#${String(idx + 1).padStart(2, "0")}` : <BookMarked className="h-6 w-6" />}
           </div>
         )}
         <span className="min-w-0 flex-1">

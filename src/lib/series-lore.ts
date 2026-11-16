@@ -1,8 +1,16 @@
 import { z } from "zod";
+import { seriesSeasonNames } from "@/lib/series-seasons";
 
 export const seasonTitlesInput = z.object({
   seriesId: z.string().uuid(),
   titles: z.array(z.string().trim().max(200)).max(100),
+});
+export const deleteSeriesInput = z.object({
+  seriesId: z.string().uuid(),
+});
+export const deleteSeasonInput = z.object({
+  seriesId: z.string().uuid(),
+  season: z.number().int().min(1).max(100),
 });
 export const seriesQuestionInput = z.object({
   seriesId: z.string().uuid(),
@@ -11,6 +19,120 @@ export const seriesQuestionInput = z.object({
 });
 export function savedSeasonTitles(titles: string[]) {
   return titles.map((title, i) => title.trim() || `Season ${i + 1}`);
+}
+
+/** Remove one 1-based season from a series, keeping remaining season titles aligned. */
+export function removeSeasonAt(
+  series: { season_count: number | null; season_names: string[] },
+  season: number,
+) {
+  const names = seriesSeasonNames(series);
+  if (!Number.isInteger(season) || season < 1 || season > names.length) return null;
+  const removedTitle = names[season - 1] ?? `Season ${season}`;
+  const nextNames = names.filter((_, i) => i !== season - 1);
+  return {
+    season_count: nextNames.length,
+    season_names: nextNames,
+    removedTitle,
+  };
+}
+
+/** Drop a deleted season's dossier entry and shift higher season numbers down by one. */
+export function removeSeasonFromDossier(stats: unknown, seriesId: string, season: number) {
+  const base =
+    stats && typeof stats === "object" && !Array.isArray(stats)
+      ? ({ ...(stats as Record<string, unknown>) } as Record<string, unknown>)
+      : {};
+  const rawDossier = base["dossier"];
+  if (!rawDossier || typeof rawDossier !== "object" || Array.isArray(rawDossier)) {
+    return { changed: false, nextStats: base };
+  }
+  const prefix = `${seriesId}:`;
+  let changed = false;
+  const nextDossier: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(rawDossier as Record<string, unknown>)) {
+    if (!key.startsWith(prefix)) {
+      nextDossier[key] = value;
+      continue;
+    }
+    const suffix = key.slice(prefix.length);
+    if (!/^\d+$/.test(suffix)) {
+      nextDossier[key] = value;
+      continue;
+    }
+    const n = Number(suffix);
+    if (n === season) {
+      changed = true;
+      continue;
+    }
+    if (n > season) {
+      changed = true;
+      nextDossier[`${prefix}${n - 1}`] = value;
+      continue;
+    }
+    nextDossier[key] = value;
+  }
+  return {
+    changed,
+    nextStats: changed ? { ...base, dossier: nextDossier } : base,
+  };
+}
+
+/** Remove every dossier entry scoped to a deleted series. */
+export function removeSeriesFromDossier(stats: unknown, seriesId: string) {
+  const base =
+    stats && typeof stats === "object" && !Array.isArray(stats)
+      ? ({ ...(stats as Record<string, unknown>) } as Record<string, unknown>)
+      : {};
+  const rawDossier = base["dossier"];
+  if (!rawDossier || typeof rawDossier !== "object" || Array.isArray(rawDossier)) {
+    return { changed: false, nextStats: base };
+  }
+  const prefix = `${seriesId}:`;
+  let changed = false;
+  const nextDossier: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(rawDossier as Record<string, unknown>)) {
+    if (key === seriesId || key.startsWith(prefix)) {
+      changed = true;
+      continue;
+    }
+    nextDossier[key] = value;
+  }
+  return {
+    changed,
+    nextStats: changed ? { ...base, dossier: nextDossier } : base,
+  };
+}
+
+/** Remove a deleted series id from app_settings series_order arrays. */
+export function removeSeriesFromOrder(order: unknown, seriesId: string) {
+  const base =
+    order && typeof order === "object" && !Array.isArray(order)
+      ? ({ ...(order as Record<string, unknown>) } as Record<string, unknown>)
+      : {};
+  let changed = false;
+  for (const field of ["release", "story"] as const) {
+    const list = base[field];
+    if (Array.isArray(list) && list.includes(seriesId)) {
+      base[field] = list.filter((id) => id !== seriesId);
+      changed = true;
+    }
+  }
+  return { changed, nextValue: base };
+}
+
+/** Remove a deleted series entry from app_settings series_styles. */
+export function removeSeriesFromStyles(styles: unknown, seriesId: string) {
+  const base =
+    styles && typeof styles === "object" && !Array.isArray(styles)
+      ? ({ ...(styles as Record<string, unknown>) } as Record<string, unknown>)
+      : {};
+  if (!Object.prototype.hasOwnProperty.call(base, seriesId)) {
+    return { changed: false, nextValue: base };
+  }
+  const nextValue = { ...base };
+  delete nextValue[seriesId];
+  return { changed: true, nextValue };
 }
 
 /** Only explicitly labelled lore is eligible; unscoped material never fills a season gap. */

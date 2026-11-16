@@ -4,8 +4,9 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2, Upload, X, Sparkles, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsStaff } from "@/hooks/use-admin";
+import { useAdminPermissions } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tables } from "@/integrations/supabase/types";
@@ -112,7 +113,7 @@ const EMPTY = {
 
 function ArsenalPage() {
   const { data } = useSuspenseQuery(artifactsQuery);
-  const staff = useIsStaff();
+  const { isStaff: staff, canDelete } = useAdminPermissions();
   const qc = useQueryClient();
   const [subTab, setSubTab] = useState<"catalog" | "isolated">("isolated");
   const [q, setQ] = useState("");
@@ -128,6 +129,8 @@ function ArsenalPage() {
   );
   const [edit, setEdit] = useState<{ id?: string; v: typeof EMPTY } | null>(null);
   const [uploading3d, setUploading3d] = useState(false);
+  const [deletingArtifact, setDeletingArtifact] = useState<Artifact | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const list = useMemo(
     () =>
       (data ?? []).filter(
@@ -174,15 +177,22 @@ function ArsenalPage() {
     setEdit(null);
     qc.invalidateQueries({ queryKey: ["artifacts"] });
   };
-  const remove = async (a: Artifact) => {
-    if (!confirm(`Delete ${a.name}?`)) return undefined;
-    const { error } = await supabase.from("artifacts").delete().eq("id", a.id);
-    if (error) {
-      toast.error(error.message);
-      return;
+  const remove = async () => {
+    if (!canDelete || !deletingArtifact || deletingBusy) return;
+    setDeletingBusy(true);
+    try {
+      const { error } = await supabase.from("artifacts").delete().eq("id", deletingArtifact.id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (focusId === deletingArtifact.id) setFocusId(null);
+      toast.success(`Deleted ${deletingArtifact.name}`);
+      setDeletingArtifact(null);
+      qc.invalidateQueries({ queryKey: ["artifacts"] });
+    } finally {
+      setDeletingBusy(false);
     }
-    if (focusId === a.id) setFocusId(null);
-    qc.invalidateQueries({ queryKey: ["artifacts"] });
   };
   const open = (a?: Artifact) => {
     setSubTab("catalog");
@@ -320,167 +330,162 @@ function ArsenalPage() {
         </MotionSection>
       ) : (
         <MotionSection key="catalog" className="grid gap-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                <Input
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+              <Input
+                className={
+                  isManga
+                    ? "rounded-none border-2 border-foreground pl-8 font-mono text-xs"
+                    : "pl-8"
+                }
+                placeholder="Search name, wielder or lore"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(["all", ...Object.keys(ARTIFACT_CATEGORIES)] as (Cat | "all")[]).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCat(c)}
                   className={
                     isManga
-                      ? "rounded-none border-2 border-foreground pl-8 font-mono text-xs"
-                      : "pl-8"
+                      ? `border-2 border-foreground px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
+                          cat === c
+                            ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                            : "bg-background text-foreground hover:bg-secondary"
+                        }`
+                      : `rounded-full border px-3 py-1 text-xs transition ${cat === c ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`
                   }
-                  placeholder="Search name, wielder or lore"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {(["all", ...Object.keys(ARTIFACT_CATEGORIES)] as (Cat | "all")[]).map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setCat(c)}
-                    className={
-                      isManga
-                        ? `border-2 border-foreground px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition ${
-                            cat === c
-                              ? "border-[#b91c1c] bg-[#b91c1c] text-white"
-                              : "bg-background text-foreground hover:bg-secondary"
-                          }`
-                        : `rounded-full border px-3 py-1 text-xs transition ${cat === c ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`
-                    }
-                  >
-                    {c === "all" ? "All" : ARTIFACT_CATEGORIES[c]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <MotionPresence>
-              {edit && (
-                <MotionSection
-                  as="section"
-                  className={`grid gap-2 bg-card p-4 sm:grid-cols-2 ${
-                    isManga
-                      ? "manga-panel border-[3px] border-foreground"
-                      : "rounded-2xl border border-accent/40"
-                  }`}
                 >
-                  <div className="flex items-center justify-between sm:col-span-2">
-                    <h2 className="font-semibold">{edit.id ? "Edit item" : "New item"}</h2>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      aria-label="Close"
-                      onClick={() => setEdit(null)}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                  <Input placeholder="Name" {...f("name")} />
-                  <select
-                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                    {...f("category")}
-                  >
-                    {Object.entries(ARTIFACT_CATEGORIES).map(([k, l]) => (
-                      <option key={k} value={k}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                  <Input placeholder="Type (sword, katana, relic...)" {...f("weapon_type")} />
-                  <Input placeholder="Wielders (comma separated)" {...f("wielders")} />
-                  <Input placeholder="Materials" {...f("materials")} />
-                  <Input placeholder="Colors" {...f("colors")} />
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    Curse level (0–5)
-                    <Input type="number" min={0} max={5} className="w-20" {...f("curse_level")} />
-                  </label>
-                  <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/25">
-                      <Upload className="size-3.5" />
-                      <span>{uploading3d ? "Uploading…" : "Upload 3D Model (.glb)"}</span>
-                      <input
-                        type="file"
-                        accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
-                        className="sr-only"
-                        disabled={uploading3d}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          e.target.value = "";
-                          if (!file || !edit) return;
-                          setUploading3d(true);
-                          try {
-                            const url = await uploadModel3d(
-                              file,
-                              "arsenals",
-                              edit.v.name || edit.id,
-                            );
-                            setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: url } });
-                            toast.success(`Uploaded 3D model "${file.name}".`);
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error ? err.message : "Could not upload 3D model.",
-                            );
-                          } finally {
-                            setUploading3d(false);
-                          }
-                        }}
-                      />
-                    </label>
-                    <Input
-                      className="min-w-0 flex-1 text-xs"
-                      placeholder="3D model .glb URL (models-3d/arsenals/…)"
-                      {...f("model_3d_url")}
-                    />
-                    {edit.v.model_3d_url && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: "" } })
-                        }
-                      >
-                        Clear 3D
-                      </Button>
-                    )}
-                  </div>
-                  <Textarea
-                    className="sm:col-span-2"
-                    placeholder="How it works"
-                    {...f("how_it_works")}
-                  />
-                  <Textarea className="sm:col-span-2" placeholder="Lore" {...f("lore")} />
-                  <div className="sm:col-span-2">
-                    <Button onClick={save}>Save</Button>
-                  </div>
-                </MotionSection>
-              )}
-            </MotionPresence>
-            <div
-              className={`scu-card-grid grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
-            >
-              {list.map((a) => (
-                <CardGuard key={a.id} name={a.name}>
-                  <ArtifactCard
-                    a={a}
-                    style={style}
-                    motion={motion}
-                    staff={staff}
-                    onEdit={() => open(a)}
-                    onDelete={() => remove(a)}
-                    onOpen={() => setFocusId(a.id)}
-                  />
-                </CardGuard>
+                  {c === "all" ? "All" : ARTIFACT_CATEGORIES[c]}
+                </button>
               ))}
-              {list.length === 0 &&
-                (isManga ? (
-                  <MangaThoughtBox className="sm:col-span-3">Nothing found.</MangaThoughtBox>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nothing found.</p>
-                ))}
             </div>
-          </MotionSection>
-        )}
+          </div>
+          <MotionPresence>
+            {edit && (
+              <MotionSection
+                as="section"
+                className={`grid gap-2 bg-card p-4 sm:grid-cols-2 ${
+                  isManga
+                    ? "manga-panel border-[3px] border-foreground"
+                    : "rounded-2xl border border-accent/40"
+                }`}
+              >
+                <div className="flex items-center justify-between sm:col-span-2">
+                  <h2 className="font-semibold">{edit.id ? "Edit item" : "New item"}</h2>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Close"
+                    onClick={() => setEdit(null)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+                <Input placeholder="Name" {...f("name")} />
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  {...f("category")}
+                >
+                  {Object.entries(ARTIFACT_CATEGORIES).map(([k, l]) => (
+                    <option key={k} value={k}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+                <Input placeholder="Type (sword, katana, relic...)" {...f("weapon_type")} />
+                <Input placeholder="Wielders (comma separated)" {...f("wielders")} />
+                <Input placeholder="Materials" {...f("materials")} />
+                <Input placeholder="Colors" {...f("colors")} />
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  Curse level (0–5)
+                  <Input type="number" min={0} max={5} className="w-20" {...f("curse_level")} />
+                </label>
+                <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/25">
+                    <Upload className="size-3.5" />
+                    <span>{uploading3d ? "Uploading…" : "Upload 3D Model (.glb)"}</span>
+                    <input
+                      type="file"
+                      accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+                      className="sr-only"
+                      disabled={uploading3d}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file || !edit) return;
+                        setUploading3d(true);
+                        try {
+                          const url = await uploadModel3d(file, "arsenals", edit.v.name || edit.id);
+                          setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: url } });
+                          toast.success(`Uploaded 3D model "${file.name}".`);
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error ? err.message : "Could not upload 3D model.",
+                          );
+                        } finally {
+                          setUploading3d(false);
+                        }
+                      }}
+                    />
+                  </label>
+                  <Input
+                    className="min-w-0 flex-1 text-xs"
+                    placeholder="3D model .glb URL (models-3d/arsenals/…)"
+                    {...f("model_3d_url")}
+                  />
+                  {edit.v.model_3d_url && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEdit((s) => s && { ...s, v: { ...s.v, model_3d_url: "" } })}
+                    >
+                      Clear 3D
+                    </Button>
+                  )}
+                </div>
+                <Textarea
+                  className="sm:col-span-2"
+                  placeholder="How it works"
+                  {...f("how_it_works")}
+                />
+                <Textarea className="sm:col-span-2" placeholder="Lore" {...f("lore")} />
+                <div className="sm:col-span-2">
+                  <Button onClick={save}>Save</Button>
+                </div>
+              </MotionSection>
+            )}
+          </MotionPresence>
+          <div
+            className={`scu-card-grid grid gap-4 sm:grid-cols-2 ${style === "minimal" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+          >
+            {list.map((a) => (
+              <CardGuard key={a.id} name={a.name}>
+                <ArtifactCard
+                  a={a}
+                  style={style}
+                  motion={motion}
+                  staff={staff}
+                  canDelete={canDelete}
+                  onEdit={() => open(a)}
+                  onDelete={() => setDeletingArtifact(a)}
+                  onOpen={() => setFocusId(a.id)}
+                />
+              </CardGuard>
+            ))}
+            {list.length === 0 &&
+              (isManga ? (
+                <MangaThoughtBox className="sm:col-span-3">Nothing found.</MangaThoughtBox>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nothing found.</p>
+              ))}
+          </div>
+        </MotionSection>
+      )}
       {focus && nexus && (
         <CardGuard key={"v" + focus.id} name={focus.name}>
           <Suspense fallback={null}>
@@ -488,6 +493,16 @@ function ArsenalPage() {
           </Suspense>
         </CardGuard>
       )}
+      <DeleteConfirmDialog
+        open={!!deletingArtifact}
+        onOpenChange={(open) => {
+          if (!open) setDeletingArtifact(null);
+        }}
+        title={`Delete ${deletingArtifact?.name ?? "artifact"}?`}
+        description="This permanently removes this weapon or relic from the Arsenal archive."
+        busy={deletingBusy}
+        onConfirm={remove}
+      />
     </MotionPage>
   );
 }

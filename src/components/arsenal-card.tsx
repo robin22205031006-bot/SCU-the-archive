@@ -185,6 +185,7 @@ export const ArtifactCard = memo(function ArtifactCard({
   style,
   motion,
   staff,
+  canDelete = false,
   onEdit,
   onDelete,
   onOpen,
@@ -193,6 +194,7 @@ export const ArtifactCard = memo(function ArtifactCard({
   style: UiStyle;
   motion: boolean;
   staff: boolean;
+  canDelete?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onOpen: () => void;
@@ -359,14 +361,18 @@ export const ArtifactCard = memo(function ArtifactCard({
             {a.name}
           </p>
         </div>
-        {staff && (
+        {(staff || canDelete) && (
           <div className="flex shrink-0">
-            <Button size="icon" variant="ghost" aria-label="Edit" onClick={onEdit}>
-              <Pencil className="size-4" />
-            </Button>
-            <Button size="icon" variant="ghost" aria-label="Delete" onClick={onDelete}>
-              <Trash2 className="size-4" />
-            </Button>
+            {staff && (
+              <Button size="icon" variant="ghost" aria-label="Edit" onClick={onEdit}>
+                <Pencil className="size-4" />
+              </Button>
+            )}
+            {canDelete && (
+              <Button size="icon" variant="ghost" aria-label="Delete" onClick={onDelete}>
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </div>
         )}
       </div>
