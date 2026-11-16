@@ -8,13 +8,7 @@ import { UiModeProvider, useUiMode, type VisualUiMode } from "@/hooks/use-ui-mod
 
 const ALL_MODES: readonly VisualUiMode[] = ["classic", "nexus", "minimal", "manga"];
 
-function StabilityProbe({
-  onMount,
-  onUnmount,
-}: {
-  onMount: () => void;
-  onUnmount: () => void;
-}) {
+function StabilityProbe({ onMount, onUnmount }: { onMount: () => void; onUnmount: () => void }) {
   const { mode, setMode } = useUiMode();
   const [count, setCount] = useState(0);
 

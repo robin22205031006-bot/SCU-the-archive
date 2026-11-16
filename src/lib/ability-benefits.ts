@@ -6,6 +6,7 @@ import {
 } from "@/lib/abilities";
 import { abilityFxRecipe, simulateCombat, type CombatStats } from "@/lib/ability-fx";
 import {
+  ABILITY_RANKS,
   ABILITY_RANK_META,
   clampDbAbilityLevel,
   resolveAbilityAliasPure,
@@ -60,6 +61,19 @@ export interface AbilityRankComparisonResult {
   next: AbilityRankBenefitProfile;
   stats: AbilityRankStatComparison[];
   newlyUnlockedBenefits: AbilityRankBenefitItem[];
+}
+
+export type AbilityRadarStatKey = "damage" | "speed" | "utility" | "range" | "mobility" | "potency";
+
+export interface AbilityRankRadarPoint {
+  stat: string;
+  key: AbilityRadarStatKey;
+  r1: number;
+  r2: number;
+  r3: number;
+  r4: number;
+  r5: number;
+  fullMark: 100;
 }
 
 export interface TopUsedAbilityEntry {
@@ -446,4 +460,98 @@ export function compareAbilityRanks(
     stats,
     newlyUnlockedBenefits,
   };
+}
+
+export function computeAbilityRankUtility(
+  profile: Pick<
+    AbilityRankBenefitProfile,
+    "cooldownReductionPct" | "energyEfficiencyPct" | "fxPower"
+  >,
+): number {
+  return Math.min(
+    100,
+    Math.round(
+      14 +
+        (profile.cooldownReductionPct / 45) * 38 +
+        (profile.energyEfficiencyPct / 50) * 38 +
+        (profile.fxPower / 8) * 10,
+    ),
+  );
+}
+
+export function getAbilityRankRadarSeries(abilityKey: string): AbilityRankRadarPoint[] {
+  const profiles = ABILITY_RANKS.map((rank) => getAbilityRankBenefits(abilityKey, rank));
+  const [p1, p2, p3, p4, p5] = profiles as [
+    AbilityRankBenefitProfile,
+    AbilityRankBenefitProfile,
+    AbilityRankBenefitProfile,
+    AbilityRankBenefitProfile,
+    AbilityRankBenefitProfile,
+  ];
+
+  const potencyScore = (p: AbilityRankBenefitProfile) =>
+    Math.min(100, Math.round(24 + (p.potencyBonusPct / 95) * 76));
+
+  return [
+    {
+      stat: "Damage",
+      key: "damage",
+      r1: p1.combat.damage,
+      r2: p2.combat.damage,
+      r3: p3.combat.damage,
+      r4: p4.combat.damage,
+      r5: p5.combat.damage,
+      fullMark: 100,
+    },
+    {
+      stat: "Speed",
+      key: "speed",
+      r1: p1.combat.speed,
+      r2: p2.combat.speed,
+      r3: p3.combat.speed,
+      r4: p4.combat.speed,
+      r5: p5.combat.speed,
+      fullMark: 100,
+    },
+    {
+      stat: "Utility",
+      key: "utility",
+      r1: computeAbilityRankUtility(p1),
+      r2: computeAbilityRankUtility(p2),
+      r3: computeAbilityRankUtility(p3),
+      r4: computeAbilityRankUtility(p4),
+      r5: computeAbilityRankUtility(p5),
+      fullMark: 100,
+    },
+    {
+      stat: "Range",
+      key: "range",
+      r1: p1.combat.range,
+      r2: p2.combat.range,
+      r3: p3.combat.range,
+      r4: p4.combat.range,
+      r5: p5.combat.range,
+      fullMark: 100,
+    },
+    {
+      stat: "Mobility",
+      key: "mobility",
+      r1: p1.combat.mobility,
+      r2: p2.combat.mobility,
+      r3: p3.combat.mobility,
+      r4: p4.combat.mobility,
+      r5: p5.combat.mobility,
+      fullMark: 100,
+    },
+    {
+      stat: "Potency",
+      key: "potency",
+      r1: potencyScore(p1),
+      r2: potencyScore(p2),
+      r3: potencyScore(p3),
+      r4: potencyScore(p4),
+      r5: potencyScore(p5),
+      fullMark: 100,
+    },
+  ];
 }

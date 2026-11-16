@@ -147,11 +147,7 @@ export function TimelineImpactChart({
               payload?: { impact: number; color: string };
             }) => {
               const r =
-                p.payload && p.payload.impact >= 8
-                  ? 4
-                  : p.payload && p.payload.impact >= 5
-                    ? 3
-                    : 2;
+                p.payload && p.payload.impact >= 8 ? 4 : p.payload && p.payload.impact >= 5 ? 3 : 2;
               if (isManga) {
                 return (
                   <rect

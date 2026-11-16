@@ -10,19 +10,36 @@ afterEach(() => {
 
 function setup() {
   let intersect: IntersectionObserverCallback | undefined;
-  vi.stubGlobal("IntersectionObserver", class {
-    constructor(callback: IntersectionObserverCallback) { intersect = callback; }
-    observe() {}
-    disconnect() {}
-  });
-  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      constructor(callback: IntersectionObserverCallback) {
+        intersect = callback;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
   const ctx = { clearRect: vi.fn(), setTransform: vi.fn(), globalCompositeOperation: "" };
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+    ctx as unknown as CanvasRenderingContext2D,
+  );
   const request = vi.spyOn(window, "requestAnimationFrame").mockReturnValue(42);
   const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
-  const setVisible = (visible: boolean) => act(() => {
-    intersect?.([{ isIntersecting: visible } as IntersectionObserverEntry], {} as IntersectionObserver);
-  });
+  const setVisible = (visible: boolean) =>
+    act(() => {
+      intersect?.(
+        [{ isIntersecting: visible } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
   return { request, cancel, setVisible };
 }
 

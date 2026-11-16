@@ -2,7 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { Users } from "lucide-react";
 import { useAbilityHolders } from "@/hooks/use-ability-registry";
 import { abilityDef, normalizeAbilityKey } from "@/lib/abilities";
-import { ABILITY_RANK_META, clampDbAbilityLevel, resolveAbilityAliasPure } from "@/lib/ability-rank";
+import {
+  ABILITY_RANK_META,
+  clampDbAbilityLevel,
+  resolveAbilityAliasPure,
+} from "@/lib/ability-rank";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { useOptionalAbilityContext } from "@/context/AbilityContext";
 

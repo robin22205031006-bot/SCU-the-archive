@@ -1162,7 +1162,7 @@ function ClassicDossier() {
                                 key="classic-season-stat-comparison"
                                 initial={animOn ? { opacity: 0, height: 0 } : false}
                                 animate={{ opacity: 1, height: "auto" }}
-                                exit={animOn ? { opacity: 0, height: 0 } : undefined}
+                                {...(animOn ? { exit: { opacity: 0, height: 0 } } : {})}
                                 transition={{
                                   duration: animOn ? 0.32 : 0,
                                   ease: [0.16, 1, 0.3, 1],

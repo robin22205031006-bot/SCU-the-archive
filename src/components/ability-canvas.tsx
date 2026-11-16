@@ -281,96 +281,100 @@ export function CrimsonBloodlineTheme({ className }: { className?: string }) {
   const mouse = useRef({ x: -9999, y: -9999 });
   const pulses = useRef<Array<{ x: number; y: number; r: number; a: number }>>([]);
 
-  const ref = useCanvasLoop((ctx, w, h, t) => {
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, w, h);
-    if (!animOn) return;
-    const cx = w / 2,
-      cy = h / 2;
-    const beat = 1 + Math.sin(t * 1.8) * 0.06;
-    const nodes: Array<[number, number, number]> = [];
+  const ref = useCanvasLoop(
+    (ctx, w, h, t) => {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      if (!animOn) return;
+      const cx = w / 2,
+        cy = h / 2;
+      const beat = 1 + Math.sin(t * 1.8) * 0.06;
+      const nodes: Array<[number, number, number]> = [];
 
-    // dense central cluster
-    const clusterN = 90;
-    for (let i = 0; i < clusterN; i++) {
-      const a = (i / clusterN) * Math.PI * 2 + i * 0.7;
-      const rr = Math.pow(((i * 37) % 100) / 100, 1.6) * Math.min(w, h) * 0.16 * beat;
-      nodes.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.9, 1]);
-    }
-    // jagged exploratory branches
-    for (let b = 0; b < 26; b++) {
-      const a = b * 2.4;
-      let x = cx + Math.cos(a) * 10,
-        y = cy + Math.sin(a) * 10;
-      for (let s = 0; s < 9; s++) {
-        const step = 14 + (b % 4) * 6;
-        x += Math.cos(a + Math.sin(t * 0.4 + b) * 0.9) * step;
-        y += Math.sin(a + Math.cos(t * 0.3 + b * 2) * 0.9) * step;
-        nodes.push([x, y, 0.4]);
+      // dense central cluster
+      const clusterN = 90;
+      for (let i = 0; i < clusterN; i++) {
+        const a = (i / clusterN) * Math.PI * 2 + i * 0.7;
+        const rr = Math.pow(((i * 37) % 100) / 100, 1.6) * Math.min(w, h) * 0.16 * beat;
+        nodes.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.9, 1]);
       }
-    }
-
-    // connective threads
-    ctx.lineWidth = 0.6;
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < Math.min(i + 8, nodes.length); j++) {
-        const [x1, y1, b1] = nodes[i]!;
-        const [x2, y2, b2] = nodes[j]!;
-        const d = Math.hypot(x2 - x1, y2 - y1);
-        if (d < Math.min(w, h) * 0.22) {
-          ctx.strokeStyle = `rgba(239,68,68,${(0.25 * b1 * b2).toFixed(3)})`;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
+      // jagged exploratory branches
+      for (let b = 0; b < 26; b++) {
+        const a = b * 2.4;
+        let x = cx + Math.cos(a) * 10,
+          y = cy + Math.sin(a) * 10;
+        for (let s = 0; s < 9; s++) {
+          const step = 14 + (b % 4) * 6;
+          x += Math.cos(a + Math.sin(t * 0.4 + b) * 0.9) * step;
+          y += Math.sin(a + Math.cos(t * 0.3 + b * 2) * 0.9) * step;
+          nodes.push([x, y, 0.4]);
         }
       }
-    }
-    // traveling pulse flashes along primary paths
-    for (let p = 0; p < 3; p++) {
-      const k = (t * 0.35 + p * 0.33) % 1;
-      const i0 = Math.floor(k * (nodes.length - 1));
-      const [x1, y1] = nodes[i0]!;
-      const [x2, y2] = nodes[i0 + 1]!;
-      ctx.strokeStyle = "rgba(252,165,165,0.8)";
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    }
-    // nodes + spores
-    ctx.globalCompositeOperation = "lighter";
-    for (const [x, y, b] of nodes) {
-      ctx.beginPath();
-      ctx.arc(x, y, 1.6 * b + 0.6, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(239,68,68,${(0.75 * b).toFixed(2)})`;
-      ctx.fill();
-    }
-    for (let i = 0; i < 40; i++) {
-      const seed = i * 91.7;
-      const ang = seed + t * 0.15;
-      const rr = (seed * 13 + t * 14) % (Math.min(w, h) * 0.55);
-      const x = cx + Math.cos(ang) * rr,
-        y = cy + Math.sin(ang) * rr * 0.85;
-      ctx.beginPath();
-      ctx.arc(x, y, 0.9, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(220,38,38,${(0.5 - rr / Math.min(w, h)).toFixed(2)})`;
-      ctx.fill();
-    }
-    // shockwave pulses from pointer
-    pulses.current = pulses.current.filter((p) => p.a > 0.01);
-    for (const p of pulses.current) {
-      p.r += 4.5;
-      p.a *= 0.94;
-      ctx.strokeStyle = `rgba(239,68,68,${p.a.toFixed(3)})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.globalCompositeOperation = "source-over";
-  }, [], animOn);
+
+      // connective threads
+      ctx.lineWidth = 0.6;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < Math.min(i + 8, nodes.length); j++) {
+          const [x1, y1, b1] = nodes[i]!;
+          const [x2, y2, b2] = nodes[j]!;
+          const d = Math.hypot(x2 - x1, y2 - y1);
+          if (d < Math.min(w, h) * 0.22) {
+            ctx.strokeStyle = `rgba(239,68,68,${(0.25 * b1 * b2).toFixed(3)})`;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+        }
+      }
+      // traveling pulse flashes along primary paths
+      for (let p = 0; p < 3; p++) {
+        const k = (t * 0.35 + p * 0.33) % 1;
+        const i0 = Math.floor(k * (nodes.length - 1));
+        const [x1, y1] = nodes[i0]!;
+        const [x2, y2] = nodes[i0 + 1]!;
+        ctx.strokeStyle = "rgba(252,165,165,0.8)";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      // nodes + spores
+      ctx.globalCompositeOperation = "lighter";
+      for (const [x, y, b] of nodes) {
+        ctx.beginPath();
+        ctx.arc(x, y, 1.6 * b + 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(239,68,68,${(0.75 * b).toFixed(2)})`;
+        ctx.fill();
+      }
+      for (let i = 0; i < 40; i++) {
+        const seed = i * 91.7;
+        const ang = seed + t * 0.15;
+        const rr = (seed * 13 + t * 14) % (Math.min(w, h) * 0.55);
+        const x = cx + Math.cos(ang) * rr,
+          y = cy + Math.sin(ang) * rr * 0.85;
+        ctx.beginPath();
+        ctx.arc(x, y, 0.9, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(220,38,38,${(0.5 - rr / Math.min(w, h)).toFixed(2)})`;
+        ctx.fill();
+      }
+      // shockwave pulses from pointer
+      pulses.current = pulses.current.filter((p) => p.a > 0.01);
+      for (const p of pulses.current) {
+        p.r += 4.5;
+        p.a *= 0.94;
+        ctx.strokeStyle = `rgba(239,68,68,${p.a.toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalCompositeOperation = "source-over";
+    },
+    [],
+    animOn,
+  );
 
   const onMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -392,100 +396,104 @@ export function CyanNeuralPlexusTheme({ className }: { className?: string }) {
   >([]);
   const init = useRef(false);
 
-  const ref = useCanvasLoop((ctx, w, h, t) => {
-    if (!animOn) {
-      ctx.fillStyle = "#020617";
-      ctx.fillRect(0, 0, w, h);
-      return;
-    }
-    if (!init.current || nodes.current.length !== 90) {
-      nodes.current = Array.from({ length: 90 }, (_, i) => ({
-        x: ((i * 73) % 100) / 100 - 0.5,
-        y: ((i * 41) % 100) / 100 - 0.5,
-        z: ((i * 29) % 100) / 100,
-        vx: 0,
-        vy: 0,
-        vz: 0,
-      }));
-      init.current = true;
-    }
-    // deep void background
-    const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
-    g.addColorStop(0, "#0b1e3a");
-    g.addColorStop(1, "#020617");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-
-    const rot = t * 0.08;
-    const cos = Math.cos(rot),
-      sin = Math.sin(rot);
-    const pts = nodes.current.map((n) => {
-      // slow drift + gentle mouse gravity
-      const wx = n.x + t * 0.008,
-        wy = n.y + Math.sin(t * 0.2 + n.z * 9) * 0.02;
-      const rz = n.z;
-      const x1 = wx * cos - wy * sin,
-        y1 = wx * sin + wy * cos;
-      const persp = 1 / (1.6 - rz * 0.5);
-      const sx = w / 2 + x1 * w * 0.42 * persp;
-      const sy = h / 2 + y1 * h * 0.42 * persp + Math.sin(t * 0.3 + n.x * 12) * 4;
-      const mdx = (sx - mouse.current.x) / w,
-        mdy = (sy - mouse.current.y) / h;
-      const md = Math.hypot(mdx, mdy);
-      const pull = md < 0.25 ? (0.25 - md) * 0.02 : 0;
-      n.vx += (-mdx / (md || 1)) * pull;
-      n.vy += (-mdy / (md || 1)) * pull;
-      n.vx *= 0.96;
-      n.vy *= 0.96;
-      n.x += n.vx * 0.01;
-      n.y += n.vy * 0.01;
-      return { sx, sy, z: rz, persp };
-    });
-
-    // polygon facets for close clusters
-    ctx.fillStyle = "rgba(6,182,212,0.05)";
-    for (let i = 0; i < pts.length; i += 3) {
-      const a = pts[i]!,
-        b = pts[(i + 1) % pts.length]!,
-        c = pts[(i + 2) % pts.length]!;
-      if (Math.hypot(a.sx - b.sx, a.sy - b.sy) < w * 0.2) {
-        ctx.beginPath();
-        ctx.moveTo(a.sx, a.sy);
-        ctx.lineTo(b.sx, b.sy);
-        ctx.lineTo(c.sx, c.sy);
-        ctx.closePath();
-        ctx.fill();
+  const ref = useCanvasLoop(
+    (ctx, w, h, t) => {
+      if (!animOn) {
+        ctx.fillStyle = "#020617";
+        ctx.fillRect(0, 0, w, h);
+        return;
       }
-    }
-    // threads
-    ctx.lineWidth = 0.7;
-    for (let i = 0; i < pts.length; i++) {
-      for (let j = i + 1; j < Math.min(i + 6, pts.length); j++) {
+      if (!init.current || nodes.current.length !== 90) {
+        nodes.current = Array.from({ length: 90 }, (_, i) => ({
+          x: ((i * 73) % 100) / 100 - 0.5,
+          y: ((i * 41) % 100) / 100 - 0.5,
+          z: ((i * 29) % 100) / 100,
+          vx: 0,
+          vy: 0,
+          vz: 0,
+        }));
+        init.current = true;
+      }
+      // deep void background
+      const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
+      g.addColorStop(0, "#0b1e3a");
+      g.addColorStop(1, "#020617");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      const rot = t * 0.08;
+      const cos = Math.cos(rot),
+        sin = Math.sin(rot);
+      const pts = nodes.current.map((n) => {
+        // slow drift + gentle mouse gravity
+        const wx = n.x + t * 0.008,
+          wy = n.y + Math.sin(t * 0.2 + n.z * 9) * 0.02;
+        const rz = n.z;
+        const x1 = wx * cos - wy * sin,
+          y1 = wx * sin + wy * cos;
+        const persp = 1 / (1.6 - rz * 0.5);
+        const sx = w / 2 + x1 * w * 0.42 * persp;
+        const sy = h / 2 + y1 * h * 0.42 * persp + Math.sin(t * 0.3 + n.x * 12) * 4;
+        const mdx = (sx - mouse.current.x) / w,
+          mdy = (sy - mouse.current.y) / h;
+        const md = Math.hypot(mdx, mdy);
+        const pull = md < 0.25 ? (0.25 - md) * 0.02 : 0;
+        n.vx += (-mdx / (md || 1)) * pull;
+        n.vy += (-mdy / (md || 1)) * pull;
+        n.vx *= 0.96;
+        n.vy *= 0.96;
+        n.x += n.vx * 0.01;
+        n.y += n.vy * 0.01;
+        return { sx, sy, z: rz, persp };
+      });
+
+      // polygon facets for close clusters
+      ctx.fillStyle = "rgba(6,182,212,0.05)";
+      for (let i = 0; i < pts.length; i += 3) {
         const a = pts[i]!,
-          b = pts[j]!;
-        const d = Math.hypot(a.sx - b.sx, a.sy - b.sy);
-        if (d < w * 0.16) {
-          const nearMouse =
-            Math.hypot((a.sx + b.sx) / 2 - mouse.current.x, (a.sy + b.sy) / 2 - mouse.current.y) <
-            140;
-          ctx.strokeStyle = `rgba(6,182,212,${(nearMouse ? 0.4 : 0.15 + 0.1 * a.persp).toFixed(2)})`;
+          b = pts[(i + 1) % pts.length]!,
+          c = pts[(i + 2) % pts.length]!;
+        if (Math.hypot(a.sx - b.sx, a.sy - b.sy) < w * 0.2) {
           ctx.beginPath();
           ctx.moveTo(a.sx, a.sy);
           ctx.lineTo(b.sx, b.sy);
-          ctx.stroke();
+          ctx.lineTo(c.sx, c.sy);
+          ctx.closePath();
+          ctx.fill();
         }
       }
-    }
-    // nodes
-    ctx.globalCompositeOperation = "lighter";
-    for (const p of pts) {
-      ctx.beginPath();
-      ctx.arc(p.sx, p.sy, 1.4 + p.persp, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(6,182,212,${(0.4 + 0.6 * p.persp).toFixed(2)})`;
-      ctx.fill();
-    }
-    ctx.globalCompositeOperation = "source-over";
-  }, [], animOn);
+      // threads
+      ctx.lineWidth = 0.7;
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < Math.min(i + 6, pts.length); j++) {
+          const a = pts[i]!,
+            b = pts[j]!;
+          const d = Math.hypot(a.sx - b.sx, a.sy - b.sy);
+          if (d < w * 0.16) {
+            const nearMouse =
+              Math.hypot((a.sx + b.sx) / 2 - mouse.current.x, (a.sy + b.sy) / 2 - mouse.current.y) <
+              140;
+            ctx.strokeStyle = `rgba(6,182,212,${(nearMouse ? 0.4 : 0.15 + 0.1 * a.persp).toFixed(2)})`;
+            ctx.beginPath();
+            ctx.moveTo(a.sx, a.sy);
+            ctx.lineTo(b.sx, b.sy);
+            ctx.stroke();
+          }
+        }
+      }
+      // nodes
+      ctx.globalCompositeOperation = "lighter";
+      for (const p of pts) {
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, 1.4 + p.persp, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(6,182,212,${(0.4 + 0.6 * p.persp).toFixed(2)})`;
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = "source-over";
+    },
+    [],
+    animOn,
+  );
 
   return (
     <canvas

@@ -1,5 +1,5 @@
+import { lazy, Suspense } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { SeriesPage } from "./_authenticated/series";
 import { UiStylePicker } from "@/components/ui-style-picker";
 import { useUiStyle } from "@/lib/ui-style";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
@@ -11,7 +11,37 @@ import { MANGA_SCALE } from "@/lib/manga-scale";
 import { HankoStamp } from "@/components/manga-emblem";
 import { Button } from "@/components/ui/button";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
+import { SectionBoundary } from "@/components/section-boundary";
 import { ArrowRight } from "lucide-react";
+
+const LazySeriesPage = lazy(async () => {
+  try {
+    const mod = await import("@/components/series-page");
+    return { default: mod.SeriesPage };
+  } catch (firstError) {
+    await new Promise((r) => setTimeout(r, 250));
+    try {
+      const mod = await import("@/components/series-page");
+      return { default: mod.SeriesPage };
+    } catch {
+      throw firstError;
+    }
+  }
+});
+
+function SeriesSection() {
+  return (
+    <SectionBoundary label="Series">
+      <Suspense
+        fallback={
+          <div className="py-12 text-center text-sm text-muted-foreground">Loading series…</div>
+        }
+      >
+        <LazySeriesPage />
+      </Suspense>
+    </SectionBoundary>
+  );
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -133,7 +163,7 @@ function Index() {
         </section>
 
         <MotionSection delay={0.08} className="mt-8">
-          <SeriesPage />
+          <SeriesSection />
         </MotionSection>
 
         <MotionSection as="footer" delay={0.12} className="mt-10 grid gap-4 md:grid-cols-2">
@@ -207,7 +237,7 @@ function Index() {
           )}
         />
         <MotionSection delay={0.08} className="mt-12">
-          <SeriesPage />
+          <SeriesSection />
         </MotionSection>
       </MotionPage>
     );
@@ -244,7 +274,7 @@ function Index() {
         ))}
       </div>
       <MotionSection delay={0.08} className="mt-16">
-        <SeriesPage />
+        <SeriesSection />
       </MotionSection>
 
       <MotionSection as="footer" delay={0.12} className="mt-20 border-t border-border pt-8">

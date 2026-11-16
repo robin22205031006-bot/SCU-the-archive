@@ -41,6 +41,7 @@ import {
   getPinnedAbilitySet,
 } from "@/lib/ability-synergy";
 import { AbilitySynergyGraph } from "@/components/ability-synergy-graph";
+import { AbilityRankRadar } from "@/components/ability-rank-radar";
 import { sfx } from "@/lib/scu-audio";
 import { useOptionalAbilityContext } from "@/context/AbilityContext";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
@@ -751,6 +752,13 @@ export function AbilityBenefitsModal({
                   </p>
                 </div>
               </div>
+
+              <AbilityRankRadar
+                abilityKey={def.key}
+                activeRank={currentRank}
+                onSelectRank={(r) => applyRankChange(r)}
+                animate={motionActive && !isMinimal}
+              />
 
               {/* Dual Stat Comparison Rows */}
               <div className="grid gap-2">

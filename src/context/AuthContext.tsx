@@ -42,9 +42,7 @@ function logDailySignIn(userId: string) {
     sessionStorage.setItem(key, "1");
     setTimeout(() => {
       try {
-        const res = supabase
-          .from("activity_log")
-          .insert({ user_id: userId, action: "Signed in" });
+        const res = supabase.from("activity_log").insert({ user_id: userId, action: "Signed in" });
         void Promise.resolve(res).catch(() => {});
       } catch {
         /* logging must never interrupt sign-in */
@@ -193,11 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
           }
 
-          const identityChanged = syncSessionCache(
-            queryClient,
-            nextUser,
-            event === "USER_UPDATED",
-          );
+          const identityChanged = syncSessionCache(queryClient, nextUser, event === "USER_UPDATED");
 
           if (event === "SIGNED_OUT") {
             try {

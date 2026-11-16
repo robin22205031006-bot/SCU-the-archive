@@ -568,7 +568,7 @@ export function NexusDossier({
               key="season-stat-comparison"
               initial={moving ? { opacity: 0, height: 0 } : false}
               animate={{ opacity: 1, height: "auto" }}
-              exit={moving ? { opacity: 0, height: 0 } : undefined}
+              {...(moving ? { exit: { opacity: 0, height: 0 } } : {})}
               transition={{ duration: moving ? 0.35 : 0, ease: EASE }}
               className="relative mx-auto mt-6 max-w-6xl overflow-hidden px-4"
             >

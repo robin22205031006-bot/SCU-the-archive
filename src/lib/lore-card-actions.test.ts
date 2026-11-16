@@ -57,7 +57,10 @@ describe("lore-card-actions", () => {
     expect(isInteractiveLongPressTarget({ tagName: "SELECT", role: null }, card)).toBe(true);
     expect(isInteractiveLongPressTarget({ tagName: "BUTTON", role: null }, card)).toBe(true);
     expect(
-      isInteractiveLongPressTarget({ tagName: "SPAN", closest: () => ({ tagName: "BUTTON" }) }, card),
+      isInteractiveLongPressTarget(
+        { tagName: "SPAN", closest: () => ({ tagName: "BUTTON" }) },
+        card,
+      ),
     ).toBe(true);
     expect(isInteractiveLongPressTarget({ tagName: "H3", closest: () => null }, card)).toBe(false);
   });

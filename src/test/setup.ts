@@ -27,6 +27,14 @@ if (typeof globalThis.IntersectionObserver === "undefined") {
   } as unknown as typeof IntersectionObserver;
 }
 
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 if (typeof globalThis.PointerEvent === "undefined") {
   class PointerEventPolyfill extends MouseEvent {
     pointerId: number;

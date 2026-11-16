@@ -16,14 +16,17 @@ const BAR_EASE = [0.16, 1, 0.3, 1] as const;
 
 export interface SeasonStatComparisonProps {
   entity: Pick<Entity, "id" | "name" | "stats" | "abilities">;
-  seriesList?: ReadonlyArray<Pick<Series, "id" | "title" | "season_count" | "season_names">> | null;
-  memberships?: ReadonlyArray<{ series_id?: string | null }> | null;
-  activeSeasonKey?: string | null;
-  abilities?: ReadonlyArray<{ name: string; label: string }>;
-  selectedAbility?: string | null;
-  variant?: "nexus" | "manga";
-  onClose?: () => void;
-  className?: string;
+  seriesList?:
+    | ReadonlyArray<Pick<Series, "id" | "title" | "season_count" | "season_names">>
+    | null
+    | undefined;
+  memberships?: ReadonlyArray<{ series_id?: string | null }> | null | undefined;
+  activeSeasonKey?: string | null | undefined;
+  abilities?: ReadonlyArray<{ name: string; label: string }> | undefined;
+  selectedAbility?: string | null | undefined;
+  variant?: "nexus" | "manga" | undefined;
+  onClose?: (() => void) | undefined;
+  className?: string | undefined;
 }
 
 function pickInitialPair(
@@ -82,8 +85,8 @@ export function SeasonStatComparison({
     () =>
       buildSeasonCompareOptions({
         stats: entity.stats,
-        seriesList,
-        memberships,
+        seriesList: seriesList ?? null,
+        memberships: memberships ?? null,
       }),
     [entity.stats, seriesList, memberships],
   );

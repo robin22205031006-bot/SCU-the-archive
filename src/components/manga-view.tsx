@@ -1787,7 +1787,7 @@ export function MangaCharacterSpread({
             key="manga-season-stat-comparison"
             initial={motionActive ? { opacity: 0, height: 0 } : false}
             animate={{ opacity: 1, height: "auto" }}
-            exit={motionActive ? { opacity: 0, height: 0 } : undefined}
+            {...(motionActive ? { exit: { opacity: 0, height: 0 } } : {})}
             transition={{ duration: motionActive ? 0.32 : 0, ease: [0.16, 1, 0.3, 1] }}
             className="mb-5 overflow-hidden"
           >
