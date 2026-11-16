@@ -10,14 +10,12 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Loader2, WifiOff } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteNav } from "@/components/site-nav";
 import { FloatingNav } from "@/components/floating-nav";
-import { WelcomeVfx } from "@/components/welcome-vfx";
 import { AmbientField } from "@/components/ambient-field";
-import { PlexusWallpaper } from "@/components/plexus-wallpaper";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { AppearanceProvider } from "@/hooks/use-appearance";
 import { TypographyProvider } from "@/hooks/use-typography";
@@ -26,22 +24,45 @@ import { AuthProvider } from "@/context/AuthContext";
 import { AbilityProvider } from "@/context/AbilityContext";
 import { UIStateProvider } from "@/context/UIStateContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { AppVersionChecker } from "@/components/AppVersionChecker";
 import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
 import { usePreloadUIFeedback } from "@/hooks/use-ui-feedback";
 import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { NexusChrome } from "@/components/nexus-shell";
-import { MangaChrome } from "@/components/manga-shell";
-import { NexusSectionRailAside } from "@/components/nexus-section-rail";
 import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
-import { AmbientStudioParticles } from "@/components/ambient-studio-particles";
-import { AnimeActionOverlay } from "@/components/anime-action-overlay";
 import { useRef } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+
+// Mode-specific chrome and decorative FX are not needed for first paint, so they
+// load in their own chunks instead of blocking the initial bundle.
+const NexusChrome = lazy(() =>
+  import("@/components/nexus-shell").then((m) => ({ default: m.NexusChrome })),
+);
+const MangaChrome = lazy(() =>
+  import("@/components/manga-shell").then((m) => ({ default: m.MangaChrome })),
+);
+const NexusSectionRailAside = lazy(() =>
+  import("@/components/nexus-section-rail").then((m) => ({ default: m.NexusSectionRailAside })),
+);
+const PlexusWallpaper = lazy(() =>
+  import("@/components/plexus-wallpaper").then((m) => ({ default: m.PlexusWallpaper })),
+);
+const WelcomeVfx = lazy(() =>
+  import("@/components/welcome-vfx").then((m) => ({ default: m.WelcomeVfx })),
+);
+const AmbientStudioParticles = lazy(() =>
+  import("@/components/ambient-studio-particles").then((m) => ({
+    default: m.AmbientStudioParticles,
+  })),
+);
+const AnimeActionOverlay = lazy(() =>
+  import("@/components/anime-action-overlay").then((m) => ({ default: m.AnimeActionOverlay })),
+);
+const AppVersionChecker = lazy(() =>
+  import("@/components/AppVersionChecker").then((m) => ({ default: m.AppVersionChecker })),
+);
 
 function NotFoundComponent() {
   return (
@@ -144,10 +165,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
+        media: "print",
+        "data-async-font": "",
         href: "https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&display=swap",
       },
       {
         rel: "stylesheet",
+        media: "print",
+        "data-async-font": "",
         href: "https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@600;700;800&family=Comic+Neue:ital,wght@0,400;0,700;1,700&family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Montserrat:wght@700;800;900&family=Nunito:wght@400;600;700&family=Oswald:wght@500;700&family=Rajdhani:wght@400;500;600;700&family=Shippori+Mincho:wght@600;800&family=Space+Grotesk:wght@400;500;600;700&display=swap",
       },
     ],
@@ -162,12 +187,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 // if app files fail to load, clear caches and reload once (at most every 60s).
 const STALE_RECOVERY = `(function(){var K="scu-stale-reload";function go(){try{var t=+sessionStorage.getItem(K)||0;if(Date.now()-t<60000)return;sessionStorage.setItem(K,String(Date.now()));}catch(e){}var done=function(){var u=new URL(location.href);u.searchParams.set("r",String(Date.now()));location.replace(u.toString());};try{var p=[];if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}));Promise.all(p).then(done,done);}catch(e){done();}}window.addEventListener("vite:preloadError",function(e){e.preventDefault();go();});window.addEventListener("error",function(e){var t=e.target;if(t&&(t.tagName==="SCRIPT"||t.tagName==="LINK")&&/\\/assets\\//.test(t.src||t.href||""))go();},true);window.addEventListener("unhandledrejection",function(e){var m=String(e.reason&&e.reason.message||e.reason||"");if(/dynamically imported module|Importing a module script failed|error loading dynamically/i.test(m))go();});setTimeout(function(){var b=document.body;if(b&&!b.innerText.trim()&&!document.querySelector("canvas,img,svg"))go();},12000);})();`;
 
+// Google Fonts stylesheets are render-blocking by default. They ship with media="print"
+// so the page paints immediately, then switch to "all" once downloaded (display=swap).
+const ASYNC_FONTS = `(function(){document.querySelectorAll("link[data-async-font]").forEach(function(l){function s(){l.media="all"}if(l.sheet)s();else l.addEventListener("load",s,{once:true})})})();`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark" style={{ backgroundColor: "#020408", colorScheme: "dark" }}>
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: STALE_RECOVERY }} />
+        <script dangerouslySetInnerHTML={{ __html: ASYNC_FONTS }} />
       </head>
       <body style={{ backgroundColor: "#020408" }}>
         {children}
@@ -211,15 +241,17 @@ function RootContent({ offline }: { offline: boolean }) {
         }`}
       >
         {mode === "classic" && <AmbientField />}
-        {mode === "classic" && <PlexusWallpaper />}
-        {mode === "nexus" && <NexusChrome />}
-        {mode === "manga" && <MangaChrome pageRef={pageContainerRef} />}
-        {mode !== "minimal" && <AmbientStudioParticles />}
-        {mode !== "minimal" && <AnimeActionOverlay />}
+        <Suspense fallback={null}>
+          {mode === "classic" && <PlexusWallpaper />}
+          {mode === "nexus" && <NexusChrome />}
+          {mode === "manga" && <MangaChrome pageRef={pageContainerRef} />}
+          {mode !== "minimal" && <AmbientStudioParticles />}
+          {mode !== "minimal" && <AnimeActionOverlay />}
+        </Suspense>
         <ScrollProgress />
         {mode !== "nexus" && mode !== "manga" && <SiteNav />}
         <FloatingNav />
-        {mode === "classic" && <WelcomeVfx />}
+        <Suspense fallback={null}>{mode === "classic" && <WelcomeVfx />}</Suspense>
         {offline && (
           <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/95 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg">
             <WifiOff className="h-3.5 w-3.5" />
@@ -240,7 +272,11 @@ function RootContent({ offline }: { offline: boolean }) {
                 : "relative"
           }
         >
-          {showNexusRail ? <NexusSectionRailAside containerRef={outletContainerRef} /> : null}
+          {showNexusRail ? (
+            <Suspense fallback={<aside aria-hidden="true" />}>
+              <NexusSectionRailAside containerRef={outletContainerRef} />
+            </Suspense>
+          ) : null}
           <div ref={outletContainerRef} className={showNexusRail ? "min-w-0" : undefined}>
             {isInitialRoutePending ? (
               <main
@@ -307,7 +343,9 @@ function RootComponent() {
                     <AbilityProvider>
                       <ErrorBoundary>
                         <RootContent offline={offline} />
-                        <AppVersionChecker />
+                        <Suspense fallback={null}>
+                          <AppVersionChecker />
+                        </Suspense>
                       </ErrorBoundary>
                       <Toaster />
                     </AbilityProvider>

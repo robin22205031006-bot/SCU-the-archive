@@ -56,7 +56,7 @@ import { SeriesStyleEditor, useSeriesTitleStyle } from "@/lib/series-style";
 import { sfx } from "@/lib/scu-audio";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-view";
+import { MangaChapterBanner, MangaPanel, MangaThoughtBox } from "@/components/manga-primitives";
 import { HankoStamp } from "@/components/manga-emblem";
 import {
   MotionModalPanel,

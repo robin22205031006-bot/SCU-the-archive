@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { WorldAtlasSections } from "@/components/atlas-pages";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
+import { MangaChapterBanner, MangaPanel } from "@/components/manga-primitives";
 import { MotionPage, MotionSection } from "@/components/app-motion";
 
 function AtlasIndexPage() {

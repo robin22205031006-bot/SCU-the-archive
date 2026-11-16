@@ -4,7 +4,7 @@ import { UiStylePicker } from "@/components/ui-style-picker";
 import { useUiStyle } from "@/lib/ui-style";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { NexusExplorer } from "@/components/nexus-explorer";
-import { MangaChapterBanner, MangaPanel, MangaSpeechBubble } from "@/components/manga-view";
+import { MangaChapterBanner, MangaPanel, MangaSpeechBubble } from "@/components/manga-primitives";
 import { GenreCardFrame } from "@/components/genre-decorations";
 import { getGenreThemeMeta } from "@/lib/genre-themes";
 import { MANGA_SCALE } from "@/lib/manga-scale";

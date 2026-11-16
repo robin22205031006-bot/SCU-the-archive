@@ -74,7 +74,7 @@ import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { MotionCard, MotionPresence, MotionSection } from "@/components/app-motion";
-import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-primitives";
 import { HankoStamp } from "@/components/manga-emblem";
 import { GenreCardFrame } from "@/components/genre-decorations";
 import { IvyDecoration } from "@/components/manga/fantasy/IvyDecoration";

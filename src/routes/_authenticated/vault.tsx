@@ -23,7 +23,7 @@ import { sfx } from "@/lib/scu-audio";
 import { ListSkeleton } from "@/components/route-skeleton";
 import type { Tables } from "@/integrations/supabase/types";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-primitives";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 
 type PdfVaultDoc = Tables<"pdf_vault">;

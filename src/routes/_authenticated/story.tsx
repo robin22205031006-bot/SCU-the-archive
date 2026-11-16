@@ -10,7 +10,7 @@ import { ambientPlaying, ambientStart, ambientStop } from "@/lib/scu-audio";
 import { useAppearance } from "@/hooks/use-appearance";
 import { sfx } from "@/lib/scu-audio";
 import { useIsManga } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-view";
+import { MangaChapterBanner, MangaThoughtBox } from "@/components/manga-primitives";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 

@@ -5,7 +5,7 @@ import { NexusWorkspace } from "@/components/nexus-explorer";
 import { useUiStyle } from "@/lib/ui-style";
 import { Map, Radio, Globe2 } from "lucide-react";
 import { useIsManga, useActiveGenre } from "@/hooks/use-ui-mode";
-import { MangaChapterBanner, MangaPanel } from "@/components/manga-view";
+import { MangaChapterBanner, MangaPanel } from "@/components/manga-primitives";
 import { GenreDiamondMediaFrame } from "@/components/genre-decorations";
 import { MotionPage, MotionSection } from "@/components/app-motion";
 import { PanelSkeleton } from "@/components/route-skeleton";
