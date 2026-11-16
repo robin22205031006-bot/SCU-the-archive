@@ -6467,3 +6467,11 @@ html[data-motion="off"] .scu-tactile:active {
 @media (prefers-reduced-motion: reduce) {
   .nx-status-field, .nexus-ability-symbol::after { animation: none !important; }
 }
+
+/* Nexus card tilt glare */
+.nexus-shell [data-nx-tilting] { transition: transform 0.12s ease-out; will-change: transform; }
+.nexus-shell [data-nx-tilting]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(240px circle at var(--nx-gx, 50%) var(--nx-gy, 50%), color-mix(in oklab, var(--foreground) 14%, transparent), transparent 60%);
+  mix-blend-mode: screen;
+}

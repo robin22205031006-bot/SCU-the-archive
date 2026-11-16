@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useNexusTilt } from "@/hooks/use-nexus-tilt";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
@@ -221,12 +222,14 @@ export function NexusChrome() {
 export function NexusShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const moving = useNexusMotion();
+  const tiltRoot = useRef<HTMLDivElement>(null);
+  useNexusTilt(tiltRoot, moving);
   return (
     <MotionConfig
       reducedMotion={moving ? "user" : "always"}
       transition={{ duration: moving ? 0.55 : 0 }}
     >
-      <div className="nexus-shell relative min-h-dvh">
+      <div ref={tiltRoot} className="nexus-shell relative min-h-dvh">
         <NexusChrome />
         <div data-nexus-page={pathname.slice(1) || "home"} className="nexus-page relative z-[1]">
           {["/admin", "/profile", "/reader", "/ingest", "/ai"].includes(pathname) ? (
