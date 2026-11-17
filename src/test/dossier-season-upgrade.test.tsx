@@ -8,6 +8,7 @@ import {
   nexusRole,
   resolveCharacterSeasonAbilities,
   resolveDossierMeta,
+  resolvePreviousSeasonStats,
 } from "@/lib/nexus-season";
 import { resolveArtifactSeasonalWielders } from "@/lib/artifacts";
 import type { Entity } from "@/lib/entities";
@@ -203,6 +204,9 @@ function makeGraceEntity(): Entity {
           gender: "Female",
           weapons: ["Kara Yazgi"],
           stats: { power: 65, agility: 48 },
+          abilityStats: {
+            red_lightning: { power: 72, agility: 84 },
+          },
         },
         "series-sentinels:2": {
           roster: true,
@@ -427,5 +431,126 @@ describe("Seasonal Dossier Upgrade & Cross-App Sync", () => {
       "Add character or organization to season",
     ) as HTMLSelectElement;
     expect(Array.from(addSelect.options).some((o) => /Horizon Institute/.test(o.text))).toBe(true);
+
+    // Previous season reference & direct numeric input box in NexusRosterEditor
+    const rosterPowerBox = screen.getByLabelText("Roster Power value") as HTMLInputElement;
+    expect(rosterPowerBox.value).toBe("78");
+    expect(screen.getByTestId("prev-stat-power").textContent).toContain("S1: 65");
+    expect(screen.getByTestId("prev-bar-power").getAttribute("style")).toContain("width: 65%");
+    // 78 vs S1 baseline 65 -> green upward visual change indicator (+13)
+    expect(screen.getByTestId("stat-input-wrap-power").getAttribute("data-trend")).toBe("up");
+    expect(screen.getByTestId("stat-delta-power").textContent).toBe("+13");
+    expect(rosterPowerBox.className).toContain("text-emerald-300");
+
+    fireEvent.change(rosterPowerBox, { target: { value: "91" } });
+    expect((screen.getByLabelText("Roster Power") as HTMLInputElement).value).toBe("91");
+    expect(screen.getByTestId("stat-delta-power").textContent).toBe("+26");
+
+    // Lowering below S1 baseline (65 -> 40) switches to red downward indicator (-25)
+    fireEvent.change(rosterPowerBox, { target: { value: "40" } });
+    expect(screen.getByTestId("stat-input-wrap-power").getAttribute("data-trend")).toBe("down");
+    expect(screen.getByTestId("stat-delta-power").textContent).toBe("-25");
+    expect(rosterPowerBox.className).toContain("text-rose-300");
+
+    // Matching S1 baseline (65) clears the up/down delta indicator
+    fireEvent.change(rosterPowerBox, { target: { value: "65" } });
+    expect(screen.getByTestId("stat-input-wrap-power").getAttribute("data-trend")).toBe("same");
+    expect(screen.queryByTestId("stat-delta-power")).toBeNull();
+  });
+
+  it("resolves previous season character & ability stats and lets admins type stat numbers directly in SeasonEditor", async () => {
+    const grace = makeGraceEntity();
+    expect(resolvePreviousSeasonStats(grace.stats, "series-sentinels", 1, null)).toBeNull();
+    expect(resolvePreviousSeasonStats(grace.stats, null, 2, null)).toBeNull();
+
+    const prevChar = resolvePreviousSeasonStats(grace.stats, "series-sentinels", 2, null, [
+      "Season 1",
+      "Season 2",
+    ]);
+    expect(prevChar?.seasonNumber).toBe(1);
+    expect(prevChar?.label).toBe("Season 1");
+    expect(prevChar?.values.power).toBe(65);
+    expect(prevChar?.values.agility).toBe(48);
+
+    const prevAbility = resolvePreviousSeasonStats(
+      grace.stats,
+      "series-sentinels",
+      2,
+      "red_lightning",
+    );
+    expect(prevAbility?.values.power).toBe(72);
+    expect(prevAbility?.values.agility).toBe(84);
+
+    // Ability with no previous season stats must not fall back to character stats
+    expect(resolvePreviousSeasonStats(grace.stats, "series-sentinels", 2, "wind_veil")).toBeNull();
+
+    // Skipping an untouched all-zero season still finds S1 stats when editing S3
+    const withEmptyS2 = {
+      ...(grace.stats as Record<string, unknown>),
+      dossier: {
+        ...((grace.stats as { dossier: Record<string, unknown> }).dossier ?? {}),
+        "series-sentinels:2": { stats: { power: 0, agility: 0 } },
+      },
+    };
+    const prevForS3 = resolvePreviousSeasonStats(withEmptyS2, "series-sentinels", 3, null);
+    expect(prevForS3?.seasonNumber).toBe(1);
+    expect(prevForS3?.values.power).toBe(65);
+
+    render(
+      wrapWithQc(
+        <SeasonEditor
+          open
+          onClose={vi.fn()}
+          entity={grace}
+          seasonKey="series-sentinels:2"
+          seasonLabel="The Sentinels · Season 2"
+          onSaved={vi.fn()}
+          seriesCards={[
+            { id: "series-sentinels", title: "The Sentinels", seasons: ["S1", "S2", "S3"] },
+          ]}
+          onSeasonChange={vi.fn()}
+        />,
+      ),
+    );
+
+    // Character stats mode shows S1 ghost bar + value label + green delta (+13 for 78 vs 65)
+    expect(screen.getByTestId("previous-season-legend").textContent).toContain("S1");
+    expect(screen.getByTestId("prev-stat-power").textContent).toBe("S1: 65");
+    expect(screen.getByTestId("prev-bar-power").getAttribute("style")).toContain("width: 65%");
+    expect(screen.getByTestId("prev-marker-power").getAttribute("style")).toContain("left: 65%");
+    expect(screen.getByTestId("stat-input-wrap-power").getAttribute("data-trend")).toBe("up");
+    expect(screen.getByTestId("stat-delta-power").textContent).toBe("+13");
+
+    // Direct number input box exists on every stat line and syncs with the slider (clamped 0-100)
+    const powerNumber = screen.getByLabelText("Power value") as HTMLInputElement;
+    const powerSlider = screen.getByLabelText("Power") as HTMLInputElement;
+    expect(powerNumber.value).toBe("78");
+
+    fireEvent.change(powerNumber, { target: { value: "88" } });
+    expect(powerSlider.value).toBe("88");
+    expect(powerNumber.value).toBe("88");
+    expect(screen.getByTestId("stat-delta-power").textContent).toBe("+23");
+
+    fireEvent.change(powerNumber, { target: { value: "150" } });
+    expect(powerSlider.value).toBe("100");
+    expect(powerNumber.value).toBe("100");
+
+    // Switching Stats profile to Red Lightning switches the previous-season reference to Red Lightning's S1 stats
+    const statsProfile = screen.getByLabelText("Edit stats profile") as HTMLSelectElement;
+    await waitFor(() => {
+      expect(Array.from(statsProfile.options).some((o) => o.value === "red_lightning")).toBe(true);
+    });
+    fireEvent.change(statsProfile, { target: { value: "red_lightning" } });
+
+    expect(screen.getByTestId("prev-stat-power").textContent).toBe("S1: 72");
+    expect(screen.getByTestId("prev-stat-agility").textContent).toBe("S1: 84");
+    expect(screen.getByTestId("prev-bar-agility").getAttribute("style")).toContain("width: 84%");
+    // Unset S2 Red Lightning (0) vs S1 (72) shows red downward delta (-72), then turns green when raised above 72
+    expect(screen.getByTestId("stat-input-wrap-power").getAttribute("data-trend")).toBe("down");
+    expect(screen.getByTestId("stat-delta-power").textContent).toBe("-72");
+
+    fireEvent.change(powerNumber, { target: { value: "85" } });
+    expect(screen.getByTestId("stat-input-wrap-power").getAttribute("data-trend")).toBe("up");
+    expect(screen.getByTestId("stat-delta-power").textContent).toBe("+13");
   });
 });

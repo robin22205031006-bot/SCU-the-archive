@@ -33,11 +33,11 @@ import {
   DOSSIER_GENDERS,
   DOSSIER_ROLES,
   DOSSIER_STATUSES,
-  NEXUS_STATS,
   readDossier,
   resolveCharacterSeasonAbilities,
   resolveDossierMeta,
   resolveNexusStats,
+  resolvePreviousSeasonStats,
   nexusRole,
   type ResolvedSeasonAbility,
   type SeasonDossier,
@@ -55,6 +55,7 @@ import { NexusStatWheel } from "@/components/nexus-stat-wheel";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { SeasonStatCharts } from "@/components/season-stat-charts";
 import { SeasonStatComparison } from "@/components/season-stat-comparison";
+import { SeasonStatSliders } from "@/components/season-stat-sliders";
 import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
 import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
@@ -69,8 +70,11 @@ import {
 import { useOptionalAbilityContext } from "@/context/AbilityContext";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
+import { StatusHistoryTimeline } from "@/components/status-history-timeline";
 import { tierDef } from "@/lib/character-tier";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
+import { appendStatusHistory, normalizeTrackedStatus } from "@/lib/status-history";
+import { logCharacterStatusUpdate } from "@/lib/lore-status-events";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -570,6 +574,21 @@ export function NexusDossier({
             </AnimatePresence>
           </div>
         </section>
+
+        {e.kind === "character" && (
+          <div className="relative mx-auto mt-5 max-w-6xl px-4">
+            <StatusHistoryTimeline
+              entity={e}
+              memberships={memberships}
+              seriesList={allSeries}
+              variant="nexus"
+              onSelectSeason={({ seriesId: sid, seasonNumber: sNum }) => {
+                setOpenSeries(sid);
+                selectSeason({ seriesId: sid, n: sNum ?? 1 });
+              }}
+            />
+          </div>
+        )}
 
         <div className="relative mx-auto mt-6 max-w-6xl px-4">
           <SeasonStatCharts
@@ -1104,6 +1123,7 @@ function normalizeHeaderStatus(raw: string | undefined | null): string {
   if (s === "missing" || s === "unknown") return "Missing";
   if (s.includes("presumed")) return "Presumed Dead";
   if (s === "sealed" || s === "imprisoned") return "Sealed";
+  if (s === "retired") return "Retired";
   const exact = DOSSIER_STATUSES.find((opt) => opt.toLowerCase() === s);
   return exact ?? "Alive";
 }
@@ -1166,11 +1186,13 @@ export function SeasonEditor({
 
   const loadedForRef = useRef<string | null>(null);
   const loadedAbilitiesForRef = useRef<string | null>(null);
+  const initialStatusRef = useRef<string>("");
 
   useEffect(() => {
     if (!open) {
       loadedForRef.current = null;
       loadedAbilitiesForRef.current = null;
+      initialStatusRef.current = "";
       setTab("dossier");
       return;
     }
@@ -1179,12 +1201,14 @@ export function SeasonEditor({
       loadedForRef.current = targetKey;
       const meta = resolveDossierMeta(entity, seriesId || null, seasonNumber);
       const current = readDossier(entity.stats)[key] ?? {};
+      const resolvedStatus = normalizeHeaderStatus(current.status ?? meta.status);
+      initialStatusRef.current = resolvedStatus;
       setAbility("");
       setWeaponChoice("");
       setCustomWeapon("");
       setForm({
         ...current,
-        status: normalizeHeaderStatus(current.status ?? meta.status),
+        status: resolvedStatus,
         role: current.role ?? meta.role ?? "",
         gender: current.gender ?? meta.gender ?? "",
         weapons: current.weapons ?? meta.weapons ?? [],
@@ -1282,7 +1306,24 @@ export function SeasonEditor({
     ]);
   };
 
-  const vals = ability ? (form.abilityStats?.[ability] ?? {}) : (form.stats ?? {});
+  const vals = ability
+    ? (form.abilityStats?.[ability] ?? form.abilityStats?.[resolveAbilityAliasPure(ability)] ?? {})
+    : (form.stats ?? {});
+  const activeSeriesSeasons = useMemo(
+    () => seriesCards.find((s) => s.id === seriesId)?.seasons ?? null,
+    [seriesCards, seriesId],
+  );
+  const previousStats = useMemo(
+    () =>
+      resolvePreviousSeasonStats(
+        entity.stats,
+        seriesId || null,
+        seasonNumber,
+        ability || null,
+        activeSeriesSeasons,
+      ),
+    [entity.stats, seriesId, seasonNumber, ability, activeSeriesSeasons],
+  );
   const setValue = (k: string, value: number) =>
     setForm((f) =>
       ability
@@ -1335,9 +1376,15 @@ export function SeasonEditor({
         .single();
       if (error) throw error;
 
-      const freshStats = { ...((fresh.stats as Record<string, unknown>) ?? {}) };
+      let freshStats: Record<string, unknown> = {
+        ...((fresh.stats as Record<string, unknown>) ?? {}),
+      };
       const map = { ...readDossier(freshStats) };
       const activeKeys = activeAbilities.map((a) => a.abilityKey);
+      const prevStatus =
+        normalizeTrackedStatus(map[key]?.status) ||
+        initialStatusRef.current ||
+        normalizeTrackedStatus(fresh.status);
       const nextStatus = normalizeHeaderStatus(form.status);
       const nextWeapons = (form.weapons ?? []).map((w) => w.trim()).filter(Boolean);
 
@@ -1350,6 +1397,34 @@ export function SeasonEditor({
         ...(seriesId ? { roster: true } : {}),
       };
       freshStats["dossier"] = map;
+
+      const seriesTitle = seriesCards.find((s) => s.id === seriesId)?.title ?? null;
+      let statusTransitionLogged: {
+        fromStatus: string;
+        toStatus: string;
+        changedAt?: string | undefined;
+      } | null = null;
+      if (nextStatus && prevStatus.toLowerCase() !== nextStatus.toLowerCase()) {
+        const appended = appendStatusHistory(freshStats, {
+          entityId: entity.id,
+          entityName: entity.name,
+          fromStatus: prevStatus || "Unrecorded",
+          toStatus: nextStatus,
+          seriesId: seriesId || null,
+          seriesTitle,
+          seasonNumber,
+          seasonLabel,
+          source: "dossier",
+        });
+        freshStats = appended.stats;
+        if (appended.recorded && appended.entry) {
+          statusTransitionLogged = {
+            fromStatus: appended.entry.fromStatus,
+            toStatus: appended.entry.toStatus,
+            changedAt: appended.entry.changedAt,
+          };
+        }
+      }
 
       if (key === "all") {
         if (form.gender) freshStats["gender"] = form.gender;
@@ -1371,6 +1446,22 @@ export function SeasonEditor({
         .eq("id", entity.id);
       if (writeError) throw writeError;
       wroteEntity = true;
+
+      if (statusTransitionLogged) {
+        initialStatusRef.current = statusTransitionLogged.toStatus;
+        void logCharacterStatusUpdate({
+          entityId: entity.id,
+          entityName: entity.name,
+          fromStatus: statusTransitionLogged.fromStatus,
+          toStatus: statusTransitionLogged.toStatus,
+          seriesId: seriesId || null,
+          seriesTitle,
+          seasonNumber,
+          seasonLabel,
+          changedAt: statusTransitionLogged.changedAt,
+          source: "dossier",
+        });
+      }
 
       // Sync seasonal character_abilities rows
       if (seriesId && seasonNumber != null) {
@@ -1533,11 +1624,13 @@ export function SeasonEditor({
                   onChange={(ev) => setForm({ ...form, status: ev.target.value })}
                   className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground"
                 >
-                  {DOSSIER_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
+                  {[...DOSSIER_STATUSES, ...(form.status === "Retired" ? ["Retired"] : [])].map(
+                    (s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ),
+                  )}
                 </select>
               </label>
             </div>
@@ -2042,24 +2135,12 @@ export function SeasonEditor({
               </select>
             </label>
 
-            <div className="space-y-2">
-              <p>Stats (0–100)</p>
-              {NEXUS_STATS.map(({ key: k, label }) => (
-                <label key={k} className="flex items-center gap-2 text-xs">
-                  <span className="w-32 shrink-0">{label}</span>
-                  <input
-                    aria-label={label}
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={vals[k] ?? 0}
-                    onChange={(ev) => setValue(k, Number(ev.target.value))}
-                    className="min-w-0 flex-1 accent-[var(--accent)]"
-                  />
-                  <span className="w-8 text-right">{vals[k] ?? 0}</span>
-                </label>
-              ))}
-            </div>
+            <SeasonStatSliders
+              title="Stats (0–100)"
+              values={vals}
+              previousStats={previousStats}
+              onChange={setValue}
+            />
 
             <Button onClick={save} disabled={busy} className="w-full">
               {busy ? "Saving…" : "Save"}

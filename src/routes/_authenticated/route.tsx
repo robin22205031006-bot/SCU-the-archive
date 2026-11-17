@@ -39,10 +39,7 @@ async function readSessionUser() {
 // cached per user. A banned account is signed out as soon as the result lands.
 function verifyNotBannedInBackground(userId: string) {
   const now = Date.now();
-  if (
-    lastBanCheck?.userId === userId &&
-    now - lastBanCheck.checkedAt < BAN_CHECK_TTL_MS
-  ) {
+  if (lastBanCheck?.userId === userId && now - lastBanCheck.checkedAt < BAN_CHECK_TTL_MS) {
     return;
   }
   lastBanCheck = { userId, checkedAt: now };

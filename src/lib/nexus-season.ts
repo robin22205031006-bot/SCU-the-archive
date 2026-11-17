@@ -72,6 +72,59 @@ export function resolveNexusStats(
   return NEXUS_STATS.map(({ key, label }) => ({ key, label, value: clampStat(source[key]) }));
 }
 
+export interface PreviousSeasonStats {
+  seasonNumber: number;
+  seasonKey: string;
+  label: string;
+  values: Record<(typeof NEXUS_STATS)[number]["key"], number>;
+}
+
+function hasPositiveNexusStat(source: Record<string, unknown> | undefined): boolean {
+  if (!source) return false;
+  return NEXUS_STATS.some(({ key }) => clampStat(source[key]) > 0);
+}
+
+/**
+ * Finds the most recent prior season in the same series that has recorded
+ * character or ability stats (> 0) for the given stats profile.
+ */
+export function resolvePreviousSeasonStats(
+  stats: unknown,
+  seriesId: string | null | undefined,
+  seasonNumber: number | null | undefined,
+  ability: string | null = null,
+  seasonNames?: readonly string[] | null,
+): PreviousSeasonStats | null {
+  if (!seriesId || seasonNumber == null || seasonNumber <= 1) return null;
+  const dossier = readDossier(stats);
+  const alias = ability ? resolveAbilityAliasPure(ability) : "";
+
+  for (let prev = seasonNumber - 1; prev >= 1; prev--) {
+    const prevKey = `${seriesId}:${prev}`;
+    const entry = dossier[prevKey];
+    if (!entry) continue;
+    const source = ability
+      ? (entry.abilityStats?.[ability] ?? (alias ? entry.abilityStats?.[alias] : undefined))
+      : entry.stats;
+    if (!hasPositiveNexusStat(source)) continue;
+
+    const values = Object.fromEntries(
+      NEXUS_STATS.map(({ key }) => [key, clampStat(source?.[key])]),
+    ) as Record<(typeof NEXUS_STATS)[number]["key"], number>;
+
+    const customName = seasonNames?.[prev - 1]?.trim();
+    const label = customName || `Season ${prev}`;
+    return {
+      seasonNumber: prev,
+      seasonKey: prevKey,
+      label,
+      values,
+    };
+  }
+
+  return null;
+}
+
 export function highestStatRadius(values: { value: number }[]): number {
   return 46 + (52 * Math.max(0, ...values.map((s) => clampStat(s.value)))) / 100;
 }

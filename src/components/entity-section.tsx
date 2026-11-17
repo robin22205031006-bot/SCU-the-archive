@@ -90,6 +90,7 @@ import { NexusView } from "./nexus-view";
 import { useUiStyle } from "@/lib/ui-style";
 import { UiStylePicker } from "@/components/ui-style-picker";
 import { StatusTooltip } from "@/components/status-tooltip";
+import { StatusHistoryTimeline } from "@/components/status-history-timeline";
 import { Character3dFrame } from "@/components/character-3d-frame";
 import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaEntitySpread } from "./manga-view";
@@ -1084,6 +1085,14 @@ function DetailOverlay({
           )}
           {dossierTab === "progress" && (
             <div className="grid gap-4">
+              {e.kind === "character" && (
+                <StatusHistoryTimeline
+                  entity={e}
+                  memberships={seasons}
+                  seriesList={allSeries}
+                  variant="classic"
+                />
+              )}
               {uiToggles.showJourneyGraph && seasonJourneyRows(seasons, e.stats).length > 1 && (
                 <JourneyGraph rows={seasonJourneyRows(seasons, e.stats) as typeof seasons} />
               )}

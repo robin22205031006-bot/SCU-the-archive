@@ -41,6 +41,7 @@ export const seriesStatusClass: Record<string, string> = {
   Sealed: "text-amber-300",
   Realive: "text-status-alive",
   Revived: "text-status-alive",
+  Retired: "text-status-neutral",
   Unknown: "text-status-neutral",
 };
 

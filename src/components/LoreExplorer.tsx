@@ -29,6 +29,12 @@ import {
   toggleLorePinEntry,
   type LorePinEntry,
 } from "@/lib/lore-pins";
+import {
+  readLoreStatusEvents,
+  subscribeLoreStatusEvents,
+  toLoreStatusExplorerItem,
+  type LoreStatusUpdateEvent,
+} from "@/lib/lore-status-events";
 
 export interface LoreItem {
   id?: string;
@@ -41,6 +47,9 @@ export interface LoreItem {
   character_tier?: string | null;
   role?: string;
   status?: string;
+  previous_status?: string;
+  event_type?: string;
+  source?: string;
   event_name?: string;
   bio?: string;
   lore?: string;
@@ -73,6 +82,7 @@ export const LORE_CATEGORY_OPTIONS = [
   "Antagonist",
   "Relic",
   "Chronicle",
+  "Status Update",
   "Unclassified",
 ] as const;
 
@@ -279,13 +289,25 @@ const LoreExplorerCard = memo(function LoreExplorerCard({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            {item.faction || item.category ? (
-              <span className="inline-block bg-gray-900/70 border border-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded">
-                {item.category ? `Category: ${item.category}` : `Faction: ${item.faction}`}
-              </span>
-            ) : (
-              <span />
-            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(item.event_type === "status update" ||
+                item.source === "status update" ||
+                item.category?.toLowerCase() === "status update") && (
+                <span className="inline-flex items-center gap-1 rounded border border-amber-400/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                  status update
+                </span>
+              )}
+              {item.previous_status && item.status && (
+                <span className="inline-flex items-center gap-1 rounded border border-cyan-400/40 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium text-cyan-200">
+                  {item.previous_status} → {item.status}
+                </span>
+              )}
+              {(item.faction || item.category) && (
+                <span className="inline-block bg-gray-900/70 border border-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded">
+                  {item.category ? `Category: ${item.category}` : `Faction: ${item.faction}`}
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => onToggleSpeak(itemKey, item)}
@@ -384,6 +406,9 @@ export function LoreExplorer({
   const [search, setSearch] = useState("");
   const [bookmarks, setBookmarks] = useState<LoreBookmarkEntry[]>(() => readLoreBookmarks());
   const [pins, setPins] = useState<LorePinEntry[]>(() => readLorePins());
+  const [statusEvents, setStatusEvents] = useState<LoreStatusUpdateEvent[]>(() =>
+    readLoreStatusEvents(),
+  );
   const [viewBookmarksOnly, setViewBookmarksOnly] = useState(false);
   const [contextMenu, setContextMenu] = useState<ActiveContextMenuState | null>(null);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
@@ -432,15 +457,20 @@ export function LoreExplorer({
   useEffect(() => {
     setBookmarks(readLoreBookmarks());
     setPins(readLorePins());
+    setStatusEvents(readLoreStatusEvents());
     const unsubBookmarks = subscribeLoreBookmarks(() => {
       setBookmarks(readLoreBookmarks());
     });
     const unsubPins = subscribeLorePins(() => {
       setPins(readLorePins());
     });
+    const unsubStatusEvents = subscribeLoreStatusEvents(() => {
+      setStatusEvents(readLoreStatusEvents());
+    });
     return () => {
       unsubBookmarks();
       unsubPins();
+      unsubStatusEvents();
       if (statusTimerRef.current !== null) window.clearTimeout(statusTimerRef.current);
       if (highlightTimerRef.current !== null) window.clearTimeout(highlightTimerRef.current);
     };
@@ -461,7 +491,7 @@ export function LoreExplorer({
       setItems(applyOverrides(fallbackItems, readLocalOverrides()));
       setActiveSection("all");
       setLoading(false);
-    } else {
+    } else if (tab !== "timeline" || statusEvents.length === 0) {
       setLoading(true);
     }
     async function loadData() {
@@ -474,6 +504,23 @@ export function LoreExplorer({
         raw = [];
       }
       if (cancelled) return;
+      if (tab === "timeline") {
+        const localStatusItems = statusEvents.map(toLoreStatusExplorerItem);
+        const existingSignatures = new Set(
+          raw.map(
+            (it) =>
+              `${(it.title || it.name || "").toLowerCase()}::${(it.description || "").toLowerCase()}`,
+          ),
+        );
+        const uniqueLocal = localStatusItems.filter(
+          (it) =>
+            !raw.some((existing) => existing.id && existing.id === it.id) &&
+            !existingSignatures.has(
+              `${(it.title || it.name || "").toLowerCase()}::${(it.description || "").toLowerCase()}`,
+            ),
+        );
+        raw = [...uniqueLocal, ...raw];
+      }
       if (raw.length === 0 && hasFallback) {
         return;
       }
@@ -481,14 +528,14 @@ export function LoreExplorer({
         raw = fallbackItems;
       }
       setItems(applyOverrides(raw, readLocalOverrides()));
-      setActiveSection("all");
+      setActiveSection((prev) => (prev === "Status Update" ? prev : "all"));
       setLoading(false);
     }
     void loadData();
     return () => {
       cancelled = true;
     };
-  }, [tab, initialItems, fallbackItems]);
+  }, [tab, initialItems, fallbackItems, statusEvents]);
 
   const bookmarkedKeySet = useMemo(() => new Set(bookmarks.map((b) => b.key)), [bookmarks]);
   const pinnedKeySet = useMemo(() => new Set(pins.map((p) => p.key)), [pins]);
@@ -694,6 +741,26 @@ export function LoreExplorer({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-xs">
+          {!initialItems && statusEvents.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                stopSpeaking();
+                setViewBookmarksOnly(false);
+                setTab("timeline");
+                setGroupBy("category");
+                setActiveSection("Status Update");
+              }}
+              aria-label={`View status update events (${statusEvents.length})`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded font-semibold uppercase transition-colors border ${
+                tab === "timeline" && activeSection === "Status Update"
+                  ? "border-amber-400 bg-amber-500/20 text-amber-200"
+                  : "border-amber-500/40 bg-amber-950/30 text-amber-200 hover:border-amber-400"
+              }`}
+            >
+              <span>Status Updates ({statusEvents.length})</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

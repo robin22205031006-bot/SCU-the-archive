@@ -65,6 +65,7 @@ import { HankoStamp, MangaCategorySeal } from "@/components/manga-emblem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusTooltip } from "@/components/status-tooltip";
+import { StatusHistoryTimeline } from "@/components/status-history-timeline";
 import { useActiveGenre, useIsManga } from "@/hooks/use-ui-mode";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useOptionalThemeContext } from "@/context/ThemeContext";
@@ -122,7 +123,6 @@ import {
 } from "@/components/manga-primitives";
 
 export { MangaCaptionBox, MangaChapterBanner, MangaPanel, MangaSpeechBubble, MangaThoughtBox };
-
 
 /** Ink-filled segmented power-level grid meter (10 notched blocks). */
 export function MangaPowerMeter({
@@ -1338,6 +1338,21 @@ export function MangaCharacterSpread({
 
       {tab === "progress" && (
         <MangaPanel caption="STORYLINE TRAJECTORY // 連載年表" badge="ARC GRAPH">
+          {e.kind === "character" && (
+            <div className="mb-3">
+              <StatusHistoryTimeline
+                entity={e}
+                memberships={memberships}
+                seriesList={allSeries}
+                variant="manga"
+                onSelectSeason={({ seriesId: sid, seasonNumber: sNum }) => {
+                  const idx = seasons.findIndex((s) => s.series_id === sid);
+                  if (idx >= 0) setSeasonIdx(idx);
+                  setSeasonNumber(sNum);
+                }}
+              />
+            </div>
+          )}
           <JourneyLine
             title={`${e.name} — Canon Arc`}
             lines={[{ name: e.name, rows: journeyRows }]}

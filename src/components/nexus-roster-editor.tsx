@@ -7,9 +7,9 @@ import {
   DOSSIER_GENDERS,
   DOSSIER_ROLES,
   DOSSIER_STATUSES,
-  NEXUS_STATS,
   readDossier,
   resolveDossierMeta,
+  resolvePreviousSeasonStats,
   type SeasonDossier,
 } from "@/lib/nexus-season";
 import { NEXUS_ROLES, projectSeasonRoster } from "@/lib/nexus-roster";
@@ -18,8 +18,14 @@ import { artifactsQuery } from "@/lib/artifacts";
 import { useServerFn } from "@tanstack/react-start";
 import { draftSeasonStory } from "@/lib/season-story.functions";
 import { allAbilityDefs, abilityDef } from "@/lib/abilities";
-import { ABILITY_RANKS, abilityRankMeta, clampDbAbilityLevel } from "@/lib/ability-rank";
+import {
+  ABILITY_RANKS,
+  abilityRankMeta,
+  clampDbAbilityLevel,
+  resolveAbilityAliasPure,
+} from "@/lib/ability-rank";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
+import { SeasonStatSliders } from "@/components/season-stat-sliders";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +33,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, UserPlus } from "lucide-react";
 import { invalidateArchive, resolveGroupIds } from "@/lib/archive-sync";
+import { appendStatusHistory, normalizeTrackedStatus } from "@/lib/status-history";
+import { logCharacterStatusUpdate } from "@/lib/lore-status-events";
 
 type Ability = { name: string; level: number; note: string };
 export function NexusRosterEditor({
@@ -288,6 +296,7 @@ export function NexusRosterEditor({
             entity={entity}
             seriesId={seriesId}
             season={season}
+            seasonLabel={label}
             groups={groups}
           />
         )}
@@ -299,16 +308,23 @@ function RosterFields({
   entity,
   seriesId,
   season,
+  seasonLabel,
   groups,
 }: {
   entity: Entity;
   seriesId: string;
   season: number;
+  seasonLabel: string;
   groups: Entity[];
 }) {
   const qc = useQueryClient();
   useAbilityRegistryVersion();
   const key = `${seriesId}:${season}`;
+  const initialStatusRef = useRef<string>(
+    normalizeTrackedStatus(readDossier(entity.stats)[key]?.status) ||
+      normalizeTrackedStatus(resolveDossierMeta(entity, seriesId, season).status) ||
+      normalizeTrackedStatus(entity.status),
+  );
   const [form, setForm] = useState<SeasonDossier>(() => {
     const meta = resolveDossierMeta(entity, seriesId, season);
     return {
@@ -378,7 +394,13 @@ function RosterFields({
     const keys = abilityKeysRef.current;
     setAbilities([...m.values()].filter((a) => keys === undefined || keys.includes(a.name)));
   }, [data, loaded, season]);
-  const values = profile ? (form.abilityStats?.[profile] ?? {}) : (form.stats ?? {});
+  const values = profile
+    ? (form.abilityStats?.[profile] ?? form.abilityStats?.[resolveAbilityAliasPure(profile)] ?? {})
+    : (form.stats ?? {});
+  const previousStats = useMemo(
+    () => resolvePreviousSeasonStats(entity.stats, seriesId, season, profile || null),
+    [entity.stats, seriesId, season, profile],
+  );
   const setStat = (stat: string, value: number) =>
     setForm((f) =>
       profile
@@ -397,11 +419,17 @@ function RosterFields({
     try {
       const { data: fresh, error } = await supabase
         .from("entities")
-        .select("stats,locked_fields")
+        .select("stats,locked_fields,status")
         .eq("id", entity.id)
         .single();
       if (error) throw error;
-      const stats = { ...(fresh.stats as Record<string, unknown>) };
+      const freshStatsRecord = (fresh.stats as Record<string, unknown>) ?? {};
+      const freshDossierStatus = normalizeTrackedStatus(readDossier(freshStatsRecord)[key]?.status);
+      const prevStatus =
+        freshDossierStatus || initialStatusRef.current || normalizeTrackedStatus(fresh.status);
+      const nextStatus = normalizeTrackedStatus(form.status);
+
+      let stats: Record<string, unknown> = { ...freshStatsRecord };
       stats["dossier"] = {
         ...readDossier(stats),
         [key]: {
@@ -410,6 +438,35 @@ function RosterFields({
           abilityKeys: abilities.filter((a) => a.name.trim()).map((a) => a.name),
         },
       };
+
+      const seriesTitle = seasonLabel.split("·")[0]?.trim() || null;
+      let statusTransitionLogged: {
+        fromStatus: string;
+        toStatus: string;
+        changedAt?: string | undefined;
+      } | null = null;
+      if (nextStatus && prevStatus.toLowerCase() !== nextStatus.toLowerCase()) {
+        const appended = appendStatusHistory(stats, {
+          entityId: entity.id,
+          entityName: entity.name,
+          fromStatus: prevStatus || "Unrecorded",
+          toStatus: nextStatus,
+          seriesId,
+          seriesTitle,
+          seasonNumber: season,
+          seasonLabel,
+          source: "roster",
+        });
+        stats = appended.stats;
+        if (appended.recorded && appended.entry) {
+          statusTransitionLogged = {
+            fromStatus: appended.entry.fromStatus,
+            toStatus: appended.entry.toStatus,
+            changedAt: appended.entry.changedAt,
+          };
+        }
+      }
+
       const result = await supabase
         .from("entities")
         .update({
@@ -421,6 +478,22 @@ function RosterFields({
         .single();
       if (result.error) throw result.error;
       wrote = true;
+
+      if (statusTransitionLogged) {
+        initialStatusRef.current = statusTransitionLogged.toStatus;
+        void logCharacterStatusUpdate({
+          entityId: entity.id,
+          entityName: entity.name,
+          fromStatus: statusTransitionLogged.fromStatus,
+          toStatus: statusTransitionLogged.toStatus,
+          seriesId,
+          seriesTitle,
+          seasonNumber: season,
+          seasonLabel,
+          changedAt: statusTransitionLogged.changedAt,
+          source: "roster",
+        });
+      }
       // Existing whole-series ability rows remain intact; only this season is replaced.
       const removed = await supabase
         .from("character_abilities")
@@ -542,7 +615,14 @@ function RosterFields({
             onChange={(ev) => setForm({ ...form, status: ev.target.value })}
           >
             <option value="">Not recorded</option>
-            {[...new Set([...DOSSIER_STATUSES, ...SEASON_STATUSES])].map((s) => (
+            {[
+              ...new Set([
+                ...DOSSIER_STATUSES,
+                ...SEASON_STATUSES,
+                "Retired",
+                ...(form.status ? [form.status] : []),
+              ]),
+            ].map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -822,23 +902,13 @@ function RosterFields({
             ))}
         </select>
       </label>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {NEXUS_STATS.map((s) => (
-          <label key={s.key} className="flex items-center gap-2 text-xs">
-            <span className="w-28 shrink-0">{s.label}</span>
-            <input
-              aria-label={`Roster ${s.label}`}
-              type="range"
-              min={0}
-              max={100}
-              value={values[s.key] ?? 0}
-              onChange={(ev) => setStat(s.key, Number(ev.target.value))}
-              className="min-w-0 flex-1 accent-[var(--accent)]"
-            />
-            <span className="w-7 text-right">{values[s.key] ?? 0}</span>
-          </label>
-        ))}
-      </div>
+      <SeasonStatSliders
+        values={values}
+        previousStats={previousStats}
+        onChange={setStat}
+        ariaPrefix="Roster "
+        layout="grid"
+      />
       <Button className="w-full" disabled={busy || !loaded || !!loadError} onClick={save}>
         {busy ? "Saving…" : "Save season"}
       </Button>

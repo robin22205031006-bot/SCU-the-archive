@@ -190,7 +190,10 @@ export function summarizeSeriesSagas({
       const dossier = readDossier(char.stats);
       for (const [key, entry] of Object.entries(dossier)) {
         if (!key.startsWith(`${s.id}:`) || entry.roster === false) continue;
-        const refs = [...(entry.organizations ?? []), ...(entry.bloodline ? [entry.bloodline] : [])];
+        const refs = [
+          ...(entry.organizations ?? []),
+          ...(entry.bloodline ? [entry.bloodline] : []),
+        ];
         for (const rawName of refs) {
           const clean = norm(rawName);
           if (!clean) continue;

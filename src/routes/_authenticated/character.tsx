@@ -47,6 +47,7 @@ import { NexusDossier, SeasonEditor } from "@/components/nexus-dossier";
 import { SeasonStatCharts } from "@/components/season-stat-charts";
 import { SeasonStatComparison } from "@/components/season-stat-comparison";
 import { StatusTooltip } from "@/components/status-tooltip";
+import { StatusHistoryTimeline } from "@/components/status-history-timeline";
 import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
 import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 import { useIsManga } from "@/hooks/use-ui-mode";
@@ -1209,6 +1210,23 @@ function ClassicDossier() {
                   {seasons.length === 0 && (
                     <p className="text-sm text-muted-foreground">No bonds recorded.</p>
                   )}
+                </div>
+              )}
+              {tab === "progress" && e.kind === "character" && (
+                <div className="mb-4">
+                  <StatusHistoryTimeline
+                    entity={e}
+                    memberships={memberships}
+                    seriesList={allSeries}
+                    variant="classic"
+                    onSelectSeason={({ seriesId: sid, seasonNumber: sNum }) => {
+                      const idx = seasons.findIndex((s) => s.series_id === sid);
+                      if (idx >= 0) setSeasonIdx(idx);
+                      setSeasonNum(sNum);
+                      const title = seriesTitleMap.get(sid) ?? "Series";
+                      setCtxSeason(sNum ? `${title} S${sNum}` : title);
+                    }}
+                  />
                 </div>
               )}
               {tab === "progress" && ui.showJourneyGraph && seasons.length > 0 && (
