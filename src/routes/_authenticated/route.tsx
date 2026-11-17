@@ -21,6 +21,45 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | "__timeout__
   ]);
 }
 
+const BAN_CHECK_TTL_MS = 10 * 60_000;
+let lastBanCheck: { userId: string; checkedAt: number } | null = null;
+
+// getSession reads the locally stored session, so navigating between pages
+// never waits on a network round trip. getUser stays as a fallback.
+async function readSessionUser() {
+  if (typeof supabase.auth.getSession === "function") {
+    const result = await withTimeout(supabase.auth.getSession(), 2_000);
+    if (result !== "__timeout__") return result.data?.session?.user ?? null;
+  }
+  const result = await withTimeout(supabase.auth.getUser(), AUTH_TIMEOUT_MS);
+  return result === "__timeout__" ? null : (result.data?.user ?? null);
+}
+
+// The ban check is a network RPC, so it runs off the navigation path and is
+// cached per user. A banned account is signed out as soon as the result lands.
+function verifyNotBannedInBackground(userId: string) {
+  const now = Date.now();
+  if (
+    lastBanCheck?.userId === userId &&
+    now - lastBanCheck.checkedAt < BAN_CHECK_TTL_MS
+  ) {
+    return;
+  }
+  lastBanCheck = { userId, checkedAt: now };
+  void (async () => {
+    try {
+      const ban = await withTimeout(supabase.rpc("is_banned", { _uid: userId }), AUTH_TIMEOUT_MS);
+      if (ban !== "__timeout__" && ban.data) {
+        lastBanCheck = null;
+        await supabase.auth.signOut().catch(() => {});
+        window.location.assign("/auth?banned=1");
+      }
+    } catch {
+      // Transient RPC errors should not falsely lock out valid sessions.
+    }
+  })();
+}
+
 function AuthLoadingFallback({ message = "Checking your session…" }: { message?: string }) {
   return (
     <main
@@ -73,37 +112,11 @@ export const Route = createFileRoute("/_authenticated")({
     if (!hasSupabaseConfig()) return;
 
     try {
-      const auth = await withTimeout(supabase.auth.getUser(), AUTH_TIMEOUT_MS);
-      let user = auth !== "__timeout__" ? (auth.data?.user ?? null) : null;
-
-      if (auth === "__timeout__") {
-        const fallback =
-          typeof supabase.auth.getSession === "function"
-            ? await withTimeout(supabase.auth.getSession(), 2_000)
-            : "__timeout__";
-        if (fallback !== "__timeout__" && fallback.data?.session?.user) {
-          user = fallback.data.session.user;
-          return;
-        }
-      }
-
+      const user = await readSessionUser();
       if (!user) {
         throw redirect({ to: "/auth", search: { next: location.pathname } });
       }
-
-      try {
-        const ban = await withTimeout(
-          supabase.rpc("is_banned", { _uid: user.id }),
-          AUTH_TIMEOUT_MS,
-        );
-        if (ban !== "__timeout__" && ban.data) {
-          await supabase.auth.signOut().catch(() => {});
-          throw redirect({ to: "/auth", search: { banned: "1" } });
-        }
-      } catch (banErr) {
-        if (isRedirect(banErr)) throw banErr;
-        // Transient RPC errors should not falsely lock out valid sessions.
-      }
+      verifyNotBannedInBackground(user.id);
     } catch (err) {
       if (isRedirect(err)) throw err;
       throw redirect({ to: "/auth", search: { next: location.pathname } });
