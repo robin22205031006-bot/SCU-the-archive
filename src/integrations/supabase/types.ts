@@ -272,6 +272,103 @@ export type Database = {
           },
         ]
       }
+      character_seasons: {
+        Row: {
+          agility: number
+          character_id: string
+          clan_mastery: number
+          equipped_weapons: string[]
+          id: string
+          power: number
+          rank_abilities: Json
+          season_number: number
+          status: string
+          tactical_iq: number
+          vitality: number
+          weapon_proficiency: number
+          wisdom: number
+        }
+        Insert: {
+          agility?: number
+          character_id: string
+          clan_mastery?: number
+          equipped_weapons?: string[]
+          id?: string
+          power?: number
+          rank_abilities?: Json
+          season_number: number
+          status?: string
+          tactical_iq?: number
+          vitality?: number
+          weapon_proficiency?: number
+          wisdom?: number
+        }
+        Update: {
+          agility?: number
+          character_id?: string
+          clan_mastery?: number
+          equipped_weapons?: string[]
+          id?: string
+          power?: number
+          rank_abilities?: Json
+          season_number?: number
+          status?: string
+          tactical_iq?: number
+          vitality?: number
+          weapon_proficiency?: number
+          wisdom?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_seasons_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      characters: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          faction_id: string | null
+          id: string
+          name: string
+          real_name: string | null
+          slug: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          faction_id?: string | null
+          id?: string
+          name: string
+          real_name?: string | null
+          slug: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          faction_id?: string | null
+          id?: string
+          name?: string
+          real_name?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "characters_faction_id_fkey"
+            columns: ["faction_id"]
+            isOneToOne: false
+            referencedRelation: "factions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string
@@ -532,6 +629,33 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      factions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          ideology: string | null
+          name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          ideology?: string | null
+          name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          ideology?: string | null
+          name?: string
+          status?: string
         }
         Relationships: []
       }
