@@ -92,6 +92,13 @@
       "when": 1794623441206,
       "tag": "0012_restrict_more_archive_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794874494354,
+      "tag": "0013_scu_core_dual_sync",
+      "breakpoints": true
     }
   ]
 }

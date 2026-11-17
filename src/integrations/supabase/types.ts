@@ -282,6 +282,7 @@ export type Database = {
           power: number
           rank_abilities: Json
           season_number: number
+          series_id: string | null
           status: string
           tactical_iq: number
           vitality: number
@@ -297,6 +298,7 @@ export type Database = {
           power?: number
           rank_abilities?: Json
           season_number: number
+          series_id?: string | null
           status?: string
           tactical_iq?: number
           vitality?: number
@@ -312,6 +314,7 @@ export type Database = {
           power?: number
           rank_abilities?: Json
           season_number?: number
+          series_id?: string | null
           status?: string
           tactical_iq?: number
           vitality?: number
@@ -324,6 +327,13 @@ export type Database = {
             columns: ["character_id"]
             isOneToOne: false
             referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_seasons_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
             referencedColumns: ["id"]
           },
         ]
@@ -1088,6 +1098,9 @@ export type Database = {
         Args: { p_primary: string; p_secondary: string }
         Returns: undefined
       }
+      scu_clamp: { Args: { v: Json }; Returns: number }
+      scu_slug: { Args: { id: string; n: string }; Returns: string }
+      scu_status: { Args: { s: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

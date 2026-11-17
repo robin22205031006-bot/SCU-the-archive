@@ -13,6 +13,8 @@ import {
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Loader2, WifiOff } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { SiteNav } from "@/components/site-nav";
 import { FloatingNav } from "@/components/floating-nav";
 import { AmbientField } from "@/components/ambient-field";
@@ -348,6 +350,8 @@ function RootComponent() {
                         </Suspense>
                       </ErrorBoundary>
                       <Toaster />
+                      <Analytics />
+                      <SpeedInsights />
                     </AbilityProvider>
                   </UIStateProvider>
                 </ThemeProvider>
