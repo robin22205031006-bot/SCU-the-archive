@@ -4,6 +4,8 @@ import { BookMarked } from "lucide-react";
 import { characterSeriesQuery, seriesStatusClass } from "@/lib/series";
 import { useUiToggles } from "@/lib/ui-toggles";
 import type { Entity } from "@/lib/entities";
+import { RoleEmblemStrip } from "@/components/role-emblem";
+import { resolveEntityEmblemRoles } from "@/lib/role-emblems";
 
 /**
  * "Series appearances" block inside an entity dossier: every series the
@@ -35,11 +37,21 @@ export function SeriesAppearances({ entity }: { entity: Entity }) {
               title={r.role_in_series ?? undefined}
             >
               <span className="max-w-40 truncate font-medium">{s.title}</span>
-              {ui.showArcRoles && r.arc_role && (
-                <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent">
-                  {r.arc_role}
-                </span>
-              )}
+              {ui.showArcRoles &&
+                (() => {
+                  const roles = resolveEntityEmblemRoles(entity, {
+                    seriesId: s.id,
+                    membership: r,
+                  });
+                  if (roles.length > 0) {
+                    return <RoleEmblemStrip roles={roles} size="xs" showLabels />;
+                  }
+                  return r.arc_role ? (
+                    <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent">
+                      {r.arc_role}
+                    </span>
+                  ) : null;
+                })()}
               <span
                 className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider ${statusClass}`}
               >

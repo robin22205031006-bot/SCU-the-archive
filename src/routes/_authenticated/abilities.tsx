@@ -6,7 +6,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityGridSkeleton } from "@/components/route-skeleton";
 import { AbilityFxPanel } from "@/components/ability-fx-panel";
 import { AbilityActionPanel } from "@/components/ability-action-panel";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
   Flame,
@@ -26,7 +26,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-admin";
-import { type Entity } from "@/lib/entities";
+import { entitiesQuery, type Entity } from "@/lib/entities";
+import { RoleEmblemBadge } from "@/components/role-emblem";
+import {
+  emblemRoleFromAbilityKey,
+  resolveEntityEmblemRoles,
+  type EmblemRoleLabel,
+} from "@/lib/role-emblems";
+import { toggleSingleRoleOnEntity } from "@/lib/role-sync";
 import {
   ABILITY_GROUP_LABELS,
   ABILITY_REGISTRY,
@@ -828,6 +835,12 @@ const AbilityCard = memo(function AbilityCard({
       <MotionPresence initial={false}>
         {open && (
           <MotionSection key="ability-holders" className="mt-3 border-t border-border pt-3">
+            {emblemRoleFromAbilityKey(def.key) && isAdmin && (
+              <RoleHoldersManager
+                roleLabel={emblemRoleFromAbilityKey(def.key)!}
+                holders={holders}
+              />
+            )}
             {holders.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 No characters carry this yet — assign it from a character's editor.
@@ -935,6 +948,114 @@ const AbilityCard = memo(function AbilityCard({
     </MotionCard>
   );
 });
+
+function RoleHoldersManager({
+  roleLabel,
+  holders,
+}: {
+  roleLabel: EmblemRoleLabel;
+  holders: Entity[];
+}) {
+  const qc = useQueryClient();
+  const { data: characters = [] } = useQuery(entitiesQuery(["character"]));
+  const [selectedId, setSelectedId] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const holderIds = useMemo(() => new Set(holders.map((h) => h.id)), [holders]);
+  const candidates = useMemo(
+    () =>
+      characters.filter((c) => !holderIds.has(c.id)).sort((a, b) => a.name.localeCompare(b.name)),
+    [characters, holderIds],
+  );
+
+  useEffect(() => {
+    if (!selectedId || holderIds.has(selectedId)) {
+      setSelectedId(candidates[0]?.id ?? "");
+    }
+  }, [selectedId, holderIds, candidates]);
+
+  const handleToggle = async (target: Entity, attach: boolean) => {
+    setBusyId(target.id);
+    try {
+      const currentRoles = resolveEntityEmblemRoles(target);
+      await toggleSingleRoleOnEntity({
+        qc,
+        entityId: target.id,
+        roleLabel,
+        attach,
+        currentRoles,
+      });
+      toast.success(
+        attach
+          ? `Attached ${roleLabel} emblem to ${target.name}`
+          : `Removed ${roleLabel} emblem from ${target.name}`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update role assignment.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="mb-3 space-y-2 rounded-lg border border-border/70 bg-background/40 p-2.5 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Attach role emblem to character
+        </span>
+        <RoleEmblemBadge role={roleLabel} size="xs" />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          aria-label={`Select character for ${roleLabel}`}
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          className="h-8 min-w-[160px] flex-1 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          {candidates.length === 0 ? (
+            <option value="">All characters already hold this role</option>
+          ) : (
+            candidates.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))
+          )}
+        </select>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={!selectedId || busyId !== null}
+          onClick={() => {
+            const target = candidates.find((c) => c.id === selectedId);
+            if (target) void handleToggle(target, true);
+          }}
+        >
+          <Plus className="mr-1 h-3 w-3" />
+          Attach role
+        </Button>
+      </div>
+      {holders.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {holders.map((h) => (
+            <button
+              key={h.id}
+              type="button"
+              disabled={busyId !== null}
+              onClick={() => void handleToggle(h, false)}
+              title={`Remove ${roleLabel} from ${h.name}`}
+              className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-secondary/40 px-2 py-0.5 text-[10px] hover:border-destructive hover:text-destructive disabled:opacity-50"
+            >
+              <span>{h.name}</span>
+              <X className="h-2.5 w-2.5" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AddAbilityForm({ onSaved }: { onSaved: (addedTier?: AbilityTier) => void }) {
   const [label, setLabel] = useState("");

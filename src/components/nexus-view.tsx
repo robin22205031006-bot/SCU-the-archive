@@ -20,6 +20,8 @@ import { Character3dFrame } from "@/components/character-3d-frame";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { Button } from "@/components/ui/button";
 import { GroupGenreEmblem } from "@/components/group-emblem";
+import { RoleEmblemStrip } from "@/components/role-emblem";
+import { resolveEntityEmblemRoles } from "@/lib/role-emblems";
 import {
   LoreBreadcrumb,
   useLoreBreadcrumbParent,
@@ -849,6 +851,13 @@ const DossierPanel = memo(function DossierPanel({
   const { data: full } = useQuery(entityByIdQuery(summary.id));
   const e = full ?? summary;
   const meta = resolveDossierMeta(e, seriesId || null, seasonNumber);
+  const emblemRoles = useMemo(
+    () =>
+      e.kind === "character"
+        ? resolveEntityEmblemRoles(e, { seriesId: seriesId || null, seasonNumber })
+        : [],
+    [e, seriesId, seasonNumber],
+  );
   const alterName = ALTER_EGOS[e.name.trim().toLowerCase()];
   const alter = alterName
     ? all.find((x) => x.name.toLowerCase() === alterName.toLowerCase())
@@ -859,7 +868,7 @@ const DossierPanel = memo(function DossierPanel({
     ["Real name", stat(e, "real_name"), false],
     ["Gender", meta.gender || null, true],
     ["Status", meta.status || e.status, true],
-    ["Role", meta.role || e.role, true],
+    ["Role", emblemRoles.length > 0 ? emblemRoles.join(", ") : meta.role || e.role, true],
     ["Category", e.category, true],
     ["Weapons", meta.weapons.length ? meta.weapons.join(", ") : null, true],
   ];
@@ -948,7 +957,13 @@ const DossierPanel = memo(function DossierPanel({
               <div key={k} data-spoiler={spoil ? "char" : undefined}>
                 <dt className="text-nexus-muted">{k}</dt>
                 <dd className="font-medium">
-                  {k === "Status" && v ? <StatusTooltip label={v}>{v}</StatusTooltip> : v}
+                  {k === "Status" && v ? (
+                    <StatusTooltip label={v}>{v}</StatusTooltip>
+                  ) : k === "Role" && emblemRoles.length > 0 ? (
+                    <RoleEmblemStrip roles={emblemRoles} masked={masked} size="xs" showLabels />
+                  ) : (
+                    v
+                  )}
                 </dd>
               </div>
             ))}

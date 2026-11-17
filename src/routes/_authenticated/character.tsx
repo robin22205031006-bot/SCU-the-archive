@@ -48,6 +48,10 @@ import { SeasonStatCharts } from "@/components/season-stat-charts";
 import { SeasonStatComparison } from "@/components/season-stat-comparison";
 import { StatusTooltip } from "@/components/status-tooltip";
 import { StatusHistoryTimeline } from "@/components/status-history-timeline";
+import { RoleEmblemStrip, RoleMultiPicker } from "@/components/role-emblem";
+import { resolveEntityEmblemRoles } from "@/lib/role-emblems";
+import { syncEntityRoles } from "@/lib/role-sync";
+import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { HeaderUiModeSelect } from "@/components/header-ui-mode-select";
 import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 import { useIsManga } from "@/hooks/use-ui-mode";
@@ -479,6 +483,20 @@ function ClassicDossier() {
     () => (e ? resolveDossierMeta(e, activeSeriesId, seasonNum, activeSeason) : null),
     [e, activeSeriesId, seasonNum, activeSeason],
   );
+  const masked = useSpoilerMask("characters");
+  const [editingRoles, setEditingRoles] = useState(false);
+  const [savingRoles, setSavingRoles] = useState(false);
+  const resolvedRoles = useMemo(
+    () =>
+      e
+        ? resolveEntityEmblemRoles(e, {
+            seriesId: activeSeriesId,
+            seasonNumber: seasonNum,
+            membership: activeSeason ?? null,
+          })
+        : [],
+    [e, activeSeriesId, seasonNum, activeSeason],
+  );
   const seasonHue = seasonIdx >= 0 ? SEASON_HUES[seasonIdx % SEASON_HUES.length] : null;
   const accent = seasonHue ? `hsl(${seasonHue} 85% 60%)` : "var(--accent)";
 
@@ -809,7 +827,7 @@ function ClassicDossier() {
               {TABS.find(([t]) => t === tab)?.[1]}
             </p>
 
-            {/* Badges — tier, status, role, gender, alias, weapons */}
+            {/* Badges — tier, status, role emblems, gender, alias, weapons */}
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
               {e.character_tier && (
                 <StatusTooltip label={e.character_tier}>
@@ -825,8 +843,11 @@ function ClassicDossier() {
                   </span>
                 </StatusTooltip>
               )}
+              {resolvedRoles.length > 0 && (
+                <RoleEmblemStrip roles={resolvedRoles} masked={masked} size="xs" showLabels />
+              )}
               {[
-                resolvedMeta?.role || e.role,
+                resolvedRoles.length === 0 ? resolvedMeta?.role || e.role : null,
                 resolvedMeta?.gender,
                 e.category,
                 resolvedMeta?.codename ||
@@ -850,7 +871,43 @@ function ClassicDossier() {
                   {w}
                 </span>
               ))}
+              {isStaff && (
+                <button
+                  type="button"
+                  onClick={() => setEditingRoles((v) => !v)}
+                  className="rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent hover:bg-accent/15"
+                >
+                  {editingRoles ? "Done roles" : "+ Roles"}
+                </button>
+              )}
             </div>
+            {editingRoles && isStaff && (
+              <div className="mt-2.5">
+                <RoleMultiPicker
+                  compact
+                  disabled={savingRoles}
+                  selected={resolvedRoles}
+                  onChange={async (next) => {
+                    setSavingRoles(true);
+                    try {
+                      await syncEntityRoles({
+                        qc,
+                        entityId: e.id,
+                        roles: next,
+                        scope: activeSeriesId
+                          ? { type: "series", seriesId: activeSeriesId, seasonNumber: seasonNum }
+                          : { type: "global" },
+                      });
+                      toast.success("Role emblems updated");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not update roles");
+                    } finally {
+                      setSavingRoles(false);
+                    }
+                  }}
+                />
+              </div>
+            )}
 
             {/* Mobile series/season selector — left rail is desktop-only */}
             {e.kind === "character" && seasons.length > 0 && (
@@ -905,10 +962,14 @@ function ClassicDossier() {
             {activeSeason && (
               <div className="mt-4 rounded-xl border border-white/10 bg-black/50 p-4 backdrop-blur-sm">
                 <div className="flex flex-wrap items-center gap-2">
-                  {activeSeason.arc_role && (
-                    <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-accent">
-                      {activeSeason.arc_role}
-                    </span>
+                  {resolvedRoles.length > 0 ? (
+                    <RoleEmblemStrip roles={resolvedRoles} masked={masked} size="xs" showLabels />
+                  ) : (
+                    activeSeason.arc_role && (
+                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-accent">
+                        {activeSeason.arc_role}
+                      </span>
+                    )
                   )}
                   {activeSeason.status && (
                     <StatusTooltip label={activeSeason.status}>

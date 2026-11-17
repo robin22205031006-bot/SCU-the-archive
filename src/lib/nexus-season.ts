@@ -28,6 +28,7 @@ export const NEXUS_STATS = [
 export type SeasonDossier = {
   story?: string;
   role?: string;
+  roles?: string[];
   impact?: string;
   codename?: string;
   roster?: boolean;
@@ -445,10 +446,23 @@ export function resolveDossierMeta(
   const baseBloodline = typeof base["bloodline"] === "string" ? base["bloodline"] : "";
   const bloodline = sd.bloodline ?? seriesAll.bloodline ?? allDossier.bloodline ?? baseBloodline;
 
+  const rawRoles = Array.isArray(sd.roles)
+    ? sd.roles
+    : Array.isArray(seriesAll.roles)
+      ? seriesAll.roles
+      : Array.isArray(allDossier.roles)
+        ? allDossier.roles
+        : Array.isArray(base["roles"])
+          ? (base["roles"] as unknown[]).filter(
+              (x): x is string => typeof x === "string" && !!x.trim(),
+            )
+          : [];
+
   return {
     sd,
     status,
     role,
+    roles: rawRoles,
     gender,
     weapons,
     codename,

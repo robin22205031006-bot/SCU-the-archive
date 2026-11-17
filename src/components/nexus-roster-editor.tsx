@@ -35,6 +35,17 @@ import { Plus, Trash2, UserPlus } from "lucide-react";
 import { invalidateArchive, resolveGroupIds } from "@/lib/archive-sync";
 import { appendStatusHistory, normalizeTrackedStatus } from "@/lib/status-history";
 import { logCharacterStatusUpdate } from "@/lib/lore-status-events";
+import { RoleEmblemStrip, RoleMultiPicker } from "@/components/role-emblem";
+import {
+  ROLE_EMBLEM_LABELS,
+  formatEmblemRolesText,
+  mergeEmblemRoles,
+  normalizeEmblemRole,
+  parseEmblemRoles,
+  readEntityGlobalRoles,
+  resolveEntityEmblemRoles,
+  type EmblemRoleLabel,
+} from "@/lib/role-emblems";
 
 type Ability = { name: string; level: number; note: string };
 export function NexusRosterEditor({
@@ -218,9 +229,14 @@ export function NexusRosterEditor({
                     <button
                       type="button"
                       onClick={() => setSelected(c.id)}
-                      className="hover:underline"
+                      className="inline-flex items-center gap-1 hover:underline"
                     >
-                      {c.name}
+                      <span>{c.name}</span>
+                      <RoleEmblemStrip
+                        roles={resolveEntityEmblemRoles(c, { seriesId, seasonNumber: season })}
+                        size="xs"
+                        showLabels={false}
+                      />
                     </button>
                     <button
                       type="button"
@@ -327,13 +343,29 @@ function RosterFields({
   );
   const [form, setForm] = useState<SeasonDossier>(() => {
     const meta = resolveDossierMeta(entity, seriesId, season);
+    const resolvedRoles = resolveEntityEmblemRoles(entity, { seriesId, seasonNumber: season });
     return {
       roster: true,
       ...readDossier(entity.stats)[key],
+      roles: resolvedRoles,
       gender: readDossier(entity.stats)[key]?.gender ?? meta.gender,
       weapons: readDossier(entity.stats)[key]?.weapons ?? meta.weapons,
     };
   });
+  const selectedEmblemRoles = useMemo<EmblemRoleLabel[]>(
+    () => mergeEmblemRoles(parseEmblemRoles(form.roles), parseEmblemRoles(form.role)),
+    [form.roles, form.role],
+  );
+  const handleRolesChange = (nextRoles: EmblemRoleLabel[]) => {
+    setForm((f) => {
+      const nextRoleText = formatEmblemRolesText(nextRoles, f.role);
+      return {
+        ...f,
+        roles: nextRoles,
+        role: nextRoleText,
+      };
+    });
+  };
   const [abilities, setAbilities] = useState<Ability[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [profile, setProfile] = useState("");
@@ -419,22 +451,45 @@ function RosterFields({
     try {
       const { data: fresh, error } = await supabase
         .from("entities")
-        .select("stats,locked_fields,status")
+        .select("stats,locked_fields,status,role")
         .eq("id", entity.id)
         .single();
       if (error) throw error;
       const freshStatsRecord = (fresh.stats as Record<string, unknown>) ?? {};
-      const freshDossierStatus = normalizeTrackedStatus(readDossier(freshStatsRecord)[key]?.status);
+      const existingDossierEntry = readDossier(freshStatsRecord)[key];
+      const freshDossierStatus = normalizeTrackedStatus(existingDossierEntry?.status);
       const prevStatus =
         freshDossierStatus || initialStatusRef.current || normalizeTrackedStatus(fresh.status);
       const nextStatus = normalizeTrackedStatus(form.status);
 
-      let stats: Record<string, unknown> = { ...freshStatsRecord };
+      const prevSeasonRoles = mergeEmblemRoles(
+        parseEmblemRoles(existingDossierEntry?.roles),
+        parseEmblemRoles(existingDossierEntry?.role),
+      );
+      const nextSeasonRoles = selectedEmblemRoles;
+      const removedFromSeason = prevSeasonRoles.filter((r) => !nextSeasonRoles.includes(r));
+      const existingGlobalRoles = mergeEmblemRoles(
+        readEntityGlobalRoles(freshStatsRecord),
+        parseEmblemRoles(fresh.role),
+      );
+      const nextGlobalRoles = mergeEmblemRoles(
+        existingGlobalRoles.filter((r) => !removedFromSeason.includes(r)),
+        nextSeasonRoles,
+      );
+      const nextRoleText = formatEmblemRolesText(nextSeasonRoles, form.role);
+      const nextGlobalRoleText = formatEmblemRolesText(nextGlobalRoles, fresh.role);
+
+      let stats: Record<string, unknown> = {
+        ...freshStatsRecord,
+        roles: nextGlobalRoles,
+      };
       stats["dossier"] = {
         ...readDossier(stats),
         [key]: {
           ...readDossier(stats)[key],
           ...form,
+          roles: nextSeasonRoles,
+          role: nextRoleText,
           abilityKeys: abilities.filter((a) => a.name.trim()).map((a) => a.name),
         },
       };
@@ -470,8 +525,9 @@ function RosterFields({
       const result = await supabase
         .from("entities")
         .update({
+          role: nextGlobalRoleText || null,
           stats: stats as never,
-          locked_fields: [...new Set([...fresh.locked_fields, "stats"])],
+          locked_fields: [...new Set([...fresh.locked_fields, "stats", "role"])],
         })
         .eq("id", entity.id)
         .select("id")
@@ -549,8 +605,11 @@ function RosterFields({
           .eq("character_id", entity.id)
           .limit(1);
         if (scErr) throw scErr;
+        const mergedRoleSummary = formatEmblemRolesText(nextSeasonRoles, form.role);
         const patch = {
-          ...(form.role ? { role_in_series: form.role, arc_role: form.role } : {}),
+          ...(mergedRoleSummary
+            ? { role_in_series: mergedRoleSummary, arc_role: mergedRoleSummary }
+            : {}),
           ...(form.status ? { status: form.status } : {}),
         };
         const up = sc?.[0]
@@ -594,11 +653,24 @@ function RosterFields({
             aria-label="Season role"
             className="h-9 rounded-md border border-input bg-background px-2"
             value={form.role ?? ""}
-            onChange={(ev) => setForm({ ...form, role: ev.target.value })}
+            onChange={(ev) => {
+              const val = ev.target.value;
+              const norm = normalizeEmblemRole(val);
+              setForm((f) => ({
+                ...f,
+                role: val,
+                ...(norm ? { roles: mergeEmblemRoles(f.roles, [norm]) } : {}),
+              }));
+            }}
           >
             <option value="">Not recorded</option>
             {[
-              ...new Set([...DOSSIER_ROLES, ...NEXUS_ROLES, ...(form.role ? [form.role] : [])]),
+              ...new Set([
+                ...ROLE_EMBLEM_LABELS,
+                ...DOSSIER_ROLES,
+                ...NEXUS_ROLES,
+                ...(form.role ? [form.role] : []),
+              ]),
             ].map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -606,6 +678,14 @@ function RosterFields({
             ))}
           </select>
         </label>
+        <div className="sm:col-span-2">
+          <RoleMultiPicker
+            selected={selectedEmblemRoles}
+            onChange={handleRolesChange}
+            compact
+            title="Role Emblems (attach multiple)"
+          />
+        </div>
         <label className="grid gap-1 text-xs">
           Status
           <select

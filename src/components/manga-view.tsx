@@ -48,6 +48,9 @@ import { AbilityRankPips } from "@/components/ability-rank-pips";
 import { useOptionalAbilityContext } from "@/context/AbilityContext";
 import { StatRadar } from "@/components/stat-radar";
 import { JourneyLine } from "@/components/journey-line";
+import { RoleEmblemStrip, RoleMultiPicker } from "@/components/role-emblem";
+import { resolveEntityEmblemRoles } from "@/lib/role-emblems";
+import { syncEntityRoles } from "@/lib/role-sync";
 import { EntityLinks } from "@/components/entity-links";
 import { CharacterRelationships, OrgHierarchy } from "@/components/lineage-panel";
 import { SeriesAppearances } from "@/components/series-appearances";
@@ -232,6 +235,7 @@ const MangaEntityCard = memo(function MangaEntityCard({
   triggerInteractionSfx: (kind: "click", ev?: React.MouseEvent<HTMLElement>) => void;
 }) {
   const tier = tierDef(e.character_tier);
+  const cardRoles = useMemo(() => (e.kind === "character" ? resolveEntityEmblemRoles(e) : []), [e]);
   const actionCutColor = isFantasy ? "#5ce1b8" : activeGenre === "shonen" ? "#e86a33" : "#38bdf8";
 
   return (
@@ -436,6 +440,15 @@ const MangaEntityCard = memo(function MangaEntityCard({
               </span>
             )}
           </div>
+        )}
+        {cardRoles.length > 0 && (
+          <RoleEmblemStrip
+            roles={cardRoles}
+            masked={spoilerMasked}
+            size="xs"
+            showLabels={false}
+            max={4}
+          />
         )}
         <div
           className={`flex items-center justify-between font-mono text-[9px] font-bold uppercase tracking-widest ${
@@ -717,7 +730,10 @@ export function MangaCharacterSpread({
   const [comparing, setComparing] = useState(false);
   const [comparingSeasons, setComparingSeasons] = useState(false);
   const [editingSeason, setEditingSeason] = useState(false);
+  const [editingRoles, setEditingRoles] = useState(false);
+  const [savingRoles, setSavingRoles] = useState(false);
   const [, setFavTick] = useState(0);
+  const spoilerMasked = useSpoilerMask("characters");
   const abilityCtx = useOptionalAbilityContext();
   useEffect(() => onFavoritesChange(() => setFavTick((t) => t + 1)), []);
   useEffect(() => {
@@ -887,6 +903,12 @@ export function MangaCharacterSpread({
     includePriorSeasons: true,
   });
   const mergedAbilities = seasonAbilityResolution.active.map((item) => item.abilityKey);
+  const resolvedRoles = resolveEntityEmblemRoles(e, {
+    seriesId: activeSeason?.series_id ?? null,
+    seasonNumber,
+    membership: activeSeason ?? null,
+    abilityKeys: mergedAbilities,
+  });
 
   const handleExportPdf = async (ev?: React.MouseEvent<HTMLElement>) => {
     try {
@@ -1051,6 +1073,60 @@ export function MangaCharacterSpread({
           </MangaCaptionBox>
         )}
       />
+      {(resolvedRoles.length > 0 || isAdmin) && (
+        <div
+          data-spoiler="char"
+          className="space-y-2 border border-border/50 bg-background/60 px-2.5 py-2"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+              ROLE EMBLEMS
+            </span>
+            {isAdmin && (
+              <button
+                type="button"
+                disabled={savingRoles}
+                onClick={() => setEditingRoles((v) => !v)}
+                className="border border-border bg-card px-2 py-0.5 font-mono text-[9px] font-bold uppercase hover:bg-primary hover:text-primary-foreground"
+              >
+                {editingRoles ? "DONE" : "MANAGE ROLES"}
+              </button>
+            )}
+          </div>
+          <RoleEmblemStrip
+            roles={resolvedRoles}
+            masked={spoilerMasked}
+            size="sm"
+            showLabels
+            emptyLabel="No role emblems attached"
+          />
+          {editingRoles && isAdmin && (
+            <RoleMultiPicker
+              compact
+              disabled={savingRoles}
+              selected={resolvedRoles}
+              onChange={async (next) => {
+                setSavingRoles(true);
+                try {
+                  await syncEntityRoles({
+                    qc,
+                    entityId: e.id,
+                    roles: next,
+                    scope: activeSeason?.series_id
+                      ? { type: "series", seriesId: activeSeason.series_id, seasonNumber }
+                      : { type: "global" },
+                  });
+                  toast.success("Role emblems updated");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Could not update roles");
+                } finally {
+                  setSavingRoles(false);
+                }
+              }}
+            />
+          )}
+        </div>
+      )}
       {(activeGender || activeWeapons.length > 0) && (
         <div
           data-spoiler="char"

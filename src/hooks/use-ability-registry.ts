@@ -14,6 +14,7 @@ import {
   type AbilityDef,
   type AbilityOverride,
 } from "@/lib/abilities";
+import { resolveEntityEmblemRoles, roleKeyForEmblem } from "@/lib/role-emblems";
 
 const CUSTOM_SETTINGS_KEY = "ability_registry";
 const OVERRIDES_SETTINGS_KEY = "ability_overrides";
@@ -189,6 +190,9 @@ export function useAbilityHolders(): AbilityHoldersIndex {
       }
       for (const n of [...(e.abilities ?? []), ...(e.beast_traits ?? [])]) {
         addHolder(n, e);
+      }
+      for (const r of resolveEntityEmblemRoles(e)) {
+        addHolder(roleKeyForEmblem(r), e);
       }
     }
 

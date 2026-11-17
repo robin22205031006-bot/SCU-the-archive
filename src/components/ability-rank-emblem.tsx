@@ -20,6 +20,8 @@ import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
 import { AbilityRankTooltipCard } from "@/components/ability-rank-tooltip";
 import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
+import { RoleEmblemGlyph } from "@/components/role-emblem";
+import { emblemRoleFromAbilityKey } from "@/lib/role-emblems";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { useIsMinimal } from "@/hooks/use-ui-mode";
@@ -621,6 +623,7 @@ export function AbilityRankEmblem({
     tooltipContext ??
     (modalEnabled ? `${def.label} · Click to inspect` : `${def.label} · ${rankMeta.tagline}`);
 
+  const emblemRole = emblemRoleFromAbilityKey(def.key);
   const innerContent = (
     <div
       data-ability-rank-emblem={def.key}
@@ -647,13 +650,15 @@ export function AbilityRankEmblem({
         className="scu-rank-emblem-aura pointer-events-none absolute -inset-1.5 rounded-full"
       />
 
-      {/* Layer 1: Swapped rank asset OR illustrated atlas OR geometric vector crest */}
+      {/* Layer 1: Swapped rank asset OR role emblem OR illustrated atlas OR geometric vector crest */}
       <div className="scu-rank-emblem-core relative flex h-[84%] w-[84%] items-center justify-center overflow-hidden rounded-full">
         {masked ? (
           <span
             aria-hidden="true"
             className="h-3/4 w-3/4 rounded-full border border-dashed border-muted-foreground/40 bg-muted/30"
           />
+        ) : emblemRole ? (
+          <RoleEmblemGlyph role={emblemRole} className={CORE_ICON_CLASSES[size]} />
         ) : assetResolution.src ? (
           <img
             src={assetResolution.src}

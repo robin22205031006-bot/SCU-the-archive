@@ -75,6 +75,17 @@ import { tierDef } from "@/lib/character-tier";
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
 import { appendStatusHistory, normalizeTrackedStatus } from "@/lib/status-history";
 import { logCharacterStatusUpdate } from "@/lib/lore-status-events";
+import { RoleEmblemStrip, RoleMultiPicker } from "@/components/role-emblem";
+import {
+  ROLE_EMBLEM_LABELS,
+  formatEmblemRolesText,
+  mergeEmblemRoles,
+  normalizeEmblemRole,
+  parseEmblemRoles,
+  readEntityGlobalRoles,
+  resolveEntityEmblemRoles,
+} from "@/lib/role-emblems";
+import { syncEntityRoles } from "@/lib/role-sync";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -115,6 +126,8 @@ export function NexusDossier({
   const [editing, setEditing] = useState(false);
   const [comparingSeasons, setComparingSeasons] = useState(false);
   const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
+  const [editingRolesInline, setEditingRolesInline] = useState(false);
+  const [savingRoles, setSavingRoles] = useState(false);
   const moving = useNexusMotion();
   const abilityCtx = useOptionalAbilityContext();
 
@@ -261,7 +274,17 @@ export function NexusDossier({
     ? selectedAbility
     : null;
   const statVals = resolveNexusStats(e.stats, seasonKey, abilitySelection);
-  const roleBadge = meta.role || "Unclassified";
+  const resolvedRoles = useMemo(
+    () =>
+      resolveEntityEmblemRoles(e, {
+        seriesId: season?.seriesId ?? null,
+        seasonNumber: season?.n ?? null,
+        membership: membership ?? null,
+        abilityKeys: abilities.map((a) => a.name),
+      }),
+    [e, season?.seriesId, season?.n, membership, abilities],
+  );
+  const roleBadge = meta.role || resolvedRoles[0] || "Unclassified";
   const roleTone = nexusRole(roleBadge, masked);
   const codename = meta.codename || null;
   const selectSeason = (value: { seriesId: string; n: number } | null) => {
@@ -312,12 +335,16 @@ export function NexusDossier({
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <span
-              data-spoiler="char"
-              className="rounded-sm border border-amber-400/50 bg-amber-500/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-300"
-            >
-              {roleBadge}
-            </span>
+            {resolvedRoles.length > 0 ? (
+              <RoleEmblemStrip roles={resolvedRoles} masked={masked} size="sm" showLabels />
+            ) : (
+              <span
+                data-spoiler="char"
+                className="rounded-sm border border-amber-400/50 bg-amber-500/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-300"
+              >
+                {roleBadge}
+              </span>
+            )}
             <div className="ml-auto flex flex-wrap items-center gap-2">
               <HeaderUiModeSelect variant="nexus" />
               {alter && (
@@ -690,14 +717,76 @@ export function NexusDossier({
                   )}
                   {menu === "role" && (
                     <div data-spoiler="char" className="space-y-3 text-sm">
-                      <p>
-                        <span className="text-muted-foreground">Role: </span>
-                        {sd.role ||
-                          membership?.role_in_series ||
-                          membership?.arc_role ||
-                          e.role ||
-                          "—"}
-                      </p>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-muted-foreground">
+                            Role Emblems & Classification
+                          </span>
+                          {isStaff && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={savingRoles}
+                              onClick={() => setEditingRolesInline((v) => !v)}
+                            >
+                              {editingRolesInline ? "Done" : "Manage roles"}
+                            </Button>
+                          )}
+                        </div>
+                        {resolvedRoles.length > 0 ? (
+                          <RoleEmblemStrip
+                            roles={resolvedRoles}
+                            masked={masked}
+                            size="sm"
+                            showLabels
+                          />
+                        ) : (
+                          <p>
+                            {sd.role ||
+                              membership?.role_in_series ||
+                              membership?.arc_role ||
+                              e.role ||
+                              "—"}
+                          </p>
+                        )}
+                        {editingRolesInline && isStaff && (
+                          <RoleMultiPicker
+                            compact
+                            disabled={savingRoles}
+                            selected={resolvedRoles}
+                            title={
+                              season
+                                ? `Attach roles for ${seasonLabel} (syncs to dossier, series & roles)`
+                                : "Attach character role emblems (syncs everywhere)"
+                            }
+                            onChange={async (next) => {
+                              setSavingRoles(true);
+                              try {
+                                await syncEntityRoles({
+                                  qc,
+                                  entityId: e.id,
+                                  roles: next,
+                                  scope: season
+                                    ? {
+                                        type: "series",
+                                        seriesId: season.seriesId,
+                                        seasonNumber: season.n,
+                                      }
+                                    : { type: "global" },
+                                });
+                                toast.success("Role emblems synchronized");
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof Error ? err.message : "Could not update roles",
+                                );
+                              } finally {
+                                setSavingRoles(false);
+                              }
+                            }}
+                          />
+                        )}
+                      </div>
                       <p className="whitespace-pre-line leading-relaxed text-foreground/90">
                         <span className="block text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
                           Impact
@@ -1206,10 +1295,17 @@ export function SeasonEditor({
       setAbility("");
       setWeaponChoice("");
       setCustomWeapon("");
+      const initialRoles = Array.isArray(current.roles)
+        ? parseEmblemRoles(current.roles)
+        : resolveEntityEmblemRoles(entity, {
+            seriesId: seriesId || null,
+            seasonNumber,
+          });
       setForm({
         ...current,
         status: resolvedStatus,
         role: current.role ?? meta.role ?? "",
+        roles: initialRoles,
         gender: current.gender ?? meta.gender ?? "",
         weapons: current.weapons ?? meta.weapons ?? [],
         stats: Object.fromEntries(
@@ -1361,6 +1457,9 @@ export function SeasonEditor({
 
   const roleOptions = useMemo(() => {
     const list: string[] = [...DOSSIER_ROLES];
+    for (const label of ROLE_EMBLEM_LABELS) {
+      if (!list.includes(label)) list.push(label);
+    }
     if (form.role && !list.includes(form.role)) list.push(form.role);
     return list;
   }, [form.role]);
@@ -1388,15 +1487,41 @@ export function SeasonEditor({
       const nextStatus = normalizeHeaderStatus(form.status);
       const nextWeapons = (form.weapons ?? []).map((w) => w.trim()).filter(Boolean);
 
+      const resolvedFormRoles = mergeEmblemRoles(
+        parseEmblemRoles(form.roles),
+        parseEmblemRoles(form.role),
+      );
+      const formattedRoleText = formatEmblemRolesText(resolvedFormRoles, form.role);
+      const prevEntryRoles = mergeEmblemRoles(
+        parseEmblemRoles(map[key]?.roles),
+        parseEmblemRoles(map[key]?.role),
+      );
+
       map[key] = {
         ...map[key],
         ...form,
+        roles: resolvedFormRoles,
+        role: formattedRoleText || form.role || "",
         status: nextStatus,
         weapons: nextWeapons,
         abilityKeys: activeKeys,
         ...(seriesId ? { roster: true } : {}),
       };
       freshStats["dossier"] = map;
+
+      const currentGlobalRoles = mergeEmblemRoles(
+        readEntityGlobalRoles(freshStats),
+        parseEmblemRoles(fresh.role),
+      );
+      const removedFromScope = prevEntryRoles.filter((r) => !resolvedFormRoles.includes(r));
+      const syncedGlobalRoles =
+        key === "all"
+          ? resolvedFormRoles
+          : mergeEmblemRoles(
+              currentGlobalRoles.filter((r) => !removedFromScope.includes(r)),
+              resolvedFormRoles,
+            );
+      freshStats["roles"] = syncedGlobalRoles;
 
       const seriesTitle = seriesCards.find((s) => s.id === seriesId)?.title ?? null;
       let statusTransitionLogged: {
@@ -1431,13 +1556,19 @@ export function SeasonEditor({
         freshStats["weapons"] = nextWeapons;
       }
 
+      const syncedEntityRoleText = formatEmblemRolesText(syncedGlobalRoles, fresh.role);
       const entityPatch: Record<string, unknown> = {
         stats: freshStats as never,
         locked_fields: [...new Set([...(fresh.locked_fields ?? []), "stats"])],
+        ...(syncedEntityRoleText || syncedGlobalRoles.length > 0
+          ? { role: syncedEntityRoleText || null }
+          : {}),
       };
       if (key === "all") {
         entityPatch["status"] = nextStatus;
-        if (form.role) entityPatch["role"] = form.role;
+        if (formattedRoleText || form.role) {
+          entityPatch["role"] = syncedEntityRoleText || form.role;
+        }
       }
 
       const { error: writeError } = await supabase
@@ -1510,7 +1641,12 @@ export function SeasonEditor({
           if (scErr) throw scErr;
           const scPatch = {
             status: nextStatus,
-            ...(form.role ? { role_in_series: form.role, arc_role: form.role } : {}),
+            ...(formattedRoleText || form.role
+              ? {
+                  role_in_series: formattedRoleText || form.role,
+                  arc_role: formattedRoleText || form.role,
+                }
+              : {}),
           };
           if (scRows?.[0]) {
             const { error: upSc } = await supabase
@@ -1996,13 +2132,24 @@ export function SeasonEditor({
               />
             </label>
 
-            {/* Role Selector */}
+            {/* Role Selector + Multi-Role Emblems */}
             <label className="block">
               Role
               <select
                 aria-label="Role"
                 value={form.role ?? ""}
-                onChange={(ev) => setForm({ ...form, role: ev.target.value })}
+                onChange={(ev) => {
+                  const nextVal = ev.target.value;
+                  setForm((f) => {
+                    const prevEmblem = normalizeEmblemRole(f.role);
+                    const nextEmblem = normalizeEmblemRole(nextVal);
+                    const kept = (f.roles ?? []).filter(
+                      (r) => !prevEmblem || normalizeEmblemRole(r) !== prevEmblem,
+                    );
+                    const nextRoles = nextEmblem ? mergeEmblemRoles(kept, [nextEmblem]) : kept;
+                    return { ...f, role: nextVal, roles: nextRoles };
+                  });
+                }}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-foreground"
               >
                 <option value="">Select role</option>
@@ -2013,6 +2160,18 @@ export function SeasonEditor({
                 ))}
               </select>
             </label>
+
+            <RoleMultiPicker
+              compact
+              selected={form.roles ?? []}
+              onChange={(nextRoles) =>
+                setForm((f) => ({
+                  ...f,
+                  roles: nextRoles,
+                  role: formatEmblemRolesText(nextRoles, f.role),
+                }))
+              }
+            />
 
             {/* Gender Selector directly below Role */}
             <label className="block">

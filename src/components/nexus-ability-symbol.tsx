@@ -15,6 +15,8 @@ import { resolveSymbolStyle, tintMatrix } from "@/lib/nexus-symbol-settings";
 import { abilityDef } from "@/lib/abilities";
 import { useAbilityRegistryVersion } from "@/hooks/use-ability-registry";
 import { ABILITY_RANKS, abilityRankMeta, parseAbilityRank } from "@/lib/ability-rank";
+import { RoleEmblemGlyph } from "@/components/role-emblem";
+import { roleEmblemDef } from "@/lib/role-emblems";
 
 /** Nexus-only illustrated artwork; renders bespoke crests and elemental/skill atlas emblems with optional Rank 1-5 constellation ring. */
 export function NexusAbilitySymbol({
@@ -45,6 +47,28 @@ export function NexusAbilitySymbol({
   const resolvedRank = parseAbilityRank(rank);
   const rankMeta = resolvedRank ? abilityRankMeta(resolvedRank) : null;
   if (masked) return <span aria-hidden className={`nexus-mark ${className}`} />;
+  const roleDef = roleEmblemDef(name);
+  if (roleDef) {
+    return (
+      <NexusSign
+        symbolName={name}
+        anime={previewAnime ?? appearance.anime}
+        className={`nexus-ability-symbol inline-grid place-items-center rounded-full border ${className}`}
+      >
+        <span
+          className="grid h-full w-full place-items-center rounded-full border"
+          style={{
+            borderColor: roleDef.borderTint,
+            backgroundColor: roleDef.bgTint,
+            color: roleDef.color,
+            boxShadow: `0 0 12px ${roleDef.bgTint}`,
+          }}
+        >
+          <RoleEmblemGlyph role={roleDef.label} className="h-[64%] w-[64%]" />
+        </span>
+      </NexusSign>
+    );
+  }
   const def = abilityDef(name);
   const effectiveDescription = description ?? def.description ?? "";
   const art = nexusAbilityArt(name, iconName, effectiveDescription);

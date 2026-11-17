@@ -96,6 +96,9 @@ import { useIsManga } from "@/hooks/use-ui-mode";
 import { MangaEntitySpread } from "./manga-view";
 import { MangaPanel } from "./manga-primitives";
 import { GroupGenreEmblem } from "@/components/group-emblem";
+import { RoleEmblemStrip, RoleMultiPicker } from "@/components/role-emblem";
+import { resolveEntityEmblemRoles } from "@/lib/role-emblems";
+import { syncEntityRoles } from "@/lib/role-sync";
 
 import {
   DOSSIER_GENDERS,
@@ -239,6 +242,13 @@ const CardBody = memo(function CardBody({
       : null;
   const roleText = meta?.role || e.role;
   const genderText = meta?.gender;
+  const emblemRoles =
+    e.kind === "character"
+      ? resolveEntityEmblemRoles(e, {
+          seriesId: seriesId || null,
+          seasonNumber: seriesId ? (seasonNumber ?? null) : null,
+        })
+      : [];
   return (
     <div className="min-w-0 flex-1 text-left">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -289,8 +299,15 @@ const CardBody = memo(function CardBody({
         {e.name}
       </h2>
       <p data-spoiler="char" className="truncate text-sm text-muted-foreground">
-        {[meta?.codename || e.alias, roleText].filter(Boolean).join(" · ") || "—"}
+        {[meta?.codename || e.alias, emblemRoles.length === 0 ? roleText : null]
+          .filter(Boolean)
+          .join(" · ") || (emblemRoles.length > 0 ? "" : "—")}
       </p>
+      {emblemRoles.length > 0 && (
+        <div className="mt-1">
+          <RoleEmblemStrip roles={emblemRoles} masked={hideSpoilers} size="xs" max={4} showLabels />
+        </div>
+      )}
       {e.kind === "character" &&
         (meta?.bloodline || (e.stats as Record<string, string> | null)?.["bloodline"]) && (
           <p
@@ -364,6 +381,8 @@ function DetailOverlay({
       k !== "dossier" &&
       k !== "weapons" &&
       k !== "gender" &&
+      k !== "roles" &&
+      k !== "teamRoles" &&
       (typeof v === "string" || typeof v === "number"),
   ) as [string, string | number][];
   const realName = typeof rawStats["real_name"] === "string" ? rawStats["real_name"] : undefined;
@@ -388,6 +407,8 @@ function DetailOverlay({
   });
   const combat = e.kind === "character" ? getCombatStats(e.stats) : null;
   const [comparing, setComparing] = useState(false);
+  const [editingRoles, setEditingRoles] = useState(false);
+  const [savingRoles, setSavingRoles] = useState(false);
   const [journeyCompareId, setJourneyCompareId] = useState("");
   const [dossierTab, setDossierTab] = useState<"lore" | "powers" | "bonds" | "progress">("lore");
   const [seasonIdx, setSeasonIdx] = useState(0);
@@ -1212,31 +1233,85 @@ function DetailOverlay({
                 data-spoiler="char"
                 className="rounded-xl border border-border/60 bg-secondary/20 p-4"
               >
-                <h4 className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
-                  Combat role
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    e.role,
-                    e.category,
-                    ...(e.abilities ?? []).filter((a) => abilityDef(a).group === "role"),
-                  ]
-                    .filter(Boolean)
-                    .map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  {!e.role &&
-                    !e.category &&
-                    (e.abilities ?? []).filter((a) => abilityDef(a).group === "role").length ===
-                      0 && (
-                      <span className="text-xs text-muted-foreground">No role classified.</span>
-                    )}
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Combat & Narrative Roles
+                  </h4>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      disabled={savingRoles}
+                      onClick={() => setEditingRoles((v) => !v)}
+                      className="rounded border border-border/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-accent hover:bg-accent/15"
+                    >
+                      {editingRoles ? "Done" : "Edit roles"}
+                    </button>
+                  )}
                 </div>
+                {(() => {
+                  const emblemRoles = resolveEntityEmblemRoles(e);
+                  const nonEmblemAbilities = (e.abilities ?? []).filter(
+                    (a) =>
+                      abilityDef(a).group === "role" &&
+                      !emblemRoles.includes(abilityDef(a).label as never),
+                  );
+                  return (
+                    <div className="space-y-2.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {emblemRoles.length > 0 && (
+                          <RoleEmblemStrip roles={emblemRoles} size="sm" showLabels />
+                        )}
+                        {[
+                          emblemRoles.length === 0 ? e.role : null,
+                          e.category,
+                          ...nonEmblemAbilities,
+                        ]
+                          .filter(Boolean)
+                          .map((t) => (
+                            <span
+                              key={t}
+                              className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        {emblemRoles.length === 0 &&
+                          !e.role &&
+                          !e.category &&
+                          nonEmblemAbilities.length === 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              No role classified.
+                            </span>
+                          )}
+                      </div>
+                      {editingRoles && isAdmin && (
+                        <RoleMultiPicker
+                          compact
+                          disabled={savingRoles}
+                          selected={emblemRoles}
+                          onChange={async (next) => {
+                            setSavingRoles(true);
+                            try {
+                              await syncEntityRoles({
+                                qc,
+                                entityId: e.id,
+                                roles: next,
+                                scope: { type: "global" },
+                              });
+                              toast.success("Role emblems updated");
+                            } catch (err) {
+                              toast.error(
+                                err instanceof Error ? err.message : "Could not update roles",
+                              );
+                            } finally {
+                              setSavingRoles(false);
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -1510,9 +1585,18 @@ function ShowcaseView({
                 <h3 className="font-display text-3xl font-bold text-white drop-shadow-lg">
                   {e.name}
                 </h3>
-                <p data-spoiler="char" className="mt-1 line-clamp-2 text-sm text-white/75">
-                  {e.role ?? e.category ?? ""}
-                </p>
+                {(() => {
+                  const sRoles = resolveEntityEmblemRoles(e);
+                  return sRoles.length > 0 ? (
+                    <div className="mt-1.5">
+                      <RoleEmblemStrip roles={sRoles} size="xs" max={4} showLabels={false} />
+                    </div>
+                  ) : (
+                    <p data-spoiler="char" className="mt-1 line-clamp-2 text-sm text-white/75">
+                      {e.role ?? e.category ?? ""}
+                    </p>
+                  );
+                })()}
                 <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur">
                   View dossier →
                 </span>
@@ -1570,9 +1654,18 @@ function ShowcaseView({
                 <h3 className="font-display text-3xl font-bold text-white drop-shadow-lg">
                   {e.name}
                 </h3>
-                <p data-spoiler="char" className="mt-1 line-clamp-2 text-sm text-white/75">
-                  {e.role ?? e.category ?? ""}
-                </p>
+                {(() => {
+                  const sRoles = resolveEntityEmblemRoles(e);
+                  return sRoles.length > 0 ? (
+                    <div className="mt-1.5">
+                      <RoleEmblemStrip roles={sRoles} size="xs" max={4} showLabels={false} />
+                    </div>
+                  ) : (
+                    <p data-spoiler="char" className="mt-1 line-clamp-2 text-sm text-white/75">
+                      {e.role ?? e.category ?? ""}
+                    </p>
+                  );
+                })()}
                 <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur">
                   View dossier →
                 </span>

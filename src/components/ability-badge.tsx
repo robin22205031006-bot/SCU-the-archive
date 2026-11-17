@@ -6,6 +6,8 @@ import { NexusAbilitySymbol } from "@/components/nexus-ability-symbol";
 import { AbilityCustomEmblem } from "@/components/ability-custom-emblem";
 import { AbilityRankPips } from "@/components/ability-rank-pips";
 import { resolveCustomAbilityEmblem } from "@/lib/ability-emblem-resolver";
+import { RoleEmblemBadge } from "@/components/role-emblem";
+import { roleEmblemDef } from "@/lib/role-emblems";
 import {
   abilityRankMeta,
   parseAbilityRank,
@@ -52,6 +54,10 @@ export function AbilityBadge({
   const [fxOpen, setFxOpen] = useState(false);
   const abilityCtx = useOptionalAbilityContext();
   useAbilityRegistryVersion();
+  const roleDef = roleEmblemDef(name);
+  if (roleDef) {
+    return <RoleEmblemBadge role={roleDef.label} size="sm" className={className} />;
+  }
   const def = abilityDef(name);
   const Icon = def.icon;
   const mythic = def.tier === "Mythic";

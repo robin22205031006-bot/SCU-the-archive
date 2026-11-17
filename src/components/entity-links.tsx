@@ -19,6 +19,9 @@ import {
 } from "@/lib/entities";
 import { sfx } from "@/lib/scu-audio";
 import { GroupGenreEmblem } from "@/components/group-emblem";
+import { RoleEmblemStrip, RoleMultiPicker } from "@/components/role-emblem";
+import { resolveEntityEmblemRoles, type EmblemRoleLabel } from "@/lib/role-emblems";
+import { syncEntityRoles } from "@/lib/role-sync";
 
 const MEMBERSHIP_STATUSES = ["Current", "Former"];
 
@@ -175,6 +178,8 @@ export function EntityLinks({
   const isCharacter = entity.kind === "character";
   const isGroup = GROUP_LINK_KINDS.includes(entity.kind);
   const [adding, setAdding] = useState(false);
+  const [editingRolesId, setEditingRolesId] = useState<string | null>(null);
+  const [savingRolesId, setSavingRolesId] = useState<string | null>(null);
   const [deletingRow, setDeletingRow] = useState<LinkedRow | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
 
@@ -246,53 +251,98 @@ export function EntityLinks({
         <p className="text-xs text-muted-foreground">No links yet.</p>
       ) : (
         <div className="grid gap-2">
-          {rows.map(({ membership: m, entity: linked }) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-3 rounded-xl bg-secondary/40 px-3 py-2"
-            >
-              {linked.kind !== "character" && (
-                <GroupGenreEmblem entity={linked} variant="seal" size="sm" showLabel={false} />
-              )}
-              <button
-                onClick={() => onOpen(linked)}
-                className="min-w-0 flex-1 text-left hover:text-accent"
-              >
-                <span className="block truncate font-medium">{linked.name}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {linked.kind}
-                  {linked.category ? ` · ${linked.category}` : ""}
-                </span>
-              </button>
-              {isAdmin ? (
-                <select
-                  value={m.status}
-                  onChange={(e) => updateStatus(m, e.target.value)}
-                  className="h-7 rounded-md border bg-background px-1.5 text-xs"
-                  aria-label={`Membership status for ${linked.name}`}
-                >
-                  {statusOptions(m.status).map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                  {m.status}
-                </span>
-              )}
-              {isAdmin && (
-                <button
-                  aria-label={`Remove link to ${linked.name}`}
-                  onClick={() => setDeletingRow({ membership: m, entity: linked })}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
+          {rows.map(({ membership: m, entity: linked }) => {
+            const characterEntity = isCharacter ? entity : linked;
+            const groupEntity = isCharacter ? linked : entity;
+            const teamRoles = resolveEntityEmblemRoles(characterEntity, {
+              groupId: groupEntity.id,
+            });
+            const editingThis = editingRolesId === m.id;
+            const handleTeamRolesChange = async (next: EmblemRoleLabel[]) => {
+              setSavingRolesId(m.id);
+              try {
+                await syncEntityRoles({
+                  qc,
+                  entityId: characterEntity.id,
+                  roles: next,
+                  scope: { type: "team", groupId: groupEntity.id },
+                });
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Could not update team roles");
+              } finally {
+                setSavingRolesId(null);
+              }
+            };
+            return (
+              <div key={m.id} className="rounded-xl bg-secondary/40 px-3 py-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  {linked.kind !== "character" && (
+                    <GroupGenreEmblem entity={linked} variant="seal" size="sm" showLabel={false} />
+                  )}
+                  <button
+                    onClick={() => onOpen(linked)}
+                    className="min-w-0 flex-1 text-left hover:text-accent"
+                  >
+                    <span className="block truncate font-medium">{linked.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {linked.kind}
+                      {linked.category ? ` · ${linked.category}` : ""}
+                    </span>
+                  </button>
+                  <RoleEmblemStrip roles={teamRoles} size="xs" showLabels />
+                  {isAdmin && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={editingThis ? "secondary" : "outline"}
+                      className="h-7 px-2 text-[10px]"
+                      onClick={() => setEditingRolesId(editingThis ? null : m.id)}
+                    >
+                      {editingThis ? "Done" : "Roles"}
+                    </Button>
+                  )}
+                  {isAdmin ? (
+                    <select
+                      value={m.status}
+                      onChange={(e) => updateStatus(m, e.target.value)}
+                      className="h-7 rounded-md border bg-background px-1.5 text-xs"
+                      aria-label={`Membership status for ${linked.name}`}
+                    >
+                      {statusOptions(m.status).map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                      {m.status}
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <button
+                      aria-label={`Remove link to ${linked.name}`}
+                      onClick={() => setDeletingRow({ membership: m, entity: linked })}
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                {isAdmin && editingThis && (
+                  <div className="mt-2 border-t border-border/50 pt-2">
+                    <RoleMultiPicker
+                      selected={teamRoles}
+                      disabled={savingRolesId === m.id}
+                      compact
+                      title={`Attach roles for ${characterEntity.name} in ${groupEntity.name}`}
+                      onChange={(next) => void handleTeamRolesChange(next)}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
       {isAdmin && (

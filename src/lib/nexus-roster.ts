@@ -82,13 +82,21 @@ export function projectSeasonRoster(
       return [];
     const baseStats =
       e.stats && typeof e.stats === "object" ? (e.stats as Record<string, unknown>) : {};
+    const primaryRole =
+      profile.roles?.[0] ??
+      profile.role ??
+      member?.arc_role ??
+      member?.role_in_series ??
+      e.category;
+    const multiRoleText =
+      profile.roles && profile.roles.length > 0
+        ? profile.roles.join(", ")
+        : (profile.role ?? member?.role_in_series ?? e.role);
     return [
       {
         ...e,
-        category: normalizeNexusRole(
-          profile.role ?? member?.arc_role ?? member?.role_in_series ?? e.category,
-        ),
-        role: profile.role ?? member?.role_in_series ?? e.role,
+        category: normalizeNexusRole(primaryRole),
+        role: multiRoleText,
         status: profile.status ?? member?.status ?? e.status,
         alias: profile.codename ?? e.alias,
         description: profile.story ?? e.description,
