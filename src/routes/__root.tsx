@@ -32,6 +32,7 @@ import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
+import { useCardSpotlight } from "@/hooks/use-card-spotlight";
 import { useRef } from "react";
 
 import appCss from "../styles.css?url";
@@ -44,6 +45,9 @@ const NexusChrome = lazy(() =>
 );
 const MangaChrome = lazy(() =>
   import("@/components/manga-shell").then((m) => ({ default: m.MangaChrome })),
+);
+const CinematicChrome = lazy(() =>
+  import("@/components/cinematic-shell").then((m) => ({ default: m.CinematicChrome })),
 );
 const NexusSectionRailAside = lazy(() =>
   import("@/components/nexus-section-rail").then((m) => ({ default: m.NexusSectionRailAside })),
@@ -219,6 +223,7 @@ function RootContent({ offline }: { offline: boolean }) {
   });
   const { isMinimal, motionActive, spec } = useAppMotion();
   const pageContainerRef = useRef<HTMLDivElement>(null);
+  useCardSpotlight((mode === "classic" || mode === "cinematic") && motionActive);
   const outletContainerRef = useRef<HTMLDivElement>(null);
   const pageSlug = pathname.slice(1) || "home";
   const showNexusRail =
@@ -239,7 +244,9 @@ function RootContent({ offline }: { offline: boolean }) {
               ? "nexus-shell min-h-dvh"
               : mode === "manga"
                 ? "manga-root manga-shell min-h-dvh text-foreground selection:bg-foreground selection:text-background"
-                : "ambient-bg"
+                : mode === "cinematic"
+                  ? "cinematic-shell min-h-dvh"
+                  : "ambient-bg"
         }`}
       >
         {mode === "classic" && <AmbientField />}
@@ -247,6 +254,7 @@ function RootContent({ offline }: { offline: boolean }) {
           {mode === "classic" && <PlexusWallpaper />}
           {mode === "nexus" && <NexusChrome />}
           {mode === "manga" && <MangaChrome pageRef={pageContainerRef} />}
+          {mode === "cinematic" && <CinematicChrome />}
           {mode !== "minimal" && <AmbientStudioParticles />}
           {mode !== "minimal" && <AnimeActionOverlay />}
         </Suspense>
@@ -266,12 +274,15 @@ function RootContent({ offline }: { offline: boolean }) {
           data-minimal-page={isMinimal ? pageSlug : undefined}
           data-nexus-page={mode === "nexus" ? pageSlug : undefined}
           data-manga-page={mode === "manga" ? pageSlug : undefined}
+          data-cinematic-page={mode === "cinematic" ? pageSlug : undefined}
           className={
             mode === "nexus"
               ? `nexus-page relative z-[1] ${showNexusRail ? "nexus-tool-layout mx-auto max-w-7xl lg:grid lg:grid-cols-[180px_minmax(0,1fr)]" : ""}`
               : mode === "manga"
                 ? "manga-page relative z-[1]"
-                : "relative"
+                : mode === "cinematic"
+                  ? "cinematic-page relative z-[1]"
+                  : "relative"
           }
         >
           {showNexusRail ? (

@@ -103,8 +103,14 @@ describe("Four-Tier Primary UI & Expanded Manga Sub-Engine Architecture", () => 
     vi.restoreAllMocks();
   });
 
-  it("manages all 4 primary systems and 8 manga sub-themes with DOM attributes & localStorage persistence", () => {
-    expect(PRIMARY_SYSTEMS.map((s) => s.id)).toEqual(["classic", "nexus", "minimal", "manga"]);
+  it("manages all 5 primary systems and 8 manga sub-themes with DOM attributes & localStorage persistence", () => {
+    expect(PRIMARY_SYSTEMS.map((s) => s.id)).toEqual([
+      "classic",
+      "nexus",
+      "minimal",
+      "manga",
+      "cinematic",
+    ]);
     expect(MANGA_SUBTHEMES).toHaveLength(8);
     expect(MANGA_SUBTHEMES.map((s) => s.id)).toEqual([
       "fantasy",

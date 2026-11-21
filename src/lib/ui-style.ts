@@ -10,6 +10,13 @@ export const UI_STYLES = [
 export function resolveUiStyle(value: string | null): UiStyle {
   return value === "nexus" || value === "minimal" ? value : "classic";
 }
+/**
+ * Visual modes that reuse Classic page layouts: the legacy picker stores "classic"
+ * for them, so a legacy "classic" event must not knock the reader out of them.
+ */
+export function isClassicBackedMode(mode: string | null | undefined): boolean {
+  return mode === "classic" || mode === "manga" || mode === "cinematic";
+}
 export const UI_STYLE_KEY = "scu-ui-style";
 const KEY = UI_STYLE_KEY;
 const listeners = new Set<() => void>();

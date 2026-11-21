@@ -13,7 +13,7 @@ import {
 import { useAppearance } from "@/hooks/use-appearance";
 import { useTypography } from "@/hooks/use-typography";
 import { DEFAULT_THEME, THEMES, themeVars } from "@/lib/themes";
-import { setUiStyle, useUiStyle, type UiStyle } from "@/lib/ui-style";
+import { isClassicBackedMode, setUiStyle, useUiStyle, type UiStyle } from "@/lib/ui-style";
 import {
   readStoredGenreTheme,
   resolveActiveGenreTheme,
@@ -22,7 +22,7 @@ import {
   type GenreThemeId,
 } from "@/lib/genre-themes";
 
-export type VisualUiMode = "classic" | "nexus" | "minimal" | "manga";
+export type VisualUiMode = "classic" | "nexus" | "minimal" | "manga" | "cinematic";
 
 export interface VisualUiModeInfo {
   id: VisualUiMode;
@@ -50,6 +50,11 @@ export const VISUAL_UI_MODES: readonly VisualUiModeInfo[] = [
     id: "manga",
     label: "Manga",
     desc: "Serialized ink-washed spreads, halftone comic panels, and hanko stamps.",
+  },
+  {
+    id: "cinematic",
+    label: "Cinematic",
+    desc: "Letterboxed film frames, teal-and-amber grade, title cards and slow camera moves.",
   },
 ] as const;
 
@@ -90,7 +95,13 @@ const MANAGED_MODE_CSS_PROPS = [
 ] as const;
 
 export function resolveVisualUiMode(value: string | null | undefined): VisualUiMode {
-  if (value === "nexus" || value === "minimal" || value === "manga" || value === "classic") {
+  if (
+    value === "nexus" ||
+    value === "minimal" ||
+    value === "manga" ||
+    value === "classic" ||
+    value === "cinematic"
+  ) {
     return value;
   }
   if (value === "gaming") return "classic";
@@ -100,7 +111,13 @@ export function resolveVisualUiMode(value: string | null | undefined): VisualUiM
 function readStoredMode(): VisualUiMode | null {
   try {
     const raw = localStorage.getItem(UI_MODE_STORAGE_KEY);
-    if (raw === "classic" || raw === "nexus" || raw === "minimal" || raw === "manga") {
+    if (
+      raw === "classic" ||
+      raw === "nexus" ||
+      raw === "minimal" ||
+      raw === "manga" ||
+      raw === "cinematic"
+    ) {
       return raw;
     }
     const legacy = localStorage.getItem("scu-ui-style");
@@ -116,7 +133,13 @@ function readStoredMode(): VisualUiMode | null {
 function readLiveVisualMode(): VisualUiMode {
   if (typeof document !== "undefined") {
     const attr = document.documentElement.dataset["uiMode"];
-    if (attr === "classic" || attr === "nexus" || attr === "minimal" || attr === "manga") {
+    if (
+      attr === "classic" ||
+      attr === "nexus" ||
+      attr === "minimal" ||
+      attr === "manga" ||
+      attr === "cinematic"
+    ) {
       return attr;
     }
   }
@@ -246,6 +269,40 @@ export function uiModeCssVars(mode: VisualUiMode, dark: boolean): Record<string,
             "--font-display": '"Bangers", "Oswald", "Shippori Mincho", serif',
             "--font-sans": '"Comic Neue", "Space Grotesk", system-ui, sans-serif',
           };
+    case "cinematic":
+      // Always graded dark, like a theatre: deep blacks, warm amber key light and
+      // cool teal shadows (the classic teal-and-orange film grade).
+      return {
+        "--ui-mode": "cinematic",
+        "--ui-transition": "420ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "--ui-card-border-width": "1px",
+        "--ui-card-shadow": "0 30px 60px -30px rgba(0, 0, 0, 0.9)",
+        "--ui-heading-tracking": "0.08em",
+        "--ui-heading-shadow": "0 2px 24px rgba(0, 0, 0, 0.65)",
+        "--background": "#07080b",
+        "--foreground": "#ece6da",
+        "--card": "#0e1014",
+        "--card-foreground": "#ece6da",
+        "--popover": "#0e1014",
+        "--popover-foreground": "#ece6da",
+        "--primary": "#e2a23b",
+        "--primary-foreground": "#0b0b0d",
+        "--secondary": "#14171c",
+        "--secondary-foreground": "#ece6da",
+        "--muted": "#14171c",
+        "--muted-foreground": "#9a9488",
+        "--accent": "#e2a23b",
+        "--accent-foreground": "#0b0b0d",
+        "--border": "#24272e",
+        "--input": "#2a2e36",
+        "--ring": "#e2a23b",
+        "--glow": "#e2a23b",
+        "--glow-strength": "0.6",
+        "--glass-blur": "12px",
+        "--radius": "0.25rem",
+        "--font-display": '"Cinzel", "Cormorant Garamond", serif',
+        "--font-sans": '"Manrope", system-ui, sans-serif',
+      };
     case "classic":
     default:
       return {
@@ -398,7 +455,7 @@ export function UiModeProvider({
       const next = (e as CustomEvent<UiStyle>).detail;
       if (!next) return;
       setModeState((prev) => {
-        if (next === "classic" && prev === "manga") return prev;
+        if (next === "classic" && isClassicBackedMode(prev)) return prev;
         const resolved = resolveVisualUiMode(next);
         try {
           localStorage.setItem(UI_MODE_STORAGE_KEY, resolved);
@@ -413,7 +470,9 @@ export function UiModeProvider({
         setModeState(resolveVisualUiMode(e.newValue));
       } else if (e.key === "scu-ui-style" && e.newValue) {
         setModeState((prev) =>
-          e.newValue === "classic" && prev === "manga" ? prev : resolveVisualUiMode(e.newValue),
+          e.newValue === "classic" && isClassicBackedMode(prev)
+            ? prev
+            : resolveVisualUiMode(e.newValue),
         );
       }
     };
@@ -433,7 +492,7 @@ export function UiModeProvider({
     if (prevExternalStyleRef.current === externalStyle) return;
     prevExternalStyleRef.current = externalStyle;
     setModeState((prev) => {
-      if (externalStyle === "classic" && (prev === "manga" || prev === "classic")) return prev;
+      if (externalStyle === "classic" && isClassicBackedMode(prev)) return prev;
       return resolveVisualUiMode(externalStyle);
     });
   }, [externalStyle]);
@@ -466,7 +525,7 @@ export function UiModeProvider({
       /* storage optional */
     }
 
-    // Keep legacy ui-style store synchronized: nexus -> nexus, minimal -> minimal, classic/manga -> classic
+    // Keep legacy ui-style store synchronized: nexus -> nexus, minimal -> minimal, classic-backed -> classic
     const legacyTarget: UiStyle =
       resolved === "nexus" || resolved === "minimal" ? resolved : "classic";
     setUiStyle(legacyTarget);

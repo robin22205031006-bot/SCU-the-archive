@@ -9,10 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import { setNavMode, useNavMode, type NavMode } from "@/lib/nav-mode";
-import { setUiStyle, type UiStyle } from "@/lib/ui-style";
+import { isClassicBackedMode, setUiStyle, type UiStyle } from "@/lib/ui-style";
 import { useOptionalUiMode } from "@/hooks/use-ui-mode";
 
-export type UIMode = "nexus" | "minimal" | "manga" | "classic";
+export type UIMode = "nexus" | "minimal" | "manga" | "classic" | "cinematic";
 
 export interface UIModeOption {
   id: Exclude<UIMode, "classic">;
@@ -35,6 +35,11 @@ export const UI_MODE_OPTIONS: readonly UIModeOption[] = [
     id: "manga",
     label: "Manga",
     desc: "Ink-hatch comic panels, halftone dot backdrop, and crisp offset shadows.",
+  },
+  {
+    id: "cinematic",
+    label: "Cinematic",
+    desc: "Letterboxed film frames, teal-and-amber grade, title cards and slow camera moves.",
   },
 ] as const;
 
@@ -63,7 +68,13 @@ export function resolveHapticIntensity(value: string | null | undefined): Haptic
 }
 
 export function resolveUIMode(value: string | null | undefined): UIMode {
-  if (value === "nexus" || value === "minimal" || value === "manga" || value === "classic") {
+  if (
+    value === "nexus" ||
+    value === "minimal" ||
+    value === "manga" ||
+    value === "classic" ||
+    value === "cinematic"
+  ) {
     return value;
   }
   if (value === "gaming") return "classic";
@@ -256,7 +267,7 @@ export function UIStateProvider({
       const next = (e as CustomEvent<UiStyle>).detail;
       if (!next) return;
       setLocalModeState((prev) => {
-        if (next === "classic" && (prev === "manga" || prev === "classic")) return prev;
+        if (next === "classic" && isClassicBackedMode(prev)) return prev;
         const resolved = resolveUIMode(next);
         return prev === resolved ? prev : resolved;
       });
@@ -267,7 +278,7 @@ export function UIStateProvider({
         setLocalModeState((prev) => (prev === resolved ? prev : resolved));
       } else if (e.key === "scu-ui-style" && e.newValue) {
         setLocalModeState((prev) => {
-          if (e.newValue === "classic" && (prev === "manga" || prev === "classic")) return prev;
+          if (e.newValue === "classic" && isClassicBackedMode(prev)) return prev;
           const resolved = resolveUIMode(e.newValue);
           return prev === resolved ? prev : resolved;
         });

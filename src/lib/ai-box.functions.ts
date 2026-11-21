@@ -108,7 +108,18 @@ export const askLore = createServerFn({ method: "POST" })
     const sb =
       token && token.split(".").length === 3 ? await loadAuthenticatedArchive(token) : null;
 
-    if (sb) {
+    // The endpoint is reachable without the app UI, so only verified readers may
+    // spend model calls. Signed-out callers get a normal reply (no Gemini call)
+    // so every chat surface shows a clear message instead of a generic error.
+    if (!sb) {
+      return {
+        reply: "Please sign in to ask the Archivist. The AI Box is available to archive members.",
+        sources: [] as string[],
+        model: "",
+      };
+    }
+
+    {
       const [e, n, t] = await Promise.all([
         sb
           .from("entities")

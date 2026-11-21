@@ -280,6 +280,9 @@ export function AbilityFxCanvas({
   const impactId = ctx?.abilityImpact?.id ?? 0;
 
   const impactStartRef = useRef<number | null>(null);
+  // One clock per mounted canvas: re-running the draw effect (impact start/end,
+  // character switch) continues the motion instead of snapping back to frame 0.
+  const clockStartRef = useRef<number | null>(null);
   useEffect(() => {
     if (isImpacting) {
       impactStartRef.current = performance.now();
@@ -297,8 +300,20 @@ export function AbilityFxCanvas({
     const rnd = seeded(resolvedRecipe.variant + resolvedRecipe.key.length * 31);
     let raf = 0;
     let last = -1;
-    const start = performance.now();
+    clockStartRef.current ??= performance.now();
+    const start = clockStartRef.current;
     let visible = true;
+    // Cache layout size; reading clientWidth every frame forces a layout pass.
+    let cssW = cv.clientWidth;
+    let cssH = cv.clientHeight;
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            cssW = cv.clientWidth;
+            cssH = cv.clientHeight;
+          })
+        : null;
+    ro?.observe(cv);
     const io =
       typeof IntersectionObserver !== "undefined"
         ? new IntersectionObserver(([e]) => {
@@ -311,8 +326,8 @@ export function AbilityFxCanvas({
     const draw = (now: number) => {
       if (!visible) return; // paused off-screen; resumed by the observer
       const dpr = Math.min(fxCaps.maxDpr, window.devicePixelRatio || 1);
-      const w = cv.clientWidth,
-        h = cv.clientHeight;
+      const w = ro ? cssW : cv.clientWidth,
+        h = ro ? cssH : cv.clientHeight;
       if (w === 0 || h === 0) {
         if (playing && !reduce) raf = requestAnimationFrame(draw);
         return;
@@ -340,12 +355,28 @@ export function AbilityFxCanvas({
           }
         }
         c.setTransform(dpr, 0, 0, dpr, 0, 0);
-        c.clearRect(0, 0, w, h);
+        const live = isImpacting && !reduce && playing;
+        // Afterimage smear: during the burst the previous frame fades instead of
+        // being wiped, so fast shapes leave anime-style ghost trails.
+        const smear = live && impactProgress > 0 && impactProgress < 0.7;
+        if (!smear) c.clearRect(0, 0, w, h);
+        c.globalAlpha = smear ? 0.42 + impactProgress * 0.5 : 1;
         c.fillStyle = "#07070d";
         c.fillRect(0, 0, w, h);
+        c.globalAlpha = 1;
         const s = Math.min(w, h);
         c.save();
-        c.translate(w / 2, h / 2);
+        // Stepped camera shake that settles as the impact resolves (cel "on twos").
+        let shakeX = 0,
+          shakeY = 0;
+        if (live && impactProgress > 0 && impactProgress < 0.55) {
+          const decay = (1 - impactProgress / 0.55) ** 2;
+          const amp = s * (0.012 + resolvedRank * 0.004) * decay;
+          const beat = Math.floor((now - (impactStartRef.current ?? now)) / 42);
+          shakeX = (rnd(beat * 2 + 101) - 0.5) * 2 * amp;
+          shakeY = (rnd(beat * 2 + 202) - 0.5) * 2 * amp;
+        }
+        c.translate(w / 2 + shakeX, h / 2 + shakeY);
         const bg = c.createRadialGradient(
           0,
           0,
@@ -404,6 +435,32 @@ export function AbilityFxCanvas({
         c.globalCompositeOperation = "source-over";
         c.restore();
         c.globalAlpha = 1;
+        // Impact frame: one negative flash, then a palette-light bloom that fades.
+        if (live && impactProgress > 0 && impactProgress < 0.12) {
+          if (impactProgress < 0.035 && !effectivePerformanceMode) {
+            c.globalCompositeOperation = "difference";
+            c.fillStyle = "#ffffff";
+            c.fillRect(0, 0, w, h);
+          } else {
+            // Radial bloom from the impact point; a flat fill washed the frame grey.
+            const bloom = c.createRadialGradient(
+              w / 2 + shakeX,
+              h / 2 + shakeY,
+              0,
+              w / 2 + shakeX,
+              h / 2 + shakeY,
+              s * 0.62,
+            );
+            bloom.addColorStop(0, rgba(resolvedRecipe.palette[2], 0.55));
+            bloom.addColorStop(1, "transparent");
+            c.globalCompositeOperation = "lighter";
+            c.globalAlpha = 1 - impactProgress / 0.12;
+            c.fillStyle = bloom;
+            c.fillRect(0, 0, w, h);
+          }
+          c.globalCompositeOperation = "source-over";
+          c.globalAlpha = 1;
+        }
       }
       if (playing && !reduce) raf = requestAnimationFrame(draw);
     };
@@ -411,6 +468,7 @@ export function AbilityFxCanvas({
     return () => {
       cancelAnimationFrame(raf);
       io?.disconnect();
+      ro?.disconnect();
     };
   }, [
     resolvedRecipe,

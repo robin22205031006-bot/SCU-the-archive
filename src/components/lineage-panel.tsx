@@ -11,6 +11,8 @@ import {
   RELATIONSHIP_LABELS,
   RELATIONSHIP_TYPES,
   type CharacterRelationship,
+  ENTITY_SUMMARY_COLUMNS,
+  withEntitySummaryDefaults,
   type Entity,
 } from "@/lib/entities";
 import { sfx } from "@/lib/scu-audio";
@@ -33,9 +35,13 @@ function useRelatedEntities(rels: CharacterRelationship[] | undefined, selfId: s
     enabled: ids.length > 0,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entities").select("*").in("id", ids);
+      // Summary columns skip heavy fields (description, sketches) these lists never show.
+      const { data, error } = await supabase
+        .from("entities")
+        .select(ENTITY_SUMMARY_COLUMNS)
+        .in("id", ids);
       if (error) throw error;
-      return data ?? [];
+      return ((data ?? []) as Partial<Entity>[]).map(withEntitySummaryDefaults);
     },
   });
 }

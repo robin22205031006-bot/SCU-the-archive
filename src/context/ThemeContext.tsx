@@ -17,7 +17,7 @@ import {
   type GenreThemeId,
 } from "@/lib/genre-themes";
 
-export type PrimarySystem = "classic" | "nexus" | "minimal" | "manga";
+export type PrimarySystem = "classic" | "nexus" | "minimal" | "manga" | "cinematic";
 
 export type MangaSubTheme =
   | "fantasy"
@@ -68,6 +68,11 @@ export const PRIMARY_SYSTEMS: readonly PrimarySystemMeta[] = [
     id: "manga",
     label: "Manga",
     tagline: "Multi-genre graphic novel & anime engine with stylized shaders.",
+  },
+  {
+    id: "cinematic",
+    label: "Cinematic",
+    tagline: "Widescreen film language: letterbox, colour grade, title cards and camera moves.",
   },
 ] as const;
 
@@ -226,11 +231,23 @@ export function normalizeMangaSubTheme(raw: string | null | undefined): MangaSub
 export function readStoredPrimarySystem(): PrimarySystem {
   try {
     const raw = localStorage.getItem(PRIMARY_SYSTEM_STORAGE_KEY);
-    if (raw === "classic" || raw === "nexus" || raw === "minimal" || raw === "manga") {
+    if (
+      raw === "classic" ||
+      raw === "nexus" ||
+      raw === "minimal" ||
+      raw === "manga" ||
+      raw === "cinematic"
+    ) {
       return raw;
     }
     const mode = localStorage.getItem("scu-ui-mode");
-    if (mode === "classic" || mode === "nexus" || mode === "minimal" || mode === "manga") {
+    if (
+      mode === "classic" ||
+      mode === "nexus" ||
+      mode === "minimal" ||
+      mode === "manga" ||
+      mode === "cinematic"
+    ) {
       return mode;
     }
   } catch {

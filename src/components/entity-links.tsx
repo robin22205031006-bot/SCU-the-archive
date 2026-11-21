@@ -14,6 +14,8 @@ import {
   groupLinksQuery,
   GROUP_LINK_KINDS,
   matchesSearch,
+  ENTITY_SUMMARY_COLUMNS,
+  withEntitySummaryDefaults,
   type Entity,
   type EntityMembership,
 } from "@/lib/entities";
@@ -44,9 +46,13 @@ function useLinkedEntities(
     enabled: ids.length > 0,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("entities").select("*").in("id", ids);
+      // Summary columns skip heavy fields (description, sketches) these lists never show.
+      const { data, error } = await supabase
+        .from("entities")
+        .select(ENTITY_SUMMARY_COLUMNS)
+        .in("id", ids);
       if (error) throw error;
-      return data ?? [];
+      return ((data ?? []) as Partial<Entity>[]).map(withEntitySummaryDefaults);
     },
   });
 }
