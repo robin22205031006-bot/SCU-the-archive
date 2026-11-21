@@ -80,7 +80,7 @@ const TABLE: Record<string, Row> = {
     4,
     P("#4fc3ff", "#1e3a8a", "#e0f7ff"),
     1.8,
-    "Silent soul-erasing blue fire, colder than ice.",
+    "Silent blue spirit-fire that burns only corrupted souls and leaves the uncorrupted untouched.",
   ],
   draconic_flame: [
     "flame",
@@ -125,12 +125,70 @@ const TABLE: Record<string, Row> = {
     1.0,
     "Another form of Red Lightning: a crimson spear wrapped in twin spiralling bolts.",
   ],
-  white_lightning_drive: [
-    "lightning",
+  // ---- Abilities from the SCU Ability Guide ----
+  blood_resonance: [
+    "blood",
+    8,
+    P("#22d3ee", "#3b0716", "#fecdd3"),
+    2.4,
+    "Crimson bond threads carrying cyan echoes of inherited gifts.",
+  ],
+  atomokinesis: [
+    "void",
+    4,
+    P("#e2e8f0", "#0f172a", "#67e8f9"),
+    2.8,
+    "Matter unthreads into atoms and rewrites itself around a null core.",
+  ],
+  oneirokinesis: [
+    "mind",
     5,
+    P("#a78bfa", "#1e1b4b", "#f5f3ff"),
+    3.4,
+    "Looping dream halos that blur the edge of the waking world.",
+  ],
+  psychological_dominion: [
+    "chaos",
+    4,
+    P("#be123c", "#1a0510", "#fda4af"),
+    2.6,
+    "A fear already inside the target, amplified until it blooms.",
+  ],
+  ichor: [
+    "impact",
+    4,
+    P("#f59e0b", "#1c1003", "#fef3c7"),
+    1.7,
+    "Pain-limit removed: a full-output human strike that dents the ground.",
+  ],
+  curse_binding: [
+    "arcane",
+    5,
+    P("#b91c1c", "#0c0a09", "#fcd34d"),
+    2.6,
+    "Kara seals winding a curse into a blade or object.",
+  ],
+  acidic_poison: [
+    "water",
+    3,
+    P("#a3e635", "#1a2e05", "#ecfccb"),
+    2.4,
+    "Corrosive acid mist shaped into deliberate streams.",
+  ],
+  corruption_separation: [
+    "flame",
+    6,
+    P("#93c5fd", "#1e3a8a", "#ffffff"),
+    2.2,
+    "Pale fire lifting corruption out of a willing soul and burning only that.",
+  ],
+  // Not an element: bio-electric momentum that exists only while Weston moves.
+  white_lightning_drive: [
+    "beam",
+    6,
     P("#ffffff", "#94a3b8", "#e2e8f0"),
-    0.8,
-    "Kinetic white sparks trailing the body's drive.",
+    2.6,
+    "Bio-electric momentum, not lightning: every step stacks speed, and it fades when he stops.",
   ],
   hyperkinesis: [
     "lightning",
@@ -202,14 +260,14 @@ const TABLE: Record<string, Row> = {
     1,
     P("#9333ea", "#0b0019", "#f0abfc"),
     3.2,
-    "A cosmic singularity crown commanding all aether.",
+    "The space between matter and soul opens: void blades that leave absence, not wounds.",
   ],
   omni_ergon: [
     "prism",
     0,
     P("#ff6a00", "#38bdf8", "#4ade80"),
     3.0,
-    "All elements orbit and collapse into a prismatic core.",
+    "Elements flow in, are stored and converted, then released: a container surviving energy.",
   ],
   omni_argon: [
     "prism",
@@ -239,12 +297,13 @@ const TABLE: Record<string, Row> = {
     2.8,
     "A crown seal pressing the field into obedience.",
   ],
+  // Command, not force: matter reports to position, holds still, then obeys "heavy".
   qahr_al_wujud: [
-    "void",
+    "judgement",
     2,
-    P("#e5e7eb", "#000000", "#fca5a5"),
-    2.6,
-    "Existence itself crushed inward to a point.",
+    P("#d4af37", "#0a0a0a", "#fef3c7"),
+    3.2,
+    "A command radius: scattered matter reports to position, holds in Stillness, then obeys Collapse.",
   ],
   destructive_legendary: [
     "impact",
@@ -717,12 +776,13 @@ const TABLE: Record<string, Row> = {
     1.9,
     "Crimson oath chains binding two life forces.",
   ],
+  // Khalid's shadows are demonic corruption, not Xinea's dark core: blood-tinged, not violet.
   umbra_control: [
     "shadow",
     4,
-    P("#312e81", "#020617", "#a5b4fc"),
+    P("#7f1d1d", "#030000", "#fca5a5"),
     2.0,
-    "Solidified umbra coils rising from the floor.",
+    "Corrupted, light-eating shadow coils rising from the floor (demonic, not the dark core).",
   ],
   errorcore: [
     "chaos",
@@ -843,7 +903,6 @@ export const FX_LINEAGES: FxLineage[] = [
     label: "Crimson branch (Red Lightning variant)",
     steps: ["lightning", "astrapo_electrokinesis", "purple_lightning", "crimson_astrapo"],
   },
-  { id: "speed", label: "Speed lightning (Weston)", steps: ["lightning", "white_lightning_drive"] },
   {
     id: "flame",
     label: "Flame ascension",
@@ -922,6 +981,8 @@ export const FX_LINEAGES: FxLineage[] = [
     label: "Velocity & Kinetics",
     steps: ["speed", "velocity_genome", "super_speed", "hyperkinesis"],
   },
+  // After Velocity so lineageFor("speed") still resolves to the full Velocity chain.
+  { id: "speed", label: "Momentum drive (Weston)", steps: ["speed", "white_lightning_drive"] },
   {
     id: "vitality",
     label: "Vitality & Regeneration",
@@ -986,6 +1047,29 @@ export const FX_LINEAGES: FxLineage[] = [
     id: "martial_trickery",
     label: "Close-Quarters & Trickery",
     steps: ["combat_specialist", "jester", "swordsman"],
+  },
+  // ---- From the SCU Ability Guide ----
+  {
+    id: "resonance",
+    label: "Blood Resonance → Azure Revenant (Arzuna)",
+    steps: ["blood_resonance", "azure_revenant_state"],
+  },
+  { id: "ichor", label: "Vanguard-X → Ichor (Derek)", steps: ["vanguard_x_protocol", "ichor"] },
+  {
+    id: "author",
+    label: "Asetra's powers (order unconfirmed)",
+    steps: ["oneirokinesis", "psychological_dominion", "atomokinesis"],
+  },
+  {
+    id: "sealing",
+    label: "Sealing arts (order unconfirmed)",
+    steps: ["ancient_art", "curse_binding"],
+  },
+  { id: "toxins", label: "Venom & acid (order unconfirmed)", steps: ["snakes", "acidic_poison"] },
+  {
+    id: "duskmoor",
+    label: "Duskmoor gifts (related, not an upgrade)",
+    steps: ["duskmoor_blue_flame", "corruption_separation"],
   },
 ];
 

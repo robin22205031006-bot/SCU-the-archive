@@ -1720,7 +1720,128 @@ function heal(f: PF) {
   c.restore();
   humanoid(c, 0, s * GY, s * 0.38, shade(r.palette[0], -0.7), 0, 0.6, true);
 }
+/** White Lightning Drive (Weston): not elemental. Bio-electric momentum stacks with
+ *  every step and exists only while he moves; when he stops it fades. */
+function whiteDrive(f: PF) {
+  const { c, s, t, r } = f,
+    rk = rankLevel(f),
+    ink = inkOf(r.palette),
+    q = cyc(f);
+  const moving = q < 0.78;
+  const m = moving ? ease(q / 0.78) : 1 - (q - 0.78) / 0.22;
+  const gy = s * GY;
+  const lean = 0.25 + m * 0.45;
+  const x = -s * 0.04 + m * s * 0.06;
+  add(c);
+  const trails = 2 + Math.floor(m * (5 + rk));
+  for (let i = 0; i < trails; i++) {
+    const y = gy - s * (0.06 + (i % 5) * 0.055);
+    streak(c, x - s * 0.06, y, s * (0.14 + m * 0.42) * (1 - i * 0.05), s * 0.012, 1, ink, t + i);
+  }
+  const stepIdx = Math.floor(t * (4 + m * 6));
+  const k = fr(t * (4 + m * 6));
+  if (moving) {
+    const fx = x + ((stepIdx % 2) - 0.5) * s * 0.05;
+    c.strokeStyle = rgba(ink.core, (1 - k) * 0.9 * m);
+    c.lineWidth = 1.6;
+    c.beginPath();
+    c.ellipse(fx, gy, s * (0.03 + k * 0.12), s * (0.01 + k * 0.025), 0, 0, TAU);
+    c.stroke();
+  }
+  const chevrons = 3 + Math.floor(rk / 2);
+  for (let i = 0; i < chevrons; i++) {
+    const lit = m * chevrons > i;
+    const cx = x + s * (0.16 + i * 0.07);
+    c.strokeStyle = rgba(lit ? ink.core : ink.edge, lit ? 0.95 : 0.25);
+    c.lineWidth = 2.2;
+    c.beginPath();
+    c.moveTo(cx, gy - s * 0.2);
+    c.lineTo(cx + s * 0.04, gy - s * 0.15);
+    c.lineTo(cx, gy - s * 0.1);
+    c.stroke();
+  }
+  for (let i = 0; i < 3 + rk; i++) {
+    const a = t * 9 + i * 2.1;
+    glowDot(
+      c,
+      x + Math.cos(a) * s * 0.05,
+      gy - s * (0.12 + fr(a * 0.3) * 0.2),
+      s * 0.008,
+      ink.core,
+      m * 0.8,
+    );
+  }
+  norm(c);
+  // Sprinter: arms down, leaning further forward as momentum stacks.
+  c.save();
+  c.translate(x, gy);
+  c.rotate(0.08 + m * 0.22);
+  humanoid(c, 0, 0, s * 0.36, shade(r.palette[1], -0.6), lean * 0.4, 0, false);
+  c.restore();
+}
+
+/** Qahr al-Wujud (Agnus): a command radius. Scattered matter "reports to position",
+ *  hangs in Stillness, then obeys Collapse ("you are heavy now"). */
+function qahrRadius(f: PF) {
+  const { c, s, t, r, rnd } = f,
+    rk = rankLevel(f),
+    ink = inkOf(r.palette),
+    q = cyc(f);
+  const gy = s * GY;
+  const cy = -s * 0.06;
+  const R = s * (0.34 + rk * 0.02);
+  add(c);
+  c.setLineDash([s * 0.025, s * 0.018]);
+  c.strokeStyle = rgba(ink.mid, 0.85);
+  c.lineWidth = 1.8;
+  c.beginPath();
+  c.ellipse(0, gy, R, R * 0.28, 0, 0, TAU);
+  c.stroke();
+  c.setLineDash([]);
+  for (let i = 0; i < 3; i++) {
+    const k = fr(t * 0.45 + i / 3);
+    c.strokeStyle = rgba(ink.core, k * 0.55);
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.ellipse(0, gy, R * (1 - k * 0.85), R * 0.28 * (1 - k * 0.85), 0, 0, TAU);
+    c.stroke();
+  }
+  const n = 6 + rk;
+  const gather = ease(q / 0.42);
+  const fall = q > 0.8 ? ease((q - 0.8) / 0.2) : 0;
+  for (let i = 0; i < n; i++) {
+    const sx = (rnd(i * 3 + 1) - 0.5) * s * 0.9;
+    const sy = gy - rnd(i * 3 + 2) * s * 0.55;
+    const a = (i / n) * TAU - Math.PI / 2;
+    const tx = Math.cos(a) * s * 0.24;
+    const ty = cy + Math.sin(a) * s * 0.11;
+    let px = lerp(sx, tx, gather);
+    let py = lerp(sy, ty, gather);
+    py = lerp(py, gy - s * 0.01, fall);
+    px = lerp(px, px * 1.15, fall);
+    const sz = s * (0.018 + rnd(i * 3 + 3) * 0.012);
+    c.save();
+    c.translate(px, py);
+    c.rotate(lerp(rnd(i) * TAU, a, gather));
+    c.fillStyle = rgba(ink.core, 0.95);
+    c.fillRect(-sz, -sz * 0.45, sz * 2, sz * 0.9);
+    c.restore();
+    if (gather > 0.98 && fall === 0) glowDot(c, px, py, sz * 1.6, ink.mid, 0.45);
+  }
+  if (q > 0.8) {
+    const k = (q - 0.8) / 0.2;
+    c.strokeStyle = rgba(ink.core, (1 - k) * 0.8);
+    c.lineWidth = 2;
+    c.beginPath();
+    c.ellipse(0, gy, R * (0.4 + k * 0.8), R * 0.28 * (0.4 + k * 0.8), 0, 0, TAU);
+    c.stroke();
+  }
+  norm(c);
+  humanoid(c, 0, gy, s * 0.38, shade(r.palette[1], -0.4), 0, 0, true);
+}
+
 function judgement(f: PF) {
+  if (f.v === 2) return qahrRadius(f);
   const { c, s, t, r, v } = f,
     rk = rankLevel(f),
     ink = inkOf(r.palette),
@@ -2093,6 +2214,7 @@ function frost(f: PF) {
   norm(c);
 }
 function beam(f: PF) {
+  if (f.v === 6) return whiteDrive(f);
   const { c, s, t, r, v } = f,
     rk = rankLevel(f),
     ink = inkOf(r.palette),

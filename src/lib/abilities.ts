@@ -71,7 +71,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#ff2d2d",
     icon: Scale,
-    description: "Sunburst gold judgement art — apex-tier destructive authority.",
+    description:
+      "The Golden Court (Judicium Aureum): weighs absolute moral weight and delivers a verdict (guilty, dual fault or innocent); every verdict costs its holder.",
   },
   {
     key: "aether_dominion",
@@ -80,7 +81,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#9d4edd",
     icon: Orbit,
-    description: "Neon violet void command over the aether.",
+    description:
+      "Control of the layer between matter and soul: phasing, ignoring durability and void blades that leave absence, not wounds. The most powerful ability in the SCU.",
   },
   {
     key: "omni_ergon",
@@ -89,7 +91,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#7dd3fc",
     icon: Sparkles,
-    description: "Iridescent prism-shift command of all elements combined.",
+    description:
+      "Absorbs, stores, converts and releases any energy. A container that survives the elements flowing through him, not a ruler of them.",
   },
   {
     key: "wind_guardian",
@@ -383,7 +386,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#dc2626",
     icon: Drama,
-    description: "Shinobi slate and ofuda red duality.",
+    description:
+      "Command over rhythm: Order (Susume) speeds allies and units, Chaos (Kuzuse) breaks a target's timing at a heavy stamina cost.",
   },
   {
     key: "tech_genius",
@@ -440,7 +444,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "art",
     color: "#3b5bdb",
     icon: Flame,
-    description: "Soul-erasing blue flame.",
+    description:
+      "Spirit-gene blue flame that burns only corrupted souls; it does nothing to a soul that is not corrupt.",
   },
   {
     key: "white_lightning_drive",
@@ -449,7 +454,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#f8fafc",
     icon: Zap,
-    description: "Kinetic white spark drive.",
+    description:
+      "Not an element: bio-electric momentum. Every step stacks speed, and it fades the moment he stops moving.",
   },
   {
     key: "demonic_hemokinesis",
@@ -534,7 +540,8 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     group: "power",
     color: "#d4af37",
     icon: Shuffle,
-    description: "Hybrid silver-gold adaptive form.",
+    description:
+      "Adaptive shapeshifting that rewrites anatomy in real time, blending demonic resilience with draconic muscle memory: speed over force.",
   },
   {
     key: "azure_revenant_state",
@@ -1024,7 +1031,7 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
   },
   {
     key: "shishjutsu",
-    label: "Shishjutsu",
+    label: "Shishōjutsu",
     tier: "Unique",
     group: "art",
     color: "#dc2626",
@@ -1074,9 +1081,10 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     label: "Umbra Control",
     tier: "Rare",
     group: "power",
-    color: "#312e81",
+    color: "#7f1d1d",
     icon: Moon,
-    description: "Shadow-forging dominion over surrounding darkness.",
+    description:
+      "Light-eating demonic shadow. Corruption, not the dark core that belongs to Xinea.",
   },
   {
     key: "errorcore",
@@ -1104,6 +1112,86 @@ export const ABILITY_REGISTRY: AbilityDef[] = [
     color: "#d97706",
     icon: Shuffle,
     description: "Aariz Maddox's adaptive beast-trait mimicry shifting form and strike weight.",
+  },
+  // ---- From the SCU Ability Guide (tier "Unique" until staff set canon tiers) ----
+  {
+    key: "blood_resonance",
+    label: "Blood Resonance",
+    tier: "Unique",
+    group: "power",
+    color: "#0891b2",
+    icon: Droplets,
+    description:
+      "Arzuna's emotion-bound vampirism: drinking the blood of someone she is bonded with leaves a permanent echo of their gifts. It preserves memory instead of eroding it.",
+  },
+  {
+    key: "atomokinesis",
+    label: "Atomokinesis",
+    tier: "Unique",
+    group: "power",
+    color: "#e2e8f0",
+    icon: Radiation,
+    description:
+      "Direct control of atoms: reshaping, disintegrating and rebuilding matter, and converting it into energy and back (Atomic Sever, Matter Rewrite, Null Core).",
+  },
+  {
+    key: "oneirokinesis",
+    label: "Oneirokinesis",
+    tier: "Unique",
+    group: "power",
+    color: "#a78bfa",
+    icon: Moon,
+    description:
+      "Entering and controlling dreams, even while the target is awake: endless loops and a blurred line between dream and reality (Lucid Prison, Dream Collapse, Waking Mirage).",
+  },
+  {
+    key: "psychological_dominion",
+    label: "Psychological Dominion",
+    tier: "Unique",
+    group: "power",
+    color: "#be123c",
+    icon: Eye,
+    description:
+      "Amplification, not illusion: the fear, jealousy, guilt or desire already inside someone is made fatal (Fear Bloom, Jealous Crown, Possession Thread, Ego Fracture).",
+  },
+  {
+    key: "ichor",
+    label: "Ichor",
+    tier: "Unique",
+    group: "power",
+    color: "#f59e0b",
+    icon: Gauge,
+    description:
+      "A-IV serum enhanced with Alt David's technology: removes the pain limit so a human body runs at full output. Ground-denting acceleration, brute force and a body that learns.",
+  },
+  {
+    key: "curse_binding",
+    label: "Kara Curse-Binding",
+    tier: "Unique",
+    group: "art",
+    color: "#7c2d12",
+    icon: Scroll,
+    description:
+      "The Kara bloodline's art of sealing curses into weapons, buildings and everyday objects, as in the cursed blade Kara Yazgı.",
+  },
+  {
+    key: "acidic_poison",
+    label: "Acidic Poison",
+    tier: "Unique",
+    group: "power",
+    color: "#84cc16",
+    icon: Droplets,
+    description: "Creates and shapes corrosive mist, streams and vapor with deliberate control.",
+  },
+  {
+    key: "corruption_separation",
+    label: "Corruption Separation",
+    tier: "Unique",
+    group: "art",
+    color: "#93c5fd",
+    icon: Flame,
+    description:
+      "Mara's gift: separates corruption from a person and burns only that, and only when the person truly wants to be free.",
   },
 ];
 
