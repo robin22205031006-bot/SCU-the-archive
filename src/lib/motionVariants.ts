@@ -15,6 +15,7 @@ const GPU_BEZIER_FANTASY: [number, number, number, number] = [0.25, 0.1, 0.25, 1
 const GPU_BEZIER_NEXUS: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const GPU_BEZIER_STANDARD: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const GPU_BEZIER_GHIBLI: [number, number, number, number] = [0.34, 1.26, 0.64, 1];
+const GPU_BEZIER_CINEMATIC: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export const TAB_INDICATOR_SPRING: Transition = {
   type: "spring",
@@ -130,6 +131,49 @@ export const THEME_MOTION_REGISTRY: Record<MotionThemeKey, ThemeMotionSpec> = {
       initial: { opacity: 1 },
       animate: { opacity: 1, transition: { duration: 0 } },
       exit: { opacity: 1, transition: { duration: 0 } },
+    },
+  },
+
+  // Cinematic: pages fade up from black with a slow push-in; cards drift into frame
+  // and hover with a heavy, unhurried camera spring. Transform/opacity only.
+  cinematic: {
+    transition: { duration: 0.5, ease: GPU_BEZIER_CINEMATIC },
+    pageVariants: {
+      initial: { opacity: 0, scale: 1.025 },
+      animate: {
+        opacity: 1,
+        scale: 1,
+        transition: { duration: 0.7, ease: GPU_BEZIER_CINEMATIC },
+      },
+      exit: { opacity: 0, transition: { duration: 0.18, ease: GPU_BEZIER_CINEMATIC } },
+    },
+    cardVariants: {
+      initial: { opacity: 0, y: 22, scale: 0.985 },
+      animate: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: { duration: 0.6, ease: GPU_BEZIER_CINEMATIC },
+      },
+      hover: {
+        y: -4,
+        scale: 1.012,
+        transition: { type: "spring", stiffness: 190, damping: 24, mass: 0.9 },
+      },
+      tap: {
+        scale: 0.985,
+        transition: { type: "spring", stiffness: 420, damping: 30, mass: 0.6 },
+      },
+    },
+    tabIndicatorTransition: { duration: 0.42, ease: GPU_BEZIER_CINEMATIC },
+    modalVariants: {
+      initial: { opacity: 0, scale: 1.04 },
+      animate: {
+        opacity: 1,
+        scale: 1,
+        transition: { duration: 0.42, ease: GPU_BEZIER_CINEMATIC },
+      },
+      exit: { opacity: 0, transition: { duration: 0.18 } },
     },
   },
 

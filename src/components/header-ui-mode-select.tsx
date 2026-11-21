@@ -19,6 +19,7 @@ const SHORT_UI_LABELS: Record<VisualUiMode, string> = {
   nexus: "Nexus",
   minimal: "Minimal",
   manga: "Manga",
+  cinematic: "Cinematic",
 };
 
 export function HeaderUiModeSelect({
