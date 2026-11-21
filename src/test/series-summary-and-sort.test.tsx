@@ -1,5 +1,12 @@
-import { QueryClient } from "@tanstack/react-query";
-import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { SeriesSummaryChart } from "@/components/series-summary-chart";
@@ -7,7 +14,51 @@ import { SeriesPage } from "@/components/series-page";
 import type { Entity } from "@/lib/entities";
 import type { Series } from "@/lib/series";
 import { sortSeriesList, summarizeSeriesSagas } from "@/lib/series-summary";
-import { routeTree } from "@/routeTree.gen";
+import { AuthProvider } from "@/context/AuthContext";
+import { AbilityProvider } from "@/context/AbilityContext";
+import { UIStateProvider } from "@/context/UIStateContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { AppearanceProvider } from "@/hooks/use-appearance";
+import { TypographyProvider } from "@/hooks/use-typography";
+import { UiModeProvider } from "@/hooks/use-ui-mode";
+
+// Mounts SeriesPage under the app's providers without the real root route: its
+// <html>/<body> shell nests inside a <div> under jsdom, and React's hydration
+// boundary walk then loops forever when the card grid remounts.
+function createSeriesTestRouter(queryClient: QueryClient) {
+  const rootRoute = createRootRoute({
+    component: () => (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppearanceProvider>
+            <TypographyProvider>
+              <UiModeProvider>
+                <ThemeProvider>
+                  <UIStateProvider applyAttributesToHtml={false}>
+                    <AbilityProvider>
+                      <Outlet />
+                    </AbilityProvider>
+                  </UIStateProvider>
+                </ThemeProvider>
+              </UiModeProvider>
+            </TypographyProvider>
+          </AppearanceProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    ),
+  });
+  const seriesRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/series",
+    validateSearch: (q: Record<string, unknown>): { s?: string } =>
+      typeof q["s"] === "string" ? { s: q["s"] } : {},
+    component: SeriesPage,
+  });
+  return createRouter({
+    routeTree: rootRoute.addChildren([seriesRoute]),
+    history: createMemoryHistory({ initialEntries: ["/series"] }),
+  });
+}
 
 const MOCK_SERIES: Series[] = [
   {
@@ -281,11 +332,7 @@ describe("SeriesSummaryChart & SeriesPage sort/chart UI", () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const router = createRouter({
-      routeTree,
-      history: createMemoryHistory({ initialEntries: ["/series"] }),
-      context: { queryClient },
-    });
+    const router = createSeriesTestRouter(queryClient);
     await act(async () => {
       await router.load();
     });
@@ -366,11 +413,7 @@ describe("SeriesSummaryChart & SeriesPage sort/chart UI", () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const router = createRouter({
-      routeTree,
-      history: createMemoryHistory({ initialEntries: ["/series"] }),
-      context: { queryClient },
-    });
+    const router = createSeriesTestRouter(queryClient);
     await act(async () => {
       await router.load();
     });

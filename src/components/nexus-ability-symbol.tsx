@@ -6,7 +6,7 @@ import dominion from "@/assets/nexus-aether-dominion.webp";
 import omni from "@/assets/nexus-omni-ergon.webp";
 import combatCrests from "@/assets/nexus-combat-crests.webp";
 import techniqueCrests from "@/assets/nexus-technique-crests.webp";
-import powerCrests from "@/assets/nexus-power-crests.png";
+import powerCrests from "@/assets/nexus-power-crests.webp";
 import { nexusDistinctTile } from "@/lib/nexus-distinct-art";
 import { NEXUS_ABILITY_ART, nexusAbilityArt } from "@/lib/nexus-ability-art";
 import { NexusSign } from "@/components/nexus-sign";

@@ -44,6 +44,7 @@
 - Ability in Action shares fighter-rig and elapsed-time camera smoothing; character-combat reference sequences stay separate from historical STORY_FIGHTS to avoid invented lore. Dedicated character-combat-fx layers around the rig; bundled environments and a 24-fps scrubber serve all combat scenes.
 - Series title styles live in app_settings `series_styles`; the shared Series page hosts staff series and season-roster editing for all styles (Nexus-only title FX fall back to static glow).
 - AI Box, series Q&A and story drafting use AI Gateway in authenticated server functions; Gemini only for PDF ingestion/embeddings (keys unreliable).
+- AI Box `askLore` (Gemini server-side, as declared in metadata.json for AI Studio) answers only verified sign-ins; signed-out calls get a sign-in reply with no model call, because the server function is reachable without the app UI.
 - adminLoreSync ALIAS_MAP maps real names, codenames and merged duplicates to the in-story card name (tested), so syncs never recreate merged cards.
 - Archive sync, journey timeline and family-tree rules: see src/lib/AGENTS.md.
 - Atlas map rules: see src/lib/AGENTS.md.
