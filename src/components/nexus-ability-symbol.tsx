@@ -97,10 +97,20 @@ export function NexusAbilitySymbol({
       ? elementalAtlas
       : skillAtlas;
   const emblemStage = resolvedRank ?? 0;
-  const stageGlow =
+  // Rank glow is a gradient halo rather than a CSS drop-shadow: filters repaint the
+  // whole emblem every animated frame, and keyframes on the svg used to override it.
+  // Stable per-emblem phase so a roster of emblems never sweeps in lockstep.
+  let phaseSeed = 0;
+  for (const ch of name) phaseSeed = (phaseSeed * 31 + ch.charCodeAt(0)) % 997;
+  const sweepDelay = `-${((phaseSeed % 70) / 10).toFixed(1)}s`;
+  // Arts that rotate or sway (see styles.css) carry a square tile whose corners
+  // would swing outside the round emblem, so they also get a circular clip.
+  const turningArt = ["wind", "aether", "water", "spirit"].includes(art);
+  const rankHaloRadius =
     rankMeta && rankMeta.glowRadiusPx > 0
-      ? `drop-shadow(0 0 ${Math.round(rankMeta.glowRadiusPx * 0.45)}px ${rankMeta.ringColor})`
-      : undefined;
+      ? // Stays inside the 100-unit viewBox so the rank-4/5 round clip never cuts it.
+        Math.min(50, 44 + rankMeta.glowRadiusPx * 0.34)
+      : 0;
 
   return (
     <NexusSign
@@ -113,7 +123,6 @@ export function NexusAbilitySymbol({
         data-ability-art={art}
         data-ability-rank={resolvedRank}
         data-emblem-rank-stage={emblemStage || undefined}
-        style={stageGlow ? { filter: stageGlow } : undefined}
         aria-label={
           rankMeta ? `${label ?? def.label} (${rankMeta.label})` : label ? label : undefined
         }
@@ -127,6 +136,25 @@ export function NexusAbilitySymbol({
           <clipPath id={`${id}-tile`}>
             <rect x="6" y="6" width="88" height="88" />
           </clipPath>
+          <clipPath id={`${id}-turn`}>
+            <circle cx="50" cy="50" r="44" />
+          </clipPath>
+          <radialGradient id={`${id}-halo`}>
+            <stop offset="0.35" className="nexus-emblem-halo-stop" stopOpacity="0.55" />
+            <stop offset="1" className="nexus-emblem-halo-stop" stopOpacity="0" />
+          </radialGradient>
+          {rankHaloRadius > 0 && rankMeta && (
+            <radialGradient id={`${id}-rank-halo`}>
+              <stop offset="0.72" stopColor={rankMeta.ringColor} stopOpacity="0" />
+              <stop offset="0.86" stopColor={rankMeta.ringColor} stopOpacity="0.5" />
+              <stop offset="1" stopColor={rankMeta.ringColor} stopOpacity="0" />
+            </radialGradient>
+          )}
+          <linearGradient id={`${id}-sweep`} x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.55" />
+            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          </linearGradient>
           <filter id={`${id}-tint`} colorInterpolationFilters="sRGB">
             <feColorMatrix
               type="matrix"
@@ -134,7 +162,20 @@ export function NexusAbilitySymbol({
             />
           </filter>
         </defs>
-        <g filter={color ? `url(#${id}-tint)` : undefined}>
+        {rankHaloRadius > 0 && (
+          <circle
+            className="nexus-emblem-rank-halo"
+            cx="50"
+            cy="50"
+            r={rankHaloRadius}
+            fill={`url(#${id}-rank-halo)`}
+          />
+        )}
+        <circle className="nexus-emblem-halo" cx="50" cy="50" r="50" fill={`url(#${id}-halo)`} />
+        <g
+          filter={color ? `url(#${id}-tint)` : undefined}
+          clipPath={turningArt ? `url(#${id}-turn)` : undefined}
+        >
           <g clipPath={`url(#${id}-tile)`} className="nexus-emblem-art">
             {special ? (
               <image href={special} x="6" y="6" width="88" height="88" />
@@ -156,6 +197,18 @@ export function NexusAbilitySymbol({
           />
           <circle className="nexus-emblem-particle" cx="37" cy="57" r="1.6" />
           <circle className="nexus-emblem-particle" cx="63" cy="69" r="1.2" />
+        </g>
+        <g clipPath={`url(#${id})`} className="nexus-emblem-sweep-clip">
+          {/* Rests off-emblem, so a disabled animation leaves no frozen band. */}
+          <rect
+            className="nexus-emblem-sweep"
+            x="-46"
+            y="-10"
+            width="26"
+            height="120"
+            fill={`url(#${id}-sweep)`}
+            style={{ animationDelay: sweepDelay }}
+          />
         </g>
         <path
           className="nexus-emblem-glint"

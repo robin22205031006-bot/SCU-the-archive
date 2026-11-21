@@ -1468,11 +1468,9 @@ html[data-spoil-archive] [data-spoiler="archive"] .nexus-sign * {
   0%,
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 1px currentColor);
   }
   50% {
-    transform: scale(1.06);
-    filter: drop-shadow(0 0 4px currentColor);
+    transform: scale(1.045);
   }
 }
 @keyframes nexus-sign-ink {
@@ -1501,11 +1499,9 @@ html[data-spoil-archive] [data-spoiler="archive"] .nexus-sign * {
   0%,
   100% {
     transform: scale(1) skewX(-2deg);
-    filter: drop-shadow(0 -1px 2px currentColor);
   }
   35% {
     transform: scale(0.97, 1.1) skewX(3deg);
-    filter: drop-shadow(0 -2px 4px currentColor);
   }
   70% {
     transform: scale(1.04, 0.97) skewX(-3deg);
@@ -1524,26 +1520,27 @@ html[data-spoil-archive] [data-spoiler="archive"] .nexus-sign * {
 }
 @keyframes nexus-sign-charge {
   0%,
-  100%,
-  60% {
+  60%,
+  100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 1px currentColor);
   }
-  45%,
-  52% {
-    transform: scale(1.08);
-    filter: drop-shadow(0 0 5px currentColor);
+  42% {
+    transform: scale(0.97);
+  }
+  48% {
+    transform: scale(1.09);
+  }
+  54% {
+    transform: scale(1.02);
   }
 }
 @keyframes nexus-sign-seal {
   0%,
   100% {
     transform: translateY(0);
-    filter: drop-shadow(0 0 1px currentColor);
   }
   50% {
     transform: translateY(-1px);
-    filter: drop-shadow(0 0 4px currentColor);
   }
 }
 @keyframes nexus-sign-mark {
@@ -1761,6 +1758,207 @@ html[data-ui="nexus"][data-nexus-anime="on"] :is(h1, h2, h3) {
 .nexus-sign[data-sign-static="on"] .nexus-emblem-glint,
 .nexus-sign[data-sign-static="on"]::after {
   display: none;
+}
+
+/* Nexus emblem energy: gradient halos, a holographic sweep and a spring hover.
+   Only transform and opacity animate, so emblems stay on the compositor instead
+   of repainting a drop-shadow filter every frame. Existing gates still apply. */
+.nexus-sign {
+  contain: layout style;
+}
+.nexus-emblem-halo,
+.nexus-emblem-rank-halo,
+.nexus-emblem-sweep {
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+}
+.nexus-emblem-halo-stop {
+  stop-color: var(--emblem-energy, currentColor);
+}
+.nexus-emblem-halo {
+  opacity: 0.5;
+  animation: nexus-emblem-halo 3.6s ease-in-out infinite;
+}
+.nexus-emblem-rank-halo {
+  opacity: 0.7;
+  animation: nexus-emblem-rank-halo 5.2s ease-in-out infinite;
+}
+[data-emblem-rank-stage="5"] > .nexus-emblem-rank-halo {
+  animation-duration: 3.4s;
+}
+.nexus-emblem-sweep {
+  animation: nexus-emblem-sweep 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+@keyframes nexus-emblem-halo {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.05);
+  }
+}
+@keyframes nexus-emblem-rank-halo {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+@keyframes nexus-emblem-sweep {
+  0% {
+    transform: translateX(0) skewX(-18deg);
+    opacity: 0;
+  }
+  4% {
+    opacity: 1;
+  }
+  22% {
+    transform: translateX(170px) skewX(-18deg);
+    opacity: 1;
+  }
+  23%,
+  100% {
+    transform: translateX(170px) skewX(-18deg);
+    opacity: 0;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .nexus-sign {
+    transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  :is(a, button, [role="button"], .nexus-record, .nexus-command):hover .nexus-sign,
+  .nexus-sign:hover {
+    transform: scale(1.08);
+  }
+  :is(a, button, [role="button"], .nexus-record, .nexus-command):hover .nexus-emblem-halo,
+  .nexus-sign:hover .nexus-emblem-halo {
+    animation-duration: 1.2s;
+  }
+}
+.nexus-sign[data-sign-motion="off"]
+  :is(.nexus-emblem-halo, .nexus-emblem-rank-halo, .nexus-emblem-sweep) {
+  animation-play-state: paused !important;
+}
+html[data-nexus-motion="off"] .nexus-sign,
+html[data-ui="minimal"] .nexus-sign,
+.nexus-sign[data-sign-static="on"] {
+  transition: none;
+  transform: none !important;
+}
+.nexus-sign[data-sign-static="on"] .nexus-emblem-sweep-clip {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nexus-sign {
+    transition: none;
+    transform: none !important;
+  }
+}
+
+/* Classic signature: an aura-tinted spotlight and rim light follow the pointer
+   across archive cards (position comes from useCardSpotlight). Hover lighting
+   only; Classic is the sole style that shows it. */
+.scu-spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(
+    260px circle at var(--spot-x, 50%) var(--spot-y, 0%),
+    color-mix(in oklab, var(--scu-aura, var(--accent)) 26%, transparent),
+    transparent 65%
+  );
+}
+.scu-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(
+    180px circle at var(--spot-x, 50%) var(--spot-y, 0%),
+    color-mix(in oklab, var(--scu-aura, var(--accent)) 90%, white),
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+html:not([data-ui]) .glass:hover > .scu-spotlight,
+html:not([data-ui]) .glass:focus-within > .scu-spotlight {
+  opacity: 1;
+}
+html[data-ui] .scu-spotlight {
+  display: none;
+}
+
+/* Manga signature: ink focus lines snap in around a panel on hover, drawn in
+   stepped cel frames. The centre is masked clear so panel text stays readable. */
+html[data-ui="manga"] .manga-panel-hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    currentColor 0deg 1.1deg,
+    transparent 1.1deg 6.5deg
+  );
+  -webkit-mask: radial-gradient(closest-side, transparent 64%, #000 100%);
+  mask: radial-gradient(closest-side, transparent 64%, #000 100%);
+  transform: scale(1.3);
+}
+html[data-ui="manga"] .manga-panel-hover:is(:hover, :focus-within)::after {
+  animation: manga-focus-lines 0.36s steps(3, end) forwards;
+}
+html[data-ui="manga"]:not([data-genre-theme]):not([data-manga-subtheme]) .manga-panel-hover {
+  transition:
+    transform 0.22s steps(3, end),
+    box-shadow 0.22s steps(3, end);
+}
+html[data-ui="manga"]:not([data-genre-theme]):not([data-manga-subtheme])
+  .manga-panel-hover:is(:hover, :focus-within) {
+  transform: translate(-2px, -3px) rotate(-0.4deg);
+  box-shadow: 6px 6px 0 currentColor;
+}
+@keyframes manga-focus-lines {
+  0% {
+    opacity: 0;
+    transform: scale(1.3) rotate(0deg);
+  }
+  100% {
+    opacity: 0.16;
+    transform: scale(1) rotate(1.5deg);
+  }
+}
+html[data-motion="off"] .manga-panel-hover::after,
+html[data-primary-system="minimal"] .manga-panel-hover::after {
+  animation: none !important;
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui="manga"] .manga-panel-hover::after {
+    animation: none !important;
+    display: none;
+  }
+  html[data-ui="manga"] .manga-panel-hover {
+    transition: none;
+  }
 }
 
 /* Reference-inspired sliding HUD; color follows the active style/theme. */
@@ -6456,14 +6654,50 @@ html[data-motion="off"] .scu-tactile:active {
 }
 .nexus-dossier .rounded-2xl:hover::before, .nexus-dossier .rounded-xl:hover::before { opacity: 0.8; transform: none; }
 
-/* Rank 4–5 emblem metallic sheen */
-.nexus-ability-symbol:has(svg[data-ability-rank="4"]), .nexus-ability-symbol:has(svg[data-ability-rank="5"]) { position: relative; overflow: hidden; }
-.nexus-ability-symbol:has(svg[data-ability-rank="4"])::after, .nexus-ability-symbol:has(svg[data-ability-rank="5"])::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-  background: linear-gradient(115deg, transparent 40%, color-mix(in oklab, var(--foreground) 45%, transparent) 50%, transparent 60%);
-  background-size: 250% 100%; animation: nx-sheen 3.6s ease-in-out infinite; mix-blend-mode: screen;
+/* Rank 4–5 emblem metallic sheen. Round (the wrapper has no radius to inherit, so
+   the band used to sweep a grey square) and moved by transform, not by repainting
+   background-position every frame. */
+.nexus-ability-symbol:has(svg[data-ability-rank="4"]),
+.nexus-ability-symbol:has(svg[data-ability-rank="5"]) {
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
 }
-@keyframes nx-sheen { 0% { background-position: 150% 0; } 60%,100% { background-position: -100% 0; } }
+.nexus-ability-symbol:has(svg[data-ability-rank="4"])::after,
+.nexus-ability-symbol:has(svg[data-ability-rank="5"])::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -100%;
+  width: 300%;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 44%,
+    color-mix(in oklab, var(--foreground) 45%, transparent) 50%,
+    transparent 56%
+  );
+  animation: nx-sheen 3.6s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+@keyframes nx-sheen {
+  0% {
+    transform: translateX(-27%);
+  }
+  60%,
+  100% {
+    transform: translateX(27%);
+  }
+}
+.nexus-sign[data-sign-motion="off"]::after {
+  animation-play-state: paused !important;
+}
+html[data-nexus-motion="off"] .nexus-ability-symbol::after,
+html[data-ui="minimal"] .nexus-ability-symbol::after {
+  animation: none !important;
+  display: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .nx-status-field, .nexus-ability-symbol::after { animation: none !important; }
 }

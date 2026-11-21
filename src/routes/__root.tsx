@@ -32,6 +32,7 @@ import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
+import { useCardSpotlight } from "@/hooks/use-card-spotlight";
 import { useRef } from "react";
 
 import appCss from "../styles.css?url";
@@ -219,6 +220,7 @@ function RootContent({ offline }: { offline: boolean }) {
   });
   const { isMinimal, motionActive, spec } = useAppMotion();
   const pageContainerRef = useRef<HTMLDivElement>(null);
+  useCardSpotlight(mode === "classic" && motionActive);
   const outletContainerRef = useRef<HTMLDivElement>(null);
   const pageSlug = pathname.slice(1) || "home";
   const showNexusRail =

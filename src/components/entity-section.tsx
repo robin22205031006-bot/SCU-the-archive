@@ -2611,6 +2611,7 @@ const EntityGridCard = memo(function EntityGridCard({
   } as CSSProperties;
   const inner = (
     <>
+      {motionActive && <span aria-hidden="true" className="scu-spotlight" />}
       <AbilityCardCanvas
         abilities={e.abilities}
         theme={e.card_theme}
