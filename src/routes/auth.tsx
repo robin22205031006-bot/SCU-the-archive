@@ -106,6 +106,10 @@ function AuthPage() {
   } | null>(null);
 
   const auth = useOptionalAuth();
+  // The OAuth callback effect must run once per payload; reading auth through a ref
+  // keeps it current without re-running (and cancelling) the sign-in flow mid-way.
+  const authRef = useRef(auth);
+  authRef.current = auth;
   const { data: queryUser } = useSession();
   const signedInUser = auth?.user ?? queryUser ?? null;
 
@@ -174,7 +178,7 @@ function AuthPage() {
         try {
           const { data: userData } = await supabase.auth.getUser();
           syncSessionCache(queryClient, userData.user ?? null);
-          await auth?.refreshAuth();
+          await authRef.current?.refreshAuth();
           await queryClient.invalidateQueries({ queryKey: ["session"] });
           const destination = readStoredOAuthDestination(defaultDestination);
           window.location.assign(destination);
