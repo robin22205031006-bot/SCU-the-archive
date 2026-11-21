@@ -107,6 +107,14 @@ import {
   resolveDossierMeta,
 } from "@/lib/nexus-season";
 import { projectSeasonRoster } from "@/lib/nexus-roster";
+import { MinimalCastView } from "@/components/minimal-cast-view";
+import {
+  CAST_GROUPS,
+  castMemberFor,
+  filterByCastGroup,
+  sortByStoryOrder,
+  type CastGroup,
+} from "@/lib/scu-cast";
 import { seriesSeasonNames } from "@/lib/series-seasons";
 import { NexusRosterEditor } from "@/components/nexus-roster-editor";
 import { SeasonEditor } from "@/components/nexus-dossier";
@@ -1678,6 +1686,59 @@ function ShowcaseView({
   );
 }
 
+/** Search also covers the cast chart: real name, title, bloodline and abilities. */
+function matchesCast(name: string, q: string): boolean {
+  const term = q.trim().toLowerCase();
+  if (!term) return true;
+  const m = castMemberFor(name);
+  if (!m) return false;
+  return [m.realName, m.title, m.bloodline, m.abilities].some((v) =>
+    v.toLowerCase().includes(term),
+  );
+}
+
+/** Story-order group filter; each UI style restyles .cast-chip in styles.css. */
+function CastGroupChips({
+  value,
+  onChange,
+  className = "",
+}: {
+  value: CastGroup | "all";
+  onChange: (g: CastGroup | "all") => void;
+  className?: string;
+}) {
+  return (
+    <div
+      data-no-swipe
+      role="group"
+      aria-label="Filter by group"
+      className={`cast-chips ${className}`}
+    >
+      <button
+        type="button"
+        className="cast-chip"
+        aria-pressed={value === "all"}
+        onClick={() => onChange("all")}
+      >
+        Everyone
+      </button>
+      {CAST_GROUPS.map((g) => (
+        <button
+          key={g.id}
+          type="button"
+          className="cast-chip"
+          aria-pressed={value === g.id}
+          onClick={() => onChange(g.id)}
+          style={{ "--g": g.dark } as CSSProperties}
+        >
+          <span className="cast-chip-dot" aria-hidden="true" />
+          {g.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function EntitySection({
   kinds,
   title,
@@ -1731,6 +1792,8 @@ export function EntitySection({
   const [statusFilter, setStatusFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("all");
+  // SCU Cast grouping (Sentinels, Redline, …) shared by every UI style.
+  const [castGroup, setCastGroup] = useState<CastGroup | "all">("all");
   const [rosterSeriesId, setRosterSeriesId] = useState(initialSeries);
   const [rosterSeason, setRosterSeason] = useState(Math.max(1, initialSeason || 1));
   const [viewMode, setViewMode] = useState<"grid" | "list" | "showcase">(() => {
@@ -1807,7 +1870,7 @@ export function EntitySection({
   }, [data, rosterSeriesId, rosterSeason, view, seriesCharRows]);
 
   const list = useMemo(() => {
-    return projectedBase.filter((e) => {
+    const filtered = projectedBase.filter((e) => {
       if (cat !== "all" && e.category !== cat) return false;
       const meta =
         e.kind === "character"
@@ -1819,9 +1882,23 @@ export function EntitySection({
       if (statusFilter !== "all" && effStatus !== statusFilter.toLowerCase()) return false;
       if (roleFilter !== "all" && effRole !== roleFilter.toLowerCase()) return false;
       if (genderFilter !== "all" && effGender !== genderFilter.toLowerCase()) return false;
-      return matchesSearch(e, q);
+      return matchesSearch(e, q) || matchesCast(e.name, q);
     });
-  }, [projectedBase, cat, statusFilter, roleFilter, genderFilter, q, rosterSeriesId, rosterSeason]);
+    if (view !== "characters") return filtered;
+    // Characters follow the cast chart's story order in every style.
+    return sortByStoryOrder(filterByCastGroup(filtered, castGroup));
+  }, [
+    projectedBase,
+    cat,
+    statusFilter,
+    roleFilter,
+    genderFilter,
+    q,
+    rosterSeriesId,
+    rosterSeason,
+    view,
+    castGroup,
+  ]);
   const openedInList = (data ?? []).find((e) => e.id === open?.id);
   // Load full entity details (description, sketches, theme audio) lazily when opened.
   const { data: openedFetched } = useQuery({
@@ -1868,6 +1945,7 @@ export function EntitySection({
     statusFilter !== "all" ||
     roleFilter !== "all" ||
     genderFilter !== "all" ||
+    castGroup !== "all" ||
     !!rosterSeriesId ||
     q.trim().length > 0;
   const countWord = total === 1 ? title.toLowerCase().replace(/s$/, "") : title.toLowerCase();
@@ -2054,8 +2132,13 @@ export function EntitySection({
             loading={isLoading}
             isAdmin={isAdmin}
             breadcrumbSlot={
-              showEntityBreadcrumb ? (
-                <LoreBreadcrumb segments={entityBreadcrumbSegments} />
+              showEntityBreadcrumb || view === "characters" ? (
+                <>
+                  {showEntityBreadcrumb && <LoreBreadcrumb segments={entityBreadcrumbSegments} />}
+                  {view === "characters" && (
+                    <CastGroupChips value={castGroup} onChange={setCastGroup} className="my-3" />
+                  )}
+                </>
               ) : undefined
             }
             onSelect={(e) => {
@@ -2173,6 +2256,37 @@ export function EntitySection({
             }
           />
         </div>
+      ) : uiStyle === "minimal" && view === "characters" ? (
+        <main className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-5" style={sectionStyle}>
+          <MinimalCastView
+            list={list}
+            total={total}
+            query={q}
+            onQuery={setQ}
+            group={castGroup}
+            onGroup={setCastGroup}
+            loading={isLoading}
+            onOpen={(e) => void nav({ to: "/character", search: { e: e.id } })}
+            toolbar={
+              <>
+                <SpoilerToggle scope="characters" />
+                <div
+                  role="group"
+                  aria-label="Interface style"
+                  className="inline-flex rounded-full border border-border p-0.5 text-[11px]"
+                >
+                  <UiStylePicker />
+                </div>
+                {isAdmin && (
+                  <Button onClick={() => setEditing(null)} size="sm" variant="outline">
+                    <Plus className="h-4 w-4" />
+                    New
+                  </Button>
+                )}
+              </>
+            }
+          />
+        </main>
       ) : (
         <main
           className={`mx-auto ${nexus ? "max-w-7xl" : "max-w-5xl"} px-4 pb-24 pt-28 sm:px-5`}
@@ -2220,12 +2334,15 @@ export function EntitySection({
             isLoading ? (
               <EntityGridSkeleton />
             ) : view === "characters" ? (
-              <NexusView
-                data={data ?? []}
-                categories={allCategories}
-                isAdmin={isAdmin}
-                onEdit={(e) => setEditing(e)}
-              />
+              <>
+                <CastGroupChips value={castGroup} onChange={setCastGroup} className="mb-4" />
+                <NexusView
+                  data={sortByStoryOrder(filterByCastGroup(data ?? [], castGroup))}
+                  categories={allCategories}
+                  isAdmin={isAdmin}
+                  onEdit={(e) => setEditing(e)}
+                />
+              </>
             ) : (
               <div data-spoiler="archive">
                 <NexusExplorer
@@ -2406,6 +2523,9 @@ export function EntitySection({
                 </div>
               )}
 
+              {view === "characters" && (
+                <CastGroupChips value={castGroup} onChange={setCastGroup} className="mb-3" />
+              )}
               <div data-no-swipe className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
                 {["all", ...allCategories].map((k) => (
                   <button

@@ -124,7 +124,22 @@ async function executeSyncPlan(sb: SupabaseClient<Database>, plan: SyncPlan, fil
     }
   }
 
+  // Skip notes an entity already has, so re-running a sync never duplicates lore.
+  const noteEntityIds = [...new Set(plan.loreNoteInserts.map((n) => n.entity_id))];
+  const existingNotes = new Set<string>();
+  if (noteEntityIds.length) {
+    const rows = checked(
+      await sb.from("lore_notes").select("entity_id, text").in("entity_id", noteEntityIds),
+      "existing lore notes",
+    );
+    for (const r of rows ?? []) existingNotes.add(`${r.entity_id}::${r.text.trim()}`);
+  }
+  let notesWritten = 0;
   for (const note of plan.loreNoteInserts) {
+    const key = `${note.entity_id}::${note.text.trim()}`;
+    if (existingNotes.has(key)) continue;
+    existingNotes.add(key);
+    notesWritten += 1;
     checked(await sb.from("lore_notes").insert(note), `lore note for entity ${note.entity_id}`);
   }
 
@@ -160,7 +175,7 @@ async function executeSyncPlan(sb: SupabaseClient<Database>, plan: SyncPlan, fil
 
   const summary = {
     created: plan.entityInserts.length,
-    notes: plan.loreNoteInserts.length,
+    notes: notesWritten,
     updated: updatedIds.size,
     events: plan.timelineInserts.length,
     warnings: plan.warnings,

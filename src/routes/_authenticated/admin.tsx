@@ -106,17 +106,14 @@ function Admin() {
     qc.invalidateQueries({ queryKey: ["roles"] });
   };
 
-  const syncExport = async () => {
+  // Validated server-side by syncLoreExport; the client only shapes the batch.
+  type SyncPayload = { entities: unknown[]; updates: unknown[]; events: unknown[] };
+  const runArchiveSync = async (label: string, load: () => Promise<SyncPayload>) => {
     setSyncing(true);
     try {
-      const [entities, updates, events] = await Promise.all([
-        import("../../../public/lore-export/entities.json").then((m) => m.default),
-        import("../../../public/lore-export/updates.json").then((m) => m.default),
-        import("../../../public/lore-export/timeline_events.json").then((m) => m.default),
-      ]);
-      const result = await runSync({ data: { entities, updates, events } });
+      const result = await runSync({ data: await load() });
       toast.success(
-        `Lore sync complete: ${result.created} created, ${result.notes} notes, ${result.updated} updated, ${result.events} events.`,
+        `${label} complete: ${result.created} created, ${result.notes} notes, ${result.updated} updated, ${result.events} events.`,
       );
       const warns = (result.warnings ?? []) as string[];
       if (warns.length) {
@@ -131,11 +128,27 @@ function Admin() {
       qc.invalidateQueries({ queryKey: ["admin-conflicts"] });
     } catch (err) {
       console.error("SYNC ERROR DETAILS:", err);
-      toast.error(err instanceof Error ? err.message : "The lore sync failed.");
+      toast.error(err instanceof Error ? err.message : `${label} failed.`);
     } finally {
       setSyncing(false);
     }
   };
+  const syncExport = () =>
+    runArchiveSync("Lore sync", async () => {
+      const [entities, updates, events] = await Promise.all([
+        import("../../../public/lore-export/entities.json").then((m) => m.default),
+        import("../../../public/lore-export/updates.json").then((m) => m.default),
+        import("../../../public/lore-export/timeline_events.json").then((m) => m.default),
+      ]);
+      return { entities, updates, events } as SyncPayload;
+    });
+  // Merges the SCU Cast chart into the archive: existing cards (matched by name or
+  // alias) gain notes and their title, missing characters get new cards.
+  const syncCast = () =>
+    runArchiveSync("Cast sync", async () => {
+      const { castSyncEntities } = await import("@/lib/scu-cast");
+      return { entities: castSyncEntities(), updates: [], events: [] } as SyncPayload;
+    });
   const banned = new Set((data?.bans ?? []).map((b) => b.user_id));
   const emailOf = (id: string | null) => data?.profiles.find((p) => p.id === id)?.email ?? "—";
 
@@ -234,6 +247,15 @@ function Admin() {
               onClick={() => void syncExport()}
             >
               {syncing ? "Syncing…" : "Sync lore export"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={syncing}
+              onClick={() => void syncCast()}
+              title="Adds missing SCU Cast characters and merges the rest into their existing cards"
+            >
+              {syncing ? "Syncing…" : "Sync SCU Cast"}
             </Button>
           </div>
         )}
