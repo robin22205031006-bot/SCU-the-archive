@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import entities from "../../public/lore-export/entities.json";
 import { planLoreSync, type ArchiveEntity } from "@/lib/adminLoreSync";
@@ -69,5 +70,12 @@ describe("SCU Cast", () => {
     // 85 chart characters already have cards (by name or alias); the other 46 are new.
     expect(plan.entityInserts).toHaveLength(46);
     expect(plan.entityInserts.length + 85).toBe(SCU_CAST.length);
+  });
+
+  it("ships every chart character in the one-time archive migration", () => {
+    const sql = fs.readFileSync("drizzle/migrations/0014_seed_scu_cast.sql", "utf8");
+    for (const m of SCU_CAST) expect(sql).toContain(`('${m.name.replace(/'/g, "''")}', `);
+    expect(sql).toContain("NOT ('alias' = ANY");
+    expect(sql).not.toMatch(/\b(DELETE FROM public\.entities|DROP TABLE|TRUNCATE)\b/);
   });
 });
