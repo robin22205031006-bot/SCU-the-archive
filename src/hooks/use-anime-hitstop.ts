@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isAnimeMotionAllowed } from "@/lib/anime-animations";
+import { isAnimeMotionAllowed } from "@/lib/anime-motion-gate";
 
 export interface AnimeActionCutDetail {
   color?: string | undefined;

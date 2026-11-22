@@ -4,18 +4,9 @@ export interface AnimeAnimationHandle {
   cancel: () => void;
 }
 
-/**
- * Checks whether Anime.js transitions and rune animations may run.
- * Respects Minimal mode, FX:OFF (`data-motion="off"`), and OS reduced motion.
- */
-export function isAnimeMotionAllowed(): boolean {
-  if (typeof window === "undefined" || typeof document === "undefined") return false;
-  const d = document.documentElement.dataset;
-  if (d["primarySystem"] === "minimal" || d["uiMode"] === "minimal") return false;
-  if (d["motion"] === "off") return false;
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return false;
-  return true;
-}
+import { isAnimeMotionAllowed } from "./anime-motion-gate";
+
+export { isAnimeMotionAllowed };
 
 function setGpuHint(nodes: HTMLElement[], active: boolean): void {
   for (const el of nodes) {

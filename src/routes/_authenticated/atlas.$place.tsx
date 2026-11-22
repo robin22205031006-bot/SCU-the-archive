@@ -5,9 +5,12 @@ import { MotionPage, MotionSection } from "@/components/app-motion";
 import { LoreBreadcrumb } from "@/components/lore-breadcrumb";
 
 export const Route = createFileRoute("/_authenticated/atlas/$place")({
-  loader: ({ params }) => {
+  // The atlas dataset is large: the loader imports it on demand (the page component's
+  // static import is code-split with the component), keeping it out of startup.
+  loader: async ({ params }) => {
+    const { ATLAS: atlas } = await import("@/lib/nexus-atlas");
     const target = params.place === "istanbul" ? "istanbul-1417" : params.place;
-    const loc = ATLAS.find((l) => l.id === target);
+    const loc = atlas.find((l) => l.id === target);
     if (!loc) throw notFound();
     return { id: loc.id, name: loc.name, epithet: loc.epithet };
   },

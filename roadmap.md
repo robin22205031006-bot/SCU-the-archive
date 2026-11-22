@@ -13,12 +13,11 @@ Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
   (a route file that exports anything besides Route is never split). Startup JS 127 files / 2.48 MB
   -> 52 files / 1.39 MB. Sign-in first paint 5.2 s -> 3.1 s, largest paint 5.7 s -> 3.5 s;
   Home 4.9 s -> 3.1 s. Tests 528/528, build OK.
-- [ ] Speed 1b (next, all verified by the audit, no visual change):
-  - move isAnimeMotionAllowed into src/lib/anime-motion-gate.ts (re-export from anime-animations.ts);
-    point use-anime-hitstop.ts and tier-hitstop.ts at it, so animejs (38 kB) leaves startup;
-  - atlas.$place.tsx loader imports the whole ATLAS dataset: load it with a dynamic import in the loader;
-  - arsenal route loader pulls arsenal-art: same dynamic-import fix;
-  - AbilityContext pulls ability-fx + canvas-confetti: lazy-load confetti where it fires.
+- [x] Speed 1b: isAnimeMotionAllowed moved to src/lib/anime-motion-gate.ts (animejs left startup);
+  atlas.$place loader imports ATLAS on demand. Startup JS now ~1.36 MB. Tests 528/528.
+  Tried and reverted: lazy arsenal fallback in lib/artifacts.ts changed when the roster editor
+  receives artifacts and broke status-history.test.tsx (real timing change, 29 kB not worth it).
+  Skipped: lazy canvas-confetti (triggerLegendaryRankUpConfetti returns synchronously; tested).
   - Re-run the four failed investigators (runtime-assets, visual-completeness, admin-customization,
     admin-welcome): workflow script scu-app-audit-understand, they stopped on a usage limit.
 - [ ] Speed 2: runtime work (pause hidden canvases, image formats, query defaults).

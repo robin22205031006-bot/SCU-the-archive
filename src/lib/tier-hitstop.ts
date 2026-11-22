@@ -1,5 +1,5 @@
 import { triggerAnimeActionCut } from "@/hooks/use-anime-hitstop";
-import { isAnimeMotionAllowed } from "@/lib/anime-animations";
+import { isAnimeMotionAllowed } from "@/lib/anime-motion-gate";
 
 let tierHitstopTimer = 0;
 
