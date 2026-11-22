@@ -2210,6 +2210,321 @@ html[data-motion="off"][data-ui="cinematic"] :is(.glass, [data-card]) img {
   }
 }
 
+/* Minimal: SCU Cast layout (src/components/minimal-cast-view.tsx). Paper and ink
+   tokens follow the app's light/dark setting; no motion, blur or glow. */
+.mcast {
+  --mc-bg: #eeebe4;
+  --mc-surface: #fbfaf6;
+  --mc-ink: #211f1b;
+  --mc-muted: #6b655b;
+  --mc-line: #d8d1c4;
+  --mc-chip: #f4f1ea;
+  --mc-accent: #1f8f6a;
+  --mc-sentinels: #1f8f6a;
+  --mc-redline: #b3202f;
+  --mc-legends: #b07818;
+  --mc-villains: #6e2a4f;
+  --mc-kara: #5a3f8c;
+  --mc-beasts: #3e7a3e;
+  --mc-alt: #4e6a8c;
+  --mc-others: #6b655b;
+  color: var(--mc-ink);
+  background: var(--mc-bg);
+  font-family: "Manrope", system-ui, sans-serif;
+  line-height: 1.5;
+  margin: 0 -16px;
+  padding: 0 16px 48px;
+  border-radius: 20px;
+}
+html.dark .mcast {
+  --mc-bg: #121317;
+  --mc-surface: #1b1d23;
+  --mc-ink: #ece8df;
+  --mc-muted: #a39c90;
+  --mc-line: #2f323b;
+  --mc-chip: #22252c;
+  --mc-accent: #4fcb97;
+  --mc-sentinels: #4fcb97;
+  --mc-redline: #f05a66;
+  --mc-legends: #e2ae4a;
+  --mc-villains: #d35a85;
+  --mc-kara: #a88bea;
+  --mc-beasts: #78c06a;
+  --mc-alt: #8fb0d8;
+  --mc-others: #a39c90;
+}
+.mcast-hero {
+  padding: 28px 0 8px;
+}
+.mcast-hero h1 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(2.6rem, 10vw, 4rem);
+  line-height: 0.92;
+  margin: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: none;
+}
+.mcast-hero p {
+  color: var(--mc-muted);
+  margin: 10px 0 0;
+  max-width: 60ch;
+}
+.mcast-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.mcast-bar {
+  position: sticky;
+  top: 64px;
+  z-index: 5;
+  background: var(--mc-bg);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mc-line);
+}
+.mcast-bar input {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--mc-line);
+  background: var(--mc-surface);
+  color: var(--mc-ink);
+}
+.mcast-bar input:focus-visible,
+.mcast-chip:focus-visible,
+.mcast-card:focus-visible {
+  outline: 2px solid var(--mc-accent);
+  outline-offset: 2px;
+}
+.mcast-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-top: 8px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.mcast-chips::-webkit-scrollbar {
+  display: none;
+}
+.mcast-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--mc-line);
+  background: var(--mc-chip);
+  color: var(--mc-ink);
+  cursor: pointer;
+}
+.mcast-chip[aria-pressed="true"] {
+  border-color: currentColor;
+  font-weight: 600;
+  background: var(--mc-surface);
+}
+.mcast-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--g);
+}
+.mcast-count {
+  color: var(--mc-muted);
+  font-size: 0.85rem;
+  margin: 14px 0 8px;
+}
+.mcast-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 700px) {
+  .mcast-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 1020px) {
+  .mcast-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+.mcast-card {
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-line);
+  border-top: 4px solid var(--g);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.mcast-card:hover {
+  border-color: var(--g);
+}
+.mcast-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.mcast-av {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #fff;
+  background: var(--g);
+}
+.mcast-av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mcast-card h2 {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 600;
+  font-size: 1.45rem;
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.mcast-title {
+  color: var(--mc-muted);
+  font-size: 0.86rem;
+  margin: 2px 0 0;
+}
+.mcast-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mcast-tag {
+  font-size: 0.74rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--mc-line);
+  color: var(--mc-muted);
+}
+.mcast-tag.mcast-real {
+  color: var(--mc-ink);
+  border-color: var(--mc-ink);
+}
+.mcast-card p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+.mcast-card .mcast-lbl {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--mc-muted);
+}
+.mcast-empty {
+  color: var(--mc-muted);
+  text-align: center;
+  padding: 40px 0;
+}
+.mcast-foot {
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  margin-top: 24px;
+}
+.mcast mark {
+  background: color-mix(in srgb, var(--mc-accent) 25%, transparent);
+  color: inherit;
+  border-radius: 3px;
+}
+
+/* Story-order group chips for the other styles (each keeps its own flavour). */
+.cast-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.cast-chips::-webkit-scrollbar {
+  display: none;
+}
+.cast-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+.cast-chip[aria-pressed="true"] {
+  color: var(--foreground);
+  border-color: var(--g, var(--accent));
+  background: color-mix(in oklab, var(--g, var(--accent)) 14%, transparent);
+}
+.cast-chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--g, var(--accent));
+}
+html[data-ui="nexus"] .cast-chip {
+  border-radius: 4px;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+html[data-ui="nexus"] .cast-chip[aria-pressed="true"] {
+  box-shadow: 0 0 12px color-mix(in oklab, var(--g, var(--accent)) 40%, transparent);
+}
+html[data-ui="manga"] .cast-chip {
+  border: 2px solid currentColor;
+  border-radius: 0;
+  color: var(--foreground);
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  box-shadow: 2px 2px 0 currentColor;
+}
+html[data-ui="manga"] .cast-chip[aria-pressed="true"] {
+  background: var(--foreground);
+  color: var(--background);
+}
+html[data-ui="manga"] .cast-chip-dot {
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+html[data-ui="cinematic"] .cast-chip {
+  border-radius: 2px;
+  font-family: var(--font-display);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+}
+html[data-ui="cinematic"] .cast-chip[aria-pressed="true"] {
+  border-color: var(--cine-amber);
+  color: #f4efe6;
+  background: color-mix(in oklab, var(--cine-amber) 12%, transparent);
+}
+
 /* Reference-inspired sliding HUD; color follows the active style/theme. */
 .hud-navigation {
   width: min(350px, 100vw);

@@ -167,7 +167,7 @@ describe("Ability FX & Action hub context integration", () => {
     expect(screen.getByRole("heading", { name: /Athena's Judgement/i })).toBeInTheDocument();
     expect(document.querySelector('[data-ability-rank="5"]')).not.toBeNull();
     expect(
-      screen.getByText(/Sunburst gold judgement art — apex-tier destructive authority/i),
+      screen.getByText(/The Golden Court \(Judicium Aureum\): weighs absolute moral weight/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Wielders \(/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Khalid" })).toBeInTheDocument();
@@ -192,7 +192,7 @@ describe("Ability FX & Action hub context integration", () => {
       true,
     );
     expect(
-      screen.getByText(/Sunburst gold judgement art — apex-tier destructive authority/i),
+      screen.getByText(/The Golden Court \(Judicium Aureum\): weighs absolute moral weight/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Wielders \(/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Khalid" })).toBeInTheDocument();

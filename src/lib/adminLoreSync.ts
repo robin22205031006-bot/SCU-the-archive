@@ -180,6 +180,9 @@ export const CHARACTER_ALIAS_MAP: Record<string, string> = {
   sparda: "prince of demons (sparda)",
   "prince of demons": "prince of demons (sparda)",
   derek: "derek miles",
+  // SCU Cast chart spellings that refer to existing cards.
+  "david (dawood)": "david",
+  "ayesha (khalid's mother)": "ayesha",
 };
 
 /** Historical/variant names → canonical entity name (normalized keys). */

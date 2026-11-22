@@ -51,6 +51,12 @@ export function nexusAbilityArt(name: string, iconName = "", description = ""): 
     [/aether dominion/, "aether-dominion"],
     [/omni (ergon|argon)/, "omni-ergon"],
     [/vampir/, "vampire"],
+    [/curse binding/, "art"],
+    // Purifies rather than burns the person: light art, not fire.
+    [/corruption separation/, "light"],
+    [/atomokinesis/, "alchemy"],
+    [/oneiro|dream|psychological/, "psychic"],
+    [/ichor/, "destruction"],
     [/ancient art|blood art|scroll/, "art"],
     [/judgement|judgment|scale/, "judgement"],
     [/card|jester|creditcard/, "cards"],
@@ -59,6 +65,8 @@ export function nexusAbilityArt(name: string, iconName = "", description = ""): 
     [/bow|archer|overwatch|long range|crosshair|locate/, "bow"],
     [/flame|fire|pyro|inferno|ember/, "fire"],
     [/cryo|ice|frost|snow/, "ice"],
+    // White Lightning Drive is bio-electric momentum, not an element: speed art.
+    [/white lightning drive/, "speed"],
     [/astrapo|lightning|electro|thunder|volt|hyperkinesis|zap/, "lightning"],
     [/hemo|sanguine|blood/, "blood"],
     [/water|hydro|aqua|wave|droplet/, "water"],
@@ -77,7 +85,9 @@ export function nexusAbilityArt(name: string, iconName = "", description = ""): 
     [/portal|door/, "portal"],
     [/ghost[\s_-]*01/, "ghost"],
     [/spirit|ghost|revenant|demonic/, "spirit"],
-    [/destruct|bomb|qahr/, "destruction"],
+    // Qahr al-Wujud commands existence; it is authority, not destruction.
+    [/qahr/, "authority"],
+    [/destruct|bomb/, "destruction"],
     [/authority|crown/, "authority"],
     [/tactician|tactics|landmark/, "tactics"],
     [/tech|cpu|bot|circuit|frame/, "tech"],
