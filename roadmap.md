@@ -1,3 +1,22 @@
+# Speed, polish, admin customization and admin welcome (in progress)
+
+Resume point for the next session: work top to bottom, ticking items off. Every
+ticked item is merged-safe on its own (tests and build pass, pushed).
+
+Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
+- Sign-in: first paint 5.2 s, largest paint 5.7 s, blocking 844 ms, 2.48 MB JS.
+- Home: first paint 4.9 s, largest paint 5.3 s, blocking 929 ms, 2.59 MB JS.
+- Cause: the entry statically pulls 127 files (~2.5 MB) incl. recharts, manga-view,
+  ability-badge, genre-decorations and animejs before first paint.
+
+- [ ] Speed 1: lazy-load heavy modules out of the startup path (no visual change).
+- [ ] Speed 2: runtime work (pause hidden canvases, image formats, query defaults).
+- [ ] Re-measure and record the after numbers here.
+- [ ] Visual completeness: loading/empty/error/404 states consistent in all five styles.
+- [ ] Admin Customize hub (site title, tagline, default style, accent, banner) on app_settings.
+- [ ] Admin welcome: one-time-per-sign-in animated greeting with the admin's name, per-style flavour.
+- [ ] Suggestions written up for the owner.
+
 # Nilanjona and Valeria combat
 
 # App-wide performance (all styles, desktop and mobile)
