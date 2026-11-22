@@ -3,7 +3,9 @@ import { motion } from "framer-motion";
 import { KineticText } from "@/components/kinetic-text";
 import { useAppMotion } from "@/hooks/use-app-motion";
 
-const KEY = "scu-welcomed";
+// Its own key: "scu-welcomed" belongs to the first-gesture audio hook, and the admin
+// welcome sets this one so the two overlays never stack.
+const KEY = "scu-welcomed-vfx";
 
 /** Full-screen cinematic welcome shown once per session after sign-in. */
 export function WelcomeVfx() {
@@ -13,6 +15,7 @@ export function WelcomeVfx() {
 
   useEffect(() => {
     if (!motionActive) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     let seen: string | null = null;
     try {
       seen = sessionStorage.getItem(KEY);

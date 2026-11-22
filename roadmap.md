@@ -37,7 +37,10 @@ Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
   characters), one tabbed hub in admin.tsx with preview, Discard and Reset; saveAppSetting helper that
   reads fresh before writing (abilities.tsx and series-style.tsx can erase data after a failed read);
   Typography/Appearance panels overwrite each other; font URL allow-list (fonts.googleapis.com).
-- [ ] Admin welcome: one-time-per-sign-in animated greeting with the admin's name, per-style flavour.
+- [x] Admin welcome: one-shot greeting with the admin's name after a real sign-in (token session_id +
+  amr time, never on reload/refocus), per-style flavour (Classic aurora, Nexus decrypt HUD, Manga ink
+  slam, Cinematic presents card, Minimal/static card), skippable, lazy chunk. Sign-in sound no longer
+  replays on every reload; Classic splash has its own key and respects reduced motion.
 - [ ] Suggestions written up for the owner.
 
 # Nilanjona and Valeria combat
