@@ -29,7 +29,14 @@ Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
   (character.tsx:560), skeleton loaders instead of 'Loading…' text, empty states with 'Clear filters'
   in entity-section, landing hero order (style picker above h1) and sector grid borders,
   route progress bar, page-top padding tokens, rem-based tiny text sizes.
-- [ ] Admin Customize hub (site title, tagline, default style, accent, banner) on app_settings.
+- [x] Admin safety: migration 0015 makes app_settings writes admin-only except the four moderator keys
+  (spoiler_mask, series_styles, series_order, nexus_symbol_presentation), verified on PostgreSQL 16
+  for admin/moderator/user. Audio clips can no longer be wiped (SiteNav and AdminAudio share one shape).
+- [ ] Admin Customize hub (from the audit): site_public key readable by anon (title, tagline, welcome
+  text, five-mode default style, default theme, per-style accents, announcement banner, featured
+  characters), one tabbed hub in admin.tsx with preview, Discard and Reset; saveAppSetting helper that
+  reads fresh before writing (abilities.tsx and series-style.tsx can erase data after a failed read);
+  Typography/Appearance panels overwrite each other; font URL allow-list (fonts.googleapis.com).
 - [ ] Admin welcome: one-time-per-sign-in animated greeting with the admin's name, per-style flavour.
 - [ ] Suggestions written up for the owner.
 
