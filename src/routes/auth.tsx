@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -554,15 +554,7 @@ function AuthPage() {
             </>
           )}
           <div className="grid gap-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="auth-password">Password</Label>
-              <span
-                data-testid="show-pass-status"
-                className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
-              >
-                Show pass: {showPassword ? "On" : "Off"}
-              </span>
-            </div>
+            <Label htmlFor="auth-password">Password</Label>
             <PasswordInput
               id="auth-password"
               showPassword={showPassword}
@@ -587,7 +579,16 @@ function AuthPage() {
             </div>
           )}
           <Button type="submit" disabled={busy}>
-            {busy ? "…" : mode === "in" ? "Sign in" : "Sign up"}
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                {mode === "in" ? "Signing in…" : "Creating account…"}
+              </>
+            ) : mode === "in" ? (
+              "Sign in"
+            ) : (
+              "Sign up"
+            )}
           </Button>
           {mode === "in" && (
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">

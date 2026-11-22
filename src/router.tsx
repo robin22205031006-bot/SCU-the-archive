@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { ArchiveErrorState, ArchiveNotFound } from "./components/archive-error-state";
 import { persistQueries, scheduleArchivePrefetch } from "./lib/query-persist";
 
 const SKIP_WARMUP = new Set(["/", "/auth", "/install", "/admin", "/ingest", "/mcp"]);
@@ -58,6 +59,10 @@ export const getRouter = () => {
     defaultPreload: "intent",
     defaultPendingMs: 600,
     defaultPendingMinMs: 0,
+    // Page errors render inside the shell (navigation stays usable) instead of
+    // reaching the app-wide boundary, which reloads the whole app.
+    defaultErrorComponent: ArchiveErrorState,
+    defaultNotFoundComponent: ArchiveNotFound,
   });
 
   if (typeof window !== "undefined") warmRoutesWhenIdle(router);

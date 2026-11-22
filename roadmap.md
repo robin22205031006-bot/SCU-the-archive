@@ -22,7 +22,13 @@ Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
     admin-welcome): workflow script scu-app-audit-understand, they stopped on a usage limit.
 - [ ] Speed 2: runtime work (pause hidden canvases, image formats, query defaults).
 - [ ] Re-measure and record the after numbers here.
-- [ ] Visual completeness: loading/empty/error/404 states consistent in all five styles.
+- [x] Visual 1: Light mode fixed in Classic/Minimal (html/body follow theme tokens; dark first paint only
+  before appearance loads). In-shell route error screen (defaultErrorComponent) with Try again /
+  Reload app for stale builds, styled 404 with quick links, sign-in debug label removed, busy spinners.
+- [ ] Visual 2 (from the audit, still open): dossier hard-coded dark canvas in light mode
+  (character.tsx:560), skeleton loaders instead of 'Loading…' text, empty states with 'Clear filters'
+  in entity-section, landing hero order (style picker above h1) and sector grid borders,
+  route progress bar, page-top padding tokens, rem-based tiny text sizes.
 - [ ] Admin Customize hub (site title, tagline, default style, accent, banner) on app_settings.
 - [ ] Admin welcome: one-time-per-sign-in animated greeting with the admin's name, per-style flavour.
 - [ ] Suggestions written up for the owner.

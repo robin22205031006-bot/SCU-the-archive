@@ -350,6 +350,15 @@ html {
   font-size: calc(16px * var(--scu-zoom, 1) * var(--scu-base-scale, 1));
 }
 
+/* The page canvas follows the theme token, so Light mode paints light in Classic and
+   Minimal (Nexus, Cinematic and Manga set their own --background). */
+html[data-theme] {
+  background-color: var(--background);
+}
+html[data-theme]:not(.dark) {
+  color-scheme: light;
+}
+
 /* Admin heading weight (unlayered rules beat Tailwind's layered font-* utilities). */
 h1,
 h2,
