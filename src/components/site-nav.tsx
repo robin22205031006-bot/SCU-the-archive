@@ -96,9 +96,11 @@ export function SiteNav() {
       return data;
     },
   });
-  // Load admin-uploaded audio clips once for the session.
-  useQuery({
-    queryKey: ["app-settings", "audio_settings"],
+  // Load admin-uploaded audio clips once for the session. This caches the full
+  // settings object under the same key AdminAudio uses (a files-only copy here made
+  // AdminAudio read "no clips" and save an empty list over them).
+  const { data: audioSettings } = useQuery({
+    queryKey: ["app-settings", "audio_settings", "full"],
     staleTime: 1000 * 60 * 15,
     refetchOnWindowFocus: false,
     queryFn: async () => {
@@ -107,11 +109,13 @@ export function SiteNav() {
         .select("value")
         .eq("key", "audio_settings")
         .maybeSingle();
-      const files = (data?.value as { files?: Record<string, string> } | null)?.files;
-      setAudioFiles(files);
-      return files ?? null;
+      return (data?.value ?? null) as { files?: Record<string, string> } | null;
     },
   });
+  // Applied from data (not inside queryFn) so clips also load from the offline cache.
+  useEffect(() => {
+    setAudioFiles(audioSettings?.files);
+  }, [audioSettings]);
   const { muted, toggleMute } = useScuMute();
   const { triggerNavigation: playSnap, triggerClick: playClick } = useUIFeedback();
   const animOn = useAnimationsEnabled();

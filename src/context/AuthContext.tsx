@@ -13,6 +13,13 @@ import { useRouter } from "@tanstack/react-router";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { syncSessionCache } from "@/lib/session-cache";
+import {
+  hasSeenWelcome,
+  isFreshSignIn,
+  markWelcomeSeen,
+  readSignInStamp,
+  welcomeKey,
+} from "@/lib/admin-welcome";
 import { playWelcome } from "@/lib/scu-audio";
 
 const AUTH_INIT_TIMEOUT_MS = 5_000;
@@ -209,7 +216,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (event === "SIGNED_IN" && nextSession?.user) {
-            setTimeout(() => playWelcome(), 400);
+            // SIGNED_IN also fires on reloads, tab refocus and other tabs; play the
+            // welcome sound only once, right after a real sign-in.
+            const stamp = readSignInStamp(nextSession);
+            if (stamp && isFreshSignIn(stamp) && document.visibilityState === "visible") {
+              const key = welcomeKey(stamp, "sound");
+              if (!hasSeenWelcome(key)) {
+                markWelcomeSeen(key);
+                setTimeout(() => playWelcome(), 400);
+              }
+            }
             logDailySignIn(nextSession.user.id);
           }
         });

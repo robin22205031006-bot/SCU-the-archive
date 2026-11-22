@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, Trash2 } from "lucide-react";
+import { Heart, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,7 +126,14 @@ function ProfilePage() {
                 disabled={busy === "name" || username.trim() === (profile?.display_name ?? "")}
                 onClick={saveUsername}
               >
-                {busy === "name" ? "…" : "Save"}
+                {busy === "name" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save"
+                )}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -134,12 +141,7 @@ function ProfilePage() {
             </p>
           </div>
           <div className="grid gap-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="profile-new-password">New password</Label>
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Show pass: {showPassword ? "On" : "Off"}
-              </span>
-            </div>
+            <Label htmlFor="profile-new-password">New password</Label>
             <div className="flex gap-2">
               <PasswordInput
                 id="profile-new-password"
@@ -155,7 +157,14 @@ function ProfilePage() {
                 disabled={busy === "pw" || !password}
                 onClick={changePassword}
               >
-                {busy === "pw" ? "…" : "Update"}
+                {busy === "pw" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Updating…
+                  </>
+                ) : (
+                  "Update"
+                )}
               </Button>
             </div>
           </div>

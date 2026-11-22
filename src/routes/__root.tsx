@@ -1,14 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
-  Link,
   createRootRouteWithContext,
   useLocation,
   useRouter,
   useRouterState,
   HeadContent,
   Scripts,
-  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Loader2, WifiOff } from "lucide-react";
@@ -30,13 +28,15 @@ import { useScuAudioGlobal } from "@/hooks/use-scu-audio";
 import { usePreloadUIFeedback } from "@/hooks/use-ui-feedback";
 import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { ArchiveErrorState, ArchiveNotFound } from "@/components/archive-error-state";
+import { AdminWelcomeGate } from "@/components/admin-welcome-gate";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useCardSpotlight } from "@/hooks/use-card-spotlight";
 import { useRef } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 // Mode-specific chrome and decorative FX are not needed for first paint, so they
 // load in their own chunks instead of blocking the initial bundle.
@@ -69,66 +69,6 @@ const AnimeActionOverlay = lazy(() =>
 const AppVersionChecker = lazy(() =>
   import("@/components/AppVersionChecker").then((m) => ({ default: m.AppVersionChecker })),
 );
-
-function NotFoundComponent() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  console.error(error);
-  const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   // SPA mode: the app is fully client-rendered. SSR 500s on TanStack Start
@@ -185,8 +125,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
+  notFoundComponent: ArchiveNotFound,
+  errorComponent: ArchiveErrorState,
 });
 
 // Recovers from a white screen caused by an outdated cached copy after an update:
@@ -197,15 +137,21 @@ const STALE_RECOVERY = `(function(){var K="scu-stale-reload";function go(){try{v
 // so the page paints immediately, then switch to "all" once downloaded (display=swap).
 const ASYNC_FONTS = `(function(){document.querySelectorAll("link[data-async-font]").forEach(function(l){function s(){l.media="all"}if(l.sheet)s();else l.addEventListener("load",s,{once:true})})})();`;
 
+const PRE_THEME_STYLE =
+  "html:not([data-theme]),html:not([data-theme]) body{background-color:#020408;color-scheme:dark}";
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark" style={{ backgroundColor: "#020408", colorScheme: "dark" }}>
+    <html lang="en" className="dark">
       <head>
         <HeadContent />
+        {/* Dark first paint only until appearance settings load (they set data-theme);
+            after that the theme tokens paint html/body, so Light mode works in every style. */}
+        <style>{PRE_THEME_STYLE}</style>
         <script dangerouslySetInnerHTML={{ __html: STALE_RECOVERY }} />
         <script dangerouslySetInnerHTML={{ __html: ASYNC_FONTS }} />
       </head>
-      <body style={{ backgroundColor: "#020408" }}>
+      <body>
         {children}
         <Scripts />
       </body>
@@ -262,6 +208,8 @@ function RootContent({ offline }: { offline: boolean }) {
         {mode !== "nexus" && mode !== "manga" && <SiteNav />}
         <FloatingNav />
         <Suspense fallback={null}>{mode === "classic" && <WelcomeVfx />}</Suspense>
+        <AdminWelcomeGate />
+        {!offline && <AnnouncementBanner />}
         {offline && (
           <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/95 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg">
             <WifiOff className="h-3.5 w-3.5" />

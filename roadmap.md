@@ -1,3 +1,52 @@
+# Speed, polish, admin customization and admin welcome (in progress)
+
+Resume point for the next session: work top to bottom, ticking items off. Every
+ticked item is merged-safe on its own (tests and build pass, pushed).
+
+Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
+- Sign-in: first paint 5.2 s, largest paint 5.7 s, blocking 844 ms, 2.48 MB JS.
+- Home: first paint 4.9 s, largest paint 5.3 s, blocking 929 ms, 2.59 MB JS.
+- Cause: the entry statically pulls 127 files (~2.5 MB) incl. recharts, manga-view,
+  ability-badge, genre-decorations and animejs before first paint.
+
+- [x] Speed 1: Orgs/Clans/Timeline pages moved to src/components/pages/ so their routes code-split
+  (a route file that exports anything besides Route is never split). Startup JS 127 files / 2.48 MB
+  -> 52 files / 1.39 MB. Sign-in first paint 5.2 s -> 3.1 s, largest paint 5.7 s -> 3.5 s;
+  Home 4.9 s -> 3.1 s. Tests 528/528, build OK.
+- [x] Speed 1b: isAnimeMotionAllowed moved to src/lib/anime-motion-gate.ts (animejs left startup);
+  atlas.$place loader imports ATLAS on demand. Startup JS now ~1.36 MB. Tests 528/528.
+  Tried and reverted: lazy arsenal fallback in lib/artifacts.ts changed when the roster editor
+  receives artifacts and broke status-history.test.tsx (real timing change, 29 kB not worth it).
+  Skipped: lazy canvas-confetti (triggerLegendaryRankUpConfetti returns synchronously; tested).
+  - Re-run the four failed investigators (runtime-assets, visual-completeness, admin-customization,
+    admin-welcome): workflow script scu-app-audit-understand, they stopped on a usage limit.
+- [ ] Speed 2: runtime work (pause hidden canvases, image formats, query defaults).
+- [ ] Re-measure and record the after numbers here.
+- [x] Visual 1: Light mode fixed in Classic/Minimal (html/body follow theme tokens; dark first paint only
+  before appearance loads). In-shell route error screen (defaultErrorComponent) with Try again /
+  Reload app for stale builds, styled 404 with quick links, sign-in debug label removed, busy spinners.
+- [ ] Visual 2 (from the audit, still open): dossier hard-coded dark canvas in light mode
+  (character.tsx:560), skeleton loaders instead of 'Loading…' text, empty states with 'Clear filters'
+  in entity-section, landing hero order (style picker above h1) and sector grid borders,
+  route progress bar, page-top padding tokens, rem-based tiny text sizes.
+- [x] Admin safety: migration 0015 makes app_settings writes admin-only except the four moderator keys
+  (spoiler_mask, series_styles, series_order, nexus_symbol_presentation), verified on PostgreSQL 16
+  for admin/moderator/user. Audio clips can no longer be wiped (SiteNav and AdminAudio share one shape).
+- [x] Customize hub v1: Admin → 'Customize site' (title, kicker, tagline, announcement banner with tone
+  and in-app link, live preview, Save / Discard / Reset). Stored in app_settings 'site_public',
+  readable by visitors via migration 0016, admin-only writes via 0015. Home page reads it in every style.
+- [ ] Customize hub v2: default UI style for new visitors (five modes), default theme, per-style accent
+  colours, featured characters on home; saveAppSetting helper (fresh read before write) for abilities.tsx
+  and series-style.tsx; merge the Typography and Appearance panels (they overwrite each other);
+  font URL allow-list (fonts.googleapis.com only).
+- [x] Admin welcome: one-shot greeting with the admin's name after a real sign-in (token session_id +
+  amr time, never on reload/refocus), per-style flavour (Classic aurora, Nexus decrypt HUD, Manga ink
+  slam, Cinematic presents card, Minimal/static card), skippable, lazy chunk. Sign-in sound no longer
+  replays on every reload; Classic splash has its own key and respects reduced motion.
+- [x] Suggestions for the owner (see the chat summary): merge the branch to publish; set real ability
+  tiers; settle the Ability Guide conflicts; fix statuses for characters who died; upload portraits
+  for the 46 new cast cards; add an About/credits page; turn on Vercel Speed Insights alerts.
+
 # Nilanjona and Valeria combat
 
 # App-wide performance (all styles, desktop and mobile)

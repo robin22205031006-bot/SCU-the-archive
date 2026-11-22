@@ -350,6 +350,15 @@ html {
   font-size: calc(16px * var(--scu-zoom, 1) * var(--scu-base-scale, 1));
 }
 
+/* The page canvas follows the theme token, so Light mode paints light in Classic and
+   Minimal (Nexus, Cinematic and Manga set their own --background). */
+html[data-theme] {
+  background-color: var(--background);
+}
+html[data-theme]:not(.dark) {
+  color-scheme: light;
+}
+
 /* Admin heading weight (unlayered rules beat Tailwind's layered font-* utilities). */
 h1,
 h2,
@@ -2523,6 +2532,337 @@ html[data-ui="cinematic"] .cast-chip[aria-pressed="true"] {
   border-color: var(--cine-amber);
   color: #f4efe6;
   background: color-mix(in oklab, var(--cine-amber) 12%, transparent);
+}
+
+/* Admin welcome (src/components/admin-welcome.tsx): one-shot, non-blocking overlay.
+   Only transform/opacity animate; [data-motion="static"] is the calm card used by
+   Minimal, motion-off and reduced motion. */
+.awel {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.awel[data-leaving="true"] {
+  opacity: 0;
+}
+.awel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in oklab, var(--background) 70%, transparent),
+    color-mix(in oklab, var(--background) 92%, transparent)
+  );
+  animation: awel-fade 0.5s ease both;
+}
+.awel-fx {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.awel-card {
+  position: relative;
+  text-align: center;
+  padding: 28px 40px;
+  max-width: min(92vw, 720px);
+}
+.awel-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+  animation: awel-rise 0.6s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.awel-name {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 9vw, 5.5rem);
+  line-height: 1;
+  margin: 12px 0 10px;
+  color: var(--foreground);
+}
+.awel-letter {
+  display: inline-block;
+  animation: awel-letter 0.7s calc(0.3s + var(--i) * 0.045s) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.awel-role {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+  margin: 0;
+  animation: awel-rise 0.6s 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.awel-skip {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  pointer-events: auto;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
+  color: var(--foreground);
+  cursor: pointer;
+}
+.awel-skip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Classic: aurora ring behind the name. */
+.awel-aurora {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(80vw, 640px);
+  aspect-ratio: 1;
+  margin: calc(min(80vw, 640px) / -2) 0 0 calc(min(80vw, 640px) / -2);
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    color-mix(in oklab, var(--accent) 45%, transparent),
+    transparent 40%,
+    color-mix(in oklab, var(--glow, var(--accent)) 35%, transparent),
+    transparent 75%
+  );
+  opacity: 0.55;
+  animation:
+    awel-spin 6s linear infinite,
+    awel-pop 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Nexus: HUD scan line, corner brackets, decrypting name. */
+.awel[data-flavor="nexus"] .awel-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 24px color-mix(in oklab, var(--accent) 60%, transparent);
+}
+.awel-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 18px var(--accent);
+  animation: awel-scan 1.6s cubic-bezier(0.45, 0, 0.2, 1) 0.1s both;
+}
+.awel-bracket {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--accent);
+  opacity: 0.8;
+  animation: awel-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+.awel-bracket-tl {
+  left: calc(50% - min(40vw, 320px));
+  top: calc(50% - 110px);
+  border-right: 0;
+  border-bottom: 0;
+}
+.awel-bracket-br {
+  right: calc(50% - min(40vw, 320px));
+  bottom: calc(50% - 110px);
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Manga: ink speed lines, a slammed panel and an SFX caption, stepped like cels. */
+.awel[data-flavor="manga"] .awel-card {
+  background: var(--card);
+  border: 3px solid var(--foreground);
+  box-shadow: 8px 8px 0 var(--foreground);
+  animation: awel-slam 0.45s steps(4, end) both;
+}
+.awel[data-flavor="manga"] .awel-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+}
+.awel-speedlines {
+  position: absolute;
+  inset: -20%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    var(--foreground) 0deg 1.2deg,
+    transparent 1.2deg 6deg
+  );
+  -webkit-mask: radial-gradient(closest-side, transparent 38%, #000 80%);
+  mask: radial-gradient(closest-side, transparent 38%, #000 80%);
+  opacity: 0.22;
+  animation: awel-lines 0.5s steps(3, end) both;
+}
+.awel-sfx {
+  position: absolute;
+  right: -18px;
+  top: -26px;
+  transform: rotate(8deg);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--accent);
+  -webkit-text-stroke: 1px var(--foreground);
+  animation: awel-pop 0.4s steps(3, end) 0.35s both;
+}
+
+/* Cinematic: letterbox, a presents card and an anamorphic flare. */
+.awel[data-flavor="cinematic"] .awel-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: clamp(2rem, 7vw, 4.4rem);
+}
+.awel-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: clamp(40px, 11vh, 110px);
+  background: #000;
+  animation: awel-bar 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.awel-bar-top {
+  top: 0;
+  transform-origin: top;
+}
+.awel-bar-bottom {
+  bottom: 0;
+  transform-origin: bottom;
+}
+.awel-flare {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: 46px;
+  background: linear-gradient(90deg, transparent, rgba(255, 206, 140, 0.9), transparent);
+  filter: none;
+  animation: awel-flare 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+/* Static card: Minimal, motion-off and reduced motion. */
+.awel[data-motion="static"] .awel-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.45);
+}
+.awel[data-motion="static"] *,
+.awel[data-motion="static"] {
+  animation: none !important;
+  transition: none !important;
+}
+.awel[data-motion="static"] .awel-name {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+}
+
+@keyframes awel-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes awel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes awel-letter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes awel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes awel-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes awel-scan {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+@keyframes awel-slam {
+  0% {
+    opacity: 0;
+    transform: scale(1.25) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-1deg);
+  }
+}
+@keyframes awel-lines {
+  from {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+  to {
+    opacity: 0.22;
+    transform: none;
+  }
+}
+@keyframes awel-bar {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes awel-flare {
+  from {
+    opacity: 0;
+    transform: scaleX(0.1);
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .awel,
+  .awel * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* Reference-inspired sliding HUD; color follows the active style/theme. */

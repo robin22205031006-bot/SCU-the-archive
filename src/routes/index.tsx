@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 import { SectionBoundary } from "@/components/section-boundary";
 import { ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { DEFAULT_SITE_PUBLIC, sitePublicQuery, splitTitle } from "@/lib/site-customize";
 
 const LazySeriesPage = lazy(async () => {
   try {
@@ -93,6 +95,9 @@ function Index() {
   const activeGenre = useActiveGenre();
   const uiStyle = useUiStyle();
   const nexus = !isManga && uiStyle === "nexus";
+  // Admin-editable branding (Admin → Customize site); defaults keep today's text.
+  const { data: site = DEFAULT_SITE_PUBLIC } = useQuery(sitePublicQuery);
+  const [titleLead, titleRest] = splitTitle(site.siteTitle);
   const resolvedGenre = activeGenre ?? "manga-ink";
   const genreMeta = getGenreThemeMeta(resolvedGenre);
 
@@ -103,8 +108,8 @@ function Index() {
           <MangaChapterBanner
             chapter={`ISSUE #01 // ${genreMeta.shortLabel.toUpperCase()}`}
             jp={genreMeta.jpLabel}
-            title="Sentinels Cinematic Universe"
-            subtitle="Serialized Index — characters, bloodlines, cursed weapons, and five eras of canon chronology."
+            title={site.siteTitle}
+            subtitle={site.tagline}
             stamp="第一巻"
           />
         </MotionSection>
@@ -211,9 +216,8 @@ function Index() {
         </MotionSection>
         <MotionSection as="header" delay={0.04} className="mb-10">
           <p className="text-xs text-accent">SCU / NEXUS</p>
-          <h1 className="mt-3 break-words text-4xl font-medium sm:text-5xl">
-            Sentinels Cinematic Universe
-          </h1>
+          <h1 className="mt-3 break-words text-4xl font-medium sm:text-5xl">{site.siteTitle}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{site.tagline}</p>
         </MotionSection>
         <NexusExplorer
           label="Archive sectors"
@@ -251,12 +255,17 @@ function Index() {
           <h2 className="text-sm">UI Style</h2>
           <UiStylePicker />
         </div>
-        <p className="text-[11px] uppercase tracking-[0.3em] text-accent">The Archive</p>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-accent">{site.kicker}</p>
         <h1 className="mt-4 text-6xl font-medium leading-[0.95] sm:text-8xl">
-          Sentinels
-          <br />
-          <em className="text-muted-foreground">Cinematic Universe</em>
+          {titleLead}
+          {titleRest && (
+            <>
+              <br />
+              <em className="text-muted-foreground">{titleRest}</em>
+            </>
+          )}
         </h1>
+        <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{site.tagline}</p>
       </MotionSection>
       <div className="mt-16 grid border-t sm:grid-cols-3">
         {sections.map((s, idx) => (

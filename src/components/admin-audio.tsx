@@ -119,7 +119,8 @@ export function AdminAudio() {
   const cur = s ?? DEFAULTS;
 
   const { data: saved } = useQuery({
-    queryKey: ["app-settings", KEY],
+    // Shared with SiteNav, which caches the same full settings object.
+    queryKey: ["app-settings", KEY, "full"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("app_settings")

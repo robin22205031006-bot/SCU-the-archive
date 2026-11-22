@@ -106,6 +106,20 @@
       "when": 1795306096287,
       "tag": "0014_seed_scu_cast",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1795348849850,
+      "tag": "0015_app_settings_admin_writes",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795349387480,
+      "tag": "0016_public_site_settings",
+      "breakpoints": true
     }
   ]
 }
