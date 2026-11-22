@@ -9,7 +9,18 @@ Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
 - Cause: the entry statically pulls 127 files (~2.5 MB) incl. recharts, manga-view,
   ability-badge, genre-decorations and animejs before first paint.
 
-- [ ] Speed 1: lazy-load heavy modules out of the startup path (no visual change).
+- [x] Speed 1: Orgs/Clans/Timeline pages moved to src/components/pages/ so their routes code-split
+  (a route file that exports anything besides Route is never split). Startup JS 127 files / 2.48 MB
+  -> 52 files / 1.39 MB. Sign-in first paint 5.2 s -> 3.1 s, largest paint 5.7 s -> 3.5 s;
+  Home 4.9 s -> 3.1 s. Tests 528/528, build OK.
+- [ ] Speed 1b (next, all verified by the audit, no visual change):
+  - move isAnimeMotionAllowed into src/lib/anime-motion-gate.ts (re-export from anime-animations.ts);
+    point use-anime-hitstop.ts and tier-hitstop.ts at it, so animejs (38 kB) leaves startup;
+  - atlas.$place.tsx loader imports the whole ATLAS dataset: load it with a dynamic import in the loader;
+  - arsenal route loader pulls arsenal-art: same dynamic-import fix;
+  - AbilityContext pulls ability-fx + canvas-confetti: lazy-load confetti where it fires.
+  - Re-run the four failed investigators (runtime-assets, visual-completeness, admin-customization,
+    admin-welcome): workflow script scu-app-audit-understand, they stopped on a usage limit.
 - [ ] Speed 2: runtime work (pause hidden canvases, image formats, query defaults).
 - [ ] Re-measure and record the after numbers here.
 - [ ] Visual completeness: loading/empty/error/404 states consistent in all five styles.

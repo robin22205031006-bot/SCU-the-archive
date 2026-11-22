@@ -13,9 +13,13 @@ import { MangaChapterBanner, MangaPanel } from "@/components/manga-primitives";
 import { MotionCard, MotionPage, MotionSection } from "@/components/app-motion";
 import { LoreBreadcrumb, LoreBreadcrumbProvider } from "@/components/lore-breadcrumb";
 
-const Orgs = lazy(() => import("./orgs").then((m) => ({ default: m.Orgs })));
-const Clans = lazy(() => import("./clans").then((m) => ({ default: m.Clans })));
-const Timeline = lazy(() => import("./timeline").then((m) => ({ default: m.Timeline })));
+const Orgs = lazy(() => import("@/components/pages/orgs-page").then((m) => ({ default: m.Orgs })));
+const Clans = lazy(() =>
+  import("@/components/pages/clans-page").then((m) => ({ default: m.Clans })),
+);
+const Timeline = lazy(() =>
+  import("@/components/pages/timeline-page").then((m) => ({ default: m.Timeline })),
+);
 const LoreExplorer = lazy(() =>
   import("@/components/LoreExplorer").then((m) => ({ default: m.LoreExplorer })),
 );

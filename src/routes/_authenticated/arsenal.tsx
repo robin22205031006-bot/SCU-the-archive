@@ -35,7 +35,9 @@ const NexusArtifactViewer = lazy(() =>
 );
 
 type Artifact = Tables<"artifacts">;
-export const ARTIFACT_CATEGORIES = {
+// Not exported: a route file that exports anything besides Route can't be code-split,
+// so the whole page (and everything it imports) would load before first paint.
+const ARTIFACT_CATEGORIES = {
   weapon: "Weapon",
   cursed_weapon: "Cursed weapon",
   cosmic_object: "Cosmic object",
