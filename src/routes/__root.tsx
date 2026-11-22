@@ -30,6 +30,7 @@ import { useAmbientAtmosphereSync } from "@/lib/ambient-atmosphere";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { ArchiveErrorState, ArchiveNotFound } from "@/components/archive-error-state";
 import { AdminWelcomeGate } from "@/components/admin-welcome-gate";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useCardSpotlight } from "@/hooks/use-card-spotlight";
@@ -208,6 +209,7 @@ function RootContent({ offline }: { offline: boolean }) {
         <FloatingNav />
         <Suspense fallback={null}>{mode === "classic" && <WelcomeVfx />}</Suspense>
         <AdminWelcomeGate />
+        {!offline && <AnnouncementBanner />}
         {offline && (
           <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-500/40 bg-zinc-950/95 px-4 py-2 text-xs font-medium text-amber-200 shadow-lg">
             <WifiOff className="h-3.5 w-3.5" />

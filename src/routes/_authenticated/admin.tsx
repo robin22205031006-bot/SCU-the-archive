@@ -16,6 +16,7 @@ import { invalidateArchive } from "@/lib/archive-sync";
 import { AdminEpisodes } from "@/components/admin-episodes";
 import { AdminSeries } from "@/components/admin-series";
 import { AdminTypography } from "@/components/admin-typography";
+import { AdminSiteCustomize } from "@/components/admin-site-customize";
 import { AdminNavVisibility } from "@/components/admin-nav-visibility";
 import { AdminAppearance } from "@/components/admin-appearance";
 import { AdminNexusWallpapers } from "@/components/admin-nexus-wallpapers";
@@ -341,6 +342,11 @@ function Admin() {
       {isAdmin && (
         <AdminAccordion title="Series & Seasons">
           <AdminSeries />
+        </AdminAccordion>
+      )}
+      {isAdmin && (
+        <AdminAccordion title="Customize site: title, tagline & banner" defaultOpen>
+          <AdminSiteCustomize />
         </AdminAccordion>
       )}
       {isAdmin && (

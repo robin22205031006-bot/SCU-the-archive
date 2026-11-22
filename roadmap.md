@@ -32,16 +32,20 @@ Baseline (production build, simulated mid-range phone: 4x CPU, fast 4G):
 - [x] Admin safety: migration 0015 makes app_settings writes admin-only except the four moderator keys
   (spoiler_mask, series_styles, series_order, nexus_symbol_presentation), verified on PostgreSQL 16
   for admin/moderator/user. Audio clips can no longer be wiped (SiteNav and AdminAudio share one shape).
-- [ ] Admin Customize hub (from the audit): site_public key readable by anon (title, tagline, welcome
-  text, five-mode default style, default theme, per-style accents, announcement banner, featured
-  characters), one tabbed hub in admin.tsx with preview, Discard and Reset; saveAppSetting helper that
-  reads fresh before writing (abilities.tsx and series-style.tsx can erase data after a failed read);
-  Typography/Appearance panels overwrite each other; font URL allow-list (fonts.googleapis.com).
+- [x] Customize hub v1: Admin → 'Customize site' (title, kicker, tagline, announcement banner with tone
+  and in-app link, live preview, Save / Discard / Reset). Stored in app_settings 'site_public',
+  readable by visitors via migration 0016, admin-only writes via 0015. Home page reads it in every style.
+- [ ] Customize hub v2: default UI style for new visitors (five modes), default theme, per-style accent
+  colours, featured characters on home; saveAppSetting helper (fresh read before write) for abilities.tsx
+  and series-style.tsx; merge the Typography and Appearance panels (they overwrite each other);
+  font URL allow-list (fonts.googleapis.com only).
 - [x] Admin welcome: one-shot greeting with the admin's name after a real sign-in (token session_id +
   amr time, never on reload/refocus), per-style flavour (Classic aurora, Nexus decrypt HUD, Manga ink
   slam, Cinematic presents card, Minimal/static card), skippable, lazy chunk. Sign-in sound no longer
   replays on every reload; Classic splash has its own key and respects reduced motion.
-- [ ] Suggestions written up for the owner.
+- [x] Suggestions for the owner (see the chat summary): merge the branch to publish; set real ability
+  tiers; settle the Ability Guide conflicts; fix statuses for characters who died; upload portraits
+  for the 46 new cast cards; add an About/credits page; turn on Vercel Speed Insights alerts.
 
 # Nilanjona and Valeria combat
 
