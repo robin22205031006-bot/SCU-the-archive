@@ -34,6 +34,7 @@ import { AnnouncementBanner } from "@/components/announcement-banner";
 import { MotionConfig } from "framer-motion";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { useCardSpotlight } from "@/hooks/use-card-spotlight";
+import { useCodexActive } from "@/hooks/use-codex-active";
 import { useRef } from "react";
 
 import appCss from "../styles.css?url";
@@ -46,8 +47,11 @@ const NexusChrome = lazy(() =>
 const MangaChrome = lazy(() =>
   import("@/components/manga-shell").then((m) => ({ default: m.MangaChrome })),
 );
-const CinematicChrome = lazy(() =>
-  import("@/components/cinematic-shell").then((m) => ({ default: m.CinematicChrome })),
+const CodexStage = lazy(() =>
+  import("@/components/codex-shell").then((m) => ({ default: m.CodexStage })),
+);
+const CodexReturnBar = lazy(() =>
+  import("@/components/codex-shell").then((m) => ({ default: m.CodexReturnBar })),
 );
 const NexusSectionRailAside = lazy(() =>
   import("@/components/nexus-section-rail").then((m) => ({ default: m.NexusSectionRailAside })),
@@ -119,7 +123,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         media: "print",
         "data-async-font": "",
-        href: "https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@600;700;800&family=Comic+Neue:ital,wght@0,400;0,700;1,700&family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&family=Montserrat:wght@700;800;900&family=Nunito:wght@400;600;700&family=Oswald:wght@500;700&family=Rajdhani:wght@400;500;600;700&family=Shippori+Mincho:wght@600;800&family=Space+Grotesk:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@600;700;800&family=Comic+Neue:ital,wght@0,400;0,700;1,700&family=Cormorant+Garamond:wght@400;500;600&family=Figtree:wght@400;500;600&family=Manrope:wght@400;500;600&family=Montserrat:wght@700;800;900&family=Nunito:wght@400;600;700&family=Oswald:wght@500;700&family=Rajdhani:wght@400;500;600;700&family=Shippori+Mincho:wght@600;800&family=Space+Grotesk:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -169,7 +173,8 @@ function RootContent({ offline }: { offline: boolean }) {
   });
   const { isMinimal, motionActive, spec } = useAppMotion();
   const pageContainerRef = useRef<HTMLDivElement>(null);
-  useCardSpotlight((mode === "classic" || mode === "cinematic") && motionActive);
+  useCardSpotlight((mode === "classic" || mode === "codex") && motionActive);
+  const codexCovers = useCodexActive();
   const outletContainerRef = useRef<HTMLDivElement>(null);
   const pageSlug = pathname.slice(1) || "home";
   const showNexusRail =
@@ -190,8 +195,8 @@ function RootContent({ offline }: { offline: boolean }) {
               ? "nexus-shell min-h-dvh"
               : mode === "manga"
                 ? "manga-root manga-shell min-h-dvh text-foreground selection:bg-foreground selection:text-background"
-                : mode === "cinematic"
-                  ? "cinematic-shell min-h-dvh"
+                : mode === "codex"
+                  ? "codex-shell min-h-dvh"
                   : "ambient-bg"
         }`}
       >
@@ -200,13 +205,14 @@ function RootContent({ offline }: { offline: boolean }) {
           {mode === "classic" && <PlexusWallpaper />}
           {mode === "nexus" && <NexusChrome />}
           {mode === "manga" && <MangaChrome pageRef={pageContainerRef} />}
-          {mode === "cinematic" && <CinematicChrome />}
+          {mode === "codex" && <CodexStage />}
+          {mode === "codex" && <CodexReturnBar />}
           {mode !== "minimal" && <AmbientStudioParticles />}
           {mode !== "minimal" && <AnimeActionOverlay />}
         </Suspense>
-        <ScrollProgress />
-        {mode !== "nexus" && mode !== "manga" && <SiteNav />}
-        <FloatingNav />
+        {!codexCovers && <ScrollProgress />}
+        {mode !== "nexus" && mode !== "manga" && !codexCovers && <SiteNav />}
+        {!codexCovers && <FloatingNav />}
         <Suspense fallback={null}>{mode === "classic" && <WelcomeVfx />}</Suspense>
         <AdminWelcomeGate />
         {!offline && <AnnouncementBanner />}
@@ -222,14 +228,14 @@ function RootContent({ offline }: { offline: boolean }) {
           data-minimal-page={isMinimal ? pageSlug : undefined}
           data-nexus-page={mode === "nexus" ? pageSlug : undefined}
           data-manga-page={mode === "manga" ? pageSlug : undefined}
-          data-cinematic-page={mode === "cinematic" ? pageSlug : undefined}
+          data-codex-page={mode === "codex" ? pageSlug : undefined}
           className={
             mode === "nexus"
               ? `nexus-page relative z-[1] ${showNexusRail ? "nexus-tool-layout mx-auto max-w-7xl lg:grid lg:grid-cols-[180px_minmax(0,1fr)]" : ""}`
               : mode === "manga"
                 ? "manga-page relative z-[1]"
-                : mode === "cinematic"
-                  ? "cinematic-page relative z-[1]"
+                : mode === "codex"
+                  ? "codex-page relative z-[1]"
                   : "relative"
           }
         >
@@ -248,7 +254,7 @@ function RootContent({ offline }: { offline: boolean }) {
                 <Loader2 className="h-7 w-7 animate-spin text-accent" aria-hidden="true" />
                 <p className="text-sm font-medium text-muted-foreground">Loading archive…</p>
               </main>
-            ) : (
+            ) : codexCovers ? null : (
               <Outlet />
             )}
           </div>

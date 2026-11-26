@@ -107,9 +107,9 @@ describe("Four-Tier Primary UI & Expanded Manga Sub-Engine Architecture", () => 
     expect(PRIMARY_SYSTEMS.map((s) => s.id)).toEqual([
       "classic",
       "nexus",
+      "codex",
       "minimal",
       "manga",
-      "cinematic",
     ]);
     expect(MANGA_SUBTHEMES).toHaveLength(8);
     expect(MANGA_SUBTHEMES.map((s) => s.id)).toEqual([

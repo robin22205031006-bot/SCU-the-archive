@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { WelcomeMotion } from "@/lib/admin-welcome";
 
-export type WelcomeFlavor = "classic" | "nexus" | "manga" | "cinematic" | "minimal";
+export type WelcomeFlavor = "classic" | "nexus" | "manga" | "codex" | "minimal";
 
 const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#@$%&";
 
@@ -94,7 +94,7 @@ export default function AdminWelcome({
             </>
           )}
           {flavor === "manga" && <span className="awel-speedlines" />}
-          {flavor === "cinematic" && (
+          {flavor === "codex" && (
             <>
               <span className="awel-bar awel-bar-top" />
               <span className="awel-bar awel-bar-bottom" />
@@ -107,14 +107,14 @@ export default function AdminWelcome({
         <p className="awel-kicker" aria-hidden="true">
           {flavor === "nexus"
             ? "Access granted · Clearance: " + role
-            : flavor === "cinematic"
-              ? "SCU presents"
+            : flavor === "codex"
+              ? "The Codex opens"
               : greeting}
         </p>
         <p className="awel-name" aria-hidden="true">
           {flavor === "nexus"
             ? decrypted
-            : animated && (flavor === "classic" || flavor === "cinematic")
+            : animated && (flavor === "classic" || flavor === "codex")
               ? letters.map((ch, i) => (
                   <span key={i} className="awel-letter" style={{ "--i": i } as CSSProperties}>
                     {ch === " " ? " " : ch}

@@ -19,7 +19,7 @@ const SHORT_UI_LABELS: Record<VisualUiMode, string> = {
   nexus: "Nexus",
   minimal: "Minimal",
   manga: "Manga",
-  cinematic: "Cinematic",
+  codex: "Codex",
 };
 
 export function HeaderUiModeSelect({
@@ -67,8 +67,26 @@ export function HeaderUiModeSelect({
       </SelectTrigger>
       <SelectContent align="end">
         <SelectGroup>
+          <SelectLabel>Signature · fully animated</SelectLabel>
+          {VISUAL_UI_MODES.filter((m) => m.signature).map((m) => (
+            <SelectItem
+              key={m.id}
+              value={m.id}
+              data-ui-option={m.id}
+              data-signature="true"
+              className="ui-signature-option"
+            >
+              <span className="font-semibold">{m.label}</span>
+              <span className="ui-signature-badge ml-2" aria-hidden="true">
+                ✦ Signature
+              </span>
+              <span className="ml-2 text-xs text-muted-foreground">· {m.desc}</span>
+            </SelectItem>
+          ))}
+        </SelectGroup>
+        <SelectGroup>
           <SelectLabel>Interface Mode</SelectLabel>
-          {VISUAL_UI_MODES.map((m) => (
+          {VISUAL_UI_MODES.filter((m) => !m.signature).map((m) => (
             <SelectItem key={m.id} value={m.id} data-ui-option={m.id}>
               <span className="font-medium">{m.label}</span>
               <span className="ml-2 text-xs text-muted-foreground">· {m.desc}</span>

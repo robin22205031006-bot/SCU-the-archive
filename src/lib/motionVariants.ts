@@ -134,9 +134,9 @@ export const THEME_MOTION_REGISTRY: Record<MotionThemeKey, ThemeMotionSpec> = {
     },
   },
 
-  // Cinematic: pages fade up from black with a slow push-in; cards drift into frame
-  // and hover with a heavy, unhurried camera spring. Transform/opacity only.
-  cinematic: {
+  // Codex host pages: fade up with a gentle push-in; cards drift into place
+  // and hover with a soft spring. Transform/opacity only.
+  codex: {
     transition: { duration: 0.5, ease: GPU_BEZIER_CINEMATIC },
     pageVariants: {
       initial: { opacity: 0, scale: 1.025 },
