@@ -1851,134 +1851,83 @@
     } catch (e) {}
   };
 
-  /* ---------- 9. premium Codex navigation: gliding gem, magnetic dock, sigil, fan, flow ---------- */
+  /* ---------- 9. Codex navigation: floating glass bar, liquid pill, raised orb, tray ---------- */
   (function navFx() {
     var dock = $id("dock");
     if (!dock) return;
-    var gem = document.createElement("span");
-    gem.className = "cx-navgem";
-    gem.setAttribute("aria-hidden", "true");
-    document.body.appendChild(gem);
-    var gx = 0, gy = 0, gw = 0, gh = 0, gshow = 0;
-    var put = function () {
-      gem.style.transform =
-        "translate(" + gx.toFixed(1) + "px," + gy.toFixed(1) + "px) scale(" + (gw / 100).toFixed(4) + "," + (gh / 100).toFixed(4) + ")";
-      gem.style.opacity = String(gshow);
+    document.documentElement.classList.add("cx-nav");
+    // Liquid pill behind the active wing: x/y/size springs (width lags a little, so it
+    // stretches as it travels and settles round).
+    var pill = document.createElement("span");
+    pill.className = "cx-pill";
+    pill.setAttribute("aria-hidden", "true");
+    document.body.appendChild(pill);
+    var px = 0, py = 0, pw = 0, ph = 0, shown = false;
+    var draw = function () {
+      pill.style.transform = "translate(" + px.toFixed(1) + "px," + py.toFixed(1) + "px)";
+      pill.style.width = Math.max(0, pw).toFixed(1) + "px";
+      pill.style.height = Math.max(0, ph).toFixed(1) + "px";
     };
-    var sx = new Spring(0, function (v) { gx = v; put(); }, { k: 230, c: 22 });
-    var sy = new Spring(0, function (v) { gy = v; put(); }, { k: 230, c: 22 });
-    var sw = new Spring(0, function (v) { gw = v; put(); }, { k: 260, c: 24 });
-    var sh = new Spring(0, function (v) { gh = v; put(); }, { k: 260, c: 24 });
-    var first = true;
-    function placeGem() {
-      var on = dock.querySelector('.dk[aria-current="true"]') || dock.querySelector(".dk.sig");
-      if (!on || !dock.getClientRects().length || getComputedStyle(dock).display === "none") {
-        gshow = 0;
-        put();
+    var sx = new Spring(0, function (v) { px = v; draw(); }, { k: 300, c: 26 });
+    var sy = new Spring(0, function (v) { py = v; draw(); }, { k: 300, c: 26 });
+    var sw = new Spring(0, function (v) { pw = v; draw(); }, { k: 200, c: 22 });
+    var sh = new Spring(0, function (v) { ph = v; draw(); }, { k: 200, c: 22 });
+    var snap = true;
+    function placePill() {
+      var on = dock.querySelector('.dk[aria-current="true"]:not(.sig)');
+      if (!on || !dock.getClientRects().length) {
+        pill.classList.remove("on");
+        shown = false;
         return;
       }
       var r = on.getBoundingClientRect();
-      var pad = 4;
-      var tx = r.left - pad, ty = r.top - pad, tw = r.width + pad * 2, th = r.height + pad * 2;
-      gshow = 1;
-      if (first || reduced()) {
-        first = false;
-        sx.x = gx = tx; sy.x = gy = ty; sw.x = gw = tw; sh.x = gh = th;
+      var tx = r.left + 4, ty = r.top + 4, tw = r.width - 8, th = r.height - 8;
+      if (snap || !shown || reduced()) {
+        snap = false;
+        [sx, sy, sw, sh].forEach(function (sp, i) {
+          var v = [tx, ty, tw, th][i];
+          sp.x = v;
+          sp.v = 0;
+          sp.to(v);
+        });
+        px = tx; py = ty; pw = tw; ph = th;
+        draw();
+      } else {
         sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
-        put();
-        return;
       }
-      sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+      shown = true;
+      pill.classList.add("on");
     }
-    function decorateDock() {
-      var sig = dock.querySelector(".dk.sig");
-      if (sig && !sig.querySelector(".cx-sigrings")) {
-        sig.insertAdjacentHTML(
-          "afterbegin",
-          '<span class="cx-sigrings" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="r1" cx="50" cy="50" r="44"/><circle class="r2" cx="50" cy="50" r="36"/><path class="tk" d="M50 2 L53 9 L47 9Z M50 98 L53 91 L47 91Z M2 50 L9 47 L9 53Z M98 50 L91 47 L91 53Z"/></svg></span>',
-        );
-      }
-      placeGem();
-    }
-    function fanRibbon() {
+    function trayItems() {
       var rib = $id("rib");
-      if (!rib || rib.hidden || rib.dataset.cxFan === rib.innerHTML.length + "") return;
-      rib.dataset.cxFan = rib.innerHTML.length + "";
-      var items = rib.querySelectorAll(".rb");
-      var n = items.length;
-      var vertical = window.matchMedia("(min-width:768px)").matches;
-      items.forEach(function (it, i) {
-        var o = i - (n - 1) / 2;
+      if (!rib || rib.hidden) return;
+      var sig = rib.innerHTML.length + ":" + rib.childElementCount;
+      if (rib.dataset.cxTray === sig) return;
+      rib.dataset.cxTray = sig;
+      rib.querySelectorAll(".rb").forEach(function (it, i) {
         it.style.setProperty("--i", String(i));
-        it.style.setProperty("--fx", vertical ? (o * o * 2.2).toFixed(1) + "px" : "0px");
-        it.style.setProperty("--fy", vertical ? "0px" : (o * o * 1.6).toFixed(1) + "px");
-        it.style.setProperty("--fr", vertical ? "0deg" : (o * 1.2).toFixed(2) + "deg");
       });
-      rib.classList.remove("cx-fan");
+      rib.classList.remove("cx-tray");
       void rib.offsetWidth;
-      rib.classList.add("cx-fan");
+      rib.classList.add("cx-tray");
     }
+    var queued = false;
     new MutationObserver(function () {
+      if (queued) return;
+      queued = true;
       requestAnimationFrame(function () {
-        decorateDock();
-        fanRibbon();
+        queued = false;
+        placePill();
+        trayItems();
       });
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-current"] });
+    }).observe(dock.parentNode || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-current"] });
     window.addEventListener("resize", function () {
-      first = true;
-      placeGem();
+      snap = true;
+      placePill();
     });
-    decorateDock();
+    placePill();
 
-    // magnetic lean toward the pointer (mouse/pen only, never on touch)
-    var hoverable = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
-    if (hoverable) {
-      dock.addEventListener("pointermove", function (e) {
-        if (reduced()) return;
-        dock.querySelectorAll(".dk").forEach(function (b) {
-          var r = b.getBoundingClientRect();
-          var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-          var dx = e.clientX - cx, dy = e.clientY - cy;
-          var d = Math.hypot(dx, dy);
-          var t = Math.max(0, 1 - d / 140);
-          b.style.transform = "translate(" + (dx * 0.08 * t).toFixed(2) + "px," + (dy * 0.08 * t).toFixed(2) + "px) scale(" + (1 + 0.22 * t).toFixed(3) + ")";
-        });
-      });
-      dock.addEventListener("pointerleave", function () {
-        dock.querySelectorAll(".dk").forEach(function (b) {
-          b.style.transform = "";
-        });
-      });
-    }
-
-    // tap ripple on dock and ribbon buttons
-    document.addEventListener("pointerdown", function (e) {
-      var b = e.target && e.target.closest ? e.target.closest(".dk,.rb") : null;
-      if (!b || reduced()) return;
-      var r = b.getBoundingClientRect();
-      var rp = document.createElement("span");
-      rp.className = "cx-ripple";
-      rp.style.left = e.clientX - r.left + "px";
-      rp.style.top = e.clientY - r.top + "px";
-      b.appendChild(rp);
-      setTimeout(function () {
-        rp.remove();
-      }, 700);
-      if (b.classList.contains("sig")) {
-        b.classList.remove("cx-burst");
-        void b.offsetWidth;
-        b.classList.add("cx-burst");
-      }
-    });
-
-    // flow transition: the page slides the way you travelled, with an ink sweep
-    var sweep = document.createElement("span");
-    sweep.className = "cx-sweep";
-    sweep.setAttribute("aria-hidden", "true");
-    document.body.appendChild(sweep);
-    var order = function (id) {
-      return API ? API.NT.findIndex(function (m) { return m[5] === id || m[0] === id; }) : 0;
-    };
+    // gentle page flow: fade and rise, never a jolt
     var lastTab = typeof tab !== "undefined" ? tab : "";
     if (typeof render === "function") {
       var _rflow = render;
@@ -1989,16 +1938,11 @@
         if (typeof tab === "undefined" || tab === prev) return;
         lastTab = tab;
         if (reduced()) return;
-        var dir = order(tab) >= order(prev) ? "r" : "l";
         var view = $id("view");
-        if (view) {
-          view.classList.remove("cx-flow-r", "cx-flow-l", "iris");
-          void view.offsetWidth;
-          view.classList.add("cx-flow-" + dir);
-        }
-        sweep.classList.remove("go-r", "go-l");
-        void sweep.offsetWidth;
-        sweep.classList.add("go-" + dir);
+        if (!view) return;
+        view.classList.remove("cx-flow", "iris");
+        void view.offsetWidth;
+        view.classList.add("cx-flow");
       };
     }
   })();
@@ -2071,7 +2015,7 @@
         var r = c.getBoundingClientRect();
         var px = (e.clientX - r.left) / r.width - 0.5;
         var py = (e.clientY - r.top) / r.height - 0.5;
-        c.style.transform = "perspective(700px) rotateX(" + (-py * 7).toFixed(2) + "deg) rotateY(" + (px * 9).toFixed(2) + "deg) translateY(-2px)";
+        c.style.transform = "perspective(900px) rotateX(" + (-py * 3).toFixed(2) + "deg) rotateY(" + (px * 4).toFixed(2) + "deg) translateY(-2px)";
         tilted = c;
       });
       document.addEventListener("pointerleave", function () {
