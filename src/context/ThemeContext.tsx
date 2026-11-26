@@ -17,7 +17,7 @@ import {
   type GenreThemeId,
 } from "@/lib/genre-themes";
 
-export type PrimarySystem = "classic" | "nexus" | "minimal" | "manga" | "cinematic";
+export type PrimarySystem = "classic" | "nexus" | "minimal" | "manga" | "codex";
 
 export type MangaSubTheme =
   | "fantasy"
@@ -60,6 +60,11 @@ export const PRIMARY_SYSTEMS: readonly PrimarySystemMeta[] = [
     tagline: "Tactical sci-fi HUD with holographic chrome and cel-outline option.",
   },
   {
+    id: "codex",
+    label: "Codex",
+    tagline: "Living ability codex: orbital trees, gem dossiers, season rails and a reveal dial.",
+  },
+  {
     id: "minimal",
     label: "Minimal",
     tagline: "Streamlined whitespace editorial layout with zero motion or blur.",
@@ -68,11 +73,6 @@ export const PRIMARY_SYSTEMS: readonly PrimarySystemMeta[] = [
     id: "manga",
     label: "Manga",
     tagline: "Multi-genre graphic novel & anime engine with stylized shaders.",
-  },
-  {
-    id: "cinematic",
-    label: "Cinematic",
-    tagline: "Widescreen film language: letterbox, colour grade, title cards and camera moves.",
   },
 ] as const;
 
@@ -230,23 +230,25 @@ export function normalizeMangaSubTheme(raw: string | null | undefined): MangaSub
 
 export function readStoredPrimarySystem(): PrimarySystem {
   try {
-    const raw = localStorage.getItem(PRIMARY_SYSTEM_STORAGE_KEY);
+    const stored = localStorage.getItem(PRIMARY_SYSTEM_STORAGE_KEY);
+    const raw = stored === "cinematic" ? "codex" : stored;
     if (
       raw === "classic" ||
       raw === "nexus" ||
       raw === "minimal" ||
       raw === "manga" ||
-      raw === "cinematic"
+      raw === "codex"
     ) {
       return raw;
     }
-    const mode = localStorage.getItem("scu-ui-mode");
+    const storedMode = localStorage.getItem("scu-ui-mode");
+    const mode = storedMode === "cinematic" ? "codex" : storedMode;
     if (
       mode === "classic" ||
       mode === "nexus" ||
       mode === "minimal" ||
       mode === "manga" ||
-      mode === "cinematic"
+      mode === "codex"
     ) {
       return mode;
     }

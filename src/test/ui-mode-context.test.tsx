@@ -132,8 +132,8 @@ describe("Global UiModeProvider context & <html> CSS custom properties", () => {
     expect(screen.getByTestId("current-mode").textContent).toBe("nexus");
     expect(document.documentElement.dataset["uiMode"]).toBe("nexus");
 
-    // Cycling advances cleanly back around
+    // Cycling advances to the next style: Codex sits right after Nexus
     fireEvent.click(screen.getByRole("button", { name: "Cycle Mode" }));
-    expect(screen.getByTestId("current-mode").textContent).toBe("minimal");
+    expect(screen.getByTestId("current-mode").textContent).toBe("codex");
   });
 });

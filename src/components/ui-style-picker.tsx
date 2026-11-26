@@ -35,6 +35,7 @@ export function UiStylePicker() {
             title={m.desc}
             variant={selected ? "secondary" : "ghost"}
             aria-pressed={selected}
+            data-signature={m.signature ? "true" : undefined}
             onClick={() => handleSelect(m.id)}
             className={
               activeMode === "manga"
@@ -43,9 +44,16 @@ export function UiStylePicker() {
                       ? "bg-foreground text-background shadow-[3px_3px_0_#b91c1c]"
                       : "bg-card text-foreground hover:bg-secondary"
                   }`
-                : undefined
+                : m.signature
+                  ? "ui-signature-chip"
+                  : undefined
             }
           >
+            {m.signature && (
+              <span aria-hidden="true" className="ui-signature-star">
+                ✦
+              </span>
+            )}
             {m.label}
           </Button>
         );

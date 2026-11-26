@@ -22,12 +22,14 @@ import {
   type GenreThemeId,
 } from "@/lib/genre-themes";
 
-export type VisualUiMode = "classic" | "nexus" | "minimal" | "manga" | "cinematic";
+export type VisualUiMode = "classic" | "nexus" | "minimal" | "manga" | "codex";
 
 export interface VisualUiModeInfo {
   id: VisualUiMode;
   label: string;
   desc: string;
+  /** Fully animated, interactive signature styles (Nexus, Codex) get top billing in pickers. */
+  signature?: boolean;
 }
 
 export const VISUAL_UI_MODES: readonly VisualUiModeInfo[] = [
@@ -40,6 +42,13 @@ export const VISUAL_UI_MODES: readonly VisualUiModeInfo[] = [
     id: "nexus",
     label: "Nexus",
     desc: "Constellation holographic shell with neon telemetry and 3D ambient backdrop.",
+    signature: true,
+  },
+  {
+    id: "codex",
+    label: "Codex",
+    desc: "Living ability codex: orbital trees, gem dossiers, season rails and a reveal dial.",
+    signature: true,
   },
   {
     id: "minimal",
@@ -51,12 +60,12 @@ export const VISUAL_UI_MODES: readonly VisualUiModeInfo[] = [
     label: "Manga",
     desc: "Serialized ink-washed spreads, halftone comic panels, and hanko stamps.",
   },
-  {
-    id: "cinematic",
-    label: "Cinematic",
-    desc: "Letterboxed film frames, teal-and-amber grade, title cards and slow camera moves.",
-  },
 ] as const;
+
+/** Older builds stored "cinematic"; the Codex replaced it, so that choice now opens the Codex. */
+export function migrateLegacyMode(value: string | null | undefined): string | null | undefined {
+  return value === "cinematic" ? "codex" : value;
+}
 
 export const UI_MODE_STORAGE_KEY = "scu-ui-mode";
 
@@ -94,13 +103,14 @@ const MANAGED_MODE_CSS_PROPS = [
   "--genre-accent-2",
 ] as const;
 
-export function resolveVisualUiMode(value: string | null | undefined): VisualUiMode {
+export function resolveVisualUiMode(input: string | null | undefined): VisualUiMode {
+  const value = migrateLegacyMode(input);
   if (
     value === "nexus" ||
     value === "minimal" ||
     value === "manga" ||
     value === "classic" ||
-    value === "cinematic"
+    value === "codex"
   ) {
     return value;
   }
@@ -110,13 +120,13 @@ export function resolveVisualUiMode(value: string | null | undefined): VisualUiM
 
 function readStoredMode(): VisualUiMode | null {
   try {
-    const raw = localStorage.getItem(UI_MODE_STORAGE_KEY);
+    const raw = migrateLegacyMode(localStorage.getItem(UI_MODE_STORAGE_KEY));
     if (
       raw === "classic" ||
       raw === "nexus" ||
       raw === "minimal" ||
       raw === "manga" ||
-      raw === "cinematic"
+      raw === "codex"
     ) {
       return raw;
     }
@@ -138,7 +148,7 @@ function readLiveVisualMode(): VisualUiMode {
       attr === "nexus" ||
       attr === "minimal" ||
       attr === "manga" ||
-      attr === "cinematic"
+      attr === "codex"
     ) {
       return attr;
     }
@@ -269,40 +279,64 @@ export function uiModeCssVars(mode: VisualUiMode, dark: boolean): Record<string,
             "--font-display": '"Bangers", "Oswald", "Shippori Mincho", serif',
             "--font-sans": '"Comic Neue", "Space Grotesk", system-ui, sans-serif',
           };
-    case "cinematic":
-      // Always graded dark, like a theatre: deep blacks, warm amber key light and
-      // cool teal shadows (the classic teal-and-orange film grade).
+    case "codex": {
+      // Codex palette: night ink with a lilac sigil light (dark) or cool paper (light),
+      // Cormorant Garamond titles over Figtree text, chamfered small radii.
+      const c = dark
+        ? {
+            bg: "#090b11",
+            panel: "#11141d",
+            panel2: "#171b27",
+            ink: "#eaf0ff",
+            muted: "#98a2bc",
+            line: "#262c3e",
+            accent: "#b79cff",
+            accentInk: "#0a0c12",
+          }
+        : {
+            bg: "#edeff6",
+            panel: "#ffffff",
+            panel2: "#f3f5fb",
+            ink: "#161923",
+            muted: "#5a6378",
+            line: "#c9d0e2",
+            accent: "#6d4fd6",
+            accentInk: "#ffffff",
+          };
       return {
-        "--ui-mode": "cinematic",
-        "--ui-transition": "420ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "--ui-mode": "codex",
+        "--ui-transition": "420ms cubic-bezier(0.2, 0.9, 0.25, 1.05)",
         "--ui-card-border-width": "1px",
-        "--ui-card-shadow": "0 30px 60px -30px rgba(0, 0, 0, 0.9)",
-        "--ui-heading-tracking": "0.08em",
-        "--ui-heading-shadow": "0 2px 24px rgba(0, 0, 0, 0.65)",
-        "--background": "#07080b",
-        "--foreground": "#ece6da",
-        "--card": "#0e1014",
-        "--card-foreground": "#ece6da",
-        "--popover": "#0e1014",
-        "--popover-foreground": "#ece6da",
-        "--primary": "#e2a23b",
-        "--primary-foreground": "#0b0b0d",
-        "--secondary": "#14171c",
-        "--secondary-foreground": "#ece6da",
-        "--muted": "#14171c",
-        "--muted-foreground": "#9a9488",
-        "--accent": "#e2a23b",
-        "--accent-foreground": "#0b0b0d",
-        "--border": "#24272e",
-        "--input": "#2a2e36",
-        "--ring": "#e2a23b",
-        "--glow": "#e2a23b",
-        "--glow-strength": "0.6",
-        "--glass-blur": "12px",
-        "--radius": "0.25rem",
-        "--font-display": '"Cinzel", "Cormorant Garamond", serif',
-        "--font-sans": '"Manrope", system-ui, sans-serif',
+        "--ui-card-shadow": dark
+          ? "0 18px 40px -22px rgba(0, 0, 0, 0.85)"
+          : "0 10px 28px -18px rgba(20, 24, 40, 0.35)",
+        "--ui-heading-tracking": "0.01em",
+        "--ui-heading-shadow": "none",
+        "--background": c.bg,
+        "--foreground": c.ink,
+        "--card": c.panel,
+        "--card-foreground": c.ink,
+        "--popover": c.panel,
+        "--popover-foreground": c.ink,
+        "--primary": c.accent,
+        "--primary-foreground": c.accentInk,
+        "--secondary": c.panel2,
+        "--secondary-foreground": c.ink,
+        "--muted": c.panel2,
+        "--muted-foreground": c.muted,
+        "--accent": c.accent,
+        "--accent-foreground": c.accentInk,
+        "--border": c.line,
+        "--input": c.line,
+        "--ring": c.accent,
+        "--glow": c.accent,
+        "--glow-strength": dark ? "0.7" : "0.3",
+        "--glass-blur": "10px",
+        "--radius": "0.75rem",
+        "--font-display": '"Cormorant Garamond", Georgia, serif',
+        "--font-sans": '"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif',
       };
+    }
     case "classic":
     default:
       return {

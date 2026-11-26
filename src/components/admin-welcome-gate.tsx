@@ -85,7 +85,7 @@ export function AdminWelcomeGate() {
       name: resolveWelcomeName(profile, user),
       role: isSuperadmin ? "Superadmin" : "Admin",
       greeting: welcomeGreeting(),
-      flavor: (["classic", "nexus", "manga", "cinematic", "minimal"].includes(mode)
+      flavor: (["classic", "nexus", "manga", "codex", "minimal"].includes(mode)
         ? mode
         : "classic") as WelcomeFlavor,
       motion: resolveWelcomeMotion({ mode, animationsEnabled, reducedMotion }),
