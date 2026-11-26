@@ -104,5 +104,9 @@ describe("Codex page", () => {
     expect(html).toContain("window.__codexApi=");
     expect(html).toContain('id="codex-host-bridge"');
     expect(html).toContain("<h1>SCU Codex</h1>");
+    // stat wheel + profile carousel, and the exact (non-Aether-fallback) ability lookup
+    expect(html).toContain("function wireWheel");
+    expect(html).toContain('class="cxc-t"');
+    expect(html).toContain("function findKey");
   });
 });

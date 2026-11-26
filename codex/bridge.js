@@ -350,6 +350,103 @@
     var v = Array.isArray(value) ? value.join(" · ") : value;
     return '<div class="cxd-f"><span>' + escH(label) + "</span><b>" + escH(v) + "</b></div>";
   }
+  var SHORT = {
+    power: "Power",
+    agility: "Agility",
+    tactical_iq: "Tactics",
+    clan_mastery: "Clan",
+    weapon_proficiency: "Weapons",
+    wisdom: "Wisdom",
+    vitality: "Vitality",
+  };
+  var NS = "http://www.w3.org/2000/svg";
+  /** Items the carousel can show: the character, then each ability, Codex holder rules applied. */
+  function profileItems(s) {
+    var items = [{ name: "Character", sub: "Whole-character profile", stats: s.stats, key: null }];
+    var profs = s.profiles || [];
+    var okNames = splitAbilities(
+      profs.map(function (p) {
+        return p.name;
+      }),
+    ).show.map(function (x) {
+      return x.n;
+    });
+    var used = {};
+    profs.forEach(function (p) {
+      if (okNames.indexOf(p.name) < 0) return;
+      used[p.name] = 1;
+      items.push({ name: p.name, sub: "Ability profile", stats: p.stats, key: findKey(p.name) });
+    });
+    splitAbilities(s.abilities).show.forEach(function (x) {
+      if (used[x.n]) return;
+      used[x.n] = 1;
+      items.push({ name: x.n, sub: "No profile recorded for this ability", stats: null, key: x.key });
+    });
+    return items.slice(0, 16);
+  }
+  function wheelHTML(s) {
+    var base = s.stats.length
+      ? s.stats
+      : s.profiles && s.profiles[0]
+        ? s.profiles[0].stats
+        : [];
+    if (!base.length) return "";
+    var n = base.length;
+    var R = 100;
+    var rings = [25, 50, 75, 100]
+      .map(function (r) {
+        return '<circle r="' + r + '" class="cxw-ring' + (r === 100 ? " out" : "") + '"/>';
+      })
+      .join("");
+    var spokes = "";
+    var petals = "";
+    var labels = "";
+    base.forEach(function (x, i) {
+      var ang = (360 / n) * i;
+      var rad = ((ang - 90) * Math.PI) / 180;
+      spokes += '<line class="cxw-spoke" x1="0" y1="0" x2="' + (R * Math.cos(rad)).toFixed(1) + '" y2="' + (R * Math.sin(rad)).toFixed(1) + '"/>';
+      petals +=
+        '<g transform="rotate(' + ang.toFixed(2) + ')" data-k="' + escH(x.key) + '">' +
+        '<path class="cxw-petal" d="M0 -22 L 10.5 -52 L 0 -100 L -10.5 -52 Z"/>' +
+        '<circle class="cxw-tip" r="3.6" cy="-22"/></g>';
+      var lx = 119 * Math.cos(rad);
+      var ly = 119 * Math.sin(rad);
+      labels +=
+        '<text class="cxw-lab" x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" dominant-baseline="central">' +
+        escH(SHORT[x.key] || String(x.label).split(" ")[0]) + "</text>";
+    });
+    var items = profileItems(s);
+    var gems = items
+      .map(function (it, i) {
+        var svg = "";
+        if (it.key) {
+          try {
+            svg = typeof emA === "function" ? emA(it.key, 34) : "";
+          } catch (e) {
+            svg = "";
+          }
+        }
+        if (!svg)
+          svg = '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7z" fill="currentColor"/></svg>';
+        return (
+          '<button type="button" class="cxc-i" role="option" data-cxp="' + i + '" aria-selected="' + (i === 0) +
+          '" tabindex="' + (i === 0 ? 0 : -1) + '"><span class="cxc-g">' + svg + "</span><small>" + escH(it.name) + "</small></button>"
+        );
+      })
+      .join("");
+    return (
+      '<div class="cxw" data-n="' + n + '">' +
+      '<div class="cxw-stage"><svg class="cxw-svg" viewBox="-140 -140 280 280" role="img" aria-label="Stat wheel">' +
+      '<g class="cxw-spin">' + rings + spokes + "</g>" + petals +
+      '<circle class="cxw-hub" r="21"/>' + labels +
+      '<text class="cxw-avg" x="0" y="-3" text-anchor="middle" dominant-baseline="central">0</text>' +
+      '<text class="cxw-avgl" x="0" y="12" text-anchor="middle">INDEX</text></svg></div>' +
+      '<div class="cxc"><button type="button" class="cxc-a" data-cxa="-1" aria-label="Previous profile">‹</button>' +
+      '<div class="cxc-t" role="listbox" aria-label="Stat profile">' + gems + "</div>" +
+      '<button type="button" class="cxc-a" data-cxa="1" aria-label="Next profile">›</button></div>' +
+      '<div class="cxc-cap" aria-live="polite"><b>' + escH(items[0].name) + "</b><small>" + escH(items[0].sub) + "</small></div></div>"
+    );
+  }
   function panelHTML(d, i, cmp) {
     var s = d.seasons[i];
     var prev = i > 0 ? d.seasons[i - 1] : null;
@@ -405,27 +502,13 @@
       roles +
       "</div></div>" +
       (s.impact ? '<blockquote class="cxd-q">' + escH(s.impact) + "</blockquote>" : "") +
-      (s.stats.length
+      (s.stats.length || (s.profiles && s.profiles.length)
         ? '<div class="cxd-sh"><h4>Rune gauges</h4><span class="cxd-pi">Power index <b data-pi="' +
           avg +
           '">' +
           avg +
           "</b></span></div>" +
-          (s.profiles && s.profiles.length
-            ? '<div class="xseg cxd-prof" role="group" aria-label="Stat profile"><button type="button" class="on" aria-pressed="true" data-cxp="-1">Character</button>' +
-              s.profiles
-                .map(function (p, pi) {
-                  return (
-                    '<button type="button" aria-pressed="false" data-cxp="' +
-                    pi +
-                    '">' +
-                    escH(p.name) +
-                    "</button>"
-                  );
-                })
-                .join("") +
-              "</div>"
-            : "") +
+          wheelHTML(s) +
           '<div class="cxd-stats' +
           (cmp && prev ? " cmp" : "") +
           '">' +
@@ -492,35 +575,113 @@
       if (pv != null) ghw.style.transform = "translateX(" + (pv - 100) + "%)";
     });
   }
-  /** Ability stat profiles: the gauges spring from the character profile to the ability's. */
-  function wireProfiles(panel, season, st) {
-    var bar = panel.querySelector(".cxd-prof");
-    if (!bar) return;
+  /** Rune wheel + profile carousel: one selection drives petals, gauges and the index with springs. */
+  function wireWheel(panel, season, st) {
+    var root = panel.querySelector(".cxw");
+    if (!root) return;
+    var items = profileItems(season);
     var box = panel.querySelector(".cxd-stats");
     var pi = panel.querySelector("[data-pi]");
-    bar.addEventListener("click", function (e) {
-      var b = e.target.closest("[data-cxp]");
-      if (!b) return;
-      var idx = +b.dataset.cxp;
-      bar.querySelectorAll("[data-cxp]").forEach(function (x) {
-        var on = x === b;
-        x.classList.toggle("on", on);
-        x.setAttribute("aria-pressed", String(on));
-      });
-      var src = idx >= 0 && season.profiles[idx] ? season.profiles[idx].stats : season.stats;
-      if (box) box.classList.toggle("prof", idx >= 0);
+    var track = root.querySelector(".cxc-t");
+    var cap = root.querySelector(".cxc-cap");
+    var avgT = root.querySelector(".cxw-avg");
+    var petals = {};
+    st.pet = st.pet || {};
+    root.querySelectorAll("g[data-k]").forEach(function (g) {
+      var k = g.dataset.k;
+      var path = g.querySelector(".cxw-petal");
+      var tip = g.querySelector(".cxw-tip");
+      petals[k] = new Spring(st.pet[k] || 0, function (v) {
+        var p = Math.max(0, Math.min(1.08, v / 100));
+        path.style.transform = "scale(" + (0.55 + 0.45 * Math.min(1, p)).toFixed(4) + "," + p.toFixed(4) + ")";
+        tip.style.transform = "translateY(" + (-78 * p).toFixed(2) + "px)";
+        tip.style.opacity = p < 0.02 ? "0" : "1";
+      }, { k: 150, c: 17 });
+    });
+    var cur = 0;
+    var avgSp = new Spring(0, function (v) {
+      avgT.textContent = String(Math.round(v));
+    }, { k: 160, c: 20 });
+    var apply = function (idx, focus) {
+      cur = idx;
+      var it = items[idx];
+      var vals = it.stats || null;
       var sum = 0;
-      box.querySelectorAll(".cxg").forEach(function (g) {
-        var m = src.find(function (x) {
-          return x.key === g.dataset.k;
-        });
+      var count = 0;
+      Object.keys(petals).forEach(function (k) {
+        var m = vals
+          ? vals.find(function (x) {
+              return x.key === k;
+            })
+          : null;
         var v = m ? m.value : 0;
         sum += v;
-        if (g._sp) g._sp.to(v);
-        st.vals[g.dataset.k] = v;
+        count++;
+        petals[k].to(v);
+        st.pet[k] = v;
       });
-      if (pi) pi.textContent = String(Math.round(sum / Math.max(1, src.length)));
+      var avg = Math.round(sum / Math.max(1, count));
+      avgSp.to(avg);
+      if (box) {
+        box.classList.toggle("prof", idx > 0);
+        box.querySelectorAll(".cxg").forEach(function (g) {
+          var m = vals
+            ? vals.find(function (x) {
+                return x.key === g.dataset.k;
+              })
+            : null;
+          var v = m ? m.value : 0;
+          if (g._sp) g._sp.to(v);
+          st.vals[g.dataset.k] = v;
+        });
+      }
+      if (pi) pi.textContent = String(avg);
+      cap.innerHTML = "<b>" + escH(it.name) + "</b><small>" + escH(it.sub) + "</small>";
+      root.querySelectorAll(".cxc-i").forEach(function (b, j) {
+        b.setAttribute("aria-selected", String(j === idx));
+        b.tabIndex = j === idx ? 0 : -1;
+        if (j === idx) {
+          var left = b.offsetLeft - track.clientWidth / 2 + b.offsetWidth / 2;
+          try {
+            track.scrollTo({ left: left, behavior: reduced() ? "auto" : "smooth" });
+          } catch (e) {
+            track.scrollLeft = left;
+          }
+          if (focus) b.focus({ preventScroll: true });
+        }
+      });
+    };
+    root.addEventListener("click", function (e) {
+      var a = e.target.closest("[data-cxa]");
+      if (a) return apply(Math.max(0, Math.min(items.length - 1, cur + +a.dataset.cxa)), false);
+      var b = e.target.closest("[data-cxp]");
+      if (b) apply(+b.dataset.cxp, false);
     });
+    track.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (e.key === "Home") return apply(0, true);
+      if (e.key === "End") return apply(items.length - 1, true);
+      if (d) {
+        e.preventDefault();
+        apply(Math.max(0, Math.min(items.length - 1, cur + d)), true);
+      }
+    });
+    // Start from the character profile; keep the carousel hint when there is only one stop.
+    var vals0 = items[0].stats;
+    var sum0 = 0;
+    Object.keys(petals).forEach(function (k) {
+      var m = vals0
+        ? vals0.find(function (x) {
+            return x.key === k;
+          })
+        : null;
+      var v = m ? m.value : 0;
+      sum0 += v;
+      petals[k].to(v);
+      st.pet[k] = v;
+    });
+    avgSp.to(Math.round(sum0 / Math.max(1, Object.keys(petals).length)));
+    if (items.length < 2) root.classList.add("solo");
   }
   function placeLens(rail, st, instant) {
     var lens = rail.querySelector(".cxr-lens");
@@ -597,7 +758,7 @@
       void panel.offsetWidth;
       panel.classList.add(dir > 0 ? "in-r" : dir < 0 ? "in-l" : "in");
       animateGauges(panel, st);
-      wireProfiles(panel, d.seasons[st.i], st);
+      wireWheel(panel, d.seasons[st.i], st);
     };
     var select = function (i, focus) {
       if (i < 0 || i >= d.seasons.length || i === st.i) return;

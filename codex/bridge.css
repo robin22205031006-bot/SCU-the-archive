@@ -96,9 +96,6 @@ html.cx-hosted body{background-attachment:scroll}
 .cxd-stats.cmp .cxg-d{opacity:1;transform:none}
 .cxg-d.up{color:#4FCB97}.cxg-d.dn{color:#F05A66}.cxg-d.eq{color:var(--muted)}
 .cxd-cmpn{margin-top:8px}
-.cxd-prof{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;max-width:100%;margin:0 0 10px;scrollbar-width:none}
-.cxd-prof::-webkit-scrollbar{display:none}
-.cxd-prof button{flex:none;min-height:36px!important;white-space:nowrap}
 .cxd-stats.prof .cxg-gh,.cxd-stats.prof .cxg-d{opacity:0!important}
 .cxd-facts{display:grid;gap:6px;margin-top:14px}
 .cxd-f{display:grid;grid-template-columns:110px 1fr;gap:8px;font-size:.84rem}
@@ -107,3 +104,39 @@ html.cx-hosted body{background-attachment:scroll}
 .cxd .chips{animation:cxFade 420ms var(--cx-soft) both}
 @media (prefers-reduced-motion:reduce){.cxd-panel,.cxd .chips,.rb,.cx-ui-card{animation:none!important}}
 html[data-motion="off"] .cxd-panel,html[data-motion="off"] .cx-ui-card{animation:none!important}
+
+/* ---- rune wheel + profile carousel ---- */
+.cxw{margin:4px 0 14px}
+.cxw-stage{display:grid;place-items:center}
+.cxw-svg{width:min(100%,300px);height:auto;overflow:visible;display:block}
+.cxw-ring{fill:none;stroke:var(--line);stroke-width:1}
+.cxw-ring.out{stroke:color-mix(in srgb,var(--c1) 45%,var(--line));stroke-dasharray:2 5}
+.cxw-spoke{stroke:var(--line);stroke-width:1;opacity:.7}
+.cxw-spin{transform-box:fill-box;transform-origin:50% 50%;animation:cxSpin 90s linear infinite}
+@keyframes cxSpin{to{transform:rotate(360deg)}}
+.cxw-petal{transform-box:fill-box;transform-origin:50% 100%;transform:scale(.55,0);fill:color-mix(in srgb,var(--c1) 48%,transparent);stroke:var(--c2);stroke-width:1.2;vector-effect:non-scaling-stroke;will-change:transform}
+.cxw-hub{fill:var(--panel2);stroke:color-mix(in srgb,var(--c1) 60%,var(--line));stroke-width:1.2}
+.cxw-tip{fill:var(--c2);stroke:var(--panel2);stroke-width:1.5;will-change:transform,opacity}
+.cxw-lab{font-size:10px;fill:var(--muted);letter-spacing:.04em}
+.cxw-avg{font-family:"Cormorant Garamond",Georgia,serif;font-size:22px;font-weight:600;fill:var(--ink);font-variant-numeric:tabular-nums}
+.cxw-avgl{font-size:6px;letter-spacing:.2em;fill:var(--muted)}
+.cxc{display:flex;align-items:center;gap:6px;margin-top:6px}
+.cxc-a{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.5rem;line-height:1;display:grid;place-items:center;transition:transform 360ms var(--cx-spring),border-color 150ms}
+.cxc-a:active{transform:scale(.9)}
+.cxc-a:hover{border-color:var(--c1)}
+.cxc-t{flex:1;display:flex;gap:8px;overflow-x:auto;padding:16px 22px 10px;scroll-snap-type:x proximity;scrollbar-width:none;overscroll-behavior-x:contain;mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.cxc-t::-webkit-scrollbar{display:none}
+.cxc-i{flex:none;width:76px;display:grid;justify-items:center;gap:4px;padding:6px 2px;border:0;background:none;color:var(--muted);scroll-snap-align:center;transform:scale(.86);opacity:.7;transition:transform 480ms var(--cx-spring),opacity 200ms ease-out,color 160ms}
+.cxc-g{display:grid;place-items:center;width:52px;height:52px;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);background:color-mix(in srgb,var(--c1) 14%,var(--panel));color:var(--c1)}
+.cxc-g svg{width:34px;height:34px}
+.cxc-i small{font-size:.72rem;max-width:74px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cxc-i[aria-selected="true"]{transform:scale(1.14);opacity:1;color:var(--ink)}
+.cxc-i[aria-selected="true"] .cxc-g{background:linear-gradient(135deg,var(--c1),var(--c2));color:#0A0C12}
+.cxc-i:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+.cxc-cap{text-align:center;display:grid;gap:2px}
+.cxc-cap b{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.25rem;line-height:1.1}
+.cxc-cap small{color:var(--muted);font-size:.78rem}
+.cxw.solo .cxc-a{display:none}
+.cxw.solo .cxc-t{justify-content:center;mask-image:none}
+@media (prefers-reduced-motion:reduce){.cxw-spin{animation:none}}
+html[data-motion="off"] .cxw-spin{animation:none}
