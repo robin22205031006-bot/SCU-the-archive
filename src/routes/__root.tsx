@@ -47,6 +47,7 @@ const NexusChrome = lazy(() =>
 const MangaChrome = lazy(() =>
   import("@/components/manga-shell").then((m) => ({ default: m.MangaChrome })),
 );
+const StyleEntry = lazy(() => import("@/components/style-entry"));
 const CodexStage = lazy(() =>
   import("@/components/codex-shell").then((m) => ({ default: m.CodexStage })),
 );
@@ -214,6 +215,9 @@ function RootContent({ offline }: { offline: boolean }) {
         {mode !== "nexus" && mode !== "manga" && !codexCovers && <SiteNav />}
         {!codexCovers && <FloatingNav />}
         <Suspense fallback={null}>{mode === "classic" && <WelcomeVfx />}</Suspense>
+        <Suspense fallback={null}>
+          <StyleEntry mode={mode} />
+        </Suspense>
         <AdminWelcomeGate />
         {!offline && <AnnouncementBanner />}
         {offline && (
