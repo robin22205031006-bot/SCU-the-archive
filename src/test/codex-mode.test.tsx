@@ -305,7 +305,7 @@ describe("Codex feed: spoiler mask, portraits and family", () => {
       ],
     });
     expect(feed.dossiers["Steven Aldercrest"]?.seasons[0]?.abilities).toEqual([
-      "Aldercrest Arcane",
+      "Aldercrest Arcane Discipline",
     ]);
     expect(feed.abilities.some((a) => a.name === "aldercrest_arcane")).toBe(false);
   });
