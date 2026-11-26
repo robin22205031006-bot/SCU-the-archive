@@ -2292,7 +2292,7 @@ const _render6=render;render=function(){_render6();setTimeout(fitHit,80);};
 applyPrefs();applyReader();routeFromHash();
 
 $("bMenu").onclick=openMenu2;
-try{window.__codexApi={NT:NT,showTab:showTab,ntNow:ntNow,drawDock:drawDock}}catch(e){}
+try{window.__codexApi={NT:NT,showTab:showTab,ntNow:ntNow,drawDock:drawDock,stAt:stAt}}catch(e){}
 render();
 })();
 </script>
@@ -3805,35 +3805,78 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
   };
 
   /* ---------- 6. Bonds orrery (Codex take on the Nexus constellation) ---------- */
+  // Codex's own Bloodlines web is the source of truth: blood ties inside, bonds and
+  // contracts in the middle, conflicts at the edge (its own type colours).
   var RINGS = [
-    { id: 1, label: "Family", test: /parent|child|sibling|spouse|ancestor|descend|kin|family|brother|sister|mother|father|son|daughter/ },
-    { id: 3, label: "Rivals", test: /rival|enemy|nemesis|foe|hunt|betray|kill/ },
-    { id: 2, label: "Allies & mentors", test: /./ },
+    { id: 1, label: "Blood" },
+    { id: 2, label: "Bonds & contracts" },
+    { id: 3, label: "Conflicts" },
   ];
-  var BOND_COL = {
-    1: "#E48AD0",
-    2: "#6FD3A0",
-    3: "#F05A66",
-  };
+  var BOND_COL = { 1: "#E5544A", 2: "#7FA8DC", 3: "#F2A15A" };
+  var TYPE_COL = { blood: "#E5544A", bond: "#7FA8DC", contract: "#B79CFF", conflict: "#F2A15A" };
+  var SYM = { Brothers: 1, Siblings: 1, Twins: 1, Married: 1, "Oldest friends": 1, "Fell in love": 1, Sisters: 1, Cousins: 1 };
   var bondsCenter = null;
   var bondsHide = {};
-  function ringOf(rel) {
-    for (var i = 0; i < RINGS.length; i++) if (RINGS[i].test.test(rel)) return RINGS[i].id;
-    return 2;
+  function ringOfType(t) {
+    return t === "blood" ? 1 : t === "conflict" ? 3 : 2;
+  }
+  /** Archive bond types mapped onto the Codex's four edge types. */
+  function typeOfRel(rel) {
+    if (/parent|child|sibling|spouse|ancestor|descend|kin|family|brother|sister|mother|father|son|daughter|cousin/.test(rel)) return "blood";
+    if (/rival|enemy|nemesis|foe|hunt|betray|kill|conflict/.test(rel)) return "conflict";
+    if (/contract|pact|vow|oath/.test(rel)) return "contract";
+    return "bond";
   }
   function cxName(app) {
     return codexNameOf(app) || app;
   }
+  function sealed(n) {
+    try {
+      return API && API.stAt && API.stAt(n) === "unseen";
+    } catch (e) {
+      return false;
+    }
+  }
   function bondIndex() {
-    var f = feed();
     var adj = {};
+    var pairs = {};
+    var key = function (a, b) {
+      return a < b ? a + "|" + b : b + "|" + a;
+    };
+    var add = function (edge) {
+      if (!edge.a || !edge.b || edge.a === edge.b) return;
+      if (sealed(edge.a) || sealed(edge.b)) return;
+      (adj[edge.a] = adj[edge.a] || []).push({ n: edge.b, e: edge });
+      (adj[edge.b] = adj[edge.b] || []).push({ n: edge.a, e: edge });
+    };
+    // 1. canon: the Codex Bloodlines web
+    try {
+      if (typeof BL !== "undefined" && BL && BL.N && BL.E) {
+        var byId = {};
+        BL.N.forEach(function (n) {
+          var c = null;
+          try {
+            c = typeof castOf === "function" ? castOf(n.n) : null;
+          } catch (e) {}
+          byId[n.id] = c || n.n;
+        });
+        BL.E.forEach(function (e) {
+          var a = byId[e[0]];
+          var b = byId[e[1]];
+          if (!a || !b || a === b) return;
+          pairs[key(a, b)] = 1;
+          add({ a: a, b: b, type: e[2], label: e[3] || "", ring: ringOfType(e[2]), src: "codex" });
+        });
+      }
+    } catch (e) {}
+    // 2. archive bonds only where the Codex says nothing about that pair
+    var f = feed();
     ((f && f.bonds) || []).forEach(function (b) {
       var a = cxName(b.a);
       var c = cxName(b.b);
-      if (a === c) return;
-      var ring = ringOf(b.rel);
-      (adj[a] = adj[a] || []).push({ n: c, rel: b.rel, label: b.label, ring: ring, dir: "out" });
-      (adj[c] = adj[c] || []).push({ n: a, rel: b.rel, label: b.label, ring: ring, dir: "in" });
+      if (!a || !c || a === c || pairs[key(a, c)]) return;
+      var t = typeOfRel(b.rel);
+      add({ a: a, b: c, type: t, label: b.label ? b.rel + ": " + b.label : b.rel, ring: ringOfType(t), src: "archive" });
     });
     return adj;
   }
@@ -3860,7 +3903,11 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
     var names = Object.keys(adj).sort(function (a, b) {
       return adj[b].length - adj[a].length || a.localeCompare(b);
     });
-    var total = ((f && f.bonds) || []).length;
+    var total = 0;
+    names.forEach(function (n) {
+      total += adj[n].length;
+    });
+    total = Math.round(total / 2);
     var hero = "";
     try {
       hero = heroX(
@@ -3869,7 +3916,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
           c2: "#FFD3F2",
           id: "balance",
           nm: "Bonds",
-          bl: "Every tie the archive records, drawn as an orrery: family close in, allies and mentors in the middle ring, rivals at the edge. Tap anyone to bring them to the centre.",
+          bl: "The Codex Bloodlines web as an orrery: blood ties close in, bonds and contracts in the middle, conflicts at the edge. Archive bonds fill pairs the Codex is silent on. Tap anyone to bring them to the centre.",
           tier: "PEOPLE",
         },
         [
@@ -3888,7 +3935,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
         '<div class="empty"><h4>No bonds yet</h4><p>' +
         (f && f.masked && f.masked.characters
           ? "Bonds are hidden by the spoiler mask."
-          : "The archive has no character bonds recorded yet. Staff can add them from the Nexus bond editor.") +
+          : "No bonds are open yet. Move the reveal dial forward, or add bonds in the archive.") +
         "</p></div></div>"
       );
     }
@@ -3899,7 +3946,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
       })
       .map(function (r) {
         var count = adj[bondsCenter].filter(function (x) {
-          return x.ring === r.id;
+          return x.e.ring === r.id;
         }).length;
         return (
           '<button type="button" class="fc cxo-lg" data-cxring="' +
@@ -3938,14 +3985,24 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
     if (!stage) return;
     var adj = bondIndex();
     var c = bondsCenter;
-    var list = (adj[c] || []).filter(function (x) {
-      return !bondsHide[x.ring];
+    document.querySelectorAll("[data-cxring]").forEach(function (lg) {
+      var r = +lg.dataset.cxring;
+      var b = lg.querySelector("b");
+      if (b)
+        b.textContent = String(
+          (adj[c] || []).filter(function (x) {
+            return x.e.ring === r;
+          }).length,
+        );
     });
-    // one node per neighbour, strongest ring wins (family > allies > rivals)
+    var list = (adj[c] || []).filter(function (x) {
+      return !bondsHide[x.e.ring];
+    });
+    // one node per neighbour, closest ring wins (blood > bonds > conflicts)
     var best = {};
     list.forEach(function (x) {
       var cur = best[x.n];
-      if (!cur || x.ring < cur.ring) best[x.n] = x;
+      if (!cur || x.e.ring < cur.ring) best[x.n] = { n: x.n, ring: x.e.ring, rel: x.e.label || x.e.type, type: x.e.type };
     });
     var W = stage.clientWidth;
     var R = { 1: W * 0.2, 2: W * 0.32, 3: W * 0.44 };
@@ -3969,7 +4026,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
       var count = arr.length + (overflow[ring] ? 1 : 0);
       arr.forEach(function (x, i) {
         var a = off + (i / Math.max(1, count)) * Math.PI * 2;
-        target[x.n] = { x: Math.cos(a) * R[ring], y: Math.sin(a) * R[ring], s: 0.78, ring: ring, rel: x.rel };
+        target[x.n] = { x: Math.cos(a) * R[ring], y: Math.sin(a) * R[ring], s: 0.78, ring: ring, rel: x.rel, type: x.type };
       });
       if (overflow[ring]) {
         var a2 = off + (arr.length / count) * Math.PI * 2;
@@ -4013,7 +4070,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
         void el.offsetWidth;
       }
       el.classList.toggle("ctr", !!t.center);
-      el.style.setProperty("--bc", t.center ? "var(--c1)" : BOND_COL[t.ring] || "var(--c1)");
+      el.style.setProperty("--bc", t.center ? "var(--c1)" : TYPE_COL[t.type] || BOND_COL[t.ring] || "var(--c1)");
       el.style.setProperty("--d", Math.min(idx * 18, 360) + "ms");
       el.setAttribute(
         "aria-label",
@@ -4036,7 +4093,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
         var ang = (Math.atan2(t.y, t.x) * 180) / Math.PI;
         return (
           '<i style="--bc:' +
-          (BOND_COL[t.ring] || "var(--c1)") +
+          (TYPE_COL[t.type] || BOND_COL[t.ring] || "var(--c1)") +
           ";--len:" +
           len.toFixed(1) +
           ";--ang:" +
@@ -4058,7 +4115,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
     var groups = groupsOf(n);
     var byRing = {};
     (adj[n] || []).forEach(function (x) {
-      (byRing[x.ring] = byRing[x.ring] || []).push(x);
+      (byRing[x.e.ring] = byRing[x.e.ring] || []).push(x);
     });
     p.innerHTML =
       '<div class="cxo-ph"><span class="tile ch">' +
@@ -4091,20 +4148,25 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
             '</h4><ul class="cxo-bl">' +
             byRing[r]
               .map(function (x) {
+                var e = x.e;
+                var sym = SYM[e.label];
+                var who = function (nm) {
+                  return nm === n
+                    ? "<b>" + escH(nm) + "</b>"
+                    : '<button type="button" class="nmb" data-cxon="' + escH(nm) + '">' + escH(nm) + "</button>";
+                };
+                var line = sym
+                  ? who(e.a) + " &amp; " + who(e.b) + ": " + escH(e.label)
+                  : who(e.a) + " → " + who(e.b) + (e.label ? ": " + escH(e.label) : "");
                 return (
                   '<li style="--bc:' +
-                  BOND_COL[r] +
-                  '"><button type="button" class="nmb" data-cxon="' +
-                  escH(x.n) +
+                  (TYPE_COL[e.type] || BOND_COL[r]) +
                   '">' +
-                  escH(x.n) +
-                  "</button> <em>" +
-                  (x.dir === "in"
-                    ? "is " + escH(x.rel) + " of " + escH(n)
-                    : escH(n) + " is " + escH(x.rel) + " of them") +
-                  "</em>" +
-                  (x.label ? "<small>" + escH(x.label) + "</small>" : "") +
-                  "</li>"
+                  line +
+                  '<small class="cxo-src">' +
+                  escH(e.type) +
+                  (e.src === "archive" ? " · from the archive" : "") +
+                  "</small></li>"
                 );
               })
               .join("") +

@@ -32,7 +32,7 @@ patch("series", /(\nconst SER0=\[.*\);)/, (m) => `${m}\ntry{window.__codexHook&&
 // 4. extra host destinations in the dock
 patch("tabs", /(\nconst NT=\[.*\];)/, (m) => `${m}\ntry{NT.push.apply(NT,window.__codexExtraTabs||[])}catch(e){}`);
 // 5. expose the dock router to the bridge
-patch("api", /\nrender\(\);\n\}\)\(\);\n<\/script>\n<\/body>/, () => `\ntry{window.__codexApi={NT:NT,showTab:showTab,ntNow:ntNow,drawDock:drawDock}}catch(e){}\nrender();\n})();\n</script>\n<style id="codex-host-css">\n${css}\n</style>\n<script id="codex-host-bridge">\n${body}\n</script>\n</body>`);
+patch("api", /\nrender\(\);\n\}\)\(\);\n<\/script>\n<\/body>/, () => `\ntry{window.__codexApi={NT:NT,showTab:showTab,ntNow:ntNow,drawDock:drawDock,stAt:stAt}}catch(e){}\nrender();\n})();\n</script>\n<style id="codex-host-css">\n${css}\n</style>\n<script id="codex-host-bridge">\n${body}\n</script>\n</body>`);
 
 html = html.replace("<title>SCU Codex</title>", "<title>SCU Codex</title>\n<meta name=\"robots\" content=\"noindex\">");
 

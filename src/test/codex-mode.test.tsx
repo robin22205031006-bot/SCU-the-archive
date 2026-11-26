@@ -303,5 +303,9 @@ describe("Codex page", () => {
     expect(html).toContain("function wireWheel");
     expect(html).toContain('class="cxc-t"');
     expect(html).toContain("function findKey");
+    // Bonds read the Codex Bloodlines web first and respect the reveal dial
+    expect(html).toContain("stAt:stAt");
+    expect(html).toContain("BL.E.forEach");
+    expect(html).toContain("from the archive");
   });
 });
