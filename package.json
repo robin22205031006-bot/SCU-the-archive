@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build:codex": "node scripts/build-codex.mjs"
+    "build:codex": "node scripts/build-codex.mjs",
+    "export:codex-canon": "node scripts/export-codex-canon.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

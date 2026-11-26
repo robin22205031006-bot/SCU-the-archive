@@ -73,6 +73,7 @@ import {
 } from "./character-card-merge";
 import { canonicalCharacterName } from "./adminLoreSync";
 import { CANON_CHARACTER_ABILITIES } from "./abilities";
+import { mergeAbilitiesWithCodex } from "./codex-canon";
 
 export { mergeCharacterCards, resolveEntityId, getMergedSecondaryIds };
 
@@ -92,12 +93,23 @@ export function withEntitySummaryDefaults(row: Partial<Entity>): Entity {
   } as Entity;
 }
 
+/**
+ * Ability list shared by every UI style. The SCU Codex is the most accurate source: where it
+ * lists a character's abilities, those come first and archive abilities it gives to other
+ * characters are dropped; archive-only abilities stay. Staff-locked lists are left exactly as
+ * staff set them, and characters the Codex does not cover keep the archive list.
+ */
 function hydrateCanonAbilities<T extends Entity>(entity: T): T {
   if (entity.kind !== "character") return entity;
-  if ((entity.abilities?.length ?? 0) > 0) return entity;
   if (entity.locked_fields?.includes("abilities")) return entity;
-  const fallback = CANON_CHARACTER_ABILITIES[canonicalCharacterName(entity.name)];
-  return fallback?.length ? { ...entity, abilities: [...fallback] } : entity;
+  const own = entity.abilities ?? [];
+  const archive = own.length
+    ? own
+    : (CANON_CHARACTER_ABILITIES[canonicalCharacterName(entity.name)] ?? []);
+  const merged = mergeAbilitiesWithCodex(entity.name, entity.alias ?? null, archive);
+  if (!merged.length) return entity;
+  if (merged.length === own.length && merged.every((a, i) => a === own[i])) return entity;
+  return { ...entity, abilities: merged };
 }
 
 export const entitiesQuery = (kinds: string[]) =>
