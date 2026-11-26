@@ -1122,6 +1122,401 @@
       paintPortraits(root || document);
     } catch (e) {}
   };
+
+  /* ---------- 6. Bonds orrery (Codex take on the Nexus constellation) ---------- */
+  var RINGS = [
+    { id: 1, label: "Family", test: /parent|child|sibling|spouse|ancestor|descend|kin|family|brother|sister|mother|father|son|daughter/ },
+    { id: 3, label: "Rivals", test: /rival|enemy|nemesis|foe|hunt|betray|kill/ },
+    { id: 2, label: "Allies & mentors", test: /./ },
+  ];
+  var BOND_COL = {
+    1: "#E48AD0",
+    2: "#6FD3A0",
+    3: "#F05A66",
+  };
+  var bondsCenter = null;
+  var bondsHide = {};
+  function ringOf(rel) {
+    for (var i = 0; i < RINGS.length; i++) if (RINGS[i].test.test(rel)) return RINGS[i].id;
+    return 2;
+  }
+  function cxName(app) {
+    return codexNameOf(app) || app;
+  }
+  function bondIndex() {
+    var f = feed();
+    var adj = {};
+    ((f && f.bonds) || []).forEach(function (b) {
+      var a = cxName(b.a);
+      var c = cxName(b.b);
+      if (a === c) return;
+      var ring = ringOf(b.rel);
+      (adj[a] = adj[a] || []).push({ n: c, rel: b.rel, label: b.label, ring: ring, dir: "out" });
+      (adj[c] = adj[c] || []).push({ n: a, rel: b.rel, label: b.label, ring: ring, dir: "in" });
+    });
+    return adj;
+  }
+  function groupsOf(n) {
+    var f = feed();
+    return ((f && f.groups) || []).filter(function (g) {
+      return g.members.some(function (m) {
+        return cxName(m) === n;
+      });
+    });
+  }
+  function tileHTML(n, sz) {
+    var url = window.__codexPortrait && window.__codexPortrait[n];
+    if (url) return '<img class="cx-pt" alt="" decoding="async" src="' + escH(url) + '">';
+    try {
+      return typeof emC === "function" ? emC(n, sz) : "";
+    } catch (e) {
+      return "";
+    }
+  }
+  function bondsHTML() {
+    var f = feed();
+    var adj = bondIndex();
+    var names = Object.keys(adj).sort(function (a, b) {
+      return adj[b].length - adj[a].length || a.localeCompare(b);
+    });
+    var total = ((f && f.bonds) || []).length;
+    var hero = "";
+    try {
+      hero = heroX(
+        {
+          c1: "#E48AD0",
+          c2: "#FFD3F2",
+          id: "balance",
+          nm: "Bonds",
+          bl: "Every tie the archive records, drawn as an orrery: family close in, allies and mentors in the middle ring, rivals at the edge. Tap anyone to bring them to the centre.",
+          tier: "PEOPLE",
+        },
+        [
+          [total, "bonds"],
+          [names.length, "characters"],
+          [((f && f.groups) || []).length, "groups"],
+        ],
+      );
+    } catch (e) {
+      hero = '<h2 class="xh">Bonds</h2>';
+    }
+    if (!names.length) {
+      return (
+        '<div class="xpage">' +
+        hero +
+        '<div class="empty"><h4>No bonds yet</h4><p>' +
+        (f && f.masked && f.masked.characters
+          ? "Bonds are hidden by the spoiler mask."
+          : "The archive has no character bonds recorded yet. Staff can add them from the Nexus bond editor.") +
+        "</p></div></div>"
+      );
+    }
+    if (!bondsCenter || !adj[bondsCenter]) bondsCenter = names[0];
+    var legend = RINGS.slice()
+      .sort(function (a, b) {
+        return a.id - b.id;
+      })
+      .map(function (r) {
+        var count = adj[bondsCenter].filter(function (x) {
+          return x.ring === r.id;
+        }).length;
+        return (
+          '<button type="button" class="fc cxo-lg" data-cxring="' +
+          r.id +
+          '" aria-pressed="' +
+          !bondsHide[r.id] +
+          '" style="--bc:' +
+          BOND_COL[r.id] +
+          '"><i></i>' +
+          escH(r.label) +
+          " <b>" +
+          count +
+          "</b></button>"
+        );
+      })
+      .join("");
+    return (
+      '<div class="xpage cxo-page">' +
+      hero +
+      '<div class="cxo-bar"><label class="sfield"><span>Centre on</span><input class="inp" id="cxoQ" list="cxoL" placeholder="Search a character" autocomplete="off"></label><datalist id="cxoL">' +
+      names
+        .map(function (n) {
+          return '<option value="' + escH(n) + '"></option>';
+        })
+        .join("") +
+      '</datalist><div class="fchips cxo-legend" role="group" aria-label="Bond rings">' +
+      legend +
+      "</div></div>" +
+      '<div class="cxo-wrap"><div class="cxo" id="cxo" role="group" aria-label="Bond orrery"><div class="cxo-ring r1"></div><div class="cxo-ring r2"></div><div class="cxo-ring r3"></div><div class="cxo-links"></div><div class="cxo-nodes"></div></div>' +
+      '<aside class="cxo-panel" id="cxoP" aria-live="polite"></aside></div></div>'
+    );
+  }
+  var oNodes = {};
+  function layoutBonds(fromName) {
+    var stage = $id("cxo");
+    if (!stage) return;
+    var adj = bondIndex();
+    var c = bondsCenter;
+    var list = (adj[c] || []).filter(function (x) {
+      return !bondsHide[x.ring];
+    });
+    // one node per neighbour, strongest ring wins (family > allies > rivals)
+    var best = {};
+    list.forEach(function (x) {
+      var cur = best[x.n];
+      if (!cur || x.ring < cur.ring) best[x.n] = x;
+    });
+    var W = stage.clientWidth;
+    var R = { 1: W * 0.2, 2: W * 0.32, 3: W * 0.44 };
+    var byRing = { 1: [], 2: [], 3: [] };
+    Object.keys(best).forEach(function (n) {
+      byRing[best[n].ring].push(best[n]);
+    });
+    var target = {};
+    target[c] = { x: 0, y: 0, s: 1, center: true, ring: 0 };
+    var overflow = {};
+    [1, 2, 3].forEach(function (ring) {
+      var arr = byRing[ring].sort(function (a, b) {
+        return a.n.localeCompare(b.n);
+      });
+      var cap = Math.max(4, Math.floor((2 * Math.PI * R[ring]) / 64));
+      if (arr.length > cap) {
+        overflow[ring] = arr.length - (cap - 1);
+        arr = arr.slice(0, cap - 1);
+      }
+      var off = ring * 0.6;
+      var count = arr.length + (overflow[ring] ? 1 : 0);
+      arr.forEach(function (x, i) {
+        var a = off + (i / Math.max(1, count)) * Math.PI * 2;
+        target[x.n] = { x: Math.cos(a) * R[ring], y: Math.sin(a) * R[ring], s: 0.78, ring: ring, rel: x.rel };
+      });
+      if (overflow[ring]) {
+        var a2 = off + (arr.length / count) * Math.PI * 2;
+        target["__more" + ring] = { x: Math.cos(a2) * R[ring], y: Math.sin(a2) * R[ring], s: 0.7, ring: ring, more: overflow[ring] };
+      }
+    });
+    var nodesBox = stage.querySelector(".cxo-nodes");
+    var start = fromName && oNodes[fromName] ? oNodes[fromName]._pos : { x: 0, y: 0 };
+    // leave
+    Object.keys(oNodes).forEach(function (n) {
+      if (target[n]) return;
+      var el = oNodes[n];
+      delete oNodes[n];
+      el.classList.add("out");
+      el.style.transform =
+        "translate(" + el._pos.x.toFixed(1) + "px," + el._pos.y.toFixed(1) + "px) scale(.4)";
+      setTimeout(function () {
+        el.remove();
+      }, reduced() ? 0 : 420);
+    });
+    // enter / move
+    Object.keys(target).forEach(function (n, idx) {
+      var t = target[n];
+      var el = oNodes[n];
+      if (!el) {
+        el = document.createElement("button");
+        el.type = "button";
+        el.className = "cxo-n";
+        if (t.more) {
+          el.innerHTML = '<span class="cxo-t more">+' + t.more + "</span><small>more</small>";
+          el.dataset.cxomore = String(t.ring);
+        } else {
+          el.innerHTML = '<span class="cxo-t ch">' + tileHTML(n, 30) + "</span><small>" + escH(n) + "</small>";
+          el.dataset.cxon = n;
+        }
+        el._pos = { x: start.x, y: start.y };
+        el.style.transform = "translate(" + start.x + "px," + start.y + "px) scale(.3)";
+        el.style.opacity = "0";
+        nodesBox.appendChild(el);
+        oNodes[n] = el;
+        void el.offsetWidth;
+      }
+      el.classList.toggle("ctr", !!t.center);
+      el.style.setProperty("--bc", t.center ? "var(--c1)" : BOND_COL[t.ring] || "var(--c1)");
+      el.style.setProperty("--d", Math.min(idx * 18, 360) + "ms");
+      el.setAttribute(
+        "aria-label",
+        t.center ? n + ", centre" : t.more ? t.more + " more in this ring" : n + ", " + (t.rel || "bond"),
+      );
+      el._pos = { x: t.x, y: t.y };
+      el.style.opacity = "1";
+      el.style.transform =
+        "translate(" + t.x.toFixed(1) + "px," + t.y.toFixed(1) + "px) scale(" + (t.center ? 1.45 : t.s) + ")";
+    });
+    // spokes: transform-only lines from the centre
+    var links = stage.querySelector(".cxo-links");
+    links.innerHTML = Object.keys(target)
+      .filter(function (n) {
+        return !target[n].center;
+      })
+      .map(function (n, i) {
+        var t = target[n];
+        var len = Math.hypot(t.x, t.y);
+        var ang = (Math.atan2(t.y, t.x) * 180) / Math.PI;
+        return (
+          '<i style="--bc:' +
+          (BOND_COL[t.ring] || "var(--c1)") +
+          ";--len:" +
+          len.toFixed(1) +
+          ";--ang:" +
+          ang.toFixed(2) +
+          "deg;--d:" +
+          Math.min(i * 18, 360) +
+          'ms"></i>'
+        );
+      })
+      .join("");
+    paintBondPanel();
+  }
+  function paintBondPanel() {
+    var p = $id("cxoP");
+    if (!p) return;
+    var n = bondsCenter;
+    var adj = bondIndex();
+    var row = typeof castRow === "function" ? castRow(n) : [n, "", ""];
+    var groups = groupsOf(n);
+    var byRing = {};
+    (adj[n] || []).forEach(function (x) {
+      (byRing[x.ring] = byRing[x.ring] || []).push(x);
+    });
+    p.innerHTML =
+      '<div class="cxo-ph"><span class="tile ch">' +
+      tileHTML(n, 42) +
+      "</span><div><h3>" +
+      escH(n) +
+      "</h3>" +
+      (row[2] ? "<p>" + escH(row[2]) + "</p>" : "") +
+      "</div></div>" +
+      (groups.length
+        ? '<div class="sec"><h4>Member of</h4><div class="chips">' +
+          groups
+            .map(function (g) {
+              return '<span class="chip"><i class="dot" style="background:var(--c1)"></i>' + escH(g.name) + " <small>" + escH(g.kind) + "</small></span>";
+            })
+            .join("") +
+          "</div></div>"
+        : "") +
+      [1, 2, 3]
+        .filter(function (r) {
+          return byRing[r];
+        })
+        .map(function (r) {
+          var label = RINGS.find(function (x) {
+            return x.id === r;
+          }).label;
+          return (
+            '<div class="sec"><h4>' +
+            escH(label) +
+            '</h4><ul class="cxo-bl">' +
+            byRing[r]
+              .map(function (x) {
+                return (
+                  '<li style="--bc:' +
+                  BOND_COL[r] +
+                  '"><button type="button" class="nmb" data-cxon="' +
+                  escH(x.n) +
+                  '">' +
+                  escH(x.n) +
+                  "</button> <em>" +
+                  (x.dir === "in"
+                    ? "is " + escH(x.rel) + " of " + escH(n)
+                    : escH(n) + " is " + escH(x.rel) + " of them") +
+                  "</em>" +
+                  (x.label ? "<small>" + escH(x.label) + "</small>" : "") +
+                  "</li>"
+                );
+              })
+              .join("") +
+            "</ul></div>"
+          );
+        })
+        .join("") +
+      '<div class="row"><button type="button" class="btn" data-cxodossier="' +
+      escH(n) +
+      '">Open dossier</button></div>';
+  }
+  function mountBonds() {
+    var stage = $id("cxo");
+    if (!stage) return;
+    oNodes = {};
+    layoutBonds(null);
+    var q = $id("cxoQ");
+    if (q)
+      q.addEventListener("change", function () {
+        var adj = bondIndex();
+        var v = q.value.trim();
+        var hit = Object.keys(adj).find(function (n) {
+          return n.toLowerCase() === v.toLowerCase();
+        });
+        if (hit) {
+          bondsCenter = hit;
+          layoutBonds(null);
+          q.value = "";
+        }
+      });
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target && e.target.closest ? e.target : null;
+    if (!t) return;
+    var node = t.closest("[data-cxon]");
+    if (node && $id("cxo")) {
+      var n = node.dataset.cxon;
+      if (n === bondsCenter) return;
+      var from = n;
+      bondsCenter = n;
+      layoutBonds(from);
+      return;
+    }
+    var more = t.closest("[data-cxomore]");
+    if (more) {
+      var p = $id("cxoP");
+      if (p) p.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "nearest" });
+      return;
+    }
+    var lg = t.closest("[data-cxring]");
+    if (lg) {
+      var r = +lg.dataset.cxring;
+      bondsHide[r] = !bondsHide[r];
+      lg.setAttribute("aria-pressed", String(!bondsHide[r]));
+      layoutBonds(null);
+      return;
+    }
+    var dz = t.closest("[data-cxodossier]");
+    if (dz && typeof openCharacter === "function") openCharacter(dz.dataset.cxodossier);
+  });
+  if (typeof viewHTML === "function") {
+    var _vhx = viewHTML;
+    // eslint-disable-next-line no-global-assign
+    viewHTML = function () {
+      if (tab === "bonds") return bondsHTML();
+      return _vhx.apply(this, arguments);
+    };
+  }
+  if (typeof render === "function") {
+    var _rbx = render;
+    // eslint-disable-next-line no-global-assign
+    render = function () {
+      _rbx.apply(this, arguments);
+      if (tab === "bonds") {
+        try {
+          mountBonds();
+        } catch (e) {
+          if (window.console) console.warn("[codex] bonds skipped", e);
+        }
+      }
+    };
+  }
+  // Codex's first render ran before this bridge loaded: redraw if it opened on Bonds.
+  try {
+    if (tab === "bonds") render();
+  } catch (e) {}
+  window.addEventListener("resize", function () {
+    if (tab !== "bonds") return;
+    clearTimeout(window.__cxoRz);
+    window.__cxoRz = setTimeout(function () {
+      layoutBonds(null);
+    }, 200);
+  });
   var decoT = 0;
   new MutationObserver(function () {
     cancelAnimationFrame(decoT);

@@ -3,6 +3,7 @@ import { useLocation, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
+import { supabase } from "@/integrations/supabase/client";
 import { seriesQuery } from "@/lib/series";
 import { allAbilityDefs } from "@/lib/abilities";
 import { useIsStaff } from "@/hooks/use-admin";
@@ -40,6 +41,21 @@ type CodexFrameWindow = Window & {
   __codexFeedUpdate?: (feed: CodexFeed) => void;
 };
 
+const GROUP_KINDS = ["organization", "clan", "bloodline", "faction"];
+/** Same key as the Nexus constellation's membership query, so the cache is shared. */
+const membershipsQuery = {
+  queryKey: ["graph-memberships"],
+  staleTime: 30_000,
+  queryFn: async () => {
+    const { data, error } = await supabase.from("entity_memberships").select("*");
+    if (error) {
+      if (/entity_memberships|schema cache|does not exist/i.test(error.message)) return [];
+      throw error;
+    }
+    return data ?? [];
+  },
+};
+
 const LAST_TAB_KEY = "scu-codex-last-path";
 
 function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: boolean } {
@@ -48,6 +64,8 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
   const ents = useQuery({ ...entitiesQuery(["character"]), enabled });
   const ser = useQuery({ ...seriesQuery, enabled });
   const rel = useQuery({ ...entityRelationsQuery, enabled });
+  const grp = useQuery({ ...entitiesQuery(GROUP_KINDS), enabled });
+  const mem = useQuery({ ...membershipsQuery, enabled });
   const maskChars = useSpoilerMask("characters");
   const maskAbil = useSpoilerMask("abilities");
   const maskArch = useSpoilerMask("archive");
@@ -64,6 +82,8 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
       entities: ents.data ?? [],
       series: ser.data ?? [],
       relations: rel.data ?? [],
+      groups: grp.data ?? [],
+      memberships: mem.data ?? [],
       masked: {
         characters: maskChars,
         abilities: maskAbil,
@@ -85,6 +105,8 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
     ents.data,
     ser.data,
     rel.data,
+    grp.data,
+    mem.data,
     maskChars,
     maskAbil,
     maskArch,

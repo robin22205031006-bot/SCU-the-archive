@@ -573,6 +573,7 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
 
   /** Extra dock destinations that open the app's own pages. */
   var extra = [
+    ["bonds", "Bonds", "people", "ring3", "local", "bonds"],
     ["fx", "Ability FX", "power", "bolt", "host", "fx"],
     ["action", "Ability in Action", "power", "blade", "host", "action"],
     ["atlas", "Atlas", "time", "portal", "host", "atlas"],
@@ -2442,6 +2443,50 @@ button.cxst-node:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.cxst-step,.cxst-link,.cxst-gem{animation:none!important}}
 html[data-motion="off"] .cxst-step,html[data-motion="off"] .cxst-link,html[data-motion="off"] .cxst-gem{animation:none!important}
 
+/* ---- Bonds orrery ---- */
+.cxo-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin:8px 0 12px}
+.cxo-bar .sfield{max-width:320px}
+.cxo-legend{flex:1;min-width:0}
+.cxo-lg{display:inline-flex;align-items:center;gap:6px}
+.cxo-lg i{width:10px;height:10px;transform:rotate(45deg);border-radius:2px;background:var(--bc)}
+.cxo-lg[aria-pressed="false"]{opacity:.5}
+.cxo-lg[aria-pressed="false"] i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--bc)}
+.cxo-wrap{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:900px){.cxo-wrap{grid-template-columns:minmax(0,1fr) 340px;align-items:start}}
+.cxo{position:relative;width:100%;max-width:640px;aspect-ratio:1;margin:0 auto;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c1) 14%,transparent),transparent 62%);overflow:visible;touch-action:manipulation}
+.cxo-ring{position:absolute;left:50%;top:50%;border-radius:50%;border:1px dashed var(--line);pointer-events:none;animation:cxSpin 160s linear infinite}
+.cxo-ring.r1{width:40%;height:40%;margin:-20% 0 0 -20%;border-color:color-mix(in srgb,#E48AD0 45%,var(--line))}
+.cxo-ring.r2{width:64%;height:64%;margin:-32% 0 0 -32%;border-color:color-mix(in srgb,#6FD3A0 40%,var(--line));animation-direction:reverse;animation-duration:220s}
+.cxo-ring.r3{width:88%;height:88%;margin:-44% 0 0 -44%;border-color:color-mix(in srgb,#F05A66 40%,var(--line))}
+.cxo-links,.cxo-nodes{position:absolute;left:50%;top:50%;width:0;height:0}
+.cxo-links i{position:absolute;left:0;top:-.5px;width:1px;height:1px;background:linear-gradient(90deg,transparent,var(--bc));opacity:.75;transform-origin:0 50%;transform:rotate(var(--ang)) scaleX(var(--len));animation:cxSpoke 620ms var(--cx-soft) both;animation-delay:var(--d)}
+@keyframes cxSpoke{from{transform:rotate(var(--ang)) scaleX(0);opacity:0}to{transform:rotate(var(--ang)) scaleX(var(--len));opacity:.75}}
+.cxo-n{position:absolute;left:-36px;top:-30px;width:72px;display:grid;justify-items:center;gap:3px;padding:0;border:0;background:none;color:var(--ink);will-change:transform,opacity;transition:transform 720ms var(--cx-spring) var(--d,0ms),opacity 320ms ease-out var(--d,0ms)}
+.cxo-n.out{transition:transform 380ms ease-in,opacity 260ms ease-in;pointer-events:none;opacity:0!important}
+.cxo-t{display:grid;place-items:center;width:44px;height:44px;overflow:hidden;background:color-mix(in srgb,var(--bc) 18%,var(--panel));box-shadow:0 0 0 2px var(--bc);border-radius:50%;transition:box-shadow 200ms}
+.cxo-t svg{width:30px;height:30px}
+.cxo-t .cx-pt{width:100%;height:100%;object-fit:cover}
+.cxo-t.more{font-weight:600;font-size:.86rem;color:var(--ink)}
+.cxo-n small{font-size:.68rem;max-width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--panel) 85%,transparent)}
+.cxo-n.ctr .cxo-t{box-shadow:0 0 0 2px var(--c1),0 0 0 6px color-mix(in srgb,var(--c1) 25%,transparent)}
+.cxo-n.ctr small{font-weight:600}
+.cxo-n:hover .cxo-t{box-shadow:0 0 0 3px var(--bc)}
+.cxo-n:focus-visible{outline:none}
+.cxo-n:focus-visible .cxo-t{box-shadow:0 0 0 3px var(--ink)}
+.cxo-panel{border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:14px;animation:cxFade 420ms var(--cx-soft) both}
+.cxo-ph{display:flex;gap:12px;align-items:center}
+.cxo-ph .tile{width:56px;height:56px;overflow:hidden}
+.cxo-ph .tile .cx-pt{width:100%;height:100%;object-fit:cover}
+.cxo-ph h3{margin:0;font-family:"Cormorant Garamond",Georgia,serif;font-size:1.5rem;line-height:1.1}
+.cxo-ph p{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
+.cxo-bl{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cxo-bl li{position:relative;padding-left:16px;font-size:.88rem}
+.cxo-bl li::before{content:"";position:absolute;left:0;top:7px;width:8px;height:8px;transform:rotate(45deg);border-radius:2px;background:var(--bc)}
+.cxo-bl em{font-style:normal;color:var(--muted);font-size:.8rem}
+.cxo-bl small{display:block;color:var(--muted);font-size:.78rem}
+@media (prefers-reduced-motion:reduce){.cxo-ring,.cxo-links i{animation:none!important}.cxo-n{transition:none!important}}
+html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation:none!important}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -3568,6 +3613,401 @@ html[data-motion="off"] .cxst-step,html[data-motion="off"] .cxst-link,html[data-
       paintPortraits(root || document);
     } catch (e) {}
   };
+
+  /* ---------- 6. Bonds orrery (Codex take on the Nexus constellation) ---------- */
+  var RINGS = [
+    { id: 1, label: "Family", test: /parent|child|sibling|spouse|ancestor|descend|kin|family|brother|sister|mother|father|son|daughter/ },
+    { id: 3, label: "Rivals", test: /rival|enemy|nemesis|foe|hunt|betray|kill/ },
+    { id: 2, label: "Allies & mentors", test: /./ },
+  ];
+  var BOND_COL = {
+    1: "#E48AD0",
+    2: "#6FD3A0",
+    3: "#F05A66",
+  };
+  var bondsCenter = null;
+  var bondsHide = {};
+  function ringOf(rel) {
+    for (var i = 0; i < RINGS.length; i++) if (RINGS[i].test.test(rel)) return RINGS[i].id;
+    return 2;
+  }
+  function cxName(app) {
+    return codexNameOf(app) || app;
+  }
+  function bondIndex() {
+    var f = feed();
+    var adj = {};
+    ((f && f.bonds) || []).forEach(function (b) {
+      var a = cxName(b.a);
+      var c = cxName(b.b);
+      if (a === c) return;
+      var ring = ringOf(b.rel);
+      (adj[a] = adj[a] || []).push({ n: c, rel: b.rel, label: b.label, ring: ring, dir: "out" });
+      (adj[c] = adj[c] || []).push({ n: a, rel: b.rel, label: b.label, ring: ring, dir: "in" });
+    });
+    return adj;
+  }
+  function groupsOf(n) {
+    var f = feed();
+    return ((f && f.groups) || []).filter(function (g) {
+      return g.members.some(function (m) {
+        return cxName(m) === n;
+      });
+    });
+  }
+  function tileHTML(n, sz) {
+    var url = window.__codexPortrait && window.__codexPortrait[n];
+    if (url) return '<img class="cx-pt" alt="" decoding="async" src="' + escH(url) + '">';
+    try {
+      return typeof emC === "function" ? emC(n, sz) : "";
+    } catch (e) {
+      return "";
+    }
+  }
+  function bondsHTML() {
+    var f = feed();
+    var adj = bondIndex();
+    var names = Object.keys(adj).sort(function (a, b) {
+      return adj[b].length - adj[a].length || a.localeCompare(b);
+    });
+    var total = ((f && f.bonds) || []).length;
+    var hero = "";
+    try {
+      hero = heroX(
+        {
+          c1: "#E48AD0",
+          c2: "#FFD3F2",
+          id: "balance",
+          nm: "Bonds",
+          bl: "Every tie the archive records, drawn as an orrery: family close in, allies and mentors in the middle ring, rivals at the edge. Tap anyone to bring them to the centre.",
+          tier: "PEOPLE",
+        },
+        [
+          [total, "bonds"],
+          [names.length, "characters"],
+          [((f && f.groups) || []).length, "groups"],
+        ],
+      );
+    } catch (e) {
+      hero = '<h2 class="xh">Bonds</h2>';
+    }
+    if (!names.length) {
+      return (
+        '<div class="xpage">' +
+        hero +
+        '<div class="empty"><h4>No bonds yet</h4><p>' +
+        (f && f.masked && f.masked.characters
+          ? "Bonds are hidden by the spoiler mask."
+          : "The archive has no character bonds recorded yet. Staff can add them from the Nexus bond editor.") +
+        "</p></div></div>"
+      );
+    }
+    if (!bondsCenter || !adj[bondsCenter]) bondsCenter = names[0];
+    var legend = RINGS.slice()
+      .sort(function (a, b) {
+        return a.id - b.id;
+      })
+      .map(function (r) {
+        var count = adj[bondsCenter].filter(function (x) {
+          return x.ring === r.id;
+        }).length;
+        return (
+          '<button type="button" class="fc cxo-lg" data-cxring="' +
+          r.id +
+          '" aria-pressed="' +
+          !bondsHide[r.id] +
+          '" style="--bc:' +
+          BOND_COL[r.id] +
+          '"><i></i>' +
+          escH(r.label) +
+          " <b>" +
+          count +
+          "</b></button>"
+        );
+      })
+      .join("");
+    return (
+      '<div class="xpage cxo-page">' +
+      hero +
+      '<div class="cxo-bar"><label class="sfield"><span>Centre on</span><input class="inp" id="cxoQ" list="cxoL" placeholder="Search a character" autocomplete="off"></label><datalist id="cxoL">' +
+      names
+        .map(function (n) {
+          return '<option value="' + escH(n) + '"></option>';
+        })
+        .join("") +
+      '</datalist><div class="fchips cxo-legend" role="group" aria-label="Bond rings">' +
+      legend +
+      "</div></div>" +
+      '<div class="cxo-wrap"><div class="cxo" id="cxo" role="group" aria-label="Bond orrery"><div class="cxo-ring r1"></div><div class="cxo-ring r2"></div><div class="cxo-ring r3"></div><div class="cxo-links"></div><div class="cxo-nodes"></div></div>' +
+      '<aside class="cxo-panel" id="cxoP" aria-live="polite"></aside></div></div>'
+    );
+  }
+  var oNodes = {};
+  function layoutBonds(fromName) {
+    var stage = $id("cxo");
+    if (!stage) return;
+    var adj = bondIndex();
+    var c = bondsCenter;
+    var list = (adj[c] || []).filter(function (x) {
+      return !bondsHide[x.ring];
+    });
+    // one node per neighbour, strongest ring wins (family > allies > rivals)
+    var best = {};
+    list.forEach(function (x) {
+      var cur = best[x.n];
+      if (!cur || x.ring < cur.ring) best[x.n] = x;
+    });
+    var W = stage.clientWidth;
+    var R = { 1: W * 0.2, 2: W * 0.32, 3: W * 0.44 };
+    var byRing = { 1: [], 2: [], 3: [] };
+    Object.keys(best).forEach(function (n) {
+      byRing[best[n].ring].push(best[n]);
+    });
+    var target = {};
+    target[c] = { x: 0, y: 0, s: 1, center: true, ring: 0 };
+    var overflow = {};
+    [1, 2, 3].forEach(function (ring) {
+      var arr = byRing[ring].sort(function (a, b) {
+        return a.n.localeCompare(b.n);
+      });
+      var cap = Math.max(4, Math.floor((2 * Math.PI * R[ring]) / 64));
+      if (arr.length > cap) {
+        overflow[ring] = arr.length - (cap - 1);
+        arr = arr.slice(0, cap - 1);
+      }
+      var off = ring * 0.6;
+      var count = arr.length + (overflow[ring] ? 1 : 0);
+      arr.forEach(function (x, i) {
+        var a = off + (i / Math.max(1, count)) * Math.PI * 2;
+        target[x.n] = { x: Math.cos(a) * R[ring], y: Math.sin(a) * R[ring], s: 0.78, ring: ring, rel: x.rel };
+      });
+      if (overflow[ring]) {
+        var a2 = off + (arr.length / count) * Math.PI * 2;
+        target["__more" + ring] = { x: Math.cos(a2) * R[ring], y: Math.sin(a2) * R[ring], s: 0.7, ring: ring, more: overflow[ring] };
+      }
+    });
+    var nodesBox = stage.querySelector(".cxo-nodes");
+    var start = fromName && oNodes[fromName] ? oNodes[fromName]._pos : { x: 0, y: 0 };
+    // leave
+    Object.keys(oNodes).forEach(function (n) {
+      if (target[n]) return;
+      var el = oNodes[n];
+      delete oNodes[n];
+      el.classList.add("out");
+      el.style.transform =
+        "translate(" + el._pos.x.toFixed(1) + "px," + el._pos.y.toFixed(1) + "px) scale(.4)";
+      setTimeout(function () {
+        el.remove();
+      }, reduced() ? 0 : 420);
+    });
+    // enter / move
+    Object.keys(target).forEach(function (n, idx) {
+      var t = target[n];
+      var el = oNodes[n];
+      if (!el) {
+        el = document.createElement("button");
+        el.type = "button";
+        el.className = "cxo-n";
+        if (t.more) {
+          el.innerHTML = '<span class="cxo-t more">+' + t.more + "</span><small>more</small>";
+          el.dataset.cxomore = String(t.ring);
+        } else {
+          el.innerHTML = '<span class="cxo-t ch">' + tileHTML(n, 30) + "</span><small>" + escH(n) + "</small>";
+          el.dataset.cxon = n;
+        }
+        el._pos = { x: start.x, y: start.y };
+        el.style.transform = "translate(" + start.x + "px," + start.y + "px) scale(.3)";
+        el.style.opacity = "0";
+        nodesBox.appendChild(el);
+        oNodes[n] = el;
+        void el.offsetWidth;
+      }
+      el.classList.toggle("ctr", !!t.center);
+      el.style.setProperty("--bc", t.center ? "var(--c1)" : BOND_COL[t.ring] || "var(--c1)");
+      el.style.setProperty("--d", Math.min(idx * 18, 360) + "ms");
+      el.setAttribute(
+        "aria-label",
+        t.center ? n + ", centre" : t.more ? t.more + " more in this ring" : n + ", " + (t.rel || "bond"),
+      );
+      el._pos = { x: t.x, y: t.y };
+      el.style.opacity = "1";
+      el.style.transform =
+        "translate(" + t.x.toFixed(1) + "px," + t.y.toFixed(1) + "px) scale(" + (t.center ? 1.45 : t.s) + ")";
+    });
+    // spokes: transform-only lines from the centre
+    var links = stage.querySelector(".cxo-links");
+    links.innerHTML = Object.keys(target)
+      .filter(function (n) {
+        return !target[n].center;
+      })
+      .map(function (n, i) {
+        var t = target[n];
+        var len = Math.hypot(t.x, t.y);
+        var ang = (Math.atan2(t.y, t.x) * 180) / Math.PI;
+        return (
+          '<i style="--bc:' +
+          (BOND_COL[t.ring] || "var(--c1)") +
+          ";--len:" +
+          len.toFixed(1) +
+          ";--ang:" +
+          ang.toFixed(2) +
+          "deg;--d:" +
+          Math.min(i * 18, 360) +
+          'ms"></i>'
+        );
+      })
+      .join("");
+    paintBondPanel();
+  }
+  function paintBondPanel() {
+    var p = $id("cxoP");
+    if (!p) return;
+    var n = bondsCenter;
+    var adj = bondIndex();
+    var row = typeof castRow === "function" ? castRow(n) : [n, "", ""];
+    var groups = groupsOf(n);
+    var byRing = {};
+    (adj[n] || []).forEach(function (x) {
+      (byRing[x.ring] = byRing[x.ring] || []).push(x);
+    });
+    p.innerHTML =
+      '<div class="cxo-ph"><span class="tile ch">' +
+      tileHTML(n, 42) +
+      "</span><div><h3>" +
+      escH(n) +
+      "</h3>" +
+      (row[2] ? "<p>" + escH(row[2]) + "</p>" : "") +
+      "</div></div>" +
+      (groups.length
+        ? '<div class="sec"><h4>Member of</h4><div class="chips">' +
+          groups
+            .map(function (g) {
+              return '<span class="chip"><i class="dot" style="background:var(--c1)"></i>' + escH(g.name) + " <small>" + escH(g.kind) + "</small></span>";
+            })
+            .join("") +
+          "</div></div>"
+        : "") +
+      [1, 2, 3]
+        .filter(function (r) {
+          return byRing[r];
+        })
+        .map(function (r) {
+          var label = RINGS.find(function (x) {
+            return x.id === r;
+          }).label;
+          return (
+            '<div class="sec"><h4>' +
+            escH(label) +
+            '</h4><ul class="cxo-bl">' +
+            byRing[r]
+              .map(function (x) {
+                return (
+                  '<li style="--bc:' +
+                  BOND_COL[r] +
+                  '"><button type="button" class="nmb" data-cxon="' +
+                  escH(x.n) +
+                  '">' +
+                  escH(x.n) +
+                  "</button> <em>" +
+                  (x.dir === "in"
+                    ? "is " + escH(x.rel) + " of " + escH(n)
+                    : escH(n) + " is " + escH(x.rel) + " of them") +
+                  "</em>" +
+                  (x.label ? "<small>" + escH(x.label) + "</small>" : "") +
+                  "</li>"
+                );
+              })
+              .join("") +
+            "</ul></div>"
+          );
+        })
+        .join("") +
+      '<div class="row"><button type="button" class="btn" data-cxodossier="' +
+      escH(n) +
+      '">Open dossier</button></div>';
+  }
+  function mountBonds() {
+    var stage = $id("cxo");
+    if (!stage) return;
+    oNodes = {};
+    layoutBonds(null);
+    var q = $id("cxoQ");
+    if (q)
+      q.addEventListener("change", function () {
+        var adj = bondIndex();
+        var v = q.value.trim();
+        var hit = Object.keys(adj).find(function (n) {
+          return n.toLowerCase() === v.toLowerCase();
+        });
+        if (hit) {
+          bondsCenter = hit;
+          layoutBonds(null);
+          q.value = "";
+        }
+      });
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target && e.target.closest ? e.target : null;
+    if (!t) return;
+    var node = t.closest("[data-cxon]");
+    if (node && $id("cxo")) {
+      var n = node.dataset.cxon;
+      if (n === bondsCenter) return;
+      var from = n;
+      bondsCenter = n;
+      layoutBonds(from);
+      return;
+    }
+    var more = t.closest("[data-cxomore]");
+    if (more) {
+      var p = $id("cxoP");
+      if (p) p.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "nearest" });
+      return;
+    }
+    var lg = t.closest("[data-cxring]");
+    if (lg) {
+      var r = +lg.dataset.cxring;
+      bondsHide[r] = !bondsHide[r];
+      lg.setAttribute("aria-pressed", String(!bondsHide[r]));
+      layoutBonds(null);
+      return;
+    }
+    var dz = t.closest("[data-cxodossier]");
+    if (dz && typeof openCharacter === "function") openCharacter(dz.dataset.cxodossier);
+  });
+  if (typeof viewHTML === "function") {
+    var _vhx = viewHTML;
+    // eslint-disable-next-line no-global-assign
+    viewHTML = function () {
+      if (tab === "bonds") return bondsHTML();
+      return _vhx.apply(this, arguments);
+    };
+  }
+  if (typeof render === "function") {
+    var _rbx = render;
+    // eslint-disable-next-line no-global-assign
+    render = function () {
+      _rbx.apply(this, arguments);
+      if (tab === "bonds") {
+        try {
+          mountBonds();
+        } catch (e) {
+          if (window.console) console.warn("[codex] bonds skipped", e);
+        }
+      }
+    };
+  }
+  // Codex's first render ran before this bridge loaded: redraw if it opened on Bonds.
+  try {
+    if (tab === "bonds") render();
+  } catch (e) {}
+  window.addEventListener("resize", function () {
+    if (tab !== "bonds") return;
+    clearTimeout(window.__cxoRz);
+    window.__cxoRz = setTimeout(function () {
+      layoutBonds(null);
+    }, 200);
+  });
   var decoT = 0;
   new MutationObserver(function () {
     cancelAnimationFrame(decoT);

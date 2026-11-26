@@ -176,3 +176,47 @@ button.cxst-node:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
 .cxst-from{font-style:normal;font-size:.7rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.cxst-step,.cxst-link,.cxst-gem{animation:none!important}}
 html[data-motion="off"] .cxst-step,html[data-motion="off"] .cxst-link,html[data-motion="off"] .cxst-gem{animation:none!important}
+
+/* ---- Bonds orrery ---- */
+.cxo-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin:8px 0 12px}
+.cxo-bar .sfield{max-width:320px}
+.cxo-legend{flex:1;min-width:0}
+.cxo-lg{display:inline-flex;align-items:center;gap:6px}
+.cxo-lg i{width:10px;height:10px;transform:rotate(45deg);border-radius:2px;background:var(--bc)}
+.cxo-lg[aria-pressed="false"]{opacity:.5}
+.cxo-lg[aria-pressed="false"] i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--bc)}
+.cxo-wrap{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:900px){.cxo-wrap{grid-template-columns:minmax(0,1fr) 340px;align-items:start}}
+.cxo{position:relative;width:100%;max-width:640px;aspect-ratio:1;margin:0 auto;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c1) 14%,transparent),transparent 62%);overflow:visible;touch-action:manipulation}
+.cxo-ring{position:absolute;left:50%;top:50%;border-radius:50%;border:1px dashed var(--line);pointer-events:none;animation:cxSpin 160s linear infinite}
+.cxo-ring.r1{width:40%;height:40%;margin:-20% 0 0 -20%;border-color:color-mix(in srgb,#E48AD0 45%,var(--line))}
+.cxo-ring.r2{width:64%;height:64%;margin:-32% 0 0 -32%;border-color:color-mix(in srgb,#6FD3A0 40%,var(--line));animation-direction:reverse;animation-duration:220s}
+.cxo-ring.r3{width:88%;height:88%;margin:-44% 0 0 -44%;border-color:color-mix(in srgb,#F05A66 40%,var(--line))}
+.cxo-links,.cxo-nodes{position:absolute;left:50%;top:50%;width:0;height:0}
+.cxo-links i{position:absolute;left:0;top:-.5px;width:1px;height:1px;background:linear-gradient(90deg,transparent,var(--bc));opacity:.75;transform-origin:0 50%;transform:rotate(var(--ang)) scaleX(var(--len));animation:cxSpoke 620ms var(--cx-soft) both;animation-delay:var(--d)}
+@keyframes cxSpoke{from{transform:rotate(var(--ang)) scaleX(0);opacity:0}to{transform:rotate(var(--ang)) scaleX(var(--len));opacity:.75}}
+.cxo-n{position:absolute;left:-36px;top:-30px;width:72px;display:grid;justify-items:center;gap:3px;padding:0;border:0;background:none;color:var(--ink);will-change:transform,opacity;transition:transform 720ms var(--cx-spring) var(--d,0ms),opacity 320ms ease-out var(--d,0ms)}
+.cxo-n.out{transition:transform 380ms ease-in,opacity 260ms ease-in;pointer-events:none;opacity:0!important}
+.cxo-t{display:grid;place-items:center;width:44px;height:44px;overflow:hidden;background:color-mix(in srgb,var(--bc) 18%,var(--panel));box-shadow:0 0 0 2px var(--bc);border-radius:50%;transition:box-shadow 200ms}
+.cxo-t svg{width:30px;height:30px}
+.cxo-t .cx-pt{width:100%;height:100%;object-fit:cover}
+.cxo-t.more{font-weight:600;font-size:.86rem;color:var(--ink)}
+.cxo-n small{font-size:.68rem;max-width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--panel) 85%,transparent)}
+.cxo-n.ctr .cxo-t{box-shadow:0 0 0 2px var(--c1),0 0 0 6px color-mix(in srgb,var(--c1) 25%,transparent)}
+.cxo-n.ctr small{font-weight:600}
+.cxo-n:hover .cxo-t{box-shadow:0 0 0 3px var(--bc)}
+.cxo-n:focus-visible{outline:none}
+.cxo-n:focus-visible .cxo-t{box-shadow:0 0 0 3px var(--ink)}
+.cxo-panel{border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:14px;animation:cxFade 420ms var(--cx-soft) both}
+.cxo-ph{display:flex;gap:12px;align-items:center}
+.cxo-ph .tile{width:56px;height:56px;overflow:hidden}
+.cxo-ph .tile .cx-pt{width:100%;height:100%;object-fit:cover}
+.cxo-ph h3{margin:0;font-family:"Cormorant Garamond",Georgia,serif;font-size:1.5rem;line-height:1.1}
+.cxo-ph p{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
+.cxo-bl{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cxo-bl li{position:relative;padding-left:16px;font-size:.88rem}
+.cxo-bl li::before{content:"";position:absolute;left:0;top:7px;width:8px;height:8px;transform:rotate(45deg);border-radius:2px;background:var(--bc)}
+.cxo-bl em{font-style:normal;color:var(--muted);font-size:.8rem}
+.cxo-bl small{display:block;color:var(--muted);font-size:.78rem}
+@media (prefers-reduced-motion:reduce){.cxo-ring,.cxo-links i{animation:none!important}.cxo-n{transition:none!important}}
+html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation:none!important}

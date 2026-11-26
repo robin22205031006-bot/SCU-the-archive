@@ -44,6 +44,7 @@
 
   /** Extra dock destinations that open the app's own pages. */
   var extra = [
+    ["bonds", "Bonds", "people", "ring3", "local", "bonds"],
     ["fx", "Ability FX", "power", "bolt", "host", "fx"],
     ["action", "Ability in Action", "power", "blade", "host", "action"],
     ["atlas", "Atlas", "time", "portal", "host", "atlas"],

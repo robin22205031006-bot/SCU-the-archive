@@ -37,6 +37,18 @@ export interface CodexFeedStatusStep {
   /** Dossier key ("seriesId:n") when the step is a season, so the Codex can jump to it. */
   season?: string | undefined;
 }
+export interface CodexFeedBond {
+  a: string;
+  b: string;
+  /** Raw archive bond type: rival, mentor, ally, commands, kin, parent, sibling, spouse, ancestor... */
+  rel: string;
+  label?: string | undefined;
+}
+export interface CodexFeedGroup {
+  name: string;
+  kind: string;
+  members: string[];
+}
 export interface CodexFeedMask {
   characters: boolean;
   abilities: boolean;
@@ -83,6 +95,10 @@ export interface CodexFeed {
   abilities: CodexFeedAbility[];
   dossiers: Record<string, { seasons: CodexFeedSeason[] }>;
   relations: CodexFeedRelation[];
+  /** Every character-to-character bond (the Nexus constellation's conduits). */
+  bonds: CodexFeedBond[];
+  /** Organizations, clans, bloodlines and factions with their character members. */
+  groups: CodexFeedGroup[];
   /** Status history per character, from the same resolver the Nexus timeline uses. */
   status: Record<string, { current: string; steps: CodexFeedStatusStep[] }>;
   /** Shared spoiler mask. Masked scopes are removed from the feed itself, not just hidden. */
@@ -111,6 +127,11 @@ export interface CodexRelationInput {
   source_id: string;
   target_id: string;
   rel: string;
+  label?: string | null;
+}
+export interface CodexMembershipInput {
+  character_id: string;
+  group_id: string;
 }
 export interface CodexAbilityInput {
   label: string;
@@ -195,12 +216,16 @@ export function buildCodexFeed({
   mode,
   modes,
   relations = [],
+  groups = [],
+  memberships = [],
   masked = { characters: false, abilities: false, archive: false, series: false },
 }: {
   entities: ReadonlyArray<CodexEntityInput>;
   series: ReadonlyArray<CodexSeriesInput>;
   abilities: ReadonlyArray<CodexAbilityInput>;
   relations?: ReadonlyArray<CodexRelationInput>;
+  groups?: ReadonlyArray<CodexEntityInput>;
+  memberships?: ReadonlyArray<CodexMembershipInput>;
   masked?: CodexFeedMask;
   staff: boolean;
   mode: string;
@@ -270,12 +295,35 @@ export function buildCodexFeed({
   for (const a of abilities) push(a.label, a.description);
   if (!masked.characters) for (const e of entities) for (const ab of list(e.abilities)) push(ab);
   const rels: CodexFeedRelation[] = [];
+  const bonds: CodexFeedBond[] = [];
+  const groupOut: CodexFeedGroup[] = [];
   if (!masked.characters) {
+    const bondSeen = new Set<string>();
     for (const r of relations) {
       const a = nameById.get(r.source_id);
       const b = nameById.get(r.target_id);
-      if (!a || !b || a === b || !isFamilyRel(r.rel)) continue;
-      rels.push({ a, b, rel: r.rel });
+      const rel = typeof r.rel === "string" ? r.rel.trim().toLowerCase() : "";
+      if (!a || !b || a === b || !rel) continue;
+      if (isFamilyRel(rel)) rels.push({ a, b, rel });
+      const k = `${a}|${rel}|${b}`;
+      if (bondSeen.has(k) || bonds.length >= 1500) continue;
+      bondSeen.add(k);
+      bonds.push({ a, b, rel: clip(rel, 30), label: clip(r.label, 120) || undefined });
+    }
+    const members = new Map<string, string[]>();
+    for (const m of memberships) {
+      const who = nameById.get(m.character_id);
+      if (!who) continue;
+      const list2 = members.get(m.group_id) ?? [];
+      if (!list2.includes(who)) list2.push(who);
+      members.set(m.group_id, list2);
+    }
+    for (const g of groups) {
+      const name = g.name?.trim();
+      if (!g.id || !name || !g.kind || g.kind === "character") continue;
+      const m = members.get(g.id);
+      if (!m?.length) continue;
+      groupOut.push({ name: clip(name, 80), kind: g.kind, members: m.slice(0, 200) });
     }
   }
   return {
@@ -287,6 +335,8 @@ export function buildCodexFeed({
     abilities: abilityOut,
     dossiers,
     relations: rels,
+    bonds,
+    groups: groupOut,
     status: statusOut,
     masked,
   };

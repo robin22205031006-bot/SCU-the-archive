@@ -201,6 +201,32 @@ describe("Codex feed: spoiler mask, portraits and family", () => {
     expect(masked.status).toEqual({});
   });
 
+  it("feeds every bond type and group memberships, and masks them", () => {
+    const feed = buildCodexFeed({
+      ...base,
+      relations: [
+        { source_id: "2", target_id: "1", rel: "parent" },
+        { source_id: "1", target_id: "2", rel: "Rival", label: "Old grudge" },
+      ],
+      groups: [{ id: "g1", name: "Sentinels", kind: "organization" }],
+      memberships: [{ character_id: "1", group_id: "g1" }],
+    });
+    expect(feed.bonds.map((b) => b.rel)).toEqual(["parent", "rival"]);
+    expect(feed.bonds[1]?.label).toBe("Old grudge");
+    expect(feed.relations).toHaveLength(1);
+    expect(feed.groups).toEqual([
+      { name: "Sentinels", kind: "organization", members: ["Ethan Thorne"] },
+    ]);
+    const masked = buildCodexFeed({
+      ...base,
+      groups: [{ id: "g1", name: "Sentinels", kind: "organization" }],
+      memberships: [{ character_id: "1", group_id: "g1" }],
+      masked: { characters: true, abilities: false, archive: false, series: false },
+    });
+    expect(masked.bonds).toEqual([]);
+    expect(masked.groups).toEqual([]);
+  });
+
   it("accepts only real image URLs", () => {
     expect(safePortrait("data:image/png;base64,AAAA")).toBeTruthy();
     expect(safePortrait("https://example.com/a.png")).toBeTruthy();
