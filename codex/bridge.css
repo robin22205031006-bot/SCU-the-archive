@@ -318,7 +318,7 @@ html.cx-nav .dk.sig:active{transform:scale(.94)!important;transition:transform 1
 .cx-pill.on{opacity:1}
 /* rounded tray for a wing */
 html.cx-nav .rib{left:50%;right:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
- width:min(440px,calc(100vw - 24px));max-width:none;display:grid!important;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;padding:10px;
+ width:min(440px,calc(100vw - 24px));max-width:none;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;padding:10px;
  border-radius:26px;border:1px solid color-mix(in srgb,var(--c1) 26%,var(--line))!important;background:var(--panel)!important;
  box-shadow:0 22px 50px rgba(0,0,0,.45)!important;overflow:visible!important}
 html.cx-nav .rib.cx-tray{animation:cxTray 360ms var(--cx-soft) both;transform-origin:50% 100%}
@@ -373,8 +373,8 @@ html[data-motion="off"] .dk.sig::after,html[data-motion="off"] #view.cx-flow,htm
 /* hero ornaments keep living instead of stopping after three cycles */
 .orb .r1,.orb .r2,.orb .glow,.orb .core,.tree::after{animation-iteration-count:infinite!important}
 /* staggered entrances */
-.cx-in{animation:cxCard 640ms var(--cx-spring) backwards;animation-delay:min(calc(var(--ci,0) * 32ms),640ms)}
-@keyframes cxCard{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+.cx-in{animation:cxCard 520ms var(--cx-spring) backwards;animation-delay:min(calc(var(--ci,0) * 18ms),260ms)}
+@keyframes cxCard{from{opacity:.15;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
 #sheet .cx-sin{animation:cxSec 560ms var(--cx-soft) backwards;animation-delay:min(calc(var(--si,0) * 55ms),500ms)}
 @keyframes cxSec{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .xgh,.gh,.stycard,.cc{transform-style:preserve-3d;will-change:transform}
@@ -391,3 +391,6 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
 .cx-toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(520px,calc(100vw - 24px));padding:10px 16px;border-radius:14px;border:1px solid var(--c1);background:var(--panel);color:var(--ink);font-size:.86rem;box-shadow:0 12px 32px rgba(0,0,0,.35);transform:translateX(-50%);animation:cxRefreshIn 480ms var(--cx-spring) both}
 .cx-toast.bad{border-color:#F05A66}
 @media (min-width:768px){.cx-toast{bottom:24px}}
+
+html.cx-nav .rib:not([hidden]){display:grid!important}
+html.cx-nav .rib[hidden],html.cx-nav .dscrim[hidden]{display:none!important}
