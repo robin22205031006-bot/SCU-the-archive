@@ -1639,10 +1639,87 @@
       layoutBonds(null);
     }, 200);
   });
-  var decoT = 0;
-  new MutationObserver(function () {
-    cancelAnimationFrame(decoT);
-    decoT = requestAnimationFrame(function () {
+
+  /* ---------- 7. ability ranks (I-V) on every ability chip ---------- */
+  function appNamesOf(n) {
+    var map = window.__codexNameMap || {};
+    var out = [n];
+    for (var app in map) if (map[app] === n && out.indexOf(app) < 0) out.push(app);
+    return out;
+  }
+  function ranksOf(n) {
+    var f = feed();
+    if (!f || !f.ranks) return null;
+    var names = appNamesOf(n);
+    for (var i = 0; i < names.length; i++) if (f.ranks[names[i]]) return f.ranks[names[i]];
+    return null;
+  }
+  function rankIn(map, ability) {
+    if (!map) return 0;
+    if (map[ability]) return map[ability];
+    var nz = window.__codexNorm || function (x) {
+      return String(x).toLowerCase();
+    };
+    var want = nz(ability);
+    for (var k in map) if (nz(k) === want) return map[k];
+    return 0;
+  }
+  function rankBadge(r) {
+    var f = feed();
+    var meta = (f && f.rankMeta && f.rankMeta[r - 1]) || { roman: String(r), title: "", color: "var(--c1)" };
+    return (
+      '<span class="cx-rk rk' + r + '" style="--rk:' + escH(meta.color) + '" title="Rank ' + escH(meta.roman) + (meta.title ? " · " + escH(meta.title) : "") +
+      '" aria-label="Rank ' + escH(meta.roman) + '"><i aria-hidden="true"></i>' + escH(meta.roman) + "</span>"
+    );
+  }
+  function paintRanks() {
+    var sheet = $id("sheet");
+    if (!sheet || sheet.hidden) return;
+    var h = sheet.querySelector(".sh-top h3");
+    if (!h) return;
+    var rk = ranksOf(h.textContent.trim());
+    if (!rk) return;
+    var pill = sheet.querySelector('.cxr-p[aria-selected="true"]');
+    var sk = pill ? pill.dataset.key : null;
+    var seasonMap = sk && rk.seasons ? rk.seasons[sk] : null;
+    sheet.querySelectorAll(".chip[data-go], .cxd-ab, .cxc-i").forEach(function (c) {
+      if (c.dataset.rk) return;
+      var inSeason = !!c.closest(".cxd");
+      var label = c.classList.contains("cxc-i") ? (c.querySelector("small") || {}).textContent : c.textContent;
+      label = String(label || "").trim();
+      if (!label || label === "Character") {
+        c.dataset.rk = "0";
+        return;
+      }
+      var r = inSeason ? rankIn(seasonMap, label) || rankIn(rk.base, label) : rankIn(rk.base, label);
+      c.dataset.rk = String(r || 0);
+      if (!r) return;
+      if (c.classList.contains("cxc-i")) {
+        var g = c.querySelector(".cxc-g");
+        if (g) g.insertAdjacentHTML("afterend", rankBadge(r));
+      } else c.insertAdjacentHTML("beforeend", rankBadge(r));
+    });
+  }
+  var _deco1 = deco;
+  deco = function (root) {
+    _deco1(root);
+    try {
+      paintRanks();
+    } catch (e) {}
+  };
+  // One pass per frame at most, and never postponed by spring counters ticking.
+  var decoPending = false;
+  var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";
+  new MutationObserver(function (records) {
+    if (decoPending) return;
+    var real = records.some(function (r) {
+      var t = r.target && r.target.nodeType === 1 ? r.target : r.target && r.target.parentElement;
+      return !(t && t.closest && t.closest(TICKERS));
+    });
+    if (!real) return;
+    decoPending = true;
+    requestAnimationFrame(function () {
+      decoPending = false;
       deco(document.body);
     });
   }).observe(document.body, { childList: true, subtree: true });

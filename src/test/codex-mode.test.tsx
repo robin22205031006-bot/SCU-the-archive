@@ -227,6 +227,46 @@ describe("Codex feed: spoiler mask, portraits and family", () => {
     expect(masked.groups).toEqual([]);
   });
 
+  it("resolves ability ranks per season like the Nexus rank map", () => {
+    const withAbilities = [
+      {
+        id: "1",
+        name: "Ethan Thorne",
+        kind: "character",
+        abilities: ["Aerokinesis"],
+        stats: {
+          dossier: {
+            "s1:1": { abilityKeys: ["Aerokinesis"], stats: { power: 40 } },
+            "s1:2": { abilityKeys: ["Aerokinesis"], stats: { power: 60 } },
+          },
+        },
+      },
+    ];
+    const series2 = [{ id: "s1", title: "Sentinels", season_count: 2, season_names: [] }];
+    const rows = [
+      { entity_id: "1", ability_key: "Aerokinesis", level: 2, series_id: "s1", season_number: 1 },
+      { entity_id: "1", ability_key: "Aerokinesis", level: 5, series_id: "s1", season_number: 2 },
+    ];
+    const feed = buildCodexFeed({
+      ...base,
+      entities: withAbilities,
+      series: series2,
+      abilityRows: rows,
+    });
+    const rk = feed.ranks["Ethan Thorne"];
+    expect(rk?.seasons["s1:1"]?.["Aerokinesis"]).toBe(2);
+    expect(rk?.seasons["s1:2"]?.["Aerokinesis"]).toBe(5);
+    expect(feed.rankMeta.map((m) => m.roman)).toEqual(["I", "II", "III", "IV", "V"]);
+    const masked = buildCodexFeed({
+      ...base,
+      entities: withAbilities,
+      series: series2,
+      abilityRows: rows,
+      masked: { characters: true, abilities: false, archive: false, series: false },
+    });
+    expect(masked.ranks).toEqual({});
+  });
+
   it("accepts only real image URLs", () => {
     expect(safePortrait("data:image/png;base64,AAAA")).toBeTruthy();
     expect(safePortrait("https://example.com/a.png")).toBeTruthy();

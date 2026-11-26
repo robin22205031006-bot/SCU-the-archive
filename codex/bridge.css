@@ -244,3 +244,14 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
 .cxtr-l{font-size:8.5px;fill:var(--muted)}
 .cxtr-cur{pointer-events:none;will-change:transform}
 .cxtr-cur rect{fill:var(--c2);stroke:var(--panel2);stroke-width:2}
+
+/* ---- ability rank gems ---- */
+.cx-rk{position:relative;display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:0 7px 0 5px;height:20px;border-radius:999px;border:1px solid color-mix(in srgb,var(--rk) 70%,transparent);background:color-mix(in srgb,var(--rk) 16%,transparent);font-size:.68rem;font-weight:600;letter-spacing:.06em;color:var(--ink);overflow:hidden;animation:cxPop 380ms var(--cx-spring) both}
+.cx-rk i{width:7px;height:7px;transform:rotate(45deg);border-radius:1.5px;background:var(--rk)}
+.cx-rk.rk4{box-shadow:0 0 0 1px color-mix(in srgb,var(--rk) 40%,transparent)}
+.cx-rk.rk5::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-120%);animation:cxSheen 2.8s ease-in-out 1s 3}
+@keyframes cxSheen{0%{transform:translateX(-120%)}60%,100%{transform:translateX(260%)}}
+.cxc-i .cx-rk{position:absolute;top:0;left:50%;margin:0;transform:translateX(10px) scale(.85);animation:none}
+.cxc-i{position:relative}
+@media (prefers-reduced-motion:reduce){.cx-rk,.cx-rk.rk5::after{animation:none!important}}
+html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animation:none!important}

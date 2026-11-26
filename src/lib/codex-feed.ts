@@ -1,6 +1,12 @@
 import { isFamilyRel } from "@/lib/family";
 import { resolveCharacterStatusTimeline } from "@/lib/status-history";
 import {
+  ABILITY_RANK_META,
+  buildAbilityRankMap,
+  resolveAssignedAbilityRank,
+  type CharacterAbilityRankRow,
+} from "@/lib/ability-rank";
+import {
   buildSeasonCompareOptions,
   readDossier,
   resolveNexusStats,
@@ -48,6 +54,12 @@ export interface CodexFeedGroup {
   name: string;
   kind: string;
   members: string[];
+}
+export interface CodexFeedRanks {
+  /** ability name -> rank 1..5 across the whole story */
+  base: Record<string, number>;
+  /** dossier season key -> ability name -> rank as of that season */
+  seasons: Record<string, Record<string, number>>;
 }
 export interface CodexFeedMask {
   characters: boolean;
@@ -101,6 +113,10 @@ export interface CodexFeed {
   groups: CodexFeedGroup[];
   /** Status history per character, from the same resolver the Nexus timeline uses. */
   status: Record<string, { current: string; steps: CodexFeedStatusStep[] }>;
+  /** Ability ranks per character, resolved like the Nexus rank map. */
+  ranks: Record<string, CodexFeedRanks>;
+  /** Rank names and colours shared with Nexus (index 0 = rank I). */
+  rankMeta: { roman: string; title: string; color: string }[];
   /** Shared spoiler mask. Masked scopes are removed from the feed itself, not just hidden. */
   masked: CodexFeedMask;
 }
@@ -128,6 +144,9 @@ export interface CodexRelationInput {
   target_id: string;
   rel: string;
   label?: string | null;
+}
+export interface CodexAbilityRowInput extends CharacterAbilityRankRow {
+  entity_id: string;
 }
 export interface CodexMembershipInput {
   character_id: string;
@@ -218,6 +237,7 @@ export function buildCodexFeed({
   relations = [],
   groups = [],
   memberships = [],
+  abilityRows = [],
   masked = { characters: false, abilities: false, archive: false, series: false },
 }: {
   entities: ReadonlyArray<CodexEntityInput>;
@@ -226,6 +246,7 @@ export function buildCodexFeed({
   relations?: ReadonlyArray<CodexRelationInput>;
   groups?: ReadonlyArray<CodexEntityInput>;
   memberships?: ReadonlyArray<CodexMembershipInput>;
+  abilityRows?: ReadonlyArray<CodexAbilityRowInput>;
   masked?: CodexFeedMask;
   staff: boolean;
   mode: string;
@@ -236,6 +257,13 @@ export function buildCodexFeed({
   const holders = new Map<string, string[]>();
   const nameById = new Map<string, string>();
   const statusOut: CodexFeed["status"] = {};
+  const ranksOut: CodexFeed["ranks"] = {};
+  const rowsById = new Map<string, CodexAbilityRowInput[]>();
+  for (const r of abilityRows) {
+    const l = rowsById.get(r.entity_id) ?? [];
+    l.push(r);
+    rowsById.set(r.entity_id, l);
+  }
   for (const e of entities) {
     if (e.kind && e.kind !== "character") continue;
     const name = e.name?.trim();
@@ -260,6 +288,37 @@ export function buildCodexFeed({
     }
     const seasons = masked.series ? [] : codexSeasonsFor(e.stats, series);
     if (seasons.length) dossiers[name] = { seasons };
+    const rows = e.id ? rowsById.get(e.id) : undefined;
+    if (rows?.length) {
+      const names = new Set<string>([...list(e.abilities), ...rows.map((r) => r.ability_key)]);
+      for (const sn of seasons) for (const a of sn.abilities ?? []) names.add(a);
+      const pick = (map: Record<string, number | undefined>) => {
+        const o: Record<string, number> = {};
+        for (const n of names) {
+          const r = resolveAssignedAbilityRank(n, map);
+          if (r) o[n] = r;
+        }
+        return o;
+      };
+      const seasonRanks: Record<string, Record<string, number>> = {};
+      for (const sn of seasons) {
+        const colon = sn.key.indexOf(":");
+        if (colon <= 0) continue;
+        const num = Number(sn.key.slice(colon + 1));
+        if (!Number.isInteger(num) || num <= 0) continue;
+        const m = pick(
+          buildAbilityRankMap(rows, {
+            seriesId: sn.key.slice(0, colon),
+            seasonNumber: num,
+            includePriorSeasons: true,
+          }),
+        );
+        if (Object.keys(m).length) seasonRanks[sn.key] = m;
+      }
+      const base = pick(buildAbilityRankMap(rows));
+      if (Object.keys(base).length || Object.keys(seasonRanks).length)
+        ranksOut[name] = { base, seasons: seasonRanks };
+    }
     if (!masked.series) {
       const tl = resolveCharacterStatusTimeline({
         entity: { id: e.id ?? name, name, status: e.status ?? null, stats: e.stats },
@@ -338,6 +397,12 @@ export function buildCodexFeed({
     bonds,
     groups: groupOut,
     status: statusOut,
+    ranks: ranksOut,
+    rankMeta: ([1, 2, 3, 4, 5] as const).map((r) => ({
+      roman: ABILITY_RANK_META[r].roman,
+      title: ABILITY_RANK_META[r].shortTitle,
+      color: ABILITY_RANK_META[r].ringColor,
+    })),
     masked,
   };
 }

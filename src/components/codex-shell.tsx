@@ -56,6 +56,22 @@ const membershipsQuery = {
   },
 };
 
+/** Every character's ability ranks (Nexus reads the same rows per character). */
+const abilityRanksQuery = {
+  queryKey: ["codex-ability-ranks"],
+  staleTime: 60_000,
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("character_abilities")
+      .select("entity_id,ability_key,level,series_id,season_number");
+    if (error) {
+      if (/character_abilities|schema cache|does not exist/i.test(error.message)) return [];
+      throw error;
+    }
+    return data ?? [];
+  },
+};
+
 const LAST_TAB_KEY = "scu-codex-last-path";
 
 function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: boolean } {
@@ -66,6 +82,7 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
   const rel = useQuery({ ...entityRelationsQuery, enabled });
   const grp = useQuery({ ...entitiesQuery(GROUP_KINDS), enabled });
   const mem = useQuery({ ...membershipsQuery, enabled });
+  const rk = useQuery({ ...abilityRanksQuery, enabled });
   const maskChars = useSpoilerMask("characters");
   const maskAbil = useSpoilerMask("abilities");
   const maskArch = useSpoilerMask("archive");
@@ -84,6 +101,7 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
       relations: rel.data ?? [],
       groups: grp.data ?? [],
       memberships: mem.data ?? [],
+      abilityRows: rk.data ?? [],
       masked: {
         characters: maskChars,
         abilities: maskAbil,
@@ -107,6 +125,7 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
     rel.data,
     grp.data,
     mem.data,
+    rk.data,
     maskChars,
     maskAbil,
     maskArch,

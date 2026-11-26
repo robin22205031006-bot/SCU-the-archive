@@ -2511,6 +2511,17 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
 .cxtr-cur{pointer-events:none;will-change:transform}
 .cxtr-cur rect{fill:var(--c2);stroke:var(--panel2);stroke-width:2}
 
+/* ---- ability rank gems ---- */
+.cx-rk{position:relative;display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:0 7px 0 5px;height:20px;border-radius:999px;border:1px solid color-mix(in srgb,var(--rk) 70%,transparent);background:color-mix(in srgb,var(--rk) 16%,transparent);font-size:.68rem;font-weight:600;letter-spacing:.06em;color:var(--ink);overflow:hidden;animation:cxPop 380ms var(--cx-spring) both}
+.cx-rk i{width:7px;height:7px;transform:rotate(45deg);border-radius:1.5px;background:var(--rk)}
+.cx-rk.rk4{box-shadow:0 0 0 1px color-mix(in srgb,var(--rk) 40%,transparent)}
+.cx-rk.rk5::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-120%);animation:cxSheen 2.8s ease-in-out 1s 3}
+@keyframes cxSheen{0%{transform:translateX(-120%)}60%,100%{transform:translateX(260%)}}
+.cxc-i .cx-rk{position:absolute;top:0;left:50%;margin:0;transform:translateX(10px) scale(.85);animation:none}
+.cxc-i{position:relative}
+@media (prefers-reduced-motion:reduce){.cx-rk,.cx-rk.rk5::after{animation:none!important}}
+html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animation:none!important}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -4154,10 +4165,87 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
       layoutBonds(null);
     }, 200);
   });
-  var decoT = 0;
-  new MutationObserver(function () {
-    cancelAnimationFrame(decoT);
-    decoT = requestAnimationFrame(function () {
+
+  /* ---------- 7. ability ranks (I-V) on every ability chip ---------- */
+  function appNamesOf(n) {
+    var map = window.__codexNameMap || {};
+    var out = [n];
+    for (var app in map) if (map[app] === n && out.indexOf(app) < 0) out.push(app);
+    return out;
+  }
+  function ranksOf(n) {
+    var f = feed();
+    if (!f || !f.ranks) return null;
+    var names = appNamesOf(n);
+    for (var i = 0; i < names.length; i++) if (f.ranks[names[i]]) return f.ranks[names[i]];
+    return null;
+  }
+  function rankIn(map, ability) {
+    if (!map) return 0;
+    if (map[ability]) return map[ability];
+    var nz = window.__codexNorm || function (x) {
+      return String(x).toLowerCase();
+    };
+    var want = nz(ability);
+    for (var k in map) if (nz(k) === want) return map[k];
+    return 0;
+  }
+  function rankBadge(r) {
+    var f = feed();
+    var meta = (f && f.rankMeta && f.rankMeta[r - 1]) || { roman: String(r), title: "", color: "var(--c1)" };
+    return (
+      '<span class="cx-rk rk' + r + '" style="--rk:' + escH(meta.color) + '" title="Rank ' + escH(meta.roman) + (meta.title ? " · " + escH(meta.title) : "") +
+      '" aria-label="Rank ' + escH(meta.roman) + '"><i aria-hidden="true"></i>' + escH(meta.roman) + "</span>"
+    );
+  }
+  function paintRanks() {
+    var sheet = $id("sheet");
+    if (!sheet || sheet.hidden) return;
+    var h = sheet.querySelector(".sh-top h3");
+    if (!h) return;
+    var rk = ranksOf(h.textContent.trim());
+    if (!rk) return;
+    var pill = sheet.querySelector('.cxr-p[aria-selected="true"]');
+    var sk = pill ? pill.dataset.key : null;
+    var seasonMap = sk && rk.seasons ? rk.seasons[sk] : null;
+    sheet.querySelectorAll(".chip[data-go], .cxd-ab, .cxc-i").forEach(function (c) {
+      if (c.dataset.rk) return;
+      var inSeason = !!c.closest(".cxd");
+      var label = c.classList.contains("cxc-i") ? (c.querySelector("small") || {}).textContent : c.textContent;
+      label = String(label || "").trim();
+      if (!label || label === "Character") {
+        c.dataset.rk = "0";
+        return;
+      }
+      var r = inSeason ? rankIn(seasonMap, label) || rankIn(rk.base, label) : rankIn(rk.base, label);
+      c.dataset.rk = String(r || 0);
+      if (!r) return;
+      if (c.classList.contains("cxc-i")) {
+        var g = c.querySelector(".cxc-g");
+        if (g) g.insertAdjacentHTML("afterend", rankBadge(r));
+      } else c.insertAdjacentHTML("beforeend", rankBadge(r));
+    });
+  }
+  var _deco1 = deco;
+  deco = function (root) {
+    _deco1(root);
+    try {
+      paintRanks();
+    } catch (e) {}
+  };
+  // One pass per frame at most, and never postponed by spring counters ticking.
+  var decoPending = false;
+  var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";
+  new MutationObserver(function (records) {
+    if (decoPending) return;
+    var real = records.some(function (r) {
+      var t = r.target && r.target.nodeType === 1 ? r.target : r.target && r.target.parentElement;
+      return !(t && t.closest && t.closest(TICKERS));
+    });
+    if (!real) return;
+    decoPending = true;
+    requestAnimationFrame(function () {
+      decoPending = false;
       deco(document.body);
     });
   }).observe(document.body, { childList: true, subtree: true });
