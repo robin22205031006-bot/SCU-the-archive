@@ -98,7 +98,14 @@ describe("Codex feed", () => {
     expect(feed.characters[0]?.aliases).toEqual(["Gale Warden"]);
     expect(feed.abilities.map((a) => a.name)).toEqual(["Described", "Windstep"]);
     expect(feed.abilities[1]?.holders).toEqual(["Ethan Thorne"]);
-    expect(Object.keys(feed.dossiers)).toEqual(["Ethan Thorne"]);
+    // Like Nexus, every character gets a dossier; one with no stats gets a zero Base profile.
+    expect(Object.keys(feed.dossiers)).toEqual(["Ethan Thorne", "Nobody"]);
+    expect(feed.dossiers["Ethan Thorne"]?.seasons[0]?.empty).toBeUndefined();
+    const nobody = feed.dossiers["Nobody"]?.seasons ?? [];
+    expect(nobody.map((x) => x.key)).toEqual(["all"]);
+    expect(nobody[0]?.empty).toBe(true);
+    expect(nobody[0]?.stats).toHaveLength(7);
+    expect(nobody[0]?.stats.every((x) => x.value === 0)).toBe(true);
   });
 });
 
@@ -135,7 +142,7 @@ describe("Codex feed: spoiler mask, portraits and family", () => {
     expect(feed.characters[0]?.image).toContain("data:image/png");
     expect(feed.characters[1]?.image).toBeUndefined();
     expect(feed.relations).toEqual([{ a: "Issabela", b: "Ethan Thorne", rel: "parent" }]);
-    expect(Object.keys(feed.dossiers)).toEqual(["Ethan Thorne"]);
+    expect(Object.keys(feed.dossiers)).toEqual(["Ethan Thorne", "Issabela"]);
   });
 
   it("removes masked data from the feed itself, not just from view", () => {

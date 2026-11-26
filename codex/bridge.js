@@ -573,6 +573,16 @@
           '">' +
           avg +
           "</b></span></div>" +
+          (!s.stats.some(function (x) {
+            return x.value > 0;
+          }) &&
+          !(s.profiles || []).some(function (p) {
+            return p.stats.some(function (x) {
+              return x.value > 0;
+            });
+          })
+            ? '<p class="note cxd-empty" role="status">No stats are recorded for this character yet, so every gauge reads zero. Staff set them in the Nexus dossier, and they appear here at once.</p>'
+            : "") +
           wheelHTML(s) +
           '<div class="cxd-stats' +
           (cmp && prev ? " cmp" : "") +

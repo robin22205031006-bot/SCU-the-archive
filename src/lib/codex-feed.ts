@@ -97,6 +97,8 @@ export interface CodexFeedSeason {
   stats: { key: string; label: string; value: number }[];
   /** Per-ability stat profiles (same data the Nexus stat wheel's ability selector reads). */
   profiles?: { name: string; stats: { key: string; label: string; value: number }[] }[];
+  /** True when no stats are recorded at all (the wheel shows zeros). */
+  empty?: boolean | undefined;
 }
 export interface CodexFeedMode {
   id: string;
@@ -297,6 +299,26 @@ export function buildCodexFeed({
     }
     const seasons = masked.series ? [] : codexSeasonsFor(e.stats, series);
     if (seasons.length) dossiers[name] = { seasons };
+    else if (!masked.series) {
+      // Like Nexus, every character gets a dossier: a Base profile from the card's own
+      // stats, at zero when nothing is recorded (flagged so the Codex can say so).
+      const base = resolveNexusStats(e.stats, null, null);
+      dossiers[name] = {
+        seasons: [
+          {
+            key: "all",
+            label: "Base",
+            series: "All seasons",
+            roles: [],
+            orgs: [],
+            weapons: [],
+            abilities: list(e.abilities).slice(0, 24),
+            stats: base,
+            empty: !base.some((x) => x.value > 0),
+          },
+        ],
+      };
+    }
     const rows = e.id ? rowsById.get(e.id) : undefined;
     if (rows?.length) {
       const names = new Set<string>([...list(e.abilities), ...rows.map((r) => r.ability_key)]);
