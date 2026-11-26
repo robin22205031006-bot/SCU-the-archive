@@ -1,5 +1,6 @@
 import { isFamilyRel } from "@/lib/family";
 import { resolveCharacterStatusTimeline } from "@/lib/status-history";
+import { codexCastName } from "@/lib/codex-canon";
 import {
   ABILITY_RANK_META,
   buildAbilityRankMap,
@@ -27,6 +28,11 @@ export interface CodexFeedCharacter {
   desc?: string | undefined;
   /** Portrait (resized data URL or https URL) from entities.image_url. */
   image?: string | undefined;
+  /**
+   * The Codex cast name this card is, decided by the same matcher every other style uses
+   * (src/lib/codex-canon.ts). null = not in the Codex, so the Codex adds it as new.
+   */
+  codex?: string | null | undefined;
 }
 export interface CodexFeedRelation {
   /** "source is <rel> of target"; names are the archive's. */
@@ -77,6 +83,8 @@ export interface CodexFeedAbility {
   name: string;
   desc?: string | undefined;
   holders: string[];
+  /** App registry category (power, element, beast, art, role) to help place it in a Codex branch. */
+  group?: string | undefined;
 }
 export interface CodexFeedSeason {
   key: string;
@@ -166,6 +174,7 @@ export interface CodexMembershipInput {
 export interface CodexAbilityInput {
   label: string;
   description?: string | undefined;
+  group?: string | undefined;
 }
 
 const clip = (s: unknown, n: number) => {
@@ -289,6 +298,7 @@ export function buildCodexFeed({
         .filter(Boolean),
       desc: masked.characters ? undefined : clip(e.role || e.category, 280) || undefined,
       image: safePortrait(e.image_url),
+      codex: codexCastName(name, e.alias ?? null),
     });
     if (masked.characters) continue;
     for (const ab of list(e.abilities)) {
@@ -373,16 +383,21 @@ export function buildCodexFeed({
   }
   const seen = new Set<string>();
   const abilityOut: CodexFeedAbility[] = [];
-  const push = (name: string, desc?: string) => {
+  const push = (name: string, desc?: string, group?: string) => {
     const k = name.trim().toLowerCase();
     if (!k || seen.has(k)) return;
     seen.add(k);
     // The "abilities" mask hides who holds what.
     const h = masked.abilities ? [] : (holders.get(k) ?? []);
     if (!h.length && !desc) return;
-    abilityOut.push({ name: name.trim(), desc: clip(desc, 400) || undefined, holders: h });
+    abilityOut.push({
+      name: name.trim(),
+      desc: clip(desc, 400) || undefined,
+      holders: h,
+      group: group || undefined,
+    });
   };
-  for (const a of abilities) push(a.label, a.description);
+  for (const a of abilities) push(a.label, a.description, a.group);
   if (!masked.characters) for (const e of entities) for (const ab of list(e.abilities)) push(ab);
   const rels: CodexFeedRelation[] = [];
   const bonds: CodexFeedBond[] = [];

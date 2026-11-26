@@ -615,13 +615,24 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
   function mergeCast(CAST) {
     var list = (feed && feed.characters) || [];
     var keys = castIndex(CAST);
+    var inCast = function (n) {
+      return CAST.some(function (r) {
+        return r[0] === n;
+      });
+    };
     list.forEach(function (ch) {
       if (!ch || !ch.name) return;
-      var cands = [ch.name].concat(ch.aliases || []);
-      var hit = findCast(CAST, keys, cands);
+      var hit = null;
+      if (Object.prototype.hasOwnProperty.call(ch, "codex")) {
+        // The app's shared matcher already decided: a Codex name, or null = a new person.
+        hit = ch.codex && inCast(ch.codex) ? ch.codex : null;
+        if (!hit && ch.codex == null && keys.has(norm(ch.name))) hit = keys.get(norm(ch.name));
+      } else {
+        hit = findCast(CAST, keys, [ch.name].concat(ch.aliases || []));
+      }
       if (hit) {
         nameMap[ch.name] = hit;
-        if (ch.image) window.__codexPortrait[hit] = ch.image;
+        if (ch.image && !window.__codexPortrait[hit]) window.__codexPortrait[hit] = ch.image;
         // Fill blanks only: the Codex text always wins when it has its own.
         var row = CAST.find(function (r) {
           return r[0] === hit;
@@ -629,22 +640,70 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
         if (row && !row[4] && ch.desc) row[4] = ch.desc;
         return;
       }
-      var row2 = [
-        ch.name,
-        ch.realName || "",
-        (ch.aliases || []).join(", "),
-        ch.bloodline || "",
-        ch.desc || "",
-        "others",
-      ];
-      CAST.push(row2);
-      if (ch.image) window.__codexPortrait[ch.name] = ch.image;
+      if (inCast(ch.name)) {
+        nameMap[ch.name] = ch.name;
+        return;
+      }
+      CAST.push([ch.name, ch.realName || "", (ch.aliases || []).join(", "), ch.bloodline || "", ch.desc || "", "others"]);
       keys.set(norm(ch.name), ch.name);
       nameMap[ch.name] = ch.name;
+      if (ch.image) window.__codexPortrait[ch.name] = ch.image;
       window.__codexAdded.cast.push(ch.name);
     });
   }
 
+  /* Archive abilities are filed the Codex way: into the branch (and so the tier) they belong
+     to; as a technique under the holder's ability family when the holders already own a family
+     in that branch, otherwise as a new ability in the branch. */
+  var BRANCH_RULES = [
+    ["aether", /aether|soul layer|void eras/],
+    ["time", /\btime\b|chrono|temporal/],
+    ["space", /portal|teleport|dimension|\brift|\bwarp|spatial/],
+    ["mind", /mind|telepath|dream|nightmare|fear|illusion|memory|psych|hypno|empath/],
+    ["curse", /curse|\bhex\b|malediction/],
+    ["chaos", /chaos|entropy/],
+    ["order", /command|authority|\border\b|decree/],
+    ["judgement", /judg|verdict/],
+    ["blood", /blood|hemo|sanguin/],
+    ["lightning", /lightning|electr|thunder|astrapo|volt|storm/],
+    ["fire", /fire|flame|pyro|burn|blaze|inferno|ember|lava|magma|heat/],
+    ["water", /water|hydro|ice\b|cryo|frost|snow|mist|tide|ocean|wave/],
+    ["air", /wind|air\b|aero|gale|gust|breeze|tornado|cyclone|sky/],
+    ["earth", /earth|stone|rock|geo|terra|metal|sand|crystal|quake/],
+    ["light", /\blight\b|radian|holy|solar|lumin|photon/],
+    ["shadow", /shadow|dark|umbra|night|gloom/],
+    ["life", /heal|regenerat|nature|plant|flora|life|restor|vital|cure/],
+    ["beast", /beast|dragon|wolf|animal|shape.?shift|feral|claw|serpent|bird|tiger/],
+    ["venom", /venom|poison|toxic|acid/],
+    ["resonance", /sound|sonic|resonan|voice|song|echo/],
+    ["energy", /energy|\bki\b|chakra|aura|power surge|blast/],
+    ["arcane", /magic|arcane|spell|rune|sorcer|witch|mana|pact|enchant|summon/],
+    ["seal", /seal|talisman|binding|\bward\b|barrier|shield|force field/],
+    ["tech", /tech|suit|cyber|serum|gadget|chip|robot|armou?r|drone|gun/],
+    ["blade", /sword|blade|katana|spear|bow|arrow|weapon|dagger|axe|scythe|whip/],
+    ["assassin", /stealth|assassin|silent|infiltrat|poison dart|shadow step/],
+    ["soldier", /soldier|combat|martial|strength|speed|agility|tactic|strateg|fight|marksman|leader|endurance|reflex|hand.to.hand|peak human/],
+  ];
+  function branchFor(BR, ab) {
+    var text = (ab.name + " " + (ab.desc || "")).toLowerCase();
+    var nameOnly = ab.name.toLowerCase();
+    var idOf = function (id) {
+      for (var i = 0; i < BR.length; i++) if (BR[i].id === id) return i;
+      return -1;
+    };
+    // the name decides first, then the description
+    var pass = [nameOnly, text];
+    for (var p = 0; p < pass.length; p++)
+      for (var r = 0; r < BRANCH_RULES.length; r++)
+        if (BRANCH_RULES[r][1].test(pass[p])) {
+          var i = idOf(BRANCH_RULES[r][0]);
+          if (i >= 0) return i;
+        }
+    if (ab.group === "role") return idOf("soldier");
+    if (ab.group === "beast") return idOf("beast");
+    if (ab.group === "art") return idOf("blade");
+    return -1;
+  }
   function mergeAbilities(ctx) {
     var list = (feed && feed.abilities) || [];
     if (!list.length) return;
@@ -658,8 +717,11 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
         });
       });
     });
-    var groups = [];
-    list.forEach(function (ab) {
+    var leftover = [];
+    var sorted = list.slice().sort(function (a, b) {
+      return String(a.name).localeCompare(String(b.name));
+    });
+    sorted.forEach(function (ab) {
       var k = norm(ab.name);
       if (!k || have.has(k)) return;
       have.add(k);
@@ -671,10 +733,31 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
       holders = holders.filter(function (h, i) {
         return holders.indexOf(h) === i;
       });
-      groups.push(ctx.G(ab.name, ab.desc || "Recorded in the archive.", holders));
+      var desc = ab.desc || "Recorded in the archive.";
+      var b = branchFor(BR, ab);
       window.__codexAdded.abilities.push(ab.name);
+      if (b < 0) {
+        leftover.push(ctx.G(ab.name, desc, holders, null, { src: "archive" }));
+        return;
+      }
+      // technique: every holder already owns an ability family in this branch
+      if (holders.length) {
+        var fam = BR[b].g.find(function (gr) {
+          return !gr.p && holders.every(function (h) {
+            return (gr.h || []).indexOf(h) >= 0;
+          });
+        });
+        if (fam) {
+          fam.k = fam.k || [];
+          fam.k.push({ n: ab.name, d: desc, src: "archive" });
+          window.__codexAdded.placed = (window.__codexAdded.placed || 0) + 1;
+          return;
+        }
+      }
+      BR[b].g.push(ctx.G(ab.name, desc, holders, null, { src: "archive" }));
+      window.__codexAdded.placed = (window.__codexAdded.placed || 0) + 1;
     });
-    if (!groups.length) return;
+    if (!leftover.length) return;
     try {
       ctx.GLY.archive = ctx.GLY.seal || ctx.GLY.arcane;
       if (ctx.DEF) ctx.DEF.archive = ["star4", "orb", "talisman"];
@@ -685,12 +768,11 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
       tier: "Skills",
       c1: "#93B6FF",
       c2: "#DCE7FF",
-      bl: "Abilities the app's archive records that the Codex had not catalogued yet. Codex entries always take priority.",
+      bl: "Archive abilities that fit no Codex branch yet. Codex entries always take priority.",
       x: [],
-      g: groups,
+      g: leftover,
     });
   }
-
 
   function mergeSeries(SER0) {
     var list = (feed && feed.series) || [];
@@ -2557,6 +2639,14 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
 
 .cxd-empty{margin:0 0 10px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel)}
 
+/* Lovable-hosted addresses show an "Edit with Lovable" badge at the bottom right of the app;
+   on phones lift the dock above it so every wing (Commons included) stays tappable. */
+@media (max-width:767.98px){
+ html.cx-badge .dock{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge .rib{bottom:calc(146px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge #view{padding-bottom:170px}
+}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -4239,11 +4329,48 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
     var dz = t.closest("[data-cxodossier]");
     if (dz && typeof openCharacter === "function") openCharacter(dz.dataset.cxodossier);
   });
+  /** App-only destination reached through history (back button, reload, saved link). */
+  function hostPageHTML(id) {
+    var n =
+      (API &&
+        API.NT.find(function (m) {
+          return m[0] === id;
+        })) ||
+      [id, id];
+    var hero = "";
+    try {
+      hero = heroX(
+        { c1: "#93B6FF", c2: "#DCE7FF", id: "balance", nm: n[1], bl: "This page lives in the app. Your place in the Codex is kept.", tier: "OPENS IN THE APP" },
+        [],
+      );
+    } catch (e) {
+      hero = "<h2>" + escH(n[1]) + "</h2>";
+    }
+    return (
+      '<div class="xpage">' +
+      hero +
+      '<div class="row" style="justify-content:center"><button type="button" class="btn" data-cxopen="' +
+      escH(HOSTP[id]) +
+      '">Open ' +
+      escH(n[1]) +
+      '</button><button type="button" class="btn ghost" data-nt="home">Back to the Codex home</button></div></div>'
+    );
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("[data-cxopen]") : null;
+    if (b && H) {
+      try {
+        H.navigate(b.dataset.cxopen);
+      } catch (err) {}
+    }
+  });
+  if (H && H.badge) document.documentElement.classList.add("cx-badge");
   if (typeof viewHTML === "function") {
     var _vhx = viewHTML;
     // eslint-disable-next-line no-global-assign
     viewHTML = function () {
       if (tab === "bonds") return bondsHTML();
+      if (H && HOSTP[tab]) return hostPageHTML(tab);
       return _vhx.apply(this, arguments);
     };
   }
@@ -4263,7 +4390,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
   }
   // Codex's first render ran before this bridge loaded: redraw if it opened on Bonds.
   try {
-    if (tab === "bonds") render();
+    if (tab === "bonds" || (H && HOSTP[tab])) render();
   } catch (e) {}
   window.addEventListener("resize", function () {
     if (tab !== "bonds") return;

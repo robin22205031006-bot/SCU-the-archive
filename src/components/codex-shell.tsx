@@ -27,6 +27,7 @@ type CodexHost = {
   setMode: (mode: string) => void;
   ready: () => void;
   motion: boolean;
+  badge?: boolean;
 };
 
 declare global {
@@ -89,9 +90,17 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
   const maskSeries = useSpoilerMask("series");
   const feed = useMemo(() => {
     if (!enabled) return null;
-    let abilities: { label: string; description?: string | undefined }[] = [];
+    let abilities: {
+      label: string;
+      description?: string | undefined;
+      group?: string | undefined;
+    }[] = [];
     try {
-      abilities = allAbilityDefs().map((a) => ({ label: a.label, description: a.description }));
+      abilities = allAbilityDefs().map((a) => ({
+        label: a.label,
+        description: a.description,
+        group: a.group,
+      }));
     } catch {
       abilities = [];
     }
@@ -153,6 +162,10 @@ export function CodexStage() {
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [bootTab, setBootTab] = useState("home");
+  const [frameKey, setFrameKey] = useState(0);
+  /** What the frame merged at boot; more archive data later triggers one quiet reload. */
+  const bootSig = useRef<{ chars: number; abilities: number; series: number } | null>(null);
+  const reloads = useRef(0);
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
   const tabRef = useRef(tab);
@@ -206,6 +219,8 @@ export function CodexStage() {
       },
       setMode: switchMode,
       ready: () => setLoaded(true),
+      // Lovable-hosted addresses overlay an "Edit with Lovable" badge at the bottom right.
+      badge: /(^|\.)(lovable\.app|lovable\.dev|lovableproject\.com)$/.test(window.location.hostname),
     };
   }, [enabled, motionActive, router, switchMode]);
 
@@ -219,6 +234,10 @@ export function CodexStage() {
     }
     if (mounted) return;
     const boot = () => {
+      const f = window.__SCU_CODEX_FEED__;
+      bootSig.current = f
+        ? { chars: f.characters.length, abilities: f.abilities.length, series: f.series.length }
+        : { chars: 0, abilities: 0, series: 0 };
       setBootTab(tabRef.current ?? "home");
       setMounted(true);
     };
@@ -226,10 +245,40 @@ export function CodexStage() {
       boot();
       return;
     }
-    // Never hold the Codex hostage to a slow archive: boot with what is cached.
-    const t = window.setTimeout(boot, 2500);
+    // Wait for the archive so its extra characters and abilities are merged at boot; a very
+    // slow archive still opens the Codex, and the late data reloads it once (below).
+    const t = window.setTimeout(boot, 8000);
     return () => window.clearTimeout(t);
   }, [enabled, settled, feed, mounted]);
+
+  // Characters, abilities and series are merged when the Codex boots. If more arrive after
+  // that, reload the frame once at the same page so nothing from the archive is missing.
+  useEffect(() => {
+    if (!mounted || !loaded || !feed || !bootSig.current || reloads.current >= 2) return;
+    const b = bootSig.current;
+    const more =
+      feed.characters.length > b.chars ||
+      feed.abilities.length > b.abilities ||
+      feed.series.length > b.series;
+    if (!more) return;
+    reloads.current += 1;
+    let hashTab = tabRef.current ?? "home";
+    try {
+      const h = frameRef.current?.contentWindow?.location.hash ?? "";
+      const m = /^#\/(\w+)/.exec(h);
+      if (m?.[1]) hashTab = m[1];
+    } catch {
+      /* cross-document access is same-origin; ignore if unavailable */
+    }
+    bootSig.current = {
+      chars: feed.characters.length,
+      abilities: feed.abilities.length,
+      series: feed.series.length,
+    };
+    setLoaded(false);
+    setBootTab(hashTab);
+    setFrameKey((k) => k + 1);
+  }, [mounted, loaded, feed]);
 
   // App URL changed (back button, links) -> move the Codex to the matching tab.
   useEffect(() => {
@@ -264,6 +313,7 @@ export function CodexStage() {
     >
       {mounted && (
         <iframe
+          key={frameKey}
           ref={frameRef}
           title="SCU Codex"
           src={`/codex/index.html#/${bootTab}`}

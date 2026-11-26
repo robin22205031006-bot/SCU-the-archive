@@ -257,3 +257,11 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
 html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animation:none!important}
 
 .cxd-empty{margin:0 0 10px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel)}
+
+/* Lovable-hosted addresses show an "Edit with Lovable" badge at the bottom right of the app;
+   on phones lift the dock above it so every wing (Commons included) stays tappable. */
+@media (max-width:767.98px){
+ html.cx-badge .dock{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge .rib{bottom:calc(146px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge #view{padding-bottom:170px}
+}

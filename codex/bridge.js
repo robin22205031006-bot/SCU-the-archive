@@ -1678,11 +1678,48 @@
     var dz = t.closest("[data-cxodossier]");
     if (dz && typeof openCharacter === "function") openCharacter(dz.dataset.cxodossier);
   });
+  /** App-only destination reached through history (back button, reload, saved link). */
+  function hostPageHTML(id) {
+    var n =
+      (API &&
+        API.NT.find(function (m) {
+          return m[0] === id;
+        })) ||
+      [id, id];
+    var hero = "";
+    try {
+      hero = heroX(
+        { c1: "#93B6FF", c2: "#DCE7FF", id: "balance", nm: n[1], bl: "This page lives in the app. Your place in the Codex is kept.", tier: "OPENS IN THE APP" },
+        [],
+      );
+    } catch (e) {
+      hero = "<h2>" + escH(n[1]) + "</h2>";
+    }
+    return (
+      '<div class="xpage">' +
+      hero +
+      '<div class="row" style="justify-content:center"><button type="button" class="btn" data-cxopen="' +
+      escH(HOSTP[id]) +
+      '">Open ' +
+      escH(n[1]) +
+      '</button><button type="button" class="btn ghost" data-nt="home">Back to the Codex home</button></div></div>'
+    );
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("[data-cxopen]") : null;
+    if (b && H) {
+      try {
+        H.navigate(b.dataset.cxopen);
+      } catch (err) {}
+    }
+  });
+  if (H && H.badge) document.documentElement.classList.add("cx-badge");
   if (typeof viewHTML === "function") {
     var _vhx = viewHTML;
     // eslint-disable-next-line no-global-assign
     viewHTML = function () {
       if (tab === "bonds") return bondsHTML();
+      if (H && HOSTP[tab]) return hostPageHTML(tab);
       return _vhx.apply(this, arguments);
     };
   }
@@ -1702,7 +1739,7 @@
   }
   // Codex's first render ran before this bridge loaded: redraw if it opened on Bonds.
   try {
-    if (tab === "bonds") render();
+    if (tab === "bonds" || (H && HOSTP[tab])) render();
   } catch (e) {}
   window.addEventListener("resize", function () {
     if (tab !== "bonds") return;

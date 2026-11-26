@@ -96,6 +96,9 @@ describe("Codex feed", () => {
     });
     expect(feed.characters.map((c) => c.name)).toEqual(["Ethan Thorne", "Nobody"]);
     expect(feed.characters[0]?.aliases).toEqual(["Gale Warden"]);
+    // the same matcher every style uses decides who is already in the Codex
+    expect(feed.characters[0]?.codex).toBe("Ethan Thorne");
+    expect(feed.characters[1]?.codex).toBeNull();
     expect(feed.abilities.map((a) => a.name)).toEqual(["Described", "Windstep"]);
     expect(feed.abilities[1]?.holders).toEqual(["Ethan Thorne"]);
     // Like Nexus, every character gets a dossier; one with no stats gets a zero Base profile.
