@@ -10,6 +10,7 @@ import {
   codexTabForPath,
   safeCodexPath,
   safePortrait,
+  abilityLabel,
 } from "@/lib/codex-feed";
 
 describe("Codex UI mode", () => {
@@ -290,6 +291,23 @@ describe("Codex feed: spoiler mask, portraits and family", () => {
       masked: { characters: false, abilities: false, archive: false, series: true },
     });
     expect(masked.series).toEqual([]);
+  });
+
+  it("shows ability names, never raw database keys", () => {
+    // registry name first (the one Nexus shows), else a readable form of the key
+    expect(abilityLabel("aldercrest_arcane")).toBe("Aldercrest Arcane Discipline");
+    expect(abilityLabel("made_up_codex_test_key")).toBe("Made Up Codex Test Key");
+    expect(abilityLabel("Wind Guardian Mode")).toBe("Wind Guardian Mode");
+    const feed = buildCodexFeed({
+      ...base,
+      entities: [
+        { id: "9", name: "Steven Aldercrest", kind: "character", abilities: ["aldercrest_arcane"] },
+      ],
+    });
+    expect(feed.dossiers["Steven Aldercrest"]?.seasons[0]?.abilities).toEqual([
+      "Aldercrest Arcane",
+    ]);
+    expect(feed.abilities.some((a) => a.name === "aldercrest_arcane")).toBe(false);
   });
 
   it("accepts only real image URLs", () => {

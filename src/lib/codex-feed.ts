@@ -1,6 +1,7 @@
 import { isFamilyRel } from "@/lib/family";
 import { resolveCharacterStatusTimeline } from "@/lib/status-history";
 import { codexCastName } from "@/lib/codex-canon";
+import { lookupAbility } from "@/lib/abilities";
 import {
   ABILITY_RANK_META,
   buildAbilityRankMap,
@@ -190,6 +191,28 @@ export function safePortrait(v: unknown): string | undefined {
   if (/^https:\/\/[^\s"'<>]+$/.test(t) && t.length < 2000) return t;
   return undefined;
 }
+/** Display name for an archive ability key: the registry label Nexus shows, else "aldercrest_arcane" -> "Aldercrest Arcane". */
+export function abilityLabel(raw: string): string {
+  const t = raw.trim();
+  if (!t) return t;
+  const def = lookupAbility(t);
+  if (def?.label) return def.label;
+  if (t.includes("_") || t === t.toLowerCase())
+    return t
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  return t;
+}
+const labels = (v: string[]) => {
+  const out: string[] = [];
+  for (const x of v) {
+    const l = abilityLabel(x);
+    if (l && !out.some((o) => o.toLowerCase() === l.toLowerCase())) out.push(l);
+  }
+  return out;
+};
 const list = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()) : [];
 
@@ -233,12 +256,12 @@ export function codexSeasonsFor(
       bloodline: clip(d.bloodline, 120) || undefined,
       orgs: list(d.organizations).slice(0, 12),
       weapons: list(d.weapons).slice(0, 12),
-      abilities: list(d.abilityKeys).slice(0, 24),
+      abilities: labels(list(d.abilityKeys)).slice(0, 24),
       stats: values,
       profiles: Object.keys(d.abilityStats ?? {})
         .slice(0, 12)
         .map((name) => ({
-          name: clip(name, 60),
+          name: clip(abilityLabel(name), 60),
           stats: resolveNexusStats(stats, o.key === "all" ? null : o.key, name),
         }))
         .filter((p) => p.name && p.stats.some((x) => x.value > 0)),
@@ -302,7 +325,7 @@ export function buildCodexFeed({
     });
     if (masked.characters) continue;
     for (const ab of list(e.abilities)) {
-      const k = ab.trim();
+      const k = abilityLabel(ab);
       const h = holders.get(k.toLowerCase()) ?? [];
       h.push(name);
       holders.set(k.toLowerCase(), h);
@@ -322,7 +345,7 @@ export function buildCodexFeed({
             roles: [],
             orgs: [],
             weapons: [],
-            abilities: list(e.abilities).slice(0, 24),
+            abilities: labels(list(e.abilities)).slice(0, 24),
             stats: base,
             empty: !base.some((x) => x.value > 0),
           },
@@ -337,7 +360,7 @@ export function buildCodexFeed({
         const o: Record<string, number> = {};
         for (const n of names) {
           const r = resolveAssignedAbilityRank(n, map);
-          if (r) o[n] = r;
+          if (r) o[abilityLabel(n)] = r;
         }
         return o;
       };
@@ -384,6 +407,7 @@ export function buildCodexFeed({
   const seen = new Set<string>();
   const abilityOut: CodexFeedAbility[] = [];
   const push = (name: string, desc?: string, group?: string) => {
+    name = abilityLabel(name);
     const k = name.trim().toLowerCase();
     if (!k || seen.has(k)) return;
     seen.add(k);
