@@ -4,7 +4,7 @@
 // has them. Runs the real page standalone (no app feed, so nothing from the archive leaks
 // in) and reads its data after every in-page canon correction has run.
 // Dev-only (needs Playwright). Usage: node scripts/build-codex.mjs && node scripts/export-codex-canon.mjs
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
@@ -60,7 +60,17 @@ await browser.close();
 
 const out = resolve(root, "src/generated/codex-canon.json");
 mkdirSync(dirname(out), { recursive: true });
-writeFileSync(out, JSON.stringify(canon, null, 1) + "\n");
+// The canon baseline is fixed: archive ties created after it are staff edits and win in every
+// style. Pass --rebase to move it (e.g. after a large Codex canon update).
+let baselineAt = new Date().toISOString();
+if (existsSync(out) && !process.argv.includes("--rebase")) {
+  try {
+    baselineAt = JSON.parse(readFileSync(out, "utf8")).baselineAt || baselineAt;
+  } catch {
+    /* keep now */
+  }
+}
+writeFileSync(out, JSON.stringify({ baselineAt, ...canon }, null, 1) + "\n");
 console.log(
   `export-codex-canon: ${canon.cast.length} characters, ${canon.groups.length} ability groups, ${canon.bonds.length} bonds -> ${out}`,
 );

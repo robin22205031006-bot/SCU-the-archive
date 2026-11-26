@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRouter } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,13 @@ import { useOptionalThemeContext, type PrimarySystem } from "@/context/ThemeCont
 import { useUiMode, VISUAL_UI_MODES, type VisualUiMode } from "@/hooks/use-ui-mode";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { buildCodexFeed, codexTabForPath, safeCodexPath, type CodexFeed } from "@/lib/codex-feed";
+import { codexCastName } from "@/lib/codex-canon";
+import { planCharacterPatch, planSeasonTitles } from "@/lib/codex-sync";
+import { saveSeasonTitles } from "@/lib/series-lore.functions";
+import { seriesSeasonNames } from "@/lib/series-seasons";
+import { invalidateArchive } from "@/lib/archive-sync";
+import type { Entity } from "@/lib/entities";
+import type { Series } from "@/lib/series";
 
 /**
  * Codex UI: the SCU Codex page (public/codex/index.html) runs full screen in a same-origin
@@ -27,7 +34,19 @@ type CodexHost = {
   setMode: (mode: string) => void;
   ready: () => void;
   motion: boolean;
+  badge?: boolean;
+  reload?: () => void;
+  /** Staff edits saved inside the Codex, written to the archive through checked paths. */
+  saveSeasonTitles?: (
+    seriesTitle: string,
+    seasons: Array<{ n: number; name: string }>,
+  ) => Promise<SyncResult>;
+  saveCharacter?: (
+    codexName: string,
+    edit: { title?: string; abil?: string },
+  ) => Promise<SyncResult>;
 };
+type SyncResult = { ok: boolean; changed: boolean; message: string };
 
 declare global {
   interface Window {
@@ -72,6 +91,19 @@ const abilityRanksQuery = {
   },
 };
 
+/** What the Codex merges at boot: any change here means the frame should reload. */
+function bootSignature(f: CodexFeed): string {
+  const parts: string[] = [];
+  for (const c of f.characters)
+    parts.push(`${c.name}|${c.codex ?? ""}|${c.aliases.join(",")}|${c.desc ?? ""}`);
+  for (const a of f.abilities) parts.push(`${a.name}|${a.holders.join(",")}|${a.group ?? ""}`);
+  for (const s of f.series) parts.push(`${s.title}|${s.seasons.join(",")}`);
+  let h = 5381;
+  const str = parts.join("\n");
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return `${parts.length}:${h}`;
+}
+
 const LAST_TAB_KEY = "scu-codex-last-path";
 
 function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: boolean } {
@@ -89,9 +121,17 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
   const maskSeries = useSpoilerMask("series");
   const feed = useMemo(() => {
     if (!enabled) return null;
-    let abilities: { label: string; description?: string | undefined }[] = [];
+    let abilities: {
+      label: string;
+      description?: string | undefined;
+      group?: string | undefined;
+    }[] = [];
     try {
-      abilities = allAbilityDefs().map((a) => ({ label: a.label, description: a.description }));
+      abilities = allAbilityDefs().map((a) => ({
+        label: a.label,
+        description: a.description,
+        group: a.group,
+      }));
     } catch {
       abilities = [];
     }
@@ -153,10 +193,28 @@ export function CodexStage() {
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [bootTab, setBootTab] = useState("home");
+  const [frameKey, setFrameKey] = useState(0);
+  /** What the frame merged at boot; more archive data later triggers one quiet reload. */
+  const bootSig = useRef<string | null>(null);
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
   const tabRef = useRef(tab);
   tabRef.current = tab;
+  const reloadFrame = useCallback(() => {
+    let hashTab = tabRef.current ?? "home";
+    try {
+      const h = frameRef.current?.contentWindow?.location.hash ?? "";
+      const m = /^#\/(\w+)/.exec(h);
+      if (m?.[1]) hashTab = m[1];
+    } catch {
+      /* same-origin frame; ignore if unavailable */
+    }
+    const f = window.__SCU_CODEX_FEED__;
+    bootSig.current = f ? bootSignature(f) : "";
+    setLoaded(false);
+    setBootTab(hashTab);
+    setFrameKey((k) => k + 1);
+  }, []);
 
   // Remember the last Codex page so "Back to Codex" returns to it.
   useEffect(() => {
@@ -190,6 +248,71 @@ export function CodexStage() {
     }
   }, [enabled, feed]);
 
+  const qc = useQueryClient();
+  const norm = (t: string) =>
+    t
+      .toLowerCase()
+      .replace(/^the\s+/, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  const syncSeasonTitles = useCallback(
+    async (
+      seriesTitle: string,
+      seasons: Array<{ n: number; name: string }>,
+    ): Promise<SyncResult> => {
+      const list = qc.getQueryData<Series[]>(seriesQuery.queryKey) ?? [];
+      const sr = list.find((x) => norm(x.title) === norm(seriesTitle));
+      if (!sr) return { ok: true, changed: false, message: "This series is only in the Codex." };
+      const titles = planSeasonTitles(seriesSeasonNames(sr), seasons);
+      if (!titles) return { ok: true, changed: false, message: "" };
+      try {
+        await saveSeasonTitles({ data: { seriesId: sr.id, titles } });
+        await qc.invalidateQueries({ queryKey: ["series"] });
+        return {
+          ok: true,
+          changed: true,
+          message: "Season titles saved to the archive for every style.",
+        };
+      } catch (e) {
+        return {
+          ok: false,
+          changed: false,
+          message: e instanceof Error ? e.message : "Could not save to the archive.",
+        };
+      }
+    },
+    [qc],
+  );
+  const syncCharacter = useCallback(
+    async (codexName: string, edit: { title?: string; abil?: string }): Promise<SyncResult> => {
+      const people = qc.getQueryData<Entity[]>(entitiesQuery(["character"]).queryKey) ?? [];
+      const card = people.find(
+        (e) => e.name === codexName || codexCastName(e.name, e.alias ?? null) === codexName,
+      );
+      if (!card)
+        return { ok: true, changed: false, message: "This character is only in the Codex." };
+      const { data: fresh, error: readError } = await supabase
+        .from("entities")
+        .select("id, alias, description, locked_fields")
+        .eq("id", card.id)
+        .single();
+      if (readError || !fresh)
+        return { ok: false, changed: false, message: "Could not read the archive card." };
+      const patch = planCharacterPatch(fresh, edit);
+      if (!patch) return { ok: true, changed: false, message: "" };
+      const { error } = await supabase.from("entities").update(patch).eq("id", card.id);
+      if (error)
+        return { ok: false, changed: false, message: "Only staff can change archive cards." };
+      await invalidateArchive(qc);
+      return {
+        ok: true,
+        changed: true,
+        message: `${card.name} saved to the archive for every style.`,
+      };
+    },
+    [qc],
+  );
+
   useEffect(() => {
     if (!enabled) return;
     window.__SCU_CODEX_HOST__ = {
@@ -206,8 +329,15 @@ export function CodexStage() {
       },
       setMode: switchMode,
       ready: () => setLoaded(true),
+      reload: () => reloadFrame(),
+      saveSeasonTitles: syncSeasonTitles,
+      saveCharacter: syncCharacter,
+      // Lovable-hosted addresses overlay an "Edit with Lovable" badge at the bottom right.
+      badge: /(^|\.)(lovable\.app|lovable\.dev|lovableproject\.com)$/.test(
+        window.location.hostname,
+      ),
     };
-  }, [enabled, motionActive, router, switchMode]);
+  }, [enabled, motionActive, router, switchMode, reloadFrame, syncSeasonTitles, syncCharacter]);
 
   useEffect(() => {
     if (!enabled) {
@@ -219,6 +349,8 @@ export function CodexStage() {
     }
     if (mounted) return;
     const boot = () => {
+      const f = window.__SCU_CODEX_FEED__;
+      bootSig.current = f ? bootSignature(f) : "";
       setBootTab(tabRef.current ?? "home");
       setMounted(true);
     };
@@ -226,10 +358,30 @@ export function CodexStage() {
       boot();
       return;
     }
-    // Never hold the Codex hostage to a slow archive: boot with what is cached.
-    const t = window.setTimeout(boot, 2500);
+    // Wait for the archive so its extra characters and abilities are merged at boot; a very
+    // slow archive still opens the Codex, and the late data reloads it once (below).
+    const t = window.setTimeout(boot, 8000);
     return () => window.clearTimeout(t);
   }, [enabled, settled, feed, mounted]);
+
+  // Characters, abilities and series are merged when the Codex boots. When any of them change
+  // in the archive (a rename, new holders, a new season title...), the Codex reloads at the same
+  // page: silently while it is hidden, or after the reader taps Refresh while they are using it.
+  useEffect(() => {
+    if (!mounted || !loaded || !feed || bootSig.current === null) return;
+    if (bootSignature(feed) === bootSig.current) return;
+    if (!visible) {
+      reloadFrame();
+      return;
+    }
+    const win = frameRef.current?.contentWindow as
+      (CodexFrameWindow & { __codexOfferRefresh?: () => void }) | null | undefined;
+    try {
+      win?.__codexOfferRefresh?.();
+    } catch {
+      /* frame navigating */
+    }
+  }, [mounted, loaded, feed, visible, reloadFrame]);
 
   // App URL changed (back button, links) -> move the Codex to the matching tab.
   useEffect(() => {
@@ -264,6 +416,7 @@ export function CodexStage() {
     >
       {mounted && (
         <iframe
+          key={frameKey}
           ref={frameRef}
           title="SCU Codex"
           src={`/codex/index.html#/${bootTab}`}

@@ -257,3 +257,107 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
 html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animation:none!important}
 
 .cxd-empty{margin:0 0 10px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel)}
+
+/* Lovable-hosted addresses show an "Edit with Lovable" badge at the bottom right of the app;
+   on phones lift the dock above it so every wing (Commons included) stays tappable. */
+@media (max-width:767.98px){
+ html.cx-badge .dock{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge .rib{bottom:calc(146px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge #view{padding-bottom:170px}
+}
+
+/* ---- detail pages fill the screen at every size ---- */
+#sheet.sheet{left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;height:100dvh!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+ padding:calc(68px + env(safe-area-inset-top,0px)) max(16px,calc((100vw - 880px) / 2)) calc(40px + env(safe-area-inset-bottom,0px))!important;
+ background:radial-gradient(120% 50% at 50% -10%,color-mix(in srgb,var(--c1) 16%,transparent),transparent 60%),var(--panel)!important;z-index:45!important;overscroll-behavior:contain}
+#sheet.sheet:not([hidden]){animation:cxSheetFull 560ms var(--cx-soft) both!important}
+@keyframes cxSheetFull{from{transform:translateY(28px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+#sheetBack{display:none!important}
+#sheet .sback{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,calc((100vw - 880px) / 2));z-index:3;min-height:44px;padding:0 16px}
+.cx-close{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:max(16px,calc((100vw - 880px) / 2));z-index:3;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 90%,transparent);color:var(--ink);display:grid;place-items:center;font-size:1.4rem;line-height:1;transition:transform 360ms var(--cx-spring),border-color 150ms}
+.cx-close:hover{border-color:var(--c1);transform:rotate(90deg)}
+.cx-close:active{transform:scale(.9)}
+.cx-close:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+#sheet .sh-top{gap:18px}
+#sheet .sh-top .tile{width:76px;height:76px}
+#sheet .sh-top h3{font-size:clamp(1.7rem,4vw,2.4rem)}
+@media (min-width:900px){#sheet .cxw-svg{width:min(100%,360px)}}
+
+/* ---- premium Codex navigation ---- */
+.dock{isolation:isolate;border:1px solid color-mix(in srgb,var(--c1) 30%,var(--line))!important;background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 92%,transparent),color-mix(in srgb,var(--panel2) 96%,transparent))!important;
+ clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,16px 100%,0 calc(100% - 16px),0 16px)}
+@media (min-width:768px){.dock{clip-path:none;border-width:0 1px 0 0!important}}
+.dk{transform:none;transition:transform 260ms var(--cx-spring),color 160ms ease-out!important;overflow:hidden;z-index:1}
+.dk .em{transition:transform 420ms var(--cx-spring)}
+.dk[aria-current="true"] .em{transform:translateY(-2px) scale(1.12)}
+.dk[aria-current="true"]::after{display:none}
+.cx-navgem{position:fixed;left:0;top:0;width:100px;height:100px;z-index:27;pointer-events:none;transform-origin:0 0;opacity:0;will-change:transform,opacity;
+ clip-path:polygon(14% 0,86% 0,100% 14%,100% 86%,86% 100%,14% 100%,0 86%,0 14%);
+ background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 30%,transparent),color-mix(in srgb,var(--c2) 14%,transparent));box-shadow:inset 0 0 0 1px var(--c1);transition:opacity 200ms ease-out}
+.dock .dk{position:relative}
+.dk.sig{overflow:visible}
+.cx-sigrings{position:absolute;left:50%;top:6px;width:58px;height:58px;margin-left:-29px;pointer-events:none;z-index:-1}
+.cx-sigrings svg{width:100%;height:100%;overflow:visible}
+.cx-sigrings .r1{fill:none;stroke:var(--c1);stroke-width:1.6;stroke-dasharray:3 7;transform-origin:50% 50%;animation:cxSpin 18s linear infinite}
+.cx-sigrings .r2{fill:none;stroke:var(--c2);stroke-width:1;opacity:.7;stroke-dasharray:14 8;transform-origin:50% 50%;animation:cxSpin 26s linear infinite reverse}
+.cx-sigrings .tk{fill:var(--c1);transform-origin:50% 50%;animation:cxSpin 40s linear infinite}
+.dk.sig .em{animation:cxBreath 3.6s ease-in-out infinite}
+@keyframes cxBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.dk.sig.cx-burst .cx-sigrings{animation:cxBurst 620ms var(--cx-spring)}
+@keyframes cxBurst{0%{transform:rotate(0) scale(1)}40%{transform:rotate(120deg) scale(1.25)}100%{transform:rotate(180deg) scale(1)}}
+.cx-ripple{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c1) 70%,transparent),transparent 70%);pointer-events:none;animation:cxRipple 650ms ease-out forwards;z-index:0}
+@keyframes cxRipple{from{transform:scale(1);opacity:.9}to{transform:scale(9);opacity:0}}
+.rib{border:1px solid color-mix(in srgb,var(--c1) 35%,var(--line))!important;background:color-mix(in srgb,var(--panel) 94%,transparent)!important;overflow:visible!important}
+.rib.cx-fan::before{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--c1),transparent);transform-origin:50% 50%;animation:cxDraw 520ms var(--cx-soft) both}
+@media (min-width:768px){.rib.cx-fan::before{left:-1px;right:auto;top:12px;bottom:12px;width:2px;height:auto;background:linear-gradient(180deg,transparent,var(--c1),transparent);transform-origin:50% 0}}
+.rib.cx-fan .rb{animation:cxFan 560ms var(--cx-spring) both;animation-delay:calc(var(--i,0) * 45ms);transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}
+@keyframes cxFan{from{opacity:0;transform:translate(var(--fx,0),calc(var(--fy,0px) + 22px)) rotate(var(--fr,0deg)) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}}
+@media (min-width:768px){@keyframes cxFan{from{opacity:0;transform:translate(calc(var(--fx,0px) - 22px),0) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),0)}}}
+.rb{position:relative;overflow:hidden}
+.rb[aria-current="true"]{box-shadow:inset 0 0 0 1px var(--c1)}
+#view.cx-flow-r{animation:cxFlowR 560ms var(--cx-soft) both}
+#view.cx-flow-l{animation:cxFlowL 560ms var(--cx-soft) both}
+@keyframes cxFlowR{from{opacity:0;transform:translateX(42px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes cxFlowL{from{opacity:0;transform:translateX(-42px) scale(.985)}to{opacity:1;transform:none}}
+.cx-sweep{position:fixed;top:0;bottom:0;left:0;width:60vw;z-index:24;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c1) 26%,transparent),color-mix(in srgb,var(--c2) 18%,transparent),transparent);transform:translateX(-70vw)}
+.cx-sweep.go-r{animation:cxSweepR 640ms cubic-bezier(.3,.7,.2,1)}
+.cx-sweep.go-l{animation:cxSweepL 640ms cubic-bezier(.3,.7,.2,1)}
+@keyframes cxSweepR{0%{opacity:0;transform:translateX(-70vw)}30%{opacity:1}100%{opacity:0;transform:translateX(110vw)}}
+@keyframes cxSweepL{0%{opacity:0;transform:translateX(110vw)}30%{opacity:1}100%{opacity:0;transform:translateX(-70vw)}}
+@media (prefers-reduced-motion:reduce){.cx-sigrings *,.dk.sig .em,.rib.cx-fan .rb,.rib.cx-fan::before,#view.cx-flow-r,#view.cx-flow-l,.cx-sweep,.cx-ripple{animation:none!important}.cx-navgem{transition:none}}
+html[data-motion="off"] .cx-sigrings *,html[data-motion="off"] .dk.sig .em,html[data-motion="off"] .rib.cx-fan .rb,html[data-motion="off"] .cx-sweep{animation:none!important}
+
+/* ---- living VFX ---- */
+.wrap{position:relative;z-index:1}
+.cx-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.cx-ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.16;will-change:transform;background:radial-gradient(circle,var(--c1),transparent 62%)}
+.cx-ambient .a1{left:-25vmax;top:-30vmax;animation:cxDrift1 38s ease-in-out infinite alternate}
+.cx-ambient .a2{right:-30vmax;bottom:-35vmax;background:radial-gradient(circle,var(--c2),transparent 62%);opacity:.1;animation:cxDrift2 46s ease-in-out infinite alternate}
+.cx-ambient .a3{left:30vw;top:40vh;width:44vmax;height:44vmax;opacity:.07;animation:cxDrift3 54s ease-in-out infinite alternate}
+@keyframes cxDrift1{to{transform:translate(18vmax,14vmax) scale(1.15)}}
+@keyframes cxDrift2{to{transform:translate(-16vmax,-12vmax) scale(.9)}}
+@keyframes cxDrift3{to{transform:translate(-22vmax,10vmax) scale(1.2)}}
+:root[data-theme="light"] .cx-ambient i{opacity:.1}
+.cx-ambient b{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--c2);opacity:0;animation:cxMote var(--d) ease-in-out var(--dl) infinite}
+@keyframes cxMote{0%,100%{opacity:0;transform:translateY(0) scale(.6)}50%{opacity:.55;transform:translateY(-14px) scale(1)}}
+/* hero ornaments keep living instead of stopping after three cycles */
+.orb .r1,.orb .r2,.orb .glow,.orb .core,.tree::after{animation-iteration-count:infinite!important}
+/* staggered entrances */
+.cx-in{animation:cxCard 640ms var(--cx-spring) backwards;animation-delay:min(calc(var(--ci,0) * 32ms),640ms)}
+@keyframes cxCard{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+#sheet .cx-sin{animation:cxSec 560ms var(--cx-soft) backwards;animation-delay:min(calc(var(--si,0) * 55ms),500ms)}
+@keyframes cxSec{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.xgh,.gh,.stycard,.cc{transform-style:preserve-3d;will-change:transform}
+@media (prefers-reduced-motion:reduce){.cx-ambient,.cx-in,#sheet .cx-sin{animation:none!important}.cx-ambient{display:none}}
+html[data-motion="off"] .cx-ambient{display:none}
+html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:none!important}
+
+.cx-refresh{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top,0px));z-index:60;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:999px;border:1px solid var(--c1);background:var(--panel);box-shadow:0 12px 32px rgba(0,0,0,.35);transform:translateX(-50%);animation:cxRefreshIn 520ms var(--cx-spring) both;max-width:calc(100vw - 24px)}
+.cx-refresh span{font-size:.86rem;white-space:nowrap}
+.cx-refresh .btn{min-height:36px;padding:0 14px}
+.cx-refresh-x{width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--muted);font-size:1.2rem}
+@keyframes cxRefreshIn{from{opacity:0;transform:translateX(-50%) translateY(-12px) scale(.94)}to{opacity:1;transform:translateX(-50%)}}
+
+.cx-toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(520px,calc(100vw - 24px));padding:10px 16px;border-radius:14px;border:1px solid var(--c1);background:var(--panel);color:var(--ink);font-size:.86rem;box-shadow:0 12px 32px rgba(0,0,0,.35);transform:translateX(-50%);animation:cxRefreshIn 480ms var(--cx-spring) both}
+.cx-toast.bad{border-color:#F05A66}
+@media (min-width:768px){.cx-toast{bottom:24px}}

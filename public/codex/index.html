@@ -615,13 +615,24 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
   function mergeCast(CAST) {
     var list = (feed && feed.characters) || [];
     var keys = castIndex(CAST);
+    var inCast = function (n) {
+      return CAST.some(function (r) {
+        return r[0] === n;
+      });
+    };
     list.forEach(function (ch) {
       if (!ch || !ch.name) return;
-      var cands = [ch.name].concat(ch.aliases || []);
-      var hit = findCast(CAST, keys, cands);
+      var hit = null;
+      if (Object.prototype.hasOwnProperty.call(ch, "codex")) {
+        // The app's shared matcher already decided: a Codex name, or null = a new person.
+        hit = ch.codex && inCast(ch.codex) ? ch.codex : null;
+        if (!hit && ch.codex == null && keys.has(norm(ch.name))) hit = keys.get(norm(ch.name));
+      } else {
+        hit = findCast(CAST, keys, [ch.name].concat(ch.aliases || []));
+      }
       if (hit) {
         nameMap[ch.name] = hit;
-        if (ch.image) window.__codexPortrait[hit] = ch.image;
+        if (ch.image && !window.__codexPortrait[hit]) window.__codexPortrait[hit] = ch.image;
         // Fill blanks only: the Codex text always wins when it has its own.
         var row = CAST.find(function (r) {
           return r[0] === hit;
@@ -629,22 +640,70 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
         if (row && !row[4] && ch.desc) row[4] = ch.desc;
         return;
       }
-      var row2 = [
-        ch.name,
-        ch.realName || "",
-        (ch.aliases || []).join(", "),
-        ch.bloodline || "",
-        ch.desc || "",
-        "others",
-      ];
-      CAST.push(row2);
-      if (ch.image) window.__codexPortrait[ch.name] = ch.image;
+      if (inCast(ch.name)) {
+        nameMap[ch.name] = ch.name;
+        return;
+      }
+      CAST.push([ch.name, ch.realName || "", (ch.aliases || []).join(", "), ch.bloodline || "", ch.desc || "", "others"]);
       keys.set(norm(ch.name), ch.name);
       nameMap[ch.name] = ch.name;
+      if (ch.image) window.__codexPortrait[ch.name] = ch.image;
       window.__codexAdded.cast.push(ch.name);
     });
   }
 
+  /* Archive abilities are filed the Codex way: into the branch (and so the tier) they belong
+     to; as a technique under the holder's ability family when the holders already own a family
+     in that branch, otherwise as a new ability in the branch. */
+  var BRANCH_RULES = [
+    ["aether", /aether|soul layer|void eras/],
+    ["time", /\btime\b|chrono|temporal/],
+    ["space", /portal|teleport|dimension|\brift|\bwarp|spatial/],
+    ["mind", /mind|telepath|dream|nightmare|fear|illusion|memory|psych|hypno|empath/],
+    ["curse", /curse|\bhex\b|malediction/],
+    ["chaos", /chaos|entropy/],
+    ["order", /command|authority|\border\b|decree/],
+    ["judgement", /judg|verdict/],
+    ["blood", /blood|hemo|sanguin/],
+    ["lightning", /lightning|electr|thunder|astrapo|volt|storm/],
+    ["fire", /fire|flame|pyro|burn|blaze|inferno|ember|lava|magma|heat/],
+    ["water", /water|hydro|ice\b|cryo|frost|snow|mist|tide|ocean|wave/],
+    ["air", /wind|air\b|aero|gale|gust|breeze|tornado|cyclone|sky/],
+    ["earth", /earth|stone|rock|geo|terra|metal|sand|crystal|quake/],
+    ["light", /\blight\b|radian|holy|solar|lumin|photon/],
+    ["shadow", /shadow|dark|umbra|night|gloom/],
+    ["life", /heal|regenerat|nature|plant|flora|life|restor|vital|cure/],
+    ["beast", /beast|dragon|wolf|animal|shape.?shift|feral|claw|serpent|bird|tiger/],
+    ["venom", /venom|poison|toxic|acid/],
+    ["resonance", /sound|sonic|resonan|voice|song|echo/],
+    ["energy", /energy|\bki\b|chakra|aura|power surge|blast/],
+    ["arcane", /magic|arcane|spell|rune|sorcer|witch|mana|pact|enchant|summon/],
+    ["seal", /seal|talisman|binding|\bward\b|barrier|shield|force field/],
+    ["tech", /tech|suit|cyber|serum|gadget|chip|robot|armou?r|drone|gun/],
+    ["blade", /sword|blade|katana|spear|bow|arrow|weapon|dagger|axe|scythe|whip/],
+    ["assassin", /stealth|assassin|silent|infiltrat|poison dart|shadow step/],
+    ["soldier", /soldier|combat|martial|strength|speed|agility|tactic|strateg|fight|marksman|leader|endurance|reflex|hand.to.hand|peak human/],
+  ];
+  function branchFor(BR, ab) {
+    var text = (ab.name + " " + (ab.desc || "")).toLowerCase();
+    var nameOnly = ab.name.toLowerCase();
+    var idOf = function (id) {
+      for (var i = 0; i < BR.length; i++) if (BR[i].id === id) return i;
+      return -1;
+    };
+    // the name decides first, then the description
+    var pass = [nameOnly, text];
+    for (var p = 0; p < pass.length; p++)
+      for (var r = 0; r < BRANCH_RULES.length; r++)
+        if (BRANCH_RULES[r][1].test(pass[p])) {
+          var i = idOf(BRANCH_RULES[r][0]);
+          if (i >= 0) return i;
+        }
+    if (ab.group === "role") return idOf("soldier");
+    if (ab.group === "beast") return idOf("beast");
+    if (ab.group === "art") return idOf("blade");
+    return -1;
+  }
   function mergeAbilities(ctx) {
     var list = (feed && feed.abilities) || [];
     if (!list.length) return;
@@ -658,8 +717,11 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
         });
       });
     });
-    var groups = [];
-    list.forEach(function (ab) {
+    var leftover = [];
+    var sorted = list.slice().sort(function (a, b) {
+      return String(a.name).localeCompare(String(b.name));
+    });
+    sorted.forEach(function (ab) {
       var k = norm(ab.name);
       if (!k || have.has(k)) return;
       have.add(k);
@@ -671,10 +733,31 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
       holders = holders.filter(function (h, i) {
         return holders.indexOf(h) === i;
       });
-      groups.push(ctx.G(ab.name, ab.desc || "Recorded in the archive.", holders));
+      var desc = ab.desc || "Recorded in the archive.";
+      var b = branchFor(BR, ab);
       window.__codexAdded.abilities.push(ab.name);
+      if (b < 0) {
+        leftover.push(ctx.G(ab.name, desc, holders, null, { src: "archive" }));
+        return;
+      }
+      // technique: every holder already owns an ability family in this branch
+      if (holders.length) {
+        var fam = BR[b].g.find(function (gr) {
+          return !gr.p && holders.every(function (h) {
+            return (gr.h || []).indexOf(h) >= 0;
+          });
+        });
+        if (fam) {
+          fam.k = fam.k || [];
+          fam.k.push({ n: ab.name, d: desc, src: "archive" });
+          window.__codexAdded.placed = (window.__codexAdded.placed || 0) + 1;
+          return;
+        }
+      }
+      BR[b].g.push(ctx.G(ab.name, desc, holders, null, { src: "archive" }));
+      window.__codexAdded.placed = (window.__codexAdded.placed || 0) + 1;
     });
-    if (!groups.length) return;
+    if (!leftover.length) return;
     try {
       ctx.GLY.archive = ctx.GLY.seal || ctx.GLY.arcane;
       if (ctx.DEF) ctx.DEF.archive = ["star4", "orb", "talisman"];
@@ -685,12 +768,11 @@ button.lrow:focus-visible,.btn:focus-visible,.xseg button:focus-visible{outline:
       tier: "Skills",
       c1: "#93B6FF",
       c2: "#DCE7FF",
-      bl: "Abilities the app's archive records that the Codex had not catalogued yet. Codex entries always take priority.",
+      bl: "Archive abilities that fit no Codex branch yet. Codex entries always take priority.",
       x: [],
-      g: groups,
+      g: leftover,
     });
   }
-
 
   function mergeSeries(SER0) {
     var list = (feed && feed.series) || [];
@@ -2557,6 +2639,110 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
 
 .cxd-empty{margin:0 0 10px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel)}
 
+/* Lovable-hosted addresses show an "Edit with Lovable" badge at the bottom right of the app;
+   on phones lift the dock above it so every wing (Commons included) stays tappable. */
+@media (max-width:767.98px){
+ html.cx-badge .dock{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge .rib{bottom:calc(146px + env(safe-area-inset-bottom,0px))}
+ html.cx-badge #view{padding-bottom:170px}
+}
+
+/* ---- detail pages fill the screen at every size ---- */
+#sheet.sheet{left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;height:100dvh!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+ padding:calc(68px + env(safe-area-inset-top,0px)) max(16px,calc((100vw - 880px) / 2)) calc(40px + env(safe-area-inset-bottom,0px))!important;
+ background:radial-gradient(120% 50% at 50% -10%,color-mix(in srgb,var(--c1) 16%,transparent),transparent 60%),var(--panel)!important;z-index:45!important;overscroll-behavior:contain}
+#sheet.sheet:not([hidden]){animation:cxSheetFull 560ms var(--cx-soft) both!important}
+@keyframes cxSheetFull{from{transform:translateY(28px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+#sheetBack{display:none!important}
+#sheet .sback{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,calc((100vw - 880px) / 2));z-index:3;min-height:44px;padding:0 16px}
+.cx-close{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:max(16px,calc((100vw - 880px) / 2));z-index:3;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 90%,transparent);color:var(--ink);display:grid;place-items:center;font-size:1.4rem;line-height:1;transition:transform 360ms var(--cx-spring),border-color 150ms}
+.cx-close:hover{border-color:var(--c1);transform:rotate(90deg)}
+.cx-close:active{transform:scale(.9)}
+.cx-close:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+#sheet .sh-top{gap:18px}
+#sheet .sh-top .tile{width:76px;height:76px}
+#sheet .sh-top h3{font-size:clamp(1.7rem,4vw,2.4rem)}
+@media (min-width:900px){#sheet .cxw-svg{width:min(100%,360px)}}
+
+/* ---- premium Codex navigation ---- */
+.dock{isolation:isolate;border:1px solid color-mix(in srgb,var(--c1) 30%,var(--line))!important;background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 92%,transparent),color-mix(in srgb,var(--panel2) 96%,transparent))!important;
+ clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,16px 100%,0 calc(100% - 16px),0 16px)}
+@media (min-width:768px){.dock{clip-path:none;border-width:0 1px 0 0!important}}
+.dk{transform:none;transition:transform 260ms var(--cx-spring),color 160ms ease-out!important;overflow:hidden;z-index:1}
+.dk .em{transition:transform 420ms var(--cx-spring)}
+.dk[aria-current="true"] .em{transform:translateY(-2px) scale(1.12)}
+.dk[aria-current="true"]::after{display:none}
+.cx-navgem{position:fixed;left:0;top:0;width:100px;height:100px;z-index:27;pointer-events:none;transform-origin:0 0;opacity:0;will-change:transform,opacity;
+ clip-path:polygon(14% 0,86% 0,100% 14%,100% 86%,86% 100%,14% 100%,0 86%,0 14%);
+ background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 30%,transparent),color-mix(in srgb,var(--c2) 14%,transparent));box-shadow:inset 0 0 0 1px var(--c1);transition:opacity 200ms ease-out}
+.dock .dk{position:relative}
+.dk.sig{overflow:visible}
+.cx-sigrings{position:absolute;left:50%;top:6px;width:58px;height:58px;margin-left:-29px;pointer-events:none;z-index:-1}
+.cx-sigrings svg{width:100%;height:100%;overflow:visible}
+.cx-sigrings .r1{fill:none;stroke:var(--c1);stroke-width:1.6;stroke-dasharray:3 7;transform-origin:50% 50%;animation:cxSpin 18s linear infinite}
+.cx-sigrings .r2{fill:none;stroke:var(--c2);stroke-width:1;opacity:.7;stroke-dasharray:14 8;transform-origin:50% 50%;animation:cxSpin 26s linear infinite reverse}
+.cx-sigrings .tk{fill:var(--c1);transform-origin:50% 50%;animation:cxSpin 40s linear infinite}
+.dk.sig .em{animation:cxBreath 3.6s ease-in-out infinite}
+@keyframes cxBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.dk.sig.cx-burst .cx-sigrings{animation:cxBurst 620ms var(--cx-spring)}
+@keyframes cxBurst{0%{transform:rotate(0) scale(1)}40%{transform:rotate(120deg) scale(1.25)}100%{transform:rotate(180deg) scale(1)}}
+.cx-ripple{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c1) 70%,transparent),transparent 70%);pointer-events:none;animation:cxRipple 650ms ease-out forwards;z-index:0}
+@keyframes cxRipple{from{transform:scale(1);opacity:.9}to{transform:scale(9);opacity:0}}
+.rib{border:1px solid color-mix(in srgb,var(--c1) 35%,var(--line))!important;background:color-mix(in srgb,var(--panel) 94%,transparent)!important;overflow:visible!important}
+.rib.cx-fan::before{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--c1),transparent);transform-origin:50% 50%;animation:cxDraw 520ms var(--cx-soft) both}
+@media (min-width:768px){.rib.cx-fan::before{left:-1px;right:auto;top:12px;bottom:12px;width:2px;height:auto;background:linear-gradient(180deg,transparent,var(--c1),transparent);transform-origin:50% 0}}
+.rib.cx-fan .rb{animation:cxFan 560ms var(--cx-spring) both;animation-delay:calc(var(--i,0) * 45ms);transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}
+@keyframes cxFan{from{opacity:0;transform:translate(var(--fx,0),calc(var(--fy,0px) + 22px)) rotate(var(--fr,0deg)) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}}
+@media (min-width:768px){@keyframes cxFan{from{opacity:0;transform:translate(calc(var(--fx,0px) - 22px),0) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),0)}}}
+.rb{position:relative;overflow:hidden}
+.rb[aria-current="true"]{box-shadow:inset 0 0 0 1px var(--c1)}
+#view.cx-flow-r{animation:cxFlowR 560ms var(--cx-soft) both}
+#view.cx-flow-l{animation:cxFlowL 560ms var(--cx-soft) both}
+@keyframes cxFlowR{from{opacity:0;transform:translateX(42px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes cxFlowL{from{opacity:0;transform:translateX(-42px) scale(.985)}to{opacity:1;transform:none}}
+.cx-sweep{position:fixed;top:0;bottom:0;left:0;width:60vw;z-index:24;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c1) 26%,transparent),color-mix(in srgb,var(--c2) 18%,transparent),transparent);transform:translateX(-70vw)}
+.cx-sweep.go-r{animation:cxSweepR 640ms cubic-bezier(.3,.7,.2,1)}
+.cx-sweep.go-l{animation:cxSweepL 640ms cubic-bezier(.3,.7,.2,1)}
+@keyframes cxSweepR{0%{opacity:0;transform:translateX(-70vw)}30%{opacity:1}100%{opacity:0;transform:translateX(110vw)}}
+@keyframes cxSweepL{0%{opacity:0;transform:translateX(110vw)}30%{opacity:1}100%{opacity:0;transform:translateX(-70vw)}}
+@media (prefers-reduced-motion:reduce){.cx-sigrings *,.dk.sig .em,.rib.cx-fan .rb,.rib.cx-fan::before,#view.cx-flow-r,#view.cx-flow-l,.cx-sweep,.cx-ripple{animation:none!important}.cx-navgem{transition:none}}
+html[data-motion="off"] .cx-sigrings *,html[data-motion="off"] .dk.sig .em,html[data-motion="off"] .rib.cx-fan .rb,html[data-motion="off"] .cx-sweep{animation:none!important}
+
+/* ---- living VFX ---- */
+.wrap{position:relative;z-index:1}
+.cx-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.cx-ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.16;will-change:transform;background:radial-gradient(circle,var(--c1),transparent 62%)}
+.cx-ambient .a1{left:-25vmax;top:-30vmax;animation:cxDrift1 38s ease-in-out infinite alternate}
+.cx-ambient .a2{right:-30vmax;bottom:-35vmax;background:radial-gradient(circle,var(--c2),transparent 62%);opacity:.1;animation:cxDrift2 46s ease-in-out infinite alternate}
+.cx-ambient .a3{left:30vw;top:40vh;width:44vmax;height:44vmax;opacity:.07;animation:cxDrift3 54s ease-in-out infinite alternate}
+@keyframes cxDrift1{to{transform:translate(18vmax,14vmax) scale(1.15)}}
+@keyframes cxDrift2{to{transform:translate(-16vmax,-12vmax) scale(.9)}}
+@keyframes cxDrift3{to{transform:translate(-22vmax,10vmax) scale(1.2)}}
+:root[data-theme="light"] .cx-ambient i{opacity:.1}
+.cx-ambient b{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--c2);opacity:0;animation:cxMote var(--d) ease-in-out var(--dl) infinite}
+@keyframes cxMote{0%,100%{opacity:0;transform:translateY(0) scale(.6)}50%{opacity:.55;transform:translateY(-14px) scale(1)}}
+/* hero ornaments keep living instead of stopping after three cycles */
+.orb .r1,.orb .r2,.orb .glow,.orb .core,.tree::after{animation-iteration-count:infinite!important}
+/* staggered entrances */
+.cx-in{animation:cxCard 640ms var(--cx-spring) backwards;animation-delay:min(calc(var(--ci,0) * 32ms),640ms)}
+@keyframes cxCard{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+#sheet .cx-sin{animation:cxSec 560ms var(--cx-soft) backwards;animation-delay:min(calc(var(--si,0) * 55ms),500ms)}
+@keyframes cxSec{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.xgh,.gh,.stycard,.cc{transform-style:preserve-3d;will-change:transform}
+@media (prefers-reduced-motion:reduce){.cx-ambient,.cx-in,#sheet .cx-sin{animation:none!important}.cx-ambient{display:none}}
+html[data-motion="off"] .cx-ambient{display:none}
+html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:none!important}
+
+.cx-refresh{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top,0px));z-index:60;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:999px;border:1px solid var(--c1);background:var(--panel);box-shadow:0 12px 32px rgba(0,0,0,.35);transform:translateX(-50%);animation:cxRefreshIn 520ms var(--cx-spring) both;max-width:calc(100vw - 24px)}
+.cx-refresh span{font-size:.86rem;white-space:nowrap}
+.cx-refresh .btn{min-height:36px;padding:0 14px}
+.cx-refresh-x{width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--muted);font-size:1.2rem}
+@keyframes cxRefreshIn{from{opacity:0;transform:translateX(-50%) translateY(-12px) scale(.94)}to{opacity:1;transform:translateX(-50%)}}
+
+.cx-toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(520px,calc(100vw - 24px));padding:10px 16px;border-radius:14px;border:1px solid var(--c1);background:var(--panel);color:var(--ink);font-size:.86rem;box-shadow:0 12px 32px rgba(0,0,0,.35);transform:translateX(-50%);animation:cxRefreshIn 480ms var(--cx-spring) both}
+.cx-toast.bad{border-color:#F05A66}
+@media (min-width:768px){.cx-toast{bottom:24px}}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -3886,7 +4072,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
     ((f && f.bonds) || []).forEach(function (b) {
       var a = cxName(b.a);
       var c = cxName(b.b);
-      if (!a || !c || a === c || pairs[key(a, c)]) return;
+      if (!a || !c || a === c || (pairs[key(a, c)] && !b.fresh)) return;
       var t = typeOfRel(b.rel);
       add({ a: a, b: c, type: t, label: b.label ? b.rel + ": " + b.label : b.rel, ring: ringOfType(t), src: "archive" });
     });
@@ -4239,11 +4425,48 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
     var dz = t.closest("[data-cxodossier]");
     if (dz && typeof openCharacter === "function") openCharacter(dz.dataset.cxodossier);
   });
+  /** App-only destination reached through history (back button, reload, saved link). */
+  function hostPageHTML(id) {
+    var n =
+      (API &&
+        API.NT.find(function (m) {
+          return m[0] === id;
+        })) ||
+      [id, id];
+    var hero = "";
+    try {
+      hero = heroX(
+        { c1: "#93B6FF", c2: "#DCE7FF", id: "balance", nm: n[1], bl: "This page lives in the app. Your place in the Codex is kept.", tier: "OPENS IN THE APP" },
+        [],
+      );
+    } catch (e) {
+      hero = "<h2>" + escH(n[1]) + "</h2>";
+    }
+    return (
+      '<div class="xpage">' +
+      hero +
+      '<div class="row" style="justify-content:center"><button type="button" class="btn" data-cxopen="' +
+      escH(HOSTP[id]) +
+      '">Open ' +
+      escH(n[1]) +
+      '</button><button type="button" class="btn ghost" data-nt="home">Back to the Codex home</button></div></div>'
+    );
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("[data-cxopen]") : null;
+    if (b && H) {
+      try {
+        H.navigate(b.dataset.cxopen);
+      } catch (err) {}
+    }
+  });
+  if (H && H.badge) document.documentElement.classList.add("cx-badge");
   if (typeof viewHTML === "function") {
     var _vhx = viewHTML;
     // eslint-disable-next-line no-global-assign
     viewHTML = function () {
       if (tab === "bonds") return bondsHTML();
+      if (H && HOSTP[tab]) return hostPageHTML(tab);
       return _vhx.apply(this, arguments);
     };
   }
@@ -4263,7 +4486,7 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
   }
   // Codex's first render ran before this bridge loaded: redraw if it opened on Bonds.
   try {
-    if (tab === "bonds") render();
+    if (tab === "bonds" || (H && HOSTP[tab])) render();
   } catch (e) {}
   window.addEventListener("resize", function () {
     if (tab !== "bonds") return;
@@ -4340,6 +4563,365 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
       paintRanks();
     } catch (e) {}
   };
+
+  /* ---------- 8. full-screen detail pages: a close button that is always reachable ---------- */
+  function paintClose() {
+    var sheet = $id("sheet");
+    if (!sheet || sheet.hidden || sheet.querySelector(".cx-close")) return;
+    sheet.insertAdjacentHTML(
+      "afterbegin",
+      '<button type="button" class="cx-close" aria-label="Close details" data-tip="Close">×</button>',
+    );
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.closest && e.target.closest(".cx-close")) {
+      try {
+        closeSheet();
+      } catch (err) {}
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var sheet = $id("sheet");
+    var modal = $id("modal");
+    if (sheet && !sheet.hidden && (!modal || modal.hidden)) {
+      try {
+        closeSheet();
+      } catch (err) {}
+    }
+  });
+  var _deco2 = deco;
+  deco = function (root) {
+    _deco2(root);
+    try {
+      paintClose();
+    } catch (e) {}
+  };
+
+  /* ---------- 9. premium Codex navigation: gliding gem, magnetic dock, sigil, fan, flow ---------- */
+  (function navFx() {
+    var dock = $id("dock");
+    if (!dock) return;
+    var gem = document.createElement("span");
+    gem.className = "cx-navgem";
+    gem.setAttribute("aria-hidden", "true");
+    document.body.appendChild(gem);
+    var gx = 0, gy = 0, gw = 0, gh = 0, gshow = 0;
+    var put = function () {
+      gem.style.transform =
+        "translate(" + gx.toFixed(1) + "px," + gy.toFixed(1) + "px) scale(" + (gw / 100).toFixed(4) + "," + (gh / 100).toFixed(4) + ")";
+      gem.style.opacity = String(gshow);
+    };
+    var sx = new Spring(0, function (v) { gx = v; put(); }, { k: 230, c: 22 });
+    var sy = new Spring(0, function (v) { gy = v; put(); }, { k: 230, c: 22 });
+    var sw = new Spring(0, function (v) { gw = v; put(); }, { k: 260, c: 24 });
+    var sh = new Spring(0, function (v) { gh = v; put(); }, { k: 260, c: 24 });
+    var first = true;
+    function placeGem() {
+      var on = dock.querySelector('.dk[aria-current="true"]') || dock.querySelector(".dk.sig");
+      if (!on || !dock.getClientRects().length || getComputedStyle(dock).display === "none") {
+        gshow = 0;
+        put();
+        return;
+      }
+      var r = on.getBoundingClientRect();
+      var pad = 4;
+      var tx = r.left - pad, ty = r.top - pad, tw = r.width + pad * 2, th = r.height + pad * 2;
+      gshow = 1;
+      if (first || reduced()) {
+        first = false;
+        sx.x = gx = tx; sy.x = gy = ty; sw.x = gw = tw; sh.x = gh = th;
+        sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+        put();
+        return;
+      }
+      sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+    }
+    function decorateDock() {
+      var sig = dock.querySelector(".dk.sig");
+      if (sig && !sig.querySelector(".cx-sigrings")) {
+        sig.insertAdjacentHTML(
+          "afterbegin",
+          '<span class="cx-sigrings" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="r1" cx="50" cy="50" r="44"/><circle class="r2" cx="50" cy="50" r="36"/><path class="tk" d="M50 2 L53 9 L47 9Z M50 98 L53 91 L47 91Z M2 50 L9 47 L9 53Z M98 50 L91 47 L91 53Z"/></svg></span>',
+        );
+      }
+      placeGem();
+    }
+    function fanRibbon() {
+      var rib = $id("rib");
+      if (!rib || rib.hidden || rib.dataset.cxFan === rib.innerHTML.length + "") return;
+      rib.dataset.cxFan = rib.innerHTML.length + "";
+      var items = rib.querySelectorAll(".rb");
+      var n = items.length;
+      var vertical = window.matchMedia("(min-width:768px)").matches;
+      items.forEach(function (it, i) {
+        var o = i - (n - 1) / 2;
+        it.style.setProperty("--i", String(i));
+        it.style.setProperty("--fx", vertical ? (o * o * 2.2).toFixed(1) + "px" : "0px");
+        it.style.setProperty("--fy", vertical ? "0px" : (o * o * 1.6).toFixed(1) + "px");
+        it.style.setProperty("--fr", vertical ? "0deg" : (o * 1.2).toFixed(2) + "deg");
+      });
+      rib.classList.remove("cx-fan");
+      void rib.offsetWidth;
+      rib.classList.add("cx-fan");
+    }
+    new MutationObserver(function () {
+      requestAnimationFrame(function () {
+        decorateDock();
+        fanRibbon();
+      });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-current"] });
+    window.addEventListener("resize", function () {
+      first = true;
+      placeGem();
+    });
+    decorateDock();
+
+    // magnetic lean toward the pointer (mouse/pen only, never on touch)
+    var hoverable = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+    if (hoverable) {
+      dock.addEventListener("pointermove", function (e) {
+        if (reduced()) return;
+        dock.querySelectorAll(".dk").forEach(function (b) {
+          var r = b.getBoundingClientRect();
+          var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          var dx = e.clientX - cx, dy = e.clientY - cy;
+          var d = Math.hypot(dx, dy);
+          var t = Math.max(0, 1 - d / 140);
+          b.style.transform = "translate(" + (dx * 0.08 * t).toFixed(2) + "px," + (dy * 0.08 * t).toFixed(2) + "px) scale(" + (1 + 0.22 * t).toFixed(3) + ")";
+        });
+      });
+      dock.addEventListener("pointerleave", function () {
+        dock.querySelectorAll(".dk").forEach(function (b) {
+          b.style.transform = "";
+        });
+      });
+    }
+
+    // tap ripple on dock and ribbon buttons
+    document.addEventListener("pointerdown", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest(".dk,.rb") : null;
+      if (!b || reduced()) return;
+      var r = b.getBoundingClientRect();
+      var rp = document.createElement("span");
+      rp.className = "cx-ripple";
+      rp.style.left = e.clientX - r.left + "px";
+      rp.style.top = e.clientY - r.top + "px";
+      b.appendChild(rp);
+      setTimeout(function () {
+        rp.remove();
+      }, 700);
+      if (b.classList.contains("sig")) {
+        b.classList.remove("cx-burst");
+        void b.offsetWidth;
+        b.classList.add("cx-burst");
+      }
+    });
+
+    // flow transition: the page slides the way you travelled, with an ink sweep
+    var sweep = document.createElement("span");
+    sweep.className = "cx-sweep";
+    sweep.setAttribute("aria-hidden", "true");
+    document.body.appendChild(sweep);
+    var order = function (id) {
+      return API ? API.NT.findIndex(function (m) { return m[5] === id || m[0] === id; }) : 0;
+    };
+    var lastTab = typeof tab !== "undefined" ? tab : "";
+    if (typeof render === "function") {
+      var _rflow = render;
+      // eslint-disable-next-line no-global-assign
+      render = function () {
+        var prev = lastTab;
+        _rflow.apply(this, arguments);
+        if (typeof tab === "undefined" || tab === prev) return;
+        lastTab = tab;
+        if (reduced()) return;
+        var dir = order(tab) >= order(prev) ? "r" : "l";
+        var view = $id("view");
+        if (view) {
+          view.classList.remove("cx-flow-r", "cx-flow-l", "iris");
+          void view.offsetWidth;
+          view.classList.add("cx-flow-" + dir);
+        }
+        sweep.classList.remove("go-r", "go-l");
+        void sweep.offsetWidth;
+        sweep.classList.add("go-" + dir);
+      };
+    }
+  })();
+
+  /* ---------- 10. living VFX: ambient aurora + motes, staggered entrances, card tilt ---------- */
+  (function vfx() {
+    var amb = document.createElement("div");
+    amb.className = "cx-ambient";
+    amb.setAttribute("aria-hidden", "true");
+    var motes = "";
+    for (var i = 0; i < 22; i++) {
+      var x = (i * 37.7) % 100, y = (i * 61.3) % 100;
+      motes +=
+        '<b style="left:' + x.toFixed(1) + "%;top:" + y.toFixed(1) + "%;--d:" + (4 + (i % 7)).toFixed(1) + "s;--dl:" + ((i % 9) * 0.6).toFixed(1) + 's"></b>';
+    }
+    amb.innerHTML = "<i class=\"a1\"></i><i class=\"a2\"></i><i class=\"a3\"></i>" + motes;
+    document.body.insertBefore(amb, document.body.firstChild);
+
+    var ITEMS = ".xgh,.gh,.cc,.leaf,.mini,.stycard,.lrow,.ab,.grp,.rel,.dq,.gcard";
+    function stagger(root, cap) {
+      if (reduced()) return;
+      var list = root.querySelectorAll(ITEMS);
+      for (var i = 0; i < list.length && i < cap; i++) {
+        var el = list[i];
+        el.style.setProperty("--ci", String(i));
+        el.classList.remove("cx-in");
+        void el.offsetWidth;
+        el.classList.add("cx-in");
+      }
+    }
+    if (typeof render === "function") {
+      var _rvfx = render;
+      // eslint-disable-next-line no-global-assign
+      render = function () {
+        _rvfx.apply(this, arguments);
+        var v = $id("view");
+        if (v && !render.keep) stagger(v, 28);
+      };
+    }
+    // detail sections cascade in whenever a new sheet is drawn
+    var sheet = $id("sheet");
+    if (sheet) {
+      new MutationObserver(function () {
+        if (sheet.hidden || reduced()) return;
+        var top = sheet.querySelector(".sh-top");
+        if (!top || top.dataset.cxIn === "1") return;
+        top.dataset.cxIn = "1";
+        var kids = sheet.children;
+        for (var k = 0, n = 0; k < kids.length; k++) {
+          var c = kids[k];
+          if (c.classList.contains("cx-close") || c.classList.contains("sback") || c.classList.contains("grip")) continue;
+          c.style.setProperty("--si", String(n++));
+          c.classList.remove("cx-sin");
+          void c.offsetWidth;
+          c.classList.add("cx-sin");
+        }
+      }).observe(sheet, { childList: true });
+    }
+    // cards lean toward the pointer (mouse/pen only)
+    if (window.matchMedia("(hover:hover) and (pointer:fine)").matches) {
+      var tilted = null;
+      document.addEventListener("pointermove", function (e) {
+        if (reduced()) return;
+        var c = e.target && e.target.closest ? e.target.closest(".xgh,.gh,.stycard,.cc") : null;
+        if (tilted && tilted !== c) {
+          tilted.style.transform = "";
+          tilted = null;
+        }
+        if (!c) return;
+        var r = c.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        c.style.transform = "perspective(700px) rotateX(" + (-py * 7).toFixed(2) + "deg) rotateY(" + (px * 9).toFixed(2) + "deg) translateY(-2px)";
+        tilted = c;
+      });
+      document.addEventListener("pointerleave", function () {
+        if (tilted) tilted.style.transform = "";
+        tilted = null;
+      });
+    }
+  })();
+
+  /* ---------- 11. the archive changed while the reader is here: offer a refresh ---------- */
+  window.__codexOfferRefresh = function () {
+    if (!H || $id("cxRefresh")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="cx-refresh" id="cxRefresh" role="status"><span>The archive was updated.</span><button type="button" class="btn" id="cxRefreshGo">Refresh</button><button type="button" class="cx-refresh-x" id="cxRefreshX" aria-label="Dismiss">×</button></div>',
+    );
+    $id("cxRefreshGo").onclick = function () {
+      try {
+        H.reload && H.reload();
+      } catch (e) {}
+    };
+    $id("cxRefreshX").onclick = function () {
+      var el = $id("cxRefresh");
+      if (el) el.remove();
+    };
+  };
+
+  /* ---------- 12. staff edits made in the Codex reach the archive (and so every style) ---------- */
+  function cxToast(msg, bad) {
+    var old = $id("cxToast");
+    if (old) old.remove();
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="cx-toast' + (bad ? " bad" : "") + '" id="cxToast" role="status">' + escH(msg) + "</div>",
+    );
+    setTimeout(function () {
+      var t = $id("cxToast");
+      if (t) t.remove();
+    }, 5200);
+  }
+  (function syncOut() {
+    if (!H || typeof S === "undefined") return;
+    var SKEY = "scu-codex-v1";
+    var snap = function () {
+      try {
+        var ed = S.ed || {};
+        var rest = {};
+        Object.keys(ed).forEach(function (k) {
+          if (k !== "cast" && k !== "series") rest[k] = ed[k];
+        });
+        return JSON.parse(JSON.stringify({ cast: ed.cast || {}, series: ed.series || null, rest: rest }));
+      } catch (e) {
+        return { cast: {}, series: null, rest: {} };
+      }
+    };
+    var prev = snap();
+    var t = 0;
+    var orig = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k) {
+      orig.apply(this, arguments);
+      if (k !== SKEY) return;
+      clearTimeout(t);
+      t = setTimeout(flush, 250);
+    };
+    function flush() {
+      var f = feed();
+      var next = snap();
+      var before = prev;
+      prev = next;
+      if (!f || !f.staff || !H.saveCharacter || !H.saveSeasonTitles) return;
+      var jobs = [];
+      Object.keys(next.cast).forEach(function (n) {
+        if (JSON.stringify(next.cast[n]) === JSON.stringify(before.cast[n])) return;
+        jobs.push(H.saveCharacter(n, { title: next.cast[n].title, abil: next.cast[n].abil }));
+      });
+      if (next.series && JSON.stringify(next.series) !== JSON.stringify(before.series)) {
+        next.series.forEach(function (sr) {
+          var ps = (before.series || []).find(function (x) {
+            return x.id === sr.id;
+          });
+          if (ps && JSON.stringify(ps.seasons) === JSON.stringify(sr.seasons)) return;
+          jobs.push(H.saveSeasonTitles(sr.name, sr.seasons || []));
+        });
+      }
+      var localOnly = JSON.stringify(next.rest) !== JSON.stringify(before.rest);
+      if (!jobs.length) {
+        if (localOnly)
+          cxToast("Saved in the Codex. The archive has no field for this edit yet, so other styles keep their version.");
+        return;
+      }
+      Promise.all(jobs).then(function (res) {
+        var bad = res.filter(function (r) {
+          return r && !r.ok;
+        });
+        var done = res.filter(function (r) {
+          return r && r.changed;
+        });
+        if (bad.length) cxToast(bad[0].message || "Could not save to the archive.", true);
+        else if (done.length) cxToast(done.length === 1 ? done[0].message : done.length + " changes saved to the archive for every style.");
+        else if (localOnly) cxToast("Saved in the Codex. The archive has no field for this edit yet.");
+      });
+    }
+  })();
   // One pass per frame at most, and never postponed by spring counters ticking.
   var decoPending = false;
   var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";

@@ -86,13 +86,24 @@
   function mergeCast(CAST) {
     var list = (feed && feed.characters) || [];
     var keys = castIndex(CAST);
+    var inCast = function (n) {
+      return CAST.some(function (r) {
+        return r[0] === n;
+      });
+    };
     list.forEach(function (ch) {
       if (!ch || !ch.name) return;
-      var cands = [ch.name].concat(ch.aliases || []);
-      var hit = findCast(CAST, keys, cands);
+      var hit = null;
+      if (Object.prototype.hasOwnProperty.call(ch, "codex")) {
+        // The app's shared matcher already decided: a Codex name, or null = a new person.
+        hit = ch.codex && inCast(ch.codex) ? ch.codex : null;
+        if (!hit && ch.codex == null && keys.has(norm(ch.name))) hit = keys.get(norm(ch.name));
+      } else {
+        hit = findCast(CAST, keys, [ch.name].concat(ch.aliases || []));
+      }
       if (hit) {
         nameMap[ch.name] = hit;
-        if (ch.image) window.__codexPortrait[hit] = ch.image;
+        if (ch.image && !window.__codexPortrait[hit]) window.__codexPortrait[hit] = ch.image;
         // Fill blanks only: the Codex text always wins when it has its own.
         var row = CAST.find(function (r) {
           return r[0] === hit;
@@ -100,22 +111,70 @@
         if (row && !row[4] && ch.desc) row[4] = ch.desc;
         return;
       }
-      var row2 = [
-        ch.name,
-        ch.realName || "",
-        (ch.aliases || []).join(", "),
-        ch.bloodline || "",
-        ch.desc || "",
-        "others",
-      ];
-      CAST.push(row2);
-      if (ch.image) window.__codexPortrait[ch.name] = ch.image;
+      if (inCast(ch.name)) {
+        nameMap[ch.name] = ch.name;
+        return;
+      }
+      CAST.push([ch.name, ch.realName || "", (ch.aliases || []).join(", "), ch.bloodline || "", ch.desc || "", "others"]);
       keys.set(norm(ch.name), ch.name);
       nameMap[ch.name] = ch.name;
+      if (ch.image) window.__codexPortrait[ch.name] = ch.image;
       window.__codexAdded.cast.push(ch.name);
     });
   }
 
+  /* Archive abilities are filed the Codex way: into the branch (and so the tier) they belong
+     to; as a technique under the holder's ability family when the holders already own a family
+     in that branch, otherwise as a new ability in the branch. */
+  var BRANCH_RULES = [
+    ["aether", /aether|soul layer|void eras/],
+    ["time", /\btime\b|chrono|temporal/],
+    ["space", /portal|teleport|dimension|\brift|\bwarp|spatial/],
+    ["mind", /mind|telepath|dream|nightmare|fear|illusion|memory|psych|hypno|empath/],
+    ["curse", /curse|\bhex\b|malediction/],
+    ["chaos", /chaos|entropy/],
+    ["order", /command|authority|\border\b|decree/],
+    ["judgement", /judg|verdict/],
+    ["blood", /blood|hemo|sanguin/],
+    ["lightning", /lightning|electr|thunder|astrapo|volt|storm/],
+    ["fire", /fire|flame|pyro|burn|blaze|inferno|ember|lava|magma|heat/],
+    ["water", /water|hydro|ice\b|cryo|frost|snow|mist|tide|ocean|wave/],
+    ["air", /wind|air\b|aero|gale|gust|breeze|tornado|cyclone|sky/],
+    ["earth", /earth|stone|rock|geo|terra|metal|sand|crystal|quake/],
+    ["light", /\blight\b|radian|holy|solar|lumin|photon/],
+    ["shadow", /shadow|dark|umbra|night|gloom/],
+    ["life", /heal|regenerat|nature|plant|flora|life|restor|vital|cure/],
+    ["beast", /beast|dragon|wolf|animal|shape.?shift|feral|claw|serpent|bird|tiger/],
+    ["venom", /venom|poison|toxic|acid/],
+    ["resonance", /sound|sonic|resonan|voice|song|echo/],
+    ["energy", /energy|\bki\b|chakra|aura|power surge|blast/],
+    ["arcane", /magic|arcane|spell|rune|sorcer|witch|mana|pact|enchant|summon/],
+    ["seal", /seal|talisman|binding|\bward\b|barrier|shield|force field/],
+    ["tech", /tech|suit|cyber|serum|gadget|chip|robot|armou?r|drone|gun/],
+    ["blade", /sword|blade|katana|spear|bow|arrow|weapon|dagger|axe|scythe|whip/],
+    ["assassin", /stealth|assassin|silent|infiltrat|poison dart|shadow step/],
+    ["soldier", /soldier|combat|martial|strength|speed|agility|tactic|strateg|fight|marksman|leader|endurance|reflex|hand.to.hand|peak human/],
+  ];
+  function branchFor(BR, ab) {
+    var text = (ab.name + " " + (ab.desc || "")).toLowerCase();
+    var nameOnly = ab.name.toLowerCase();
+    var idOf = function (id) {
+      for (var i = 0; i < BR.length; i++) if (BR[i].id === id) return i;
+      return -1;
+    };
+    // the name decides first, then the description
+    var pass = [nameOnly, text];
+    for (var p = 0; p < pass.length; p++)
+      for (var r = 0; r < BRANCH_RULES.length; r++)
+        if (BRANCH_RULES[r][1].test(pass[p])) {
+          var i = idOf(BRANCH_RULES[r][0]);
+          if (i >= 0) return i;
+        }
+    if (ab.group === "role") return idOf("soldier");
+    if (ab.group === "beast") return idOf("beast");
+    if (ab.group === "art") return idOf("blade");
+    return -1;
+  }
   function mergeAbilities(ctx) {
     var list = (feed && feed.abilities) || [];
     if (!list.length) return;
@@ -129,8 +188,11 @@
         });
       });
     });
-    var groups = [];
-    list.forEach(function (ab) {
+    var leftover = [];
+    var sorted = list.slice().sort(function (a, b) {
+      return String(a.name).localeCompare(String(b.name));
+    });
+    sorted.forEach(function (ab) {
       var k = norm(ab.name);
       if (!k || have.has(k)) return;
       have.add(k);
@@ -142,10 +204,31 @@
       holders = holders.filter(function (h, i) {
         return holders.indexOf(h) === i;
       });
-      groups.push(ctx.G(ab.name, ab.desc || "Recorded in the archive.", holders));
+      var desc = ab.desc || "Recorded in the archive.";
+      var b = branchFor(BR, ab);
       window.__codexAdded.abilities.push(ab.name);
+      if (b < 0) {
+        leftover.push(ctx.G(ab.name, desc, holders, null, { src: "archive" }));
+        return;
+      }
+      // technique: every holder already owns an ability family in this branch
+      if (holders.length) {
+        var fam = BR[b].g.find(function (gr) {
+          return !gr.p && holders.every(function (h) {
+            return (gr.h || []).indexOf(h) >= 0;
+          });
+        });
+        if (fam) {
+          fam.k = fam.k || [];
+          fam.k.push({ n: ab.name, d: desc, src: "archive" });
+          window.__codexAdded.placed = (window.__codexAdded.placed || 0) + 1;
+          return;
+        }
+      }
+      BR[b].g.push(ctx.G(ab.name, desc, holders, null, { src: "archive" }));
+      window.__codexAdded.placed = (window.__codexAdded.placed || 0) + 1;
     });
-    if (!groups.length) return;
+    if (!leftover.length) return;
     try {
       ctx.GLY.archive = ctx.GLY.seal || ctx.GLY.arcane;
       if (ctx.DEF) ctx.DEF.archive = ["star4", "orb", "talisman"];
@@ -156,12 +239,11 @@
       tier: "Skills",
       c1: "#93B6FF",
       c2: "#DCE7FF",
-      bl: "Abilities the app's archive records that the Codex had not catalogued yet. Codex entries always take priority.",
+      bl: "Archive abilities that fit no Codex branch yet. Codex entries always take priority.",
       x: [],
-      g: groups,
+      g: leftover,
     });
   }
-
 
   function mergeSeries(SER0) {
     var list = (feed && feed.series) || [];

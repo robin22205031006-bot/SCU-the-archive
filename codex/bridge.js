@@ -1325,7 +1325,7 @@
     ((f && f.bonds) || []).forEach(function (b) {
       var a = cxName(b.a);
       var c = cxName(b.b);
-      if (!a || !c || a === c || pairs[key(a, c)]) return;
+      if (!a || !c || a === c || (pairs[key(a, c)] && !b.fresh)) return;
       var t = typeOfRel(b.rel);
       add({ a: a, b: c, type: t, label: b.label ? b.rel + ": " + b.label : b.rel, ring: ringOfType(t), src: "archive" });
     });
@@ -1678,11 +1678,48 @@
     var dz = t.closest("[data-cxodossier]");
     if (dz && typeof openCharacter === "function") openCharacter(dz.dataset.cxodossier);
   });
+  /** App-only destination reached through history (back button, reload, saved link). */
+  function hostPageHTML(id) {
+    var n =
+      (API &&
+        API.NT.find(function (m) {
+          return m[0] === id;
+        })) ||
+      [id, id];
+    var hero = "";
+    try {
+      hero = heroX(
+        { c1: "#93B6FF", c2: "#DCE7FF", id: "balance", nm: n[1], bl: "This page lives in the app. Your place in the Codex is kept.", tier: "OPENS IN THE APP" },
+        [],
+      );
+    } catch (e) {
+      hero = "<h2>" + escH(n[1]) + "</h2>";
+    }
+    return (
+      '<div class="xpage">' +
+      hero +
+      '<div class="row" style="justify-content:center"><button type="button" class="btn" data-cxopen="' +
+      escH(HOSTP[id]) +
+      '">Open ' +
+      escH(n[1]) +
+      '</button><button type="button" class="btn ghost" data-nt="home">Back to the Codex home</button></div></div>'
+    );
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("[data-cxopen]") : null;
+    if (b && H) {
+      try {
+        H.navigate(b.dataset.cxopen);
+      } catch (err) {}
+    }
+  });
+  if (H && H.badge) document.documentElement.classList.add("cx-badge");
   if (typeof viewHTML === "function") {
     var _vhx = viewHTML;
     // eslint-disable-next-line no-global-assign
     viewHTML = function () {
       if (tab === "bonds") return bondsHTML();
+      if (H && HOSTP[tab]) return hostPageHTML(tab);
       return _vhx.apply(this, arguments);
     };
   }
@@ -1702,7 +1739,7 @@
   }
   // Codex's first render ran before this bridge loaded: redraw if it opened on Bonds.
   try {
-    if (tab === "bonds") render();
+    if (tab === "bonds" || (H && HOSTP[tab])) render();
   } catch (e) {}
   window.addEventListener("resize", function () {
     if (tab !== "bonds") return;
@@ -1779,6 +1816,365 @@
       paintRanks();
     } catch (e) {}
   };
+
+  /* ---------- 8. full-screen detail pages: a close button that is always reachable ---------- */
+  function paintClose() {
+    var sheet = $id("sheet");
+    if (!sheet || sheet.hidden || sheet.querySelector(".cx-close")) return;
+    sheet.insertAdjacentHTML(
+      "afterbegin",
+      '<button type="button" class="cx-close" aria-label="Close details" data-tip="Close">×</button>',
+    );
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.closest && e.target.closest(".cx-close")) {
+      try {
+        closeSheet();
+      } catch (err) {}
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var sheet = $id("sheet");
+    var modal = $id("modal");
+    if (sheet && !sheet.hidden && (!modal || modal.hidden)) {
+      try {
+        closeSheet();
+      } catch (err) {}
+    }
+  });
+  var _deco2 = deco;
+  deco = function (root) {
+    _deco2(root);
+    try {
+      paintClose();
+    } catch (e) {}
+  };
+
+  /* ---------- 9. premium Codex navigation: gliding gem, magnetic dock, sigil, fan, flow ---------- */
+  (function navFx() {
+    var dock = $id("dock");
+    if (!dock) return;
+    var gem = document.createElement("span");
+    gem.className = "cx-navgem";
+    gem.setAttribute("aria-hidden", "true");
+    document.body.appendChild(gem);
+    var gx = 0, gy = 0, gw = 0, gh = 0, gshow = 0;
+    var put = function () {
+      gem.style.transform =
+        "translate(" + gx.toFixed(1) + "px," + gy.toFixed(1) + "px) scale(" + (gw / 100).toFixed(4) + "," + (gh / 100).toFixed(4) + ")";
+      gem.style.opacity = String(gshow);
+    };
+    var sx = new Spring(0, function (v) { gx = v; put(); }, { k: 230, c: 22 });
+    var sy = new Spring(0, function (v) { gy = v; put(); }, { k: 230, c: 22 });
+    var sw = new Spring(0, function (v) { gw = v; put(); }, { k: 260, c: 24 });
+    var sh = new Spring(0, function (v) { gh = v; put(); }, { k: 260, c: 24 });
+    var first = true;
+    function placeGem() {
+      var on = dock.querySelector('.dk[aria-current="true"]') || dock.querySelector(".dk.sig");
+      if (!on || !dock.getClientRects().length || getComputedStyle(dock).display === "none") {
+        gshow = 0;
+        put();
+        return;
+      }
+      var r = on.getBoundingClientRect();
+      var pad = 4;
+      var tx = r.left - pad, ty = r.top - pad, tw = r.width + pad * 2, th = r.height + pad * 2;
+      gshow = 1;
+      if (first || reduced()) {
+        first = false;
+        sx.x = gx = tx; sy.x = gy = ty; sw.x = gw = tw; sh.x = gh = th;
+        sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+        put();
+        return;
+      }
+      sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+    }
+    function decorateDock() {
+      var sig = dock.querySelector(".dk.sig");
+      if (sig && !sig.querySelector(".cx-sigrings")) {
+        sig.insertAdjacentHTML(
+          "afterbegin",
+          '<span class="cx-sigrings" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="r1" cx="50" cy="50" r="44"/><circle class="r2" cx="50" cy="50" r="36"/><path class="tk" d="M50 2 L53 9 L47 9Z M50 98 L53 91 L47 91Z M2 50 L9 47 L9 53Z M98 50 L91 47 L91 53Z"/></svg></span>',
+        );
+      }
+      placeGem();
+    }
+    function fanRibbon() {
+      var rib = $id("rib");
+      if (!rib || rib.hidden || rib.dataset.cxFan === rib.innerHTML.length + "") return;
+      rib.dataset.cxFan = rib.innerHTML.length + "";
+      var items = rib.querySelectorAll(".rb");
+      var n = items.length;
+      var vertical = window.matchMedia("(min-width:768px)").matches;
+      items.forEach(function (it, i) {
+        var o = i - (n - 1) / 2;
+        it.style.setProperty("--i", String(i));
+        it.style.setProperty("--fx", vertical ? (o * o * 2.2).toFixed(1) + "px" : "0px");
+        it.style.setProperty("--fy", vertical ? "0px" : (o * o * 1.6).toFixed(1) + "px");
+        it.style.setProperty("--fr", vertical ? "0deg" : (o * 1.2).toFixed(2) + "deg");
+      });
+      rib.classList.remove("cx-fan");
+      void rib.offsetWidth;
+      rib.classList.add("cx-fan");
+    }
+    new MutationObserver(function () {
+      requestAnimationFrame(function () {
+        decorateDock();
+        fanRibbon();
+      });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-current"] });
+    window.addEventListener("resize", function () {
+      first = true;
+      placeGem();
+    });
+    decorateDock();
+
+    // magnetic lean toward the pointer (mouse/pen only, never on touch)
+    var hoverable = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+    if (hoverable) {
+      dock.addEventListener("pointermove", function (e) {
+        if (reduced()) return;
+        dock.querySelectorAll(".dk").forEach(function (b) {
+          var r = b.getBoundingClientRect();
+          var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          var dx = e.clientX - cx, dy = e.clientY - cy;
+          var d = Math.hypot(dx, dy);
+          var t = Math.max(0, 1 - d / 140);
+          b.style.transform = "translate(" + (dx * 0.08 * t).toFixed(2) + "px," + (dy * 0.08 * t).toFixed(2) + "px) scale(" + (1 + 0.22 * t).toFixed(3) + ")";
+        });
+      });
+      dock.addEventListener("pointerleave", function () {
+        dock.querySelectorAll(".dk").forEach(function (b) {
+          b.style.transform = "";
+        });
+      });
+    }
+
+    // tap ripple on dock and ribbon buttons
+    document.addEventListener("pointerdown", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest(".dk,.rb") : null;
+      if (!b || reduced()) return;
+      var r = b.getBoundingClientRect();
+      var rp = document.createElement("span");
+      rp.className = "cx-ripple";
+      rp.style.left = e.clientX - r.left + "px";
+      rp.style.top = e.clientY - r.top + "px";
+      b.appendChild(rp);
+      setTimeout(function () {
+        rp.remove();
+      }, 700);
+      if (b.classList.contains("sig")) {
+        b.classList.remove("cx-burst");
+        void b.offsetWidth;
+        b.classList.add("cx-burst");
+      }
+    });
+
+    // flow transition: the page slides the way you travelled, with an ink sweep
+    var sweep = document.createElement("span");
+    sweep.className = "cx-sweep";
+    sweep.setAttribute("aria-hidden", "true");
+    document.body.appendChild(sweep);
+    var order = function (id) {
+      return API ? API.NT.findIndex(function (m) { return m[5] === id || m[0] === id; }) : 0;
+    };
+    var lastTab = typeof tab !== "undefined" ? tab : "";
+    if (typeof render === "function") {
+      var _rflow = render;
+      // eslint-disable-next-line no-global-assign
+      render = function () {
+        var prev = lastTab;
+        _rflow.apply(this, arguments);
+        if (typeof tab === "undefined" || tab === prev) return;
+        lastTab = tab;
+        if (reduced()) return;
+        var dir = order(tab) >= order(prev) ? "r" : "l";
+        var view = $id("view");
+        if (view) {
+          view.classList.remove("cx-flow-r", "cx-flow-l", "iris");
+          void view.offsetWidth;
+          view.classList.add("cx-flow-" + dir);
+        }
+        sweep.classList.remove("go-r", "go-l");
+        void sweep.offsetWidth;
+        sweep.classList.add("go-" + dir);
+      };
+    }
+  })();
+
+  /* ---------- 10. living VFX: ambient aurora + motes, staggered entrances, card tilt ---------- */
+  (function vfx() {
+    var amb = document.createElement("div");
+    amb.className = "cx-ambient";
+    amb.setAttribute("aria-hidden", "true");
+    var motes = "";
+    for (var i = 0; i < 22; i++) {
+      var x = (i * 37.7) % 100, y = (i * 61.3) % 100;
+      motes +=
+        '<b style="left:' + x.toFixed(1) + "%;top:" + y.toFixed(1) + "%;--d:" + (4 + (i % 7)).toFixed(1) + "s;--dl:" + ((i % 9) * 0.6).toFixed(1) + 's"></b>';
+    }
+    amb.innerHTML = "<i class=\"a1\"></i><i class=\"a2\"></i><i class=\"a3\"></i>" + motes;
+    document.body.insertBefore(amb, document.body.firstChild);
+
+    var ITEMS = ".xgh,.gh,.cc,.leaf,.mini,.stycard,.lrow,.ab,.grp,.rel,.dq,.gcard";
+    function stagger(root, cap) {
+      if (reduced()) return;
+      var list = root.querySelectorAll(ITEMS);
+      for (var i = 0; i < list.length && i < cap; i++) {
+        var el = list[i];
+        el.style.setProperty("--ci", String(i));
+        el.classList.remove("cx-in");
+        void el.offsetWidth;
+        el.classList.add("cx-in");
+      }
+    }
+    if (typeof render === "function") {
+      var _rvfx = render;
+      // eslint-disable-next-line no-global-assign
+      render = function () {
+        _rvfx.apply(this, arguments);
+        var v = $id("view");
+        if (v && !render.keep) stagger(v, 28);
+      };
+    }
+    // detail sections cascade in whenever a new sheet is drawn
+    var sheet = $id("sheet");
+    if (sheet) {
+      new MutationObserver(function () {
+        if (sheet.hidden || reduced()) return;
+        var top = sheet.querySelector(".sh-top");
+        if (!top || top.dataset.cxIn === "1") return;
+        top.dataset.cxIn = "1";
+        var kids = sheet.children;
+        for (var k = 0, n = 0; k < kids.length; k++) {
+          var c = kids[k];
+          if (c.classList.contains("cx-close") || c.classList.contains("sback") || c.classList.contains("grip")) continue;
+          c.style.setProperty("--si", String(n++));
+          c.classList.remove("cx-sin");
+          void c.offsetWidth;
+          c.classList.add("cx-sin");
+        }
+      }).observe(sheet, { childList: true });
+    }
+    // cards lean toward the pointer (mouse/pen only)
+    if (window.matchMedia("(hover:hover) and (pointer:fine)").matches) {
+      var tilted = null;
+      document.addEventListener("pointermove", function (e) {
+        if (reduced()) return;
+        var c = e.target && e.target.closest ? e.target.closest(".xgh,.gh,.stycard,.cc") : null;
+        if (tilted && tilted !== c) {
+          tilted.style.transform = "";
+          tilted = null;
+        }
+        if (!c) return;
+        var r = c.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        c.style.transform = "perspective(700px) rotateX(" + (-py * 7).toFixed(2) + "deg) rotateY(" + (px * 9).toFixed(2) + "deg) translateY(-2px)";
+        tilted = c;
+      });
+      document.addEventListener("pointerleave", function () {
+        if (tilted) tilted.style.transform = "";
+        tilted = null;
+      });
+    }
+  })();
+
+  /* ---------- 11. the archive changed while the reader is here: offer a refresh ---------- */
+  window.__codexOfferRefresh = function () {
+    if (!H || $id("cxRefresh")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="cx-refresh" id="cxRefresh" role="status"><span>The archive was updated.</span><button type="button" class="btn" id="cxRefreshGo">Refresh</button><button type="button" class="cx-refresh-x" id="cxRefreshX" aria-label="Dismiss">×</button></div>',
+    );
+    $id("cxRefreshGo").onclick = function () {
+      try {
+        H.reload && H.reload();
+      } catch (e) {}
+    };
+    $id("cxRefreshX").onclick = function () {
+      var el = $id("cxRefresh");
+      if (el) el.remove();
+    };
+  };
+
+  /* ---------- 12. staff edits made in the Codex reach the archive (and so every style) ---------- */
+  function cxToast(msg, bad) {
+    var old = $id("cxToast");
+    if (old) old.remove();
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="cx-toast' + (bad ? " bad" : "") + '" id="cxToast" role="status">' + escH(msg) + "</div>",
+    );
+    setTimeout(function () {
+      var t = $id("cxToast");
+      if (t) t.remove();
+    }, 5200);
+  }
+  (function syncOut() {
+    if (!H || typeof S === "undefined") return;
+    var SKEY = "scu-codex-v1";
+    var snap = function () {
+      try {
+        var ed = S.ed || {};
+        var rest = {};
+        Object.keys(ed).forEach(function (k) {
+          if (k !== "cast" && k !== "series") rest[k] = ed[k];
+        });
+        return JSON.parse(JSON.stringify({ cast: ed.cast || {}, series: ed.series || null, rest: rest }));
+      } catch (e) {
+        return { cast: {}, series: null, rest: {} };
+      }
+    };
+    var prev = snap();
+    var t = 0;
+    var orig = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k) {
+      orig.apply(this, arguments);
+      if (k !== SKEY) return;
+      clearTimeout(t);
+      t = setTimeout(flush, 250);
+    };
+    function flush() {
+      var f = feed();
+      var next = snap();
+      var before = prev;
+      prev = next;
+      if (!f || !f.staff || !H.saveCharacter || !H.saveSeasonTitles) return;
+      var jobs = [];
+      Object.keys(next.cast).forEach(function (n) {
+        if (JSON.stringify(next.cast[n]) === JSON.stringify(before.cast[n])) return;
+        jobs.push(H.saveCharacter(n, { title: next.cast[n].title, abil: next.cast[n].abil }));
+      });
+      if (next.series && JSON.stringify(next.series) !== JSON.stringify(before.series)) {
+        next.series.forEach(function (sr) {
+          var ps = (before.series || []).find(function (x) {
+            return x.id === sr.id;
+          });
+          if (ps && JSON.stringify(ps.seasons) === JSON.stringify(sr.seasons)) return;
+          jobs.push(H.saveSeasonTitles(sr.name, sr.seasons || []));
+        });
+      }
+      var localOnly = JSON.stringify(next.rest) !== JSON.stringify(before.rest);
+      if (!jobs.length) {
+        if (localOnly)
+          cxToast("Saved in the Codex. The archive has no field for this edit yet, so other styles keep their version.");
+        return;
+      }
+      Promise.all(jobs).then(function (res) {
+        var bad = res.filter(function (r) {
+          return r && !r.ok;
+        });
+        var done = res.filter(function (r) {
+          return r && r.changed;
+        });
+        if (bad.length) cxToast(bad[0].message || "Could not save to the archive.", true);
+        else if (done.length) cxToast(done.length === 1 ? done[0].message : done.length + " changes saved to the archive for every style.");
+        else if (localOnly) cxToast("Saved in the Codex. The archive has no field for this edit yet.");
+      });
+    }
+  })();
   // One pass per frame at most, and never postponed by spring counters ticking.
   var decoPending = false;
   var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";

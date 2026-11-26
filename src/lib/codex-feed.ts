@@ -1,5 +1,7 @@
 import { isFamilyRel } from "@/lib/family";
 import { resolveCharacterStatusTimeline } from "@/lib/status-history";
+import { codexCastName, isFreshArchiveRow } from "@/lib/codex-canon";
+import { lookupAbility } from "@/lib/abilities";
 import {
   ABILITY_RANK_META,
   buildAbilityRankMap,
@@ -27,6 +29,11 @@ export interface CodexFeedCharacter {
   desc?: string | undefined;
   /** Portrait (resized data URL or https URL) from entities.image_url. */
   image?: string | undefined;
+  /**
+   * The Codex cast name this card is, decided by the same matcher every other style uses
+   * (src/lib/codex-canon.ts). null = not in the Codex, so the Codex adds it as new.
+   */
+  codex?: string | null | undefined;
 }
 export interface CodexFeedRelation {
   /** "source is <rel> of target"; names are the archive's. */
@@ -49,6 +56,8 @@ export interface CodexFeedBond {
   /** Raw archive bond type: rival, mentor, ally, commands, kin, parent, sibling, spouse, ancestor... */
   rel: string;
   label?: string | undefined;
+  /** Made after the canon baseline: a staff edit, shown even where the Codex has its own tie. */
+  fresh?: boolean | undefined;
 }
 export interface CodexFeedGroup {
   name: string;
@@ -77,6 +86,8 @@ export interface CodexFeedAbility {
   name: string;
   desc?: string | undefined;
   holders: string[];
+  /** App registry category (power, element, beast, art, role) to help place it in a Codex branch. */
+  group?: string | undefined;
 }
 export interface CodexFeedSeason {
   key: string;
@@ -151,6 +162,8 @@ export interface CodexSeriesInput {
   season_names?: string[] | null;
 }
 export interface CodexRelationInput {
+  id?: string;
+  created_at?: string | null;
   source_id: string;
   target_id: string;
   rel: string;
@@ -166,6 +179,7 @@ export interface CodexMembershipInput {
 export interface CodexAbilityInput {
   label: string;
   description?: string | undefined;
+  group?: string | undefined;
 }
 
 const clip = (s: unknown, n: number) => {
@@ -181,6 +195,28 @@ export function safePortrait(v: unknown): string | undefined {
   if (/^https:\/\/[^\s"'<>]+$/.test(t) && t.length < 2000) return t;
   return undefined;
 }
+/** Display name for an archive ability key: the registry label Nexus shows, else "aldercrest_arcane" -> "Aldercrest Arcane". */
+export function abilityLabel(raw: string): string {
+  const t = raw.trim();
+  if (!t) return t;
+  const def = lookupAbility(t);
+  if (def?.label) return def.label;
+  if (t.includes("_") || t === t.toLowerCase())
+    return t
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  return t;
+}
+const labels = (v: string[]) => {
+  const out: string[] = [];
+  for (const x of v) {
+    const l = abilityLabel(x);
+    if (l && !out.some((o) => o.toLowerCase() === l.toLowerCase())) out.push(l);
+  }
+  return out;
+};
 const list = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()) : [];
 
@@ -224,12 +260,12 @@ export function codexSeasonsFor(
       bloodline: clip(d.bloodline, 120) || undefined,
       orgs: list(d.organizations).slice(0, 12),
       weapons: list(d.weapons).slice(0, 12),
-      abilities: list(d.abilityKeys).slice(0, 24),
+      abilities: labels(list(d.abilityKeys)).slice(0, 24),
       stats: values,
       profiles: Object.keys(d.abilityStats ?? {})
         .slice(0, 12)
         .map((name) => ({
-          name: clip(name, 60),
+          name: clip(abilityLabel(name), 60),
           stats: resolveNexusStats(stats, o.key === "all" ? null : o.key, name),
         }))
         .filter((p) => p.name && p.stats.some((x) => x.value > 0)),
@@ -289,10 +325,11 @@ export function buildCodexFeed({
         .filter(Boolean),
       desc: masked.characters ? undefined : clip(e.role || e.category, 280) || undefined,
       image: safePortrait(e.image_url),
+      codex: codexCastName(name, e.alias ?? null),
     });
     if (masked.characters) continue;
     for (const ab of list(e.abilities)) {
-      const k = ab.trim();
+      const k = abilityLabel(ab);
       const h = holders.get(k.toLowerCase()) ?? [];
       h.push(name);
       holders.set(k.toLowerCase(), h);
@@ -312,7 +349,7 @@ export function buildCodexFeed({
             roles: [],
             orgs: [],
             weapons: [],
-            abilities: list(e.abilities).slice(0, 24),
+            abilities: labels(list(e.abilities)).slice(0, 24),
             stats: base,
             empty: !base.some((x) => x.value > 0),
           },
@@ -327,7 +364,7 @@ export function buildCodexFeed({
         const o: Record<string, number> = {};
         for (const n of names) {
           const r = resolveAssignedAbilityRank(n, map);
-          if (r) o[n] = r;
+          if (r) o[abilityLabel(n)] = r;
         }
         return o;
       };
@@ -373,16 +410,22 @@ export function buildCodexFeed({
   }
   const seen = new Set<string>();
   const abilityOut: CodexFeedAbility[] = [];
-  const push = (name: string, desc?: string) => {
+  const push = (name: string, desc?: string, group?: string) => {
+    name = abilityLabel(name);
     const k = name.trim().toLowerCase();
     if (!k || seen.has(k)) return;
     seen.add(k);
     // The "abilities" mask hides who holds what.
     const h = masked.abilities ? [] : (holders.get(k) ?? []);
     if (!h.length && !desc) return;
-    abilityOut.push({ name: name.trim(), desc: clip(desc, 400) || undefined, holders: h });
+    abilityOut.push({
+      name: name.trim(),
+      desc: clip(desc, 400) || undefined,
+      holders: h,
+      group: group || undefined,
+    });
   };
-  for (const a of abilities) push(a.label, a.description);
+  for (const a of abilities) push(a.label, a.description, a.group);
   if (!masked.characters) for (const e of entities) for (const ab of list(e.abilities)) push(ab);
   const rels: CodexFeedRelation[] = [];
   const bonds: CodexFeedBond[] = [];
@@ -398,7 +441,13 @@ export function buildCodexFeed({
       const k = `${a}|${rel}|${b}`;
       if (bondSeen.has(k) || bonds.length >= 1500) continue;
       bondSeen.add(k);
-      bonds.push({ a, b, rel: clip(rel, 30), label: clip(r.label, 120) || undefined });
+      bonds.push({
+        a,
+        b,
+        rel: clip(rel, 30),
+        label: clip(r.label, 120) || undefined,
+        fresh: isFreshArchiveRow(r) || undefined,
+      });
     }
     const members = new Map<string, string[]>();
     for (const m of memberships) {
