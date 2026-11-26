@@ -56,6 +56,8 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 vi.mock("@/hooks/use-admin", () => ({
   useSession: () => ({ data: { id: "user-1", email: "archivist@scu.test" } }),
+  useIsRealStaff: () => false,
+  useRealRoles: () => [],
 }));
 
 function AtmosphereSyncHost({ children }: { children: ReactNode }) {
