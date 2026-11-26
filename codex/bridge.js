@@ -289,31 +289,61 @@
     }
     return null;
   }
-  function abilityChip(name) {
-    var key = null;
+  /** Exact Codex lookup. The Codex's own keyByName falls back to its first ability, so never use it raw. */
+  function findKey(name) {
     try {
-      key = typeof keyByName === "function" ? keyByName(name) : null;
-    } catch (e) {
-      key = null;
-    }
-    if (key) {
+      var want = typeof clean === "function" ? clean(name) : name;
+      for (var b = 0; b < BR.length; b++)
+        for (var g = 0; g < BR[b].g.length; g++) {
+          if (clean(BR[b].g[g].n) === want) return b + "|" + g;
+          for (var l = 0; l < BR[b].g[g].k.length; l++)
+            if (clean(BR[b].g[g].k[l].n) === want) return b + "|" + g + "|" + l;
+        }
+    } catch (e) {}
+    return null;
+  }
+  var curChar = "";
+  /** Codex is the authority on who holds what: split the app's list for this character. */
+  function splitAbilities(names) {
+    var held = null;
+    try {
+      held = (typeof HOLD !== "undefined" && HOLD[curChar]) || null;
+    } catch (e) {}
+    var codexKnows = !!held;
+    var show = [];
+    var hidden = 0;
+    (names || []).forEach(function (nm) {
+      var key = findKey(nm);
+      if (!key) return show.push({ n: nm, key: null });
+      if (!codexKnows) return show.push({ n: nm, key: key });
+      var grp = key.split("|").slice(0, 2).join("|");
+      var mine = held.some(function (x) {
+        return x.k === grp;
+      });
+      if (mine) show.push({ n: nm, key: key });
+      else hidden++;
+    });
+    return { show: show, hidden: hidden };
+  }
+  function abilityChip(it) {
+    if (it.key) {
       var svg = "";
       try {
-        svg = typeof emA === "function" ? emA(key, 20) : "";
+        svg = typeof emA === "function" ? emA(it.key, 20) : "";
       } catch (e) {
         svg = "";
       }
       return (
         '<button class="chip cxd-ab" data-go="' +
-        escH(key) +
+        escH(it.key) +
         '"><span style="display:inline-grid;width:20px;height:20px">' +
         svg +
         "</span>" +
-        escH(name) +
+        escH(it.n) +
         "</button>"
       );
     }
-    return '<span class="chip cxd-ab canon">' + escH(name) + "</span>";
+    return '<span class="chip cxd-ab canon">' + escH(it.n) + "</span>";
   }
   function factRow(label, value) {
     if (!value || (Array.isArray(value) && !value.length)) return "";
@@ -409,11 +439,26 @@
               + "</p>"
             : "")
         : '<p class="note">No stat profile recorded for this season yet.</p>') +
-      (s.abilities && s.abilities.length
-        ? '<div class="sec"><h4>Abilities this season</h4><div class="chips">' +
-          s.abilities.map(abilityChip).join("") +
-          "</div></div>"
-        : "") +
+      (function () {
+        var sp = splitAbilities(s.abilities);
+        if (!sp.show.length && !sp.hidden) return "";
+        return (
+          '<div class="sec"><h4>Abilities this season</h4>' +
+          (sp.show.length
+            ? '<div class="chips">' + sp.show.map(abilityChip).join("") + "</div>"
+            : '<p class="note">None recorded for this season.</p>') +
+          (sp.hidden
+            ? '<p class="note">' +
+              sp.hidden +
+              " archive entr" +
+              (sp.hidden === 1 ? "y is" : "ies are") +
+              " left out: the Codex lists " +
+              (sp.hidden === 1 ? "it" : "them") +
+              " under other characters.</p>"
+            : "") +
+          "</div>"
+        );
+      })() +
       '<div class="cxd-facts">' +
       factRow("Bloodline", s.bloodline) +
       factRow("Organizations", s.orgs) +
@@ -508,6 +553,7 @@
     if (!sheet || sheet.querySelector(".sealedbox") || sheet.querySelector(".cxd")) return;
     var d = dossierFor(name);
     if (!d || !d.seasons || !d.seasons.length) return;
+    curChar = name;
     var st = dState[name] || (dState[name] = { i: d.seasons.length - 1, cmp: false, vals: {} });
     if (st.i >= d.seasons.length) st.i = d.seasons.length - 1;
     st.lx = null;
