@@ -265,3 +265,20 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
  html.cx-badge .rib{bottom:calc(146px + env(safe-area-inset-bottom,0px))}
  html.cx-badge #view{padding-bottom:170px}
 }
+
+/* ---- detail pages fill the screen at every size ---- */
+#sheet.sheet{left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;max-width:none!important;height:100dvh!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+ padding:calc(68px + env(safe-area-inset-top,0px)) max(16px,calc((100vw - 880px) / 2)) calc(40px + env(safe-area-inset-bottom,0px))!important;
+ background:radial-gradient(120% 50% at 50% -10%,color-mix(in srgb,var(--c1) 16%,transparent),transparent 60%),var(--panel)!important;z-index:45!important;overscroll-behavior:contain}
+#sheet.sheet:not([hidden]){animation:cxSheetFull 560ms var(--cx-soft) both!important}
+@keyframes cxSheetFull{from{transform:translateY(28px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+#sheetBack{display:none!important}
+#sheet .sback{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,calc((100vw - 880px) / 2));z-index:3;min-height:44px;padding:0 16px}
+.cx-close{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:max(16px,calc((100vw - 880px) / 2));z-index:3;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 90%,transparent);color:var(--ink);display:grid;place-items:center;font-size:1.4rem;line-height:1;transition:transform 360ms var(--cx-spring),border-color 150ms}
+.cx-close:hover{border-color:var(--c1);transform:rotate(90deg)}
+.cx-close:active{transform:scale(.9)}
+.cx-close:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+#sheet .sh-top{gap:18px}
+#sheet .sh-top .tile{width:76px;height:76px}
+#sheet .sh-top h3{font-size:clamp(1.7rem,4vw,2.4rem)}
+@media (min-width:900px){#sheet .cxw-svg{width:min(100%,360px)}}

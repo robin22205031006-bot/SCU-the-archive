@@ -1816,6 +1816,40 @@
       paintRanks();
     } catch (e) {}
   };
+
+  /* ---------- 8. full-screen detail pages: a close button that is always reachable ---------- */
+  function paintClose() {
+    var sheet = $id("sheet");
+    if (!sheet || sheet.hidden || sheet.querySelector(".cx-close")) return;
+    sheet.insertAdjacentHTML(
+      "afterbegin",
+      '<button type="button" class="cx-close" aria-label="Close details" data-tip="Close">×</button>',
+    );
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.closest && e.target.closest(".cx-close")) {
+      try {
+        closeSheet();
+      } catch (err) {}
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var sheet = $id("sheet");
+    var modal = $id("modal");
+    if (sheet && !sheet.hidden && (!modal || modal.hidden)) {
+      try {
+        closeSheet();
+      } catch (err) {}
+    }
+  });
+  var _deco2 = deco;
+  deco = function (root) {
+    _deco2(root);
+    try {
+      paintClose();
+    } catch (e) {}
+  };
   // One pass per frame at most, and never postponed by spring counters ticking.
   var decoPending = false;
   var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";
