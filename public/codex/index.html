@@ -2664,54 +2664,84 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
 #sheet .sh-top h3{font-size:clamp(1.7rem,4vw,2.4rem)}
 @media (min-width:900px){#sheet .cxw-svg{width:min(100%,360px)}}
 
-/* ---- premium Codex navigation ---- */
-.dock{isolation:isolate;border:1px solid color-mix(in srgb,var(--c1) 30%,var(--line))!important;background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 92%,transparent),color-mix(in srgb,var(--panel2) 96%,transparent))!important;
- clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,16px 100%,0 calc(100% - 16px),0 16px)}
-@media (min-width:768px){.dock{clip-path:none;border-width:0 1px 0 0!important}}
-.dk{transform:none;transition:transform 260ms var(--cx-spring),color 160ms ease-out!important;overflow:hidden;z-index:1}
-.dk .em{transition:transform 420ms var(--cx-spring)}
-.dk[aria-current="true"] .em{transform:translateY(-2px) scale(1.12)}
-.dk[aria-current="true"]::after{display:none}
-.cx-navgem{position:fixed;left:0;top:0;width:100px;height:100px;z-index:27;pointer-events:none;transform-origin:0 0;opacity:0;will-change:transform,opacity;
- clip-path:polygon(14% 0,86% 0,100% 14%,100% 86%,86% 100%,14% 100%,0 86%,0 14%);
- background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 30%,transparent),color-mix(in srgb,var(--c2) 14%,transparent));box-shadow:inset 0 0 0 1px var(--c1);transition:opacity 200ms ease-out}
-.dock .dk{position:relative}
-.dk.sig{overflow:visible}
-.cx-sigrings{position:absolute;left:50%;top:6px;width:58px;height:58px;margin-left:-29px;pointer-events:none;z-index:-1}
-.cx-sigrings svg{width:100%;height:100%;overflow:visible}
-.cx-sigrings .r1{fill:none;stroke:var(--c1);stroke-width:1.6;stroke-dasharray:3 7;transform-origin:50% 50%;animation:cxSpin 18s linear infinite}
-.cx-sigrings .r2{fill:none;stroke:var(--c2);stroke-width:1;opacity:.7;stroke-dasharray:14 8;transform-origin:50% 50%;animation:cxSpin 26s linear infinite reverse}
-.cx-sigrings .tk{fill:var(--c1);transform-origin:50% 50%;animation:cxSpin 40s linear infinite}
-.dk.sig .em{animation:cxBreath 3.6s ease-in-out infinite}
-@keyframes cxBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-.dk.sig.cx-burst .cx-sigrings{animation:cxBurst 620ms var(--cx-spring)}
-@keyframes cxBurst{0%{transform:rotate(0) scale(1)}40%{transform:rotate(120deg) scale(1.25)}100%{transform:rotate(180deg) scale(1)}}
-.cx-ripple{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c1) 70%,transparent),transparent 70%);pointer-events:none;animation:cxRipple 650ms ease-out forwards;z-index:0}
-@keyframes cxRipple{from{transform:scale(1);opacity:.9}to{transform:scale(9);opacity:0}}
-.rib{border:1px solid color-mix(in srgb,var(--c1) 35%,var(--line))!important;background:color-mix(in srgb,var(--panel) 94%,transparent)!important;overflow:visible!important}
-.rib.cx-fan::before{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--c1),transparent);transform-origin:50% 50%;animation:cxDraw 520ms var(--cx-soft) both}
-@media (min-width:768px){.rib.cx-fan::before{left:-1px;right:auto;top:12px;bottom:12px;width:2px;height:auto;background:linear-gradient(180deg,transparent,var(--c1),transparent);transform-origin:50% 0}}
-.rib.cx-fan .rb{animation:cxFan 560ms var(--cx-spring) both;animation-delay:calc(var(--i,0) * 45ms);transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}
-@keyframes cxFan{from{opacity:0;transform:translate(var(--fx,0),calc(var(--fy,0px) + 22px)) rotate(var(--fr,0deg)) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}}
-@media (min-width:768px){@keyframes cxFan{from{opacity:0;transform:translate(calc(var(--fx,0px) - 22px),0) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),0)}}}
-.rb{position:relative;overflow:hidden}
-.rb[aria-current="true"]{box-shadow:inset 0 0 0 1px var(--c1)}
-#view.cx-flow-r{animation:cxFlowR 560ms var(--cx-soft) both}
-#view.cx-flow-l{animation:cxFlowL 560ms var(--cx-soft) both}
-@keyframes cxFlowR{from{opacity:0;transform:translateX(42px) scale(.985)}to{opacity:1;transform:none}}
-@keyframes cxFlowL{from{opacity:0;transform:translateX(-42px) scale(.985)}to{opacity:1;transform:none}}
-.cx-sweep{position:fixed;top:0;bottom:0;left:0;width:60vw;z-index:24;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c1) 26%,transparent),color-mix(in srgb,var(--c2) 18%,transparent),transparent);transform:translateX(-70vw)}
-.cx-sweep.go-r{animation:cxSweepR 640ms cubic-bezier(.3,.7,.2,1)}
-.cx-sweep.go-l{animation:cxSweepL 640ms cubic-bezier(.3,.7,.2,1)}
-@keyframes cxSweepR{0%{opacity:0;transform:translateX(-70vw)}30%{opacity:1}100%{opacity:0;transform:translateX(110vw)}}
-@keyframes cxSweepL{0%{opacity:0;transform:translateX(110vw)}30%{opacity:1}100%{opacity:0;transform:translateX(-70vw)}}
-@media (prefers-reduced-motion:reduce){.cx-sigrings *,.dk.sig .em,.rib.cx-fan .rb,.rib.cx-fan::before,#view.cx-flow-r,#view.cx-flow-l,.cx-sweep,.cx-ripple{animation:none!important}.cx-navgem{transition:none}}
-html[data-motion="off"] .cx-sigrings *,html[data-motion="off"] .dk.sig .em,html[data-motion="off"] .rib.cx-fan .rb,html[data-motion="off"] .cx-sweep{animation:none!important}
+/* ---- Codex navigation: floating glass bar, liquid pill, raised orb, rounded tray ---- */
+html.cx-nav .dock{left:50%;right:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+ width:min(440px,calc(100vw - 24px));height:68px;padding:6px 8px;gap:0;justify-content:space-between;align-items:center;
+ border-radius:999px;border:1px solid color-mix(in srgb,var(--c1) 26%,var(--line))!important;
+ background:linear-gradient(180deg,var(--panel2),var(--panel))!important;
+ box-shadow:0 18px 44px rgba(0,0,0,.42),inset 0 1px 0 color-mix(in srgb,#fff 8%,transparent)!important;clip-path:none!important}
+html.cx-nav .dk{flex:1;width:auto!important;min-width:0;height:56px;padding:6px 0 4px;border-radius:999px;gap:2px;transform:none!important;
+ transition:color 200ms ease-out!important;overflow:visible;z-index:2}
+html.cx-nav .dk::after{display:none!important}
+html.cx-nav .dk span{font-size:.7rem;letter-spacing:.01em;opacity:.75;transition:opacity 200ms ease-out}
+html.cx-nav .dk .em{transition:transform 420ms var(--cx-spring)}
+html.cx-nav .dk:active .em{transform:scale(.86)}
+html.cx-nav .dk[aria-current="true"]:not(.sig){color:var(--ink)}
+html.cx-nav .dk[aria-current="true"]:not(.sig) span{opacity:1}
+html.cx-nav .dk[aria-current="true"]:not(.sig) .em{transform:translateY(-1px) scale(1.08)}
+html.cx-nav .dk[aria-current="true"]:not(.sig) .em .ga,html.cx-nav .dk[aria-current="true"]:not(.sig) .em .gb{fill:var(--c1)}
+/* raised Codex orb */
+html.cx-nav .dk.sig{flex:0 0 72px;height:72px;margin-top:-26px;border-radius:50%;padding:0;align-content:center;color:#0a0c12}
+html.cx-nav .dk.sig::before{content:"";position:absolute;inset:4px;border-radius:50%;z-index:-1;
+ background:radial-gradient(circle at 35% 30%,var(--c2),var(--c1) 70%);box-shadow:0 10px 26px color-mix(in srgb,var(--c1) 45%,transparent),0 0 0 5px var(--panel)}
+html.cx-nav .dk.sig::after{content:""!important;display:block!important;position:absolute;inset:-2px;border-radius:50%;width:auto;height:auto;left:-2px;bottom:auto;
+ background:conic-gradient(from 0deg,transparent 0 70%,color-mix(in srgb,var(--c2) 85%,transparent) 85%,transparent 100%);
+ -webkit-mask:radial-gradient(circle,transparent 58%,#000 60%);mask:radial-gradient(circle,transparent 58%,#000 60%);
+ animation:cxSpin 6s linear infinite;z-index:-1;box-shadow:none!important}
+html.cx-nav .dk.sig .em .ga,html.cx-nav .dk.sig .em .gb{fill:#0a0c12!important}
+html.cx-nav .dk.sig .em{filter:none;transform:none;width:30px;height:30px}
+html.cx-nav .dk.sig span{display:none}
+html.cx-nav .dk.sig:active{transform:scale(.94)!important;transition:transform 120ms ease-out!important}
+/* liquid pill */
+.cx-pill{position:fixed;left:0;top:0;z-index:27;border-radius:999px;pointer-events:none;opacity:0;will-change:transform,width,height;
+ background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 22%,transparent),color-mix(in srgb,var(--c1) 12%,transparent));
+ box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c1) 45%,transparent);transition:opacity 220ms ease-out}
+.cx-pill.on{opacity:1}
+/* rounded tray for a wing */
+html.cx-nav .rib{left:50%;right:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+ width:min(440px,calc(100vw - 24px));max-width:none;display:grid!important;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;padding:10px;
+ border-radius:26px;border:1px solid color-mix(in srgb,var(--c1) 26%,var(--line))!important;background:var(--panel)!important;
+ box-shadow:0 22px 50px rgba(0,0,0,.45)!important;overflow:visible!important}
+html.cx-nav .rib.cx-tray{animation:cxTray 360ms var(--cx-soft) both;transform-origin:50% 100%}
+@keyframes cxTray{from{opacity:0;transform:translateX(-50%) translateY(10px) scale(.97)}to{opacity:1;transform:translateX(-50%)}}
+html.cx-nav .rb{height:48px;padding:0 14px 0 10px;border-radius:16px;justify-content:flex-start;animation:none;transform:none}
+html.cx-nav .rib.cx-tray .rb{animation:cxTrayItem 360ms var(--cx-soft) backwards;animation-delay:calc(60ms + var(--i,0) * 28ms)}
+@keyframes cxTrayItem{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+html.cx-nav .rb:active{transform:scale(.97)}
+html.cx-nav .rb[aria-current="true"]{border-color:var(--c1);background:color-mix(in srgb,var(--c1) 14%,var(--panel2));color:var(--ink)}
+html.cx-nav .dscrim{background:rgba(0,0,0,.35)}
+html.cx-badge.cx-nav .dock{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+html.cx-badge.cx-nav .rib{bottom:calc(156px + env(safe-area-inset-bottom,0px))}
+@media (min-width:768px){
+ html.cx-nav body{padding-left:104px}
+ html.cx-nav .dock{left:14px;top:50%;bottom:auto;transform:translateY(-50%);width:76px;height:auto;flex-direction:column;padding:10px 6px;gap:6px;border-radius:38px;justify-content:center}
+ html.cx-nav .dk{flex:0 0 auto;width:64px!important;height:60px}
+ html.cx-nav .dk.sig{flex:0 0 64px;width:64px!important;height:64px;margin:6px 0}
+ html.cx-nav .rib{left:104px;top:50%;bottom:auto;transform:translateY(-50%);width:260px;grid-template-columns:1fr;max-height:80vh;overflow:auto!important}
+ @keyframes cxTray{from{opacity:0;transform:translateY(-50%) translateX(-10px) scale(.97)}to{opacity:1;transform:translateY(-50%)}}
+ html.cx-badge.cx-nav .dock{bottom:auto}
+ html.cx-badge.cx-nav .rib{bottom:auto}
+}
+#view.cx-flow{animation:cxFlow 420ms var(--cx-soft) both}
+@keyframes cxFlow{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){html.cx-nav .dk.sig::after,html.cx-nav .rib.cx-tray,html.cx-nav .rib.cx-tray .rb,#view.cx-flow{animation:none!important}.cx-pill{transition:none}}
+html[data-motion="off"] .dk.sig::after,html[data-motion="off"] #view.cx-flow,html[data-motion="off"] .rib.cx-tray,html[data-motion="off"] .rib.cx-tray .rb{animation:none!important}
 
+/* ---- smooth rounded shapes everywhere (no cut corners) ---- */
+.ch{clip-path:none!important}
+.xgh,.gh{border-radius:24px!important;overflow:hidden}
+.xgh .in,.gh .in,.in.ch{border-radius:22.5px!important}
+.cgrid2 .xgh{border-radius:22px!important}.cgrid2 .xgh .in{border-radius:20.5px!important}
+.tile.ch,.tile{border-radius:32%!important;overflow:hidden}
+#sheet .sh-top .tile{border-radius:30%!important}
+.cxr-lens{clip-path:none!important;border-radius:16px}
+.cxc-g{clip-path:none!important;border-radius:32%}
+.cxg-t{clip-path:none!important;border-radius:999px}
+.cxg-f{border-radius:999px}
 /* ---- living VFX ---- */
 .wrap{position:relative;z-index:1}
 .cx-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.cx-ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.16;will-change:transform;background:radial-gradient(circle,var(--c1),transparent 62%)}
+.cx-ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.11;will-change:transform;background:radial-gradient(circle,var(--c1),transparent 62%)}
 .cx-ambient .a1{left:-25vmax;top:-30vmax;animation:cxDrift1 38s ease-in-out infinite alternate}
 .cx-ambient .a2{right:-30vmax;bottom:-35vmax;background:radial-gradient(circle,var(--c2),transparent 62%);opacity:.1;animation:cxDrift2 46s ease-in-out infinite alternate}
 .cx-ambient .a3{left:30vw;top:40vh;width:44vmax;height:44vmax;opacity:.07;animation:cxDrift3 54s ease-in-out infinite alternate}
@@ -4598,134 +4628,83 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
     } catch (e) {}
   };
 
-  /* ---------- 9. premium Codex navigation: gliding gem, magnetic dock, sigil, fan, flow ---------- */
+  /* ---------- 9. Codex navigation: floating glass bar, liquid pill, raised orb, tray ---------- */
   (function navFx() {
     var dock = $id("dock");
     if (!dock) return;
-    var gem = document.createElement("span");
-    gem.className = "cx-navgem";
-    gem.setAttribute("aria-hidden", "true");
-    document.body.appendChild(gem);
-    var gx = 0, gy = 0, gw = 0, gh = 0, gshow = 0;
-    var put = function () {
-      gem.style.transform =
-        "translate(" + gx.toFixed(1) + "px," + gy.toFixed(1) + "px) scale(" + (gw / 100).toFixed(4) + "," + (gh / 100).toFixed(4) + ")";
-      gem.style.opacity = String(gshow);
+    document.documentElement.classList.add("cx-nav");
+    // Liquid pill behind the active wing: x/y/size springs (width lags a little, so it
+    // stretches as it travels and settles round).
+    var pill = document.createElement("span");
+    pill.className = "cx-pill";
+    pill.setAttribute("aria-hidden", "true");
+    document.body.appendChild(pill);
+    var px = 0, py = 0, pw = 0, ph = 0, shown = false;
+    var draw = function () {
+      pill.style.transform = "translate(" + px.toFixed(1) + "px," + py.toFixed(1) + "px)";
+      pill.style.width = Math.max(0, pw).toFixed(1) + "px";
+      pill.style.height = Math.max(0, ph).toFixed(1) + "px";
     };
-    var sx = new Spring(0, function (v) { gx = v; put(); }, { k: 230, c: 22 });
-    var sy = new Spring(0, function (v) { gy = v; put(); }, { k: 230, c: 22 });
-    var sw = new Spring(0, function (v) { gw = v; put(); }, { k: 260, c: 24 });
-    var sh = new Spring(0, function (v) { gh = v; put(); }, { k: 260, c: 24 });
-    var first = true;
-    function placeGem() {
-      var on = dock.querySelector('.dk[aria-current="true"]') || dock.querySelector(".dk.sig");
-      if (!on || !dock.getClientRects().length || getComputedStyle(dock).display === "none") {
-        gshow = 0;
-        put();
+    var sx = new Spring(0, function (v) { px = v; draw(); }, { k: 300, c: 26 });
+    var sy = new Spring(0, function (v) { py = v; draw(); }, { k: 300, c: 26 });
+    var sw = new Spring(0, function (v) { pw = v; draw(); }, { k: 200, c: 22 });
+    var sh = new Spring(0, function (v) { ph = v; draw(); }, { k: 200, c: 22 });
+    var snap = true;
+    function placePill() {
+      var on = dock.querySelector('.dk[aria-current="true"]:not(.sig)');
+      if (!on || !dock.getClientRects().length) {
+        pill.classList.remove("on");
+        shown = false;
         return;
       }
       var r = on.getBoundingClientRect();
-      var pad = 4;
-      var tx = r.left - pad, ty = r.top - pad, tw = r.width + pad * 2, th = r.height + pad * 2;
-      gshow = 1;
-      if (first || reduced()) {
-        first = false;
-        sx.x = gx = tx; sy.x = gy = ty; sw.x = gw = tw; sh.x = gh = th;
+      var tx = r.left + 4, ty = r.top + 4, tw = r.width - 8, th = r.height - 8;
+      if (snap || !shown || reduced()) {
+        snap = false;
+        [sx, sy, sw, sh].forEach(function (sp, i) {
+          var v = [tx, ty, tw, th][i];
+          sp.x = v;
+          sp.v = 0;
+          sp.to(v);
+        });
+        px = tx; py = ty; pw = tw; ph = th;
+        draw();
+      } else {
         sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
-        put();
-        return;
       }
-      sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+      shown = true;
+      pill.classList.add("on");
     }
-    function decorateDock() {
-      var sig = dock.querySelector(".dk.sig");
-      if (sig && !sig.querySelector(".cx-sigrings")) {
-        sig.insertAdjacentHTML(
-          "afterbegin",
-          '<span class="cx-sigrings" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="r1" cx="50" cy="50" r="44"/><circle class="r2" cx="50" cy="50" r="36"/><path class="tk" d="M50 2 L53 9 L47 9Z M50 98 L53 91 L47 91Z M2 50 L9 47 L9 53Z M98 50 L91 47 L91 53Z"/></svg></span>',
-        );
-      }
-      placeGem();
-    }
-    function fanRibbon() {
+    function trayItems() {
       var rib = $id("rib");
-      if (!rib || rib.hidden || rib.dataset.cxFan === rib.innerHTML.length + "") return;
-      rib.dataset.cxFan = rib.innerHTML.length + "";
-      var items = rib.querySelectorAll(".rb");
-      var n = items.length;
-      var vertical = window.matchMedia("(min-width:768px)").matches;
-      items.forEach(function (it, i) {
-        var o = i - (n - 1) / 2;
+      if (!rib || rib.hidden) return;
+      var sig = rib.innerHTML.length + ":" + rib.childElementCount;
+      if (rib.dataset.cxTray === sig) return;
+      rib.dataset.cxTray = sig;
+      rib.querySelectorAll(".rb").forEach(function (it, i) {
         it.style.setProperty("--i", String(i));
-        it.style.setProperty("--fx", vertical ? (o * o * 2.2).toFixed(1) + "px" : "0px");
-        it.style.setProperty("--fy", vertical ? "0px" : (o * o * 1.6).toFixed(1) + "px");
-        it.style.setProperty("--fr", vertical ? "0deg" : (o * 1.2).toFixed(2) + "deg");
       });
-      rib.classList.remove("cx-fan");
+      rib.classList.remove("cx-tray");
       void rib.offsetWidth;
-      rib.classList.add("cx-fan");
+      rib.classList.add("cx-tray");
     }
+    var queued = false;
     new MutationObserver(function () {
+      if (queued) return;
+      queued = true;
       requestAnimationFrame(function () {
-        decorateDock();
-        fanRibbon();
+        queued = false;
+        placePill();
+        trayItems();
       });
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-current"] });
+    }).observe(dock.parentNode || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-current"] });
     window.addEventListener("resize", function () {
-      first = true;
-      placeGem();
+      snap = true;
+      placePill();
     });
-    decorateDock();
+    placePill();
 
-    // magnetic lean toward the pointer (mouse/pen only, never on touch)
-    var hoverable = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
-    if (hoverable) {
-      dock.addEventListener("pointermove", function (e) {
-        if (reduced()) return;
-        dock.querySelectorAll(".dk").forEach(function (b) {
-          var r = b.getBoundingClientRect();
-          var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-          var dx = e.clientX - cx, dy = e.clientY - cy;
-          var d = Math.hypot(dx, dy);
-          var t = Math.max(0, 1 - d / 140);
-          b.style.transform = "translate(" + (dx * 0.08 * t).toFixed(2) + "px," + (dy * 0.08 * t).toFixed(2) + "px) scale(" + (1 + 0.22 * t).toFixed(3) + ")";
-        });
-      });
-      dock.addEventListener("pointerleave", function () {
-        dock.querySelectorAll(".dk").forEach(function (b) {
-          b.style.transform = "";
-        });
-      });
-    }
-
-    // tap ripple on dock and ribbon buttons
-    document.addEventListener("pointerdown", function (e) {
-      var b = e.target && e.target.closest ? e.target.closest(".dk,.rb") : null;
-      if (!b || reduced()) return;
-      var r = b.getBoundingClientRect();
-      var rp = document.createElement("span");
-      rp.className = "cx-ripple";
-      rp.style.left = e.clientX - r.left + "px";
-      rp.style.top = e.clientY - r.top + "px";
-      b.appendChild(rp);
-      setTimeout(function () {
-        rp.remove();
-      }, 700);
-      if (b.classList.contains("sig")) {
-        b.classList.remove("cx-burst");
-        void b.offsetWidth;
-        b.classList.add("cx-burst");
-      }
-    });
-
-    // flow transition: the page slides the way you travelled, with an ink sweep
-    var sweep = document.createElement("span");
-    sweep.className = "cx-sweep";
-    sweep.setAttribute("aria-hidden", "true");
-    document.body.appendChild(sweep);
-    var order = function (id) {
-      return API ? API.NT.findIndex(function (m) { return m[5] === id || m[0] === id; }) : 0;
-    };
+    // gentle page flow: fade and rise, never a jolt
     var lastTab = typeof tab !== "undefined" ? tab : "";
     if (typeof render === "function") {
       var _rflow = render;
@@ -4736,16 +4715,11 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
         if (typeof tab === "undefined" || tab === prev) return;
         lastTab = tab;
         if (reduced()) return;
-        var dir = order(tab) >= order(prev) ? "r" : "l";
         var view = $id("view");
-        if (view) {
-          view.classList.remove("cx-flow-r", "cx-flow-l", "iris");
-          void view.offsetWidth;
-          view.classList.add("cx-flow-" + dir);
-        }
-        sweep.classList.remove("go-r", "go-l");
-        void sweep.offsetWidth;
-        sweep.classList.add("go-" + dir);
+        if (!view) return;
+        view.classList.remove("cx-flow", "iris");
+        void view.offsetWidth;
+        view.classList.add("cx-flow");
       };
     }
   })();
@@ -4818,7 +4792,7 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
         var r = c.getBoundingClientRect();
         var px = (e.clientX - r.left) / r.width - 0.5;
         var py = (e.clientY - r.top) / r.height - 0.5;
-        c.style.transform = "perspective(700px) rotateX(" + (-py * 7).toFixed(2) + "deg) rotateY(" + (px * 9).toFixed(2) + "deg) translateY(-2px)";
+        c.style.transform = "perspective(900px) rotateX(" + (-py * 3).toFixed(2) + "deg) rotateY(" + (px * 4).toFixed(2) + "deg) translateY(-2px)";
         tilted = c;
       });
       document.addEventListener("pointerleave", function () {
