@@ -381,6 +381,21 @@
           '">' +
           avg +
           "</b></span></div>" +
+          (s.profiles && s.profiles.length
+            ? '<div class="xseg cxd-prof" role="group" aria-label="Stat profile"><button type="button" class="on" aria-pressed="true" data-cxp="-1">Character</button>' +
+              s.profiles
+                .map(function (p, pi) {
+                  return (
+                    '<button type="button" aria-pressed="false" data-cxp="' +
+                    pi +
+                    '">' +
+                    escH(p.name) +
+                    "</button>"
+                  );
+                })
+                .join("") +
+              "</div>"
+            : "") +
           '<div class="cxd-stats' +
           (cmp && prev ? " cmp" : "") +
           '">' +
@@ -426,9 +441,40 @@
         out.textContent = String(Math.max(0, Math.round(x)));
       };
       var sp = new Spring(from, setP, { k: 160, c: 19 });
+      g._sp = sp;
       sp.to(v);
       st.vals[k] = v;
       if (pv != null) ghw.style.transform = "translateX(" + (pv - 100) + "%)";
+    });
+  }
+  /** Ability stat profiles: the gauges spring from the character profile to the ability's. */
+  function wireProfiles(panel, season, st) {
+    var bar = panel.querySelector(".cxd-prof");
+    if (!bar) return;
+    var box = panel.querySelector(".cxd-stats");
+    var pi = panel.querySelector("[data-pi]");
+    bar.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cxp]");
+      if (!b) return;
+      var idx = +b.dataset.cxp;
+      bar.querySelectorAll("[data-cxp]").forEach(function (x) {
+        var on = x === b;
+        x.classList.toggle("on", on);
+        x.setAttribute("aria-pressed", String(on));
+      });
+      var src = idx >= 0 && season.profiles[idx] ? season.profiles[idx].stats : season.stats;
+      if (box) box.classList.toggle("prof", idx >= 0);
+      var sum = 0;
+      box.querySelectorAll(".cxg").forEach(function (g) {
+        var m = src.find(function (x) {
+          return x.key === g.dataset.k;
+        });
+        var v = m ? m.value : 0;
+        sum += v;
+        if (g._sp) g._sp.to(v);
+        st.vals[g.dataset.k] = v;
+      });
+      if (pi) pi.textContent = String(Math.round(sum / Math.max(1, src.length)));
     });
   }
   function placeLens(rail, st, instant) {
@@ -505,6 +551,7 @@
       void panel.offsetWidth;
       panel.classList.add(dir > 0 ? "in-r" : dir < 0 ? "in-l" : "in");
       animateGauges(panel, st);
+      wireProfiles(panel, d.seasons[st.i], st);
     };
     var select = function (i, focus) {
       if (i < 0 || i >= d.seasons.length || i === st.i) return;

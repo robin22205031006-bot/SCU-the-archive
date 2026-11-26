@@ -40,6 +40,8 @@ export interface CodexFeedSeason {
   weapons?: string[];
   abilities?: string[];
   stats: { key: string; label: string; value: number }[];
+  /** Per-ability stat profiles (same data the Nexus stat wheel's ability selector reads). */
+  profiles?: { name: string; stats: { key: string; label: string; value: number }[] }[];
 }
 export interface CodexFeedMode {
   id: string;
@@ -126,6 +128,13 @@ export function codexSeasonsFor(
       weapons: list(d.weapons).slice(0, 12),
       abilities: list(d.abilityKeys).slice(0, 24),
       stats: values,
+      profiles: Object.keys(d.abilityStats ?? {})
+        .slice(0, 12)
+        .map((name) => ({
+          name: clip(name, 60),
+          stats: resolveNexusStats(stats, o.key === "all" ? null : o.key, name),
+        }))
+        .filter((p) => p.name && p.stats.some((x) => x.value > 0)),
     });
   }
   return out;

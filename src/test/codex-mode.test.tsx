@@ -50,7 +50,12 @@ describe("Codex feed", () => {
   const stats = {
     dossier: {
       "s1:1": { codename: "Gale Warden", status: "Alive", stats: { power: 40, agility: 60 } },
-      "s1:2": { codename: "Gale Warden", status: "Dead", stats: { power: 70, agility: 65 } },
+      "s1:2": {
+        codename: "Gale Warden",
+        status: "Dead",
+        stats: { power: 70, agility: 65 },
+        abilityStats: { Windstep: { agility: 90 } },
+      },
     },
   };
 
@@ -60,6 +65,9 @@ describe("Codex feed", () => {
     expect(seasons[0]?.label).toBe("Season 1");
     expect(seasons[1]?.status).toBe("Dead");
     expect(seasons[1]?.stats.find((s) => s.key === "power")?.value).toBe(70);
+    expect(seasons[1]?.profiles?.[0]?.name).toBe("Windstep");
+    expect(seasons[1]?.profiles?.[0]?.stats.find((s) => s.key === "agility")?.value).toBe(90);
+    expect(seasons[0]?.profiles).toEqual([]);
   });
 
   it("collects characters, holders and dossiers without inventing data", () => {

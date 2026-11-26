@@ -96,6 +96,10 @@ html.cx-hosted body{background-attachment:scroll}
 .cxd-stats.cmp .cxg-d{opacity:1;transform:none}
 .cxg-d.up{color:#4FCB97}.cxg-d.dn{color:#F05A66}.cxg-d.eq{color:var(--muted)}
 .cxd-cmpn{margin-top:8px}
+.cxd-prof{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;max-width:100%;margin:0 0 10px;scrollbar-width:none}
+.cxd-prof::-webkit-scrollbar{display:none}
+.cxd-prof button{flex:none;min-height:36px!important;white-space:nowrap}
+.cxd-stats.prof .cxg-gh,.cxd-stats.prof .cxg-d{opacity:0!important}
 .cxd-facts{display:grid;gap:6px;margin-top:14px}
 .cxd-f{display:grid;grid-template-columns:110px 1fr;gap:8px;font-size:.84rem}
 .cxd-f span{color:var(--muted)}
