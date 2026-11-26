@@ -326,3 +326,28 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
 @keyframes cxSweepL{0%{opacity:0;transform:translateX(110vw)}30%{opacity:1}100%{opacity:0;transform:translateX(-70vw)}}
 @media (prefers-reduced-motion:reduce){.cx-sigrings *,.dk.sig .em,.rib.cx-fan .rb,.rib.cx-fan::before,#view.cx-flow-r,#view.cx-flow-l,.cx-sweep,.cx-ripple{animation:none!important}.cx-navgem{transition:none}}
 html[data-motion="off"] .cx-sigrings *,html[data-motion="off"] .dk.sig .em,html[data-motion="off"] .rib.cx-fan .rb,html[data-motion="off"] .cx-sweep{animation:none!important}
+
+/* ---- living VFX ---- */
+.wrap{position:relative;z-index:1}
+.cx-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.cx-ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.16;will-change:transform;background:radial-gradient(circle,var(--c1),transparent 62%)}
+.cx-ambient .a1{left:-25vmax;top:-30vmax;animation:cxDrift1 38s ease-in-out infinite alternate}
+.cx-ambient .a2{right:-30vmax;bottom:-35vmax;background:radial-gradient(circle,var(--c2),transparent 62%);opacity:.1;animation:cxDrift2 46s ease-in-out infinite alternate}
+.cx-ambient .a3{left:30vw;top:40vh;width:44vmax;height:44vmax;opacity:.07;animation:cxDrift3 54s ease-in-out infinite alternate}
+@keyframes cxDrift1{to{transform:translate(18vmax,14vmax) scale(1.15)}}
+@keyframes cxDrift2{to{transform:translate(-16vmax,-12vmax) scale(.9)}}
+@keyframes cxDrift3{to{transform:translate(-22vmax,10vmax) scale(1.2)}}
+:root[data-theme="light"] .cx-ambient i{opacity:.1}
+.cx-ambient b{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--c2);opacity:0;animation:cxMote var(--d) ease-in-out var(--dl) infinite}
+@keyframes cxMote{0%,100%{opacity:0;transform:translateY(0) scale(.6)}50%{opacity:.55;transform:translateY(-14px) scale(1)}}
+/* hero ornaments keep living instead of stopping after three cycles */
+.orb .r1,.orb .r2,.orb .glow,.orb .core,.tree::after{animation-iteration-count:infinite!important}
+/* staggered entrances */
+.cx-in{animation:cxCard 640ms var(--cx-spring) backwards;animation-delay:min(calc(var(--ci,0) * 32ms),640ms)}
+@keyframes cxCard{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+#sheet .cx-sin{animation:cxSec 560ms var(--cx-soft) backwards;animation-delay:min(calc(var(--si,0) * 55ms),500ms)}
+@keyframes cxSec{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.xgh,.gh,.stycard,.cc{transform-style:preserve-3d;will-change:transform}
+@media (prefers-reduced-motion:reduce){.cx-ambient,.cx-in,#sheet .cx-sin{animation:none!important}.cx-ambient{display:none}}
+html[data-motion="off"] .cx-ambient{display:none}
+html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:none!important}

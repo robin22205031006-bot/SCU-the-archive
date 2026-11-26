@@ -2708,6 +2708,31 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
 @media (prefers-reduced-motion:reduce){.cx-sigrings *,.dk.sig .em,.rib.cx-fan .rb,.rib.cx-fan::before,#view.cx-flow-r,#view.cx-flow-l,.cx-sweep,.cx-ripple{animation:none!important}.cx-navgem{transition:none}}
 html[data-motion="off"] .cx-sigrings *,html[data-motion="off"] .dk.sig .em,html[data-motion="off"] .rib.cx-fan .rb,html[data-motion="off"] .cx-sweep{animation:none!important}
 
+/* ---- living VFX ---- */
+.wrap{position:relative;z-index:1}
+.cx-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.cx-ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;opacity:.16;will-change:transform;background:radial-gradient(circle,var(--c1),transparent 62%)}
+.cx-ambient .a1{left:-25vmax;top:-30vmax;animation:cxDrift1 38s ease-in-out infinite alternate}
+.cx-ambient .a2{right:-30vmax;bottom:-35vmax;background:radial-gradient(circle,var(--c2),transparent 62%);opacity:.1;animation:cxDrift2 46s ease-in-out infinite alternate}
+.cx-ambient .a3{left:30vw;top:40vh;width:44vmax;height:44vmax;opacity:.07;animation:cxDrift3 54s ease-in-out infinite alternate}
+@keyframes cxDrift1{to{transform:translate(18vmax,14vmax) scale(1.15)}}
+@keyframes cxDrift2{to{transform:translate(-16vmax,-12vmax) scale(.9)}}
+@keyframes cxDrift3{to{transform:translate(-22vmax,10vmax) scale(1.2)}}
+:root[data-theme="light"] .cx-ambient i{opacity:.1}
+.cx-ambient b{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--c2);opacity:0;animation:cxMote var(--d) ease-in-out var(--dl) infinite}
+@keyframes cxMote{0%,100%{opacity:0;transform:translateY(0) scale(.6)}50%{opacity:.55;transform:translateY(-14px) scale(1)}}
+/* hero ornaments keep living instead of stopping after three cycles */
+.orb .r1,.orb .r2,.orb .glow,.orb .core,.tree::after{animation-iteration-count:infinite!important}
+/* staggered entrances */
+.cx-in{animation:cxCard 640ms var(--cx-spring) backwards;animation-delay:min(calc(var(--ci,0) * 32ms),640ms)}
+@keyframes cxCard{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+#sheet .cx-sin{animation:cxSec 560ms var(--cx-soft) backwards;animation-delay:min(calc(var(--si,0) * 55ms),500ms)}
+@keyframes cxSec{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.xgh,.gh,.stycard,.cc{transform-style:preserve-3d;will-change:transform}
+@media (prefers-reduced-motion:reduce){.cx-ambient,.cx-in,#sheet .cx-sin{animation:none!important}.cx-ambient{display:none}}
+html[data-motion="off"] .cx-ambient{display:none}
+html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:none!important}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -4712,6 +4737,84 @@ html[data-motion="off"] .cx-sigrings *,html[data-motion="off"] .dk.sig .em,html[
         void sweep.offsetWidth;
         sweep.classList.add("go-" + dir);
       };
+    }
+  })();
+
+  /* ---------- 10. living VFX: ambient aurora + motes, staggered entrances, card tilt ---------- */
+  (function vfx() {
+    var amb = document.createElement("div");
+    amb.className = "cx-ambient";
+    amb.setAttribute("aria-hidden", "true");
+    var motes = "";
+    for (var i = 0; i < 22; i++) {
+      var x = (i * 37.7) % 100, y = (i * 61.3) % 100;
+      motes +=
+        '<b style="left:' + x.toFixed(1) + "%;top:" + y.toFixed(1) + "%;--d:" + (4 + (i % 7)).toFixed(1) + "s;--dl:" + ((i % 9) * 0.6).toFixed(1) + 's"></b>';
+    }
+    amb.innerHTML = "<i class=\"a1\"></i><i class=\"a2\"></i><i class=\"a3\"></i>" + motes;
+    document.body.insertBefore(amb, document.body.firstChild);
+
+    var ITEMS = ".xgh,.gh,.cc,.leaf,.mini,.stycard,.lrow,.ab,.grp,.rel,.dq,.gcard";
+    function stagger(root, cap) {
+      if (reduced()) return;
+      var list = root.querySelectorAll(ITEMS);
+      for (var i = 0; i < list.length && i < cap; i++) {
+        var el = list[i];
+        el.style.setProperty("--ci", String(i));
+        el.classList.remove("cx-in");
+        void el.offsetWidth;
+        el.classList.add("cx-in");
+      }
+    }
+    if (typeof render === "function") {
+      var _rvfx = render;
+      // eslint-disable-next-line no-global-assign
+      render = function () {
+        _rvfx.apply(this, arguments);
+        var v = $id("view");
+        if (v && !render.keep) stagger(v, 28);
+      };
+    }
+    // detail sections cascade in whenever a new sheet is drawn
+    var sheet = $id("sheet");
+    if (sheet) {
+      new MutationObserver(function () {
+        if (sheet.hidden || reduced()) return;
+        var top = sheet.querySelector(".sh-top");
+        if (!top || top.dataset.cxIn === "1") return;
+        top.dataset.cxIn = "1";
+        var kids = sheet.children;
+        for (var k = 0, n = 0; k < kids.length; k++) {
+          var c = kids[k];
+          if (c.classList.contains("cx-close") || c.classList.contains("sback") || c.classList.contains("grip")) continue;
+          c.style.setProperty("--si", String(n++));
+          c.classList.remove("cx-sin");
+          void c.offsetWidth;
+          c.classList.add("cx-sin");
+        }
+      }).observe(sheet, { childList: true });
+    }
+    // cards lean toward the pointer (mouse/pen only)
+    if (window.matchMedia("(hover:hover) and (pointer:fine)").matches) {
+      var tilted = null;
+      document.addEventListener("pointermove", function (e) {
+        if (reduced()) return;
+        var c = e.target && e.target.closest ? e.target.closest(".xgh,.gh,.stycard,.cc") : null;
+        if (tilted && tilted !== c) {
+          tilted.style.transform = "";
+          tilted = null;
+        }
+        if (!c) return;
+        var r = c.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        c.style.transform = "perspective(700px) rotateX(" + (-py * 7).toFixed(2) + "deg) rotateY(" + (px * 9).toFixed(2) + "deg) translateY(-2px)";
+        tilted = c;
+      });
+      document.addEventListener("pointerleave", function () {
+        if (tilted) tilted.style.transform = "";
+        tilted = null;
+      });
     }
   })();
   // One pass per frame at most, and never postponed by spring counters ticking.

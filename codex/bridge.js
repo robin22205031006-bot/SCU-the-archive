@@ -2002,6 +2002,84 @@
       };
     }
   })();
+
+  /* ---------- 10. living VFX: ambient aurora + motes, staggered entrances, card tilt ---------- */
+  (function vfx() {
+    var amb = document.createElement("div");
+    amb.className = "cx-ambient";
+    amb.setAttribute("aria-hidden", "true");
+    var motes = "";
+    for (var i = 0; i < 22; i++) {
+      var x = (i * 37.7) % 100, y = (i * 61.3) % 100;
+      motes +=
+        '<b style="left:' + x.toFixed(1) + "%;top:" + y.toFixed(1) + "%;--d:" + (4 + (i % 7)).toFixed(1) + "s;--dl:" + ((i % 9) * 0.6).toFixed(1) + 's"></b>';
+    }
+    amb.innerHTML = "<i class=\"a1\"></i><i class=\"a2\"></i><i class=\"a3\"></i>" + motes;
+    document.body.insertBefore(amb, document.body.firstChild);
+
+    var ITEMS = ".xgh,.gh,.cc,.leaf,.mini,.stycard,.lrow,.ab,.grp,.rel,.dq,.gcard";
+    function stagger(root, cap) {
+      if (reduced()) return;
+      var list = root.querySelectorAll(ITEMS);
+      for (var i = 0; i < list.length && i < cap; i++) {
+        var el = list[i];
+        el.style.setProperty("--ci", String(i));
+        el.classList.remove("cx-in");
+        void el.offsetWidth;
+        el.classList.add("cx-in");
+      }
+    }
+    if (typeof render === "function") {
+      var _rvfx = render;
+      // eslint-disable-next-line no-global-assign
+      render = function () {
+        _rvfx.apply(this, arguments);
+        var v = $id("view");
+        if (v && !render.keep) stagger(v, 28);
+      };
+    }
+    // detail sections cascade in whenever a new sheet is drawn
+    var sheet = $id("sheet");
+    if (sheet) {
+      new MutationObserver(function () {
+        if (sheet.hidden || reduced()) return;
+        var top = sheet.querySelector(".sh-top");
+        if (!top || top.dataset.cxIn === "1") return;
+        top.dataset.cxIn = "1";
+        var kids = sheet.children;
+        for (var k = 0, n = 0; k < kids.length; k++) {
+          var c = kids[k];
+          if (c.classList.contains("cx-close") || c.classList.contains("sback") || c.classList.contains("grip")) continue;
+          c.style.setProperty("--si", String(n++));
+          c.classList.remove("cx-sin");
+          void c.offsetWidth;
+          c.classList.add("cx-sin");
+        }
+      }).observe(sheet, { childList: true });
+    }
+    // cards lean toward the pointer (mouse/pen only)
+    if (window.matchMedia("(hover:hover) and (pointer:fine)").matches) {
+      var tilted = null;
+      document.addEventListener("pointermove", function (e) {
+        if (reduced()) return;
+        var c = e.target && e.target.closest ? e.target.closest(".xgh,.gh,.stycard,.cc") : null;
+        if (tilted && tilted !== c) {
+          tilted.style.transform = "";
+          tilted = null;
+        }
+        if (!c) return;
+        var r = c.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        c.style.transform = "perspective(700px) rotateX(" + (-py * 7).toFixed(2) + "deg) rotateY(" + (px * 9).toFixed(2) + "deg) translateY(-2px)";
+        tilted = c;
+      });
+      document.addEventListener("pointerleave", function () {
+        if (tilted) tilted.style.transform = "";
+        tilted = null;
+      });
+    }
+  })();
   // One pass per frame at most, and never postponed by spring counters ticking.
   var decoPending = false;
   var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";
