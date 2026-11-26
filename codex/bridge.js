@@ -1325,7 +1325,7 @@
     ((f && f.bonds) || []).forEach(function (b) {
       var a = cxName(b.a);
       var c = cxName(b.b);
-      if (!a || !c || a === c || pairs[key(a, c)]) return;
+      if (!a || !c || a === c || (pairs[key(a, c)] && !b.fresh)) return;
       var t = typeOfRel(b.rel);
       add({ a: a, b: c, type: t, label: b.label ? b.rel + ": " + b.label : b.rel, ring: ringOfType(t), src: "archive" });
     });
@@ -2080,6 +2080,24 @@
       });
     }
   })();
+
+  /* ---------- 11. the archive changed while the reader is here: offer a refresh ---------- */
+  window.__codexOfferRefresh = function () {
+    if (!H || $id("cxRefresh")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="cx-refresh" id="cxRefresh" role="status"><span>The archive was updated.</span><button type="button" class="btn" id="cxRefreshGo">Refresh</button><button type="button" class="cx-refresh-x" id="cxRefreshX" aria-label="Dismiss">×</button></div>',
+    );
+    $id("cxRefreshGo").onclick = function () {
+      try {
+        H.reload && H.reload();
+      } catch (e) {}
+    };
+    $id("cxRefreshX").onclick = function () {
+      var el = $id("cxRefresh");
+      if (el) el.remove();
+    };
+  };
   // One pass per frame at most, and never postponed by spring counters ticking.
   var decoPending = false;
   var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";

@@ -3,6 +3,7 @@ import {
   codexAbilitiesFor,
   codexCanon,
   codexCastName,
+  CODEX_BASELINE,
   isCodexRelation,
   mergeAbilitiesWithCodex,
   mergeRelationsWithCodex,
@@ -63,5 +64,26 @@ describe("Codex canon shared by every UI style", () => {
       "a parent z: Father",
       "z rival a: Defeated his father",
     ]);
+  });
+
+  it("keeps ties staff add after the canon baseline, in every style", () => {
+    const people = [
+      { id: "z", name: "Zayn Hayes" },
+      { id: "a", name: "Agnus El-Mansur" },
+    ];
+    const after = new Date(Date.parse(CODEX_BASELINE) + 60_000).toISOString();
+    const before = new Date(Date.parse(CODEX_BASELINE) - 60_000).toISOString();
+    const row = (id: string, created_at: string) => ({
+      id,
+      source_id: "z",
+      target_id: "a",
+      rel: "ally",
+      label: "Staff note",
+      created_at,
+    });
+    const out = mergeRelationsWithCodex([row("old", before), row("new", after)], people);
+    expect(out.find((r) => r.id === "old")).toBeUndefined();
+    expect(out.find((r) => r.id === "new")).toBeTruthy();
+    expect(out.some((r) => isCodexRelation(r))).toBe(true);
   });
 });

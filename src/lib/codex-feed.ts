@@ -1,6 +1,6 @@
 import { isFamilyRel } from "@/lib/family";
 import { resolveCharacterStatusTimeline } from "@/lib/status-history";
-import { codexCastName } from "@/lib/codex-canon";
+import { codexCastName, isFreshArchiveRow } from "@/lib/codex-canon";
 import { lookupAbility } from "@/lib/abilities";
 import {
   ABILITY_RANK_META,
@@ -56,6 +56,8 @@ export interface CodexFeedBond {
   /** Raw archive bond type: rival, mentor, ally, commands, kin, parent, sibling, spouse, ancestor... */
   rel: string;
   label?: string | undefined;
+  /** Made after the canon baseline: a staff edit, shown even where the Codex has its own tie. */
+  fresh?: boolean | undefined;
 }
 export interface CodexFeedGroup {
   name: string;
@@ -160,6 +162,8 @@ export interface CodexSeriesInput {
   season_names?: string[] | null;
 }
 export interface CodexRelationInput {
+  id?: string;
+  created_at?: string | null;
   source_id: string;
   target_id: string;
   rel: string;
@@ -437,7 +441,13 @@ export function buildCodexFeed({
       const k = `${a}|${rel}|${b}`;
       if (bondSeen.has(k) || bonds.length >= 1500) continue;
       bondSeen.add(k);
-      bonds.push({ a, b, rel: clip(rel, 30), label: clip(r.label, 120) || undefined });
+      bonds.push({
+        a,
+        b,
+        rel: clip(rel, 30),
+        label: clip(r.label, 120) || undefined,
+        fresh: isFreshArchiveRow(r) || undefined,
+      });
     }
     const members = new Map<string, string[]>();
     for (const m of memberships) {

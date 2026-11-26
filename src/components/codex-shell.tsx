@@ -28,6 +28,7 @@ type CodexHost = {
   ready: () => void;
   motion: boolean;
   badge?: boolean;
+  reload?: () => void;
 };
 
 declare global {
@@ -72,6 +73,19 @@ const abilityRanksQuery = {
     return data ?? [];
   },
 };
+
+/** What the Codex merges at boot: any change here means the frame should reload. */
+function bootSignature(f: CodexFeed): string {
+  const parts: string[] = [];
+  for (const c of f.characters)
+    parts.push(`${c.name}|${c.codex ?? ""}|${c.aliases.join(",")}|${c.desc ?? ""}`);
+  for (const a of f.abilities) parts.push(`${a.name}|${a.holders.join(",")}|${a.group ?? ""}`);
+  for (const s of f.series) parts.push(`${s.title}|${s.seasons.join(",")}`);
+  let h = 5381;
+  const str = parts.join("\n");
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return `${parts.length}:${h}`;
+}
 
 const LAST_TAB_KEY = "scu-codex-last-path";
 
@@ -164,12 +178,26 @@ export function CodexStage() {
   const [bootTab, setBootTab] = useState("home");
   const [frameKey, setFrameKey] = useState(0);
   /** What the frame merged at boot; more archive data later triggers one quiet reload. */
-  const bootSig = useRef<{ chars: number; abilities: number; series: number } | null>(null);
-  const reloads = useRef(0);
+  const bootSig = useRef<string | null>(null);
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
   const tabRef = useRef(tab);
   tabRef.current = tab;
+  const reloadFrame = useCallback(() => {
+    let hashTab = tabRef.current ?? "home";
+    try {
+      const h = frameRef.current?.contentWindow?.location.hash ?? "";
+      const m = /^#\/(\w+)/.exec(h);
+      if (m?.[1]) hashTab = m[1];
+    } catch {
+      /* same-origin frame; ignore if unavailable */
+    }
+    const f = window.__SCU_CODEX_FEED__;
+    bootSig.current = f ? bootSignature(f) : "";
+    setLoaded(false);
+    setBootTab(hashTab);
+    setFrameKey((k) => k + 1);
+  }, []);
 
   // Remember the last Codex page so "Back to Codex" returns to it.
   useEffect(() => {
@@ -219,10 +247,13 @@ export function CodexStage() {
       },
       setMode: switchMode,
       ready: () => setLoaded(true),
+      reload: () => reloadFrame(),
       // Lovable-hosted addresses overlay an "Edit with Lovable" badge at the bottom right.
-      badge: /(^|\.)(lovable\.app|lovable\.dev|lovableproject\.com)$/.test(window.location.hostname),
+      badge: /(^|\.)(lovable\.app|lovable\.dev|lovableproject\.com)$/.test(
+        window.location.hostname,
+      ),
     };
-  }, [enabled, motionActive, router, switchMode]);
+  }, [enabled, motionActive, router, switchMode, reloadFrame]);
 
   useEffect(() => {
     if (!enabled) {
@@ -235,9 +266,7 @@ export function CodexStage() {
     if (mounted) return;
     const boot = () => {
       const f = window.__SCU_CODEX_FEED__;
-      bootSig.current = f
-        ? { chars: f.characters.length, abilities: f.abilities.length, series: f.series.length }
-        : { chars: 0, abilities: 0, series: 0 };
+      bootSig.current = f ? bootSignature(f) : "";
       setBootTab(tabRef.current ?? "home");
       setMounted(true);
     };
@@ -251,34 +280,24 @@ export function CodexStage() {
     return () => window.clearTimeout(t);
   }, [enabled, settled, feed, mounted]);
 
-  // Characters, abilities and series are merged when the Codex boots. If more arrive after
-  // that, reload the frame once at the same page so nothing from the archive is missing.
+  // Characters, abilities and series are merged when the Codex boots. When any of them change
+  // in the archive (a rename, new holders, a new season title...), the Codex reloads at the same
+  // page: silently while it is hidden, or after the reader taps Refresh while they are using it.
   useEffect(() => {
-    if (!mounted || !loaded || !feed || !bootSig.current || reloads.current >= 2) return;
-    const b = bootSig.current;
-    const more =
-      feed.characters.length > b.chars ||
-      feed.abilities.length > b.abilities ||
-      feed.series.length > b.series;
-    if (!more) return;
-    reloads.current += 1;
-    let hashTab = tabRef.current ?? "home";
-    try {
-      const h = frameRef.current?.contentWindow?.location.hash ?? "";
-      const m = /^#\/(\w+)/.exec(h);
-      if (m?.[1]) hashTab = m[1];
-    } catch {
-      /* cross-document access is same-origin; ignore if unavailable */
+    if (!mounted || !loaded || !feed || bootSig.current === null) return;
+    if (bootSignature(feed) === bootSig.current) return;
+    if (!visible) {
+      reloadFrame();
+      return;
     }
-    bootSig.current = {
-      chars: feed.characters.length,
-      abilities: feed.abilities.length,
-      series: feed.series.length,
-    };
-    setLoaded(false);
-    setBootTab(hashTab);
-    setFrameKey((k) => k + 1);
-  }, [mounted, loaded, feed]);
+    const win = frameRef.current?.contentWindow as
+      (CodexFrameWindow & { __codexOfferRefresh?: () => void }) | null | undefined;
+    try {
+      win?.__codexOfferRefresh?.();
+    } catch {
+      /* frame navigating */
+    }
+  }, [mounted, loaded, feed, visible, reloadFrame]);
 
   // App URL changed (back button, links) -> move the Codex to the matching tab.
   useEffect(() => {

@@ -25,12 +25,24 @@ export interface CodexCanonGroup {
   leaves: string[];
 }
 export interface CodexCanon {
+  /** Archive ties created after this moment are staff edits and win in every style. */
+  baselineAt?: string;
   cast: CodexCanonCharacter[];
   groups: CodexCanonGroup[];
   bonds: { a: string; b: string; type: string; label: string }[];
 }
 
 const CANON = canonData as CodexCanon;
+export const CODEX_BASELINE = CANON.baselineAt ?? "1970-01-01T00:00:00.000Z";
+
+/** True for archive rows made after the canon baseline (staff edits): they show in every style. */
+export function isFreshArchiveRow(row: { id?: string; created_at?: string | null }): boolean {
+  return (
+    !!row.created_at &&
+    !String(row.id ?? "").startsWith("codex:") &&
+    row.created_at > CODEX_BASELINE
+  );
+}
 
 const key = (s: string) => canonicalCharacterName(s);
 const abilityKey = (s: string) => resolveAbilityAliasPure(s.replace(/\*$/, ""));
@@ -171,6 +183,9 @@ export function mergeRelationsWithCodex<T extends RelationRow>(
       created_at: "1970-01-01T00:00:00.000Z",
     });
   });
-  const kept = rows.filter((r) => !covered.has(pair(r.source_id, r.target_id)));
+  // Older archive rows for Codex pairs were the wrong data; newer ones are staff edits and stay.
+  const kept = rows.filter(
+    (r) => !covered.has(pair(r.source_id, r.target_id)) || isFreshArchiveRow(r),
+  );
   return [...codexRows, ...kept];
 }
