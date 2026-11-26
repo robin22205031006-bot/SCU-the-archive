@@ -1973,13 +1973,20 @@
         el.classList.add("cx-in");
       }
     }
+    // Cards rise in only when a page is first shown, never on redraws within it (filtering,
+    // assigning, toggling), so lists never blank out while you use them.
+    var staggeredTab = null;
     if (typeof render === "function") {
       var _rvfx = render;
       // eslint-disable-next-line no-global-assign
       render = function () {
         _rvfx.apply(this, arguments);
         var v = $id("view");
-        if (v && !render.keep) stagger(v, 28);
+        var cur = typeof tab !== "undefined" ? tab : "";
+        if (v && !render.keep && cur !== staggeredTab) {
+          staggeredTab = cur;
+          stagger(v, 24);
+        }
       };
     }
     // detail sections cascade in whenever a new sheet is drawn
