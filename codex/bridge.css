@@ -149,3 +149,30 @@ html[data-motion="off"] .cxw-spin{animation:none}
 .cxrel-g{margin-top:8px}
 .cxrel-g small{display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 .cxmask{margin-top:12px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel2)}
+
+/* ---- status history chain ---- */
+.cxst{margin-top:18px}
+.cxst-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cxst-h h4{margin:0}
+.cxst-now{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+.cxst-now i{width:8px;height:8px;border-radius:50%;background:var(--tc)}
+.tone-alive{--tc:#4FCB97}.tone-dead{--tc:#F05A66}.tone-presumed{--tc:#E47A5C}.tone-missing{--tc:#E9B84F}.tone-sealed{--tc:#A88BEA}.tone-retired{--tc:#9AA7C7}.tone-other{--tc:var(--muted)}
+.cxst-chain{list-style:none;margin:10px 0 0;padding:6px 2px 8px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity}
+.cxst-chain::-webkit-scrollbar{display:none}
+.cxst-step{position:relative;flex:none;display:flex;align-items:flex-start;scroll-snap-align:start;animation:cxRise 520ms var(--cx-spring) both;animation-delay:min(calc(var(--i) * 60ms),600ms)}
+.cxst-link{flex:none;width:28px;height:2px;margin-top:21px;background:linear-gradient(90deg,var(--line),var(--tc));transform-origin:0 50%;animation:cxDraw 600ms var(--cx-soft) both;animation-delay:min(calc(var(--i) * 60ms + 80ms),680ms)}
+.cxst-step.chg .cxst-link{height:3px;background:linear-gradient(90deg,var(--line),var(--tc));box-shadow:none}
+@keyframes cxDraw{from{transform:scaleX(0)}to{transform:none}}
+.cxst-node{display:grid;justify-items:center;gap:2px;min-width:84px;max-width:120px;padding:6px 6px;border:0;border-radius:12px;background:none;color:inherit;text-align:center;transition:transform 360ms var(--cx-spring),background-color 150ms}
+button.cxst-node{cursor:pointer}
+button.cxst-node:hover{background:var(--panel2)}
+button.cxst-node:active{transform:scale(.95)}
+button.cxst-node:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+.cxst-gem{width:16px;height:16px;margin:4px 0 4px;transform:rotate(45deg);border-radius:3px;background:var(--tc);box-shadow:0 0 0 3px var(--panel2),0 0 0 4px color-mix(in srgb,var(--tc) 50%,transparent)}
+.cxst-step.chg .cxst-gem{animation:cxPulse 2.4s ease-in-out 2}
+@keyframes cxPulse{0%,100%{transform:rotate(45deg) scale(1)}50%{transform:rotate(45deg) scale(1.25)}}
+.cxst-node small{font-size:.7rem;color:var(--muted);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.cxst-node b{font-size:.84rem;color:var(--tc)}
+.cxst-from{font-style:normal;font-size:.7rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.cxst-step,.cxst-link,.cxst-gem{animation:none!important}}
+html[data-motion="off"] .cxst-step,html[data-motion="off"] .cxst-link,html[data-motion="off"] .cxst-gem{animation:none!important}

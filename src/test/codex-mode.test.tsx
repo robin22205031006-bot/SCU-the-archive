@@ -171,6 +171,36 @@ describe("Codex feed: spoiler mask, portraits and family", () => {
     expect(feed.dossiers).toEqual({});
   });
 
+  it("builds status history from the Nexus resolver and masks it with characters", () => {
+    const withHistory = [
+      {
+        id: "1",
+        name: "Ethan Thorne",
+        kind: "character",
+        status: "Alive",
+        stats: {
+          dossier: {
+            "s1:1": { status: "Alive" },
+            "s1:2": { status: "Dead" },
+          },
+        },
+      },
+    ];
+    const series2 = [{ id: "s1", title: "Sentinels", season_count: 2, season_names: [] }];
+    const feed = buildCodexFeed({ ...base, entities: withHistory, series: series2 });
+    const steps = feed.status["Ethan Thorne"]?.steps ?? [];
+    expect(steps.map((x) => x.status)).toEqual(["Alive", "Dead"]);
+    expect(steps[1]?.transition).toBe(true);
+    expect(steps[1]?.season).toBe("s1:2");
+    const masked = buildCodexFeed({
+      ...base,
+      entities: withHistory,
+      series: series2,
+      masked: { characters: true, abilities: false, archive: false, series: false },
+    });
+    expect(masked.status).toEqual({});
+  });
+
   it("accepts only real image URLs", () => {
     expect(safePortrait("data:image/png;base64,AAAA")).toBeTruthy();
     expect(safePortrait("https://example.com/a.png")).toBeTruthy();

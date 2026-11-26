@@ -730,7 +730,9 @@
       d.seasons
         .map(function (s, i) {
           return (
-            '<button class="cxr-p" role="tab" type="button" data-cxs="' +
+            '<button class="cxr-p" role="tab" type="button" data-key="' +
+            escH(s.key) +
+            '" data-cxs="' +
             i +
             '" aria-selected="' +
             (i === st.i) +
@@ -941,13 +943,97 @@
     });
     return out;
   }
+  function toneOf(st) {
+    var t = String(st || "").toLowerCase();
+    if (/presum/.test(t)) return "presumed";
+    if (/dead|deceased|killed|died/.test(t)) return "dead";
+    if (/missing|unknown/.test(t)) return "missing";
+    if (/seal/.test(t)) return "sealed";
+    if (/retir|inactive/.test(t)) return "retired";
+    if (/alive|active|return/.test(t)) return "alive";
+    return "other";
+  }
+  function statusFor(n) {
+    var f = feed();
+    if (!f || !f.status) return null;
+    if (f.status[n]) return f.status[n];
+    var map = window.__codexNameMap || {};
+    for (var app in map) if (map[app] === n && f.status[app]) return f.status[app];
+    return null;
+  }
+  function statusHTML(n) {
+    var tl = statusFor(n);
+    if (!tl || !tl.steps || !tl.steps.length) return "";
+    var changes = tl.steps.filter(function (x) {
+      return x.transition;
+    }).length;
+    return (
+      '<section class="sec cxst" aria-label="Status history"><div class="cxst-h"><h4>Status history</h4><span class="cxst-now tone-' +
+      toneOf(tl.current) +
+      '"><i></i>Now: ' +
+      escH(tl.current || "Unknown") +
+      "</span></div>" +
+      '<ol class="cxst-chain">' +
+      tl.steps
+        .map(function (x, i) {
+          var tag = x.season ? "button" : "div";
+          return (
+            "<li class=\"cxst-step tone-" +
+            toneOf(x.status) +
+            (x.transition ? " chg" : "") +
+            '" style="--i:' +
+            i +
+            '">' +
+            (i ? '<span class="cxst-link" aria-hidden="true"></span>' : "") +
+            "<" +
+            tag +
+            ' class="cxst-node"' +
+            (x.season ? ' type="button" data-cxseason="' + escH(x.season) + '"' : "") +
+            ' title="' +
+            escH(x.label) +
+            '"><span class="cxst-gem" aria-hidden="true"></span><small>' +
+            escH(x.short) +
+            "</small><b>" +
+            escH(x.status) +
+            "</b>" +
+            (x.transition && x.from
+              ? '<em class="cxst-from">from ' + escH(x.from) + "</em>"
+              : "") +
+            "</" +
+            tag +
+            "></li>"
+          );
+        })
+        .join("") +
+      "</ol>" +
+      '<p class="note">' +
+      (changes
+        ? changes + " status change" + (changes === 1 ? "" : "s") + " recorded."
+        : "No status change recorded.") +
+      (tl.steps.some(function (x) {
+        return x.season;
+      }) && document.querySelector("#sheet .cxd")
+        ? " Tap a season to open it in the dossier."
+        : "") +
+      "</p></section>"
+    );
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("[data-cxseason]") : null;
+    if (!b) return;
+    var pill = document.querySelector('#sheet .cxr-p[data-key="' + CSS.escape(b.dataset.cxseason) + '"]');
+    if (!pill) return;
+    pill.click();
+    var box = document.querySelector("#sheet .cxd");
+    if (box) box.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+  });
   function paintSheetExtras(name) {
     var sheet = $id("sheet");
-    if (!sheet || sheet.querySelector(".sealedbox") || sheet.querySelector(".cxrel")) return;
+    if (!sheet || sheet.querySelector(".sealedbox") || sheet.querySelector(".cxrel,.cxst,.cxmask")) return;
     var f = feed();
     var anchor = sheet.querySelector(".cxd") || sheet.querySelector(".desc");
     if (!anchor) return;
-    var html = "";
+    var html = statusHTML(name);
     var groups = relationsFor(name);
     if (groups.length) {
       html +=

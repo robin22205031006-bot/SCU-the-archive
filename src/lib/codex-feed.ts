@@ -1,4 +1,5 @@
 import { isFamilyRel } from "@/lib/family";
+import { resolveCharacterStatusTimeline } from "@/lib/status-history";
 import {
   buildSeasonCompareOptions,
   readDossier,
@@ -26,6 +27,15 @@ export interface CodexFeedRelation {
   a: string;
   b: string;
   rel: "parent" | "sibling" | "spouse" | "ancestor";
+}
+export interface CodexFeedStatusStep {
+  label: string;
+  short: string;
+  status: string;
+  from?: string | undefined;
+  transition: boolean;
+  /** Dossier key ("seriesId:n") when the step is a season, so the Codex can jump to it. */
+  season?: string | undefined;
 }
 export interface CodexFeedMask {
   characters: boolean;
@@ -73,6 +83,8 @@ export interface CodexFeed {
   abilities: CodexFeedAbility[];
   dossiers: Record<string, { seasons: CodexFeedSeason[] }>;
   relations: CodexFeedRelation[];
+  /** Status history per character, from the same resolver the Nexus timeline uses. */
+  status: Record<string, { current: string; steps: CodexFeedStatusStep[] }>;
   /** Shared spoiler mask. Masked scopes are removed from the feed itself, not just hidden. */
   masked: CodexFeedMask;
 }
@@ -81,6 +93,7 @@ export interface CodexEntityInput {
   id?: string;
   name: string;
   image_url?: string | null;
+  status?: string | null;
   kind?: string | undefined;
   alias?: string | null;
   role?: string | null;
@@ -197,6 +210,7 @@ export function buildCodexFeed({
   const dossiers: CodexFeed["dossiers"] = {};
   const holders = new Map<string, string[]>();
   const nameById = new Map<string, string>();
+  const statusOut: CodexFeed["status"] = {};
   for (const e of entities) {
     if (e.kind && e.kind !== "character") continue;
     const name = e.name?.trim();
@@ -221,6 +235,26 @@ export function buildCodexFeed({
     }
     const seasons = masked.series ? [] : codexSeasonsFor(e.stats, series);
     if (seasons.length) dossiers[name] = { seasons };
+    if (!masked.series) {
+      const tl = resolveCharacterStatusTimeline({
+        entity: { id: e.id ?? name, name, status: e.status ?? null, stats: e.stats },
+        seriesList: series,
+      });
+      if (tl.steps.length > 1 || tl.transitions.length) {
+        statusOut[name] = {
+          current: clip(tl.currentStatus, 40),
+          steps: tl.steps.slice(0, 40).map((st) => ({
+            label: clip(st.label, 80),
+            short: clip(st.shortLabel, 40),
+            status: clip(st.status, 40),
+            from: clip(st.fromStatus, 40) || undefined,
+            transition: st.isTransition,
+            season:
+              st.seriesId && st.seasonNumber ? `${st.seriesId}:${st.seasonNumber}` : undefined,
+          })),
+        };
+      }
+    }
   }
   const seen = new Set<string>();
   const abilityOut: CodexFeedAbility[] = [];
@@ -253,6 +287,7 @@ export function buildCodexFeed({
     abilities: abilityOut,
     dossiers,
     relations: rels,
+    status: statusOut,
     masked,
   };
 }
