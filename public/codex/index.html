@@ -2555,6 +2555,8 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
 @media (prefers-reduced-motion:reduce){.cx-rk,.cx-rk.rk5::after{animation:none!important}}
 html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animation:none!important}
 
+.cxd-empty{margin:0 0 10px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel)}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -3132,6 +3134,16 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
           '">' +
           avg +
           "</b></span></div>" +
+          (!s.stats.some(function (x) {
+            return x.value > 0;
+          }) &&
+          !(s.profiles || []).some(function (p) {
+            return p.stats.some(function (x) {
+              return x.value > 0;
+            });
+          })
+            ? '<p class="note cxd-empty" role="status">No stats are recorded for this character yet, so every gauge reads zero. Staff set them in the Nexus dossier, and they appear here at once.</p>'
+            : "") +
           wheelHTML(s) +
           '<div class="cxd-stats' +
           (cmp && prev ? " cmp" : "") +

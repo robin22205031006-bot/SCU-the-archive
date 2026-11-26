@@ -255,3 +255,5 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
 .cxc-i{position:relative}
 @media (prefers-reduced-motion:reduce){.cx-rk,.cx-rk.rk5::after{animation:none!important}}
 html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animation:none!important}
+
+.cxd-empty{margin:0 0 10px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel)}

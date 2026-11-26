@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, GitBranch, Link2, Swords, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
+import { isCodexRelation } from "@/lib/codex-canon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -251,6 +252,10 @@ export function ClanGraph() {
   };
 
   const removeLink = async (id: string) => {
+    if (isCodexRelation({ id })) {
+      toast.info("This tie comes from the Codex canon, so it is read-only here.");
+      return;
+    }
     const { error } = await supabase.from("entity_relations").delete().eq("id", id);
     if (error) toast.error(error.message);
     else {

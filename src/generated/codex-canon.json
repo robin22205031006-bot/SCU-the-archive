@@ -1,0 +1,2810 @@
+{
+ "cast": [
+  {
+   "name": "Ethan Thorne",
+   "realName": "Robin",
+   "codename": "Gale Warden",
+   "bloodline": "Zaan’s line (mother), Khalid’s line (father)",
+   "desc": "Aerokinesis: control of air, wind and pressure, fought through techniques like Windstep, Gale Guard, Pressure Break and Sky Rend. Wind Guardian mode manifests for the first time in the final fight against Isaac. In Season 1 he never used wind as a weapon: he saw it as a friend. From Season 5 he runs both engines at once, polite and savage together.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Elizah",
+   "realName": "Robin",
+   "codename": "Omen",
+   "bloodline": "Zaan’s line (mother), Khalid’s line (father)",
+   "desc": "Hemokinesis: complete control of blood as fuel, weapon, armor and memory, including Sanguine Shift (moving through his own blood) and blood constructs. Ethan’s alter ego, built in a lonely, bullied childhood. For a time he lived in a clone of Ethan’s body, which he kept alive by pushing blood through it himself. His blueprint always lives inside Ethan.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Zayn Hayes",
+   "realName": "Jubayer",
+   "codename": "Duskblade, Black Knight",
+   "bloodline": "El-Mansur (elder son of Agnus)",
+   "desc": "Astrapo-Electrokinesis: electricity, lightning and thunder. Red lightning (Crimson Astrapo), inherited from Dorian, as his execution mode.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Xinea",
+   "realName": "Marufa",
+   "codename": "Nyxia",
+   "bloodline": "Balance host",
+   "desc": "Aether Dominion: control of the layer between matter and soul. Phasing, soul-touch and void erasure. Her early healing and fire were leaks of Aether.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Valeria",
+   "realName": "Nawshin",
+   "codename": "Ravenblade",
+   "bloodline": "Al-Ahd",
+   "desc": "Peak human assassin: Shadow Step, silent movement and the finest sword in the SCU. An incorruptible mind. Later wields Kara Yazgı.",
+   "group": "redline"
+  },
+  {
+   "name": "Nilanjona",
+   "realName": "Nisha",
+   "codename": "Velonda",
+   "bloodline": "Nezha (Vethara)",
+   "desc": "Hydrokinesis: water’s flow, pressure and state. Stronger near water and with a calm mind. Accepts the Water Guardian’s path.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Grace",
+   "realName": "Ela",
+   "codename": "Bearer of Athena’s Judgement",
+   "bloodline": "None (chosen by the Aldercrest Pendant)",
+   "desc": "Divine Healing (Aegis of Mercy) and Athena’s Judgement, the Golden Eye: a court that weighs absolute moral weight. Holder of the light core.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Weston Hale",
+   "realName": "Rafi",
+   "codename": "",
+   "bloodline": "El-Mansur and unknown",
+   "desc": "White Lightning Drive: kinetic speed that stacks momentum and exists only while he moves.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Damian Brown",
+   "realName": "Rohan",
+   "codename": "Arcane Tactician",
+   "bloodline": "Aldercrest",
+   "desc": "Strategy and Aldercrest spellcasting.",
+   "group": "redline"
+  },
+  {
+   "name": "Rowan Colloway",
+   "realName": "Fahad",
+   "codename": "Red Saint",
+   "bloodline": "Duskmoor",
+   "desc": "Red Flame Fist and super strength, then the Duskmoor flame, then earth.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Ayaan Siddique",
+   "realName": "Ayman",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Tech genius and tech support. His mind is his weapon, the seed of Echogrim.",
+   "group": "redline"
+  },
+  {
+   "name": "Samuel Sterling",
+   "realName": "Sammam",
+   "codename": "Ghost-01",
+   "bloodline": "None",
+   "desc": "Peak-human super-soldier with no powers: Ghost Sense awareness, extreme endurance, a hardened tie as a weapon, and anything else as a weapon.",
+   "group": "redline"
+  },
+  {
+   "name": "David (Dawood)",
+   "realName": "Tamim",
+   "codename": "Dagger Wolf",
+   "bloodline": "El-Mansur (younger son of Agnus)",
+   "desc": "Psychokinetic dagger mastery through the Call of Sharpness. Opens short-range portals with his daggers.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Maliha",
+   "realName": "Luba",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Healing and hand-to-hand combat.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Nur",
+   "realName": "Nur",
+   "codename": "",
+   "bloodline": "Demon Clan",
+   "desc": "Blood Magic that fuels, summons, binds and extends life, which he refuses to use. Carries Iqaris’s soul essence.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Aariz Maddox",
+   "realName": "Ariyan",
+   "codename": "",
+   "bloodline": "Beast Clan",
+   "desc": "Bestiakinesis and hyperkinesis: speaks with and becomes animals, with heightened senses. Gains a mythical beast’s power after defeating it.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Saya",
+   "realName": "Nusrat",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Long-range weapons specialist raised in DEW. Valeria’s heir in skill, later holder of Kara Yazgı and heir to Anna’s sword.",
+   "group": "redline"
+  },
+  {
+   "name": "Nytheris",
+   "realName": "Madhobi",
+   "codename": "The Nature Guardian",
+   "bloodline": "Elf Clan",
+   "desc": "The Nature Guardian, present across eras.",
+   "group": "legends"
+  },
+  {
+   "name": "Amaya",
+   "realName": "Humayra",
+   "codename": "Disciple of the Nature Guardian",
+   "bloodline": "None",
+   "desc": "Acidic poison in mist, streams and vapor. The only winged character in the SCU.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Yoshiko Arashi",
+   "realName": "Shakti",
+   "codename": "",
+   "bloodline": "Kara, Kurohana clan (daughter of Arashi)",
+   "desc": "Chaos and Order (Forward and Break commands), Shishōjutsu corpse control through ofuda, and a full weapon set.",
+   "group": "redline"
+  },
+  {
+   "name": "Derek Miles",
+   "realName": "Rifat",
+   "codename": "Vanguard-X",
+   "bloodline": "None",
+   "desc": "The first Ichor subject: human strength and speed at full output, faster recovery, and the Vanguard Pistol.",
+   "group": "redline"
+  },
+  {
+   "name": "Dorian Cross",
+   "realName": "John",
+   "codename": "",
+   "bloodline": "El-Mansur genes (rejected the name)",
+   "desc": "Red lightning, the last carrier of it, which disrupts blood art. Elite battle IQ.",
+   "group": "legends"
+  },
+  {
+   "name": "Eldrich Aldercrest",
+   "realName": "Liam",
+   "codename": "",
+   "bloodline": "Aldercrest",
+   "desc": "Aldercrest magic. Cursed by Khalid. Stole the Architect Cube back from Agnus and gave it to Zaan.",
+   "group": "legends"
+  },
+  {
+   "name": "Norman",
+   "realName": "Norman",
+   "codename": "The Paleborn",
+   "bloodline": "Demon Clan (turned)",
+   "desc": "Cursed vampire: strength, speed, regeneration, predator senses, partial shapeshifting and mass nightmare control.",
+   "group": "villains"
+  },
+  {
+   "name": "Agnus El-Mansur",
+   "realName": "Agnus",
+   "codename": "Dread Walker",
+   "bloodline": "El-Mansur",
+   "desc": "Qahr al-Wujud, making existence obey his will, and the Call of Sharpness, blades as authority. Guarded the Architect Cube for a long time.",
+   "group": "legends"
+  },
+  {
+   "name": "Silas Duskmoor",
+   "realName": "Silas",
+   "codename": "Seraph of the Ash, Dragon Slayer",
+   "bloodline": "Duskmoor (son of Tedmond)",
+   "desc": "The Blue Flame, which burns only corrupted souls. Explosive, full-commitment fighting.",
+   "group": "legends"
+  },
+  {
+   "name": "Marcello Corvani",
+   "realName": "Corvani",
+   "codename": "The Whale",
+   "bloodline": "None",
+   "desc": "No powers: stubbornness, leadership and mercy. Founded Redline’s team.",
+   "group": "redline"
+  },
+  {
+   "name": "Kensho Arashi",
+   "realName": "Arashi",
+   "codename": "Blind Blade",
+   "bloodline": "Kara, Kurohana clan (Wrath)",
+   "desc": "Blind swordsmanship that keeps improving. Taught Valeria’s sword philosophy and trained Mashiho.",
+   "group": "kara"
+  },
+  {
+   "name": "Anna",
+   "realName": "Anna",
+   "codename": "Anna la Sarta",
+   "bloodline": "Al-Ahd (elder daughter of Ramiz)",
+   "desc": "Peak human. Faced super beings without fear and won. Her ancestral sword passes through chosen heirs.",
+   "group": "legends"
+  },
+  {
+   "name": "Issabela",
+   "realName": "Issabela",
+   "codename": "Zaynab",
+   "bloodline": "Al-Ahd (younger daughter of Ramiz)",
+   "desc": "Led the Nullborn Rome cell; later a detached assassin.",
+   "group": "legends"
+  },
+  {
+   "name": "Anthony",
+   "realName": "Anthony",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Rebuilt the Nullborn. His preserved essence was placed inside Derek Miles.",
+   "group": "legends"
+  },
+  {
+   "name": "Joe Rainer",
+   "realName": "Billy",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Not recorded in the files.",
+   "group": "sentinels"
+  },
+  {
+   "name": "William Victor",
+   "realName": "Victor",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Scientist and HWKS veteran. Co-founded ECAP; his formula is the base of the A-IV serum.",
+   "group": "others"
+  },
+  {
+   "name": "Stitch",
+   "realName": "Stitch",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "HWKS veteran and strategist who co-founded ECAP and turned the Old Order into DEW. Alt David’s partner in name only: each used the other, and each knew the other might end him.",
+   "group": "villains"
+  },
+  {
+   "name": "Kazumi",
+   "realName": "Kurahana",
+   "codename": "",
+   "bloodline": "Kara, Kurohana clan (daughter of Arashi)",
+   "desc": "Trained by elite killers inside the Kurohana.",
+   "group": "kara"
+  },
+  {
+   "name": "Ramiz Al-Ahd",
+   "realName": "Ramiz",
+   "codename": "",
+   "bloodline": "Al-Ahd",
+   "desc": "Nullborn spy and Architect Cube guardian. Father of Anna and Issabela.",
+   "group": "legends"
+  },
+  {
+   "name": "Soa Aldercrest",
+   "realName": "Soa",
+   "codename": "Fallen Goddess",
+   "bloodline": "Aldercrest",
+   "desc": "Held Athena’s Judgement before Grace.",
+   "group": "legends"
+  },
+  {
+   "name": "Elina Quins",
+   "realName": "Elina",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Eldrich’s love. No powers recorded.",
+   "group": "legends"
+  },
+  {
+   "name": "Pristine",
+   "realName": "Elizabeth Pristine",
+   "codename": "Prismorph",
+   "bloodline": "Demon Clan and Dragonic (Khalid and Freya)",
+   "desc": "Prismorph: real-time adaptive shapeshifting, speed over force. Twin Ascension when both bloodlines awaken.",
+   "group": "villains"
+  },
+  {
+   "name": "Arzuna",
+   "realName": "Arzuna",
+   "codename": "The Blue Lament (unofficial)",
+   "bloodline": "None",
+   "desc": "Unique vampiric hybrid with Blood Resonance, inheriting echoes of bonded people’s gifts. Azure Revenant State.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Arthur",
+   "realName": "Arthur",
+   "codename": "",
+   "bloodline": "Dragonic (son of Freya and Gabriel)",
+   "desc": "Pure dragon physiology: monstrous strength, dragon-scale durability and fast regeneration.",
+   "group": "villains"
+  },
+  {
+   "name": "Gabriel",
+   "realName": "Gabriel",
+   "codename": "",
+   "bloodline": "Dragonic",
+   "desc": "Dragon.",
+   "group": "villains"
+  },
+  {
+   "name": "Freya",
+   "realName": "Freya",
+   "codename": "Queen of Destruction",
+   "bloodline": "Dragonic",
+   "desc": "Dragon, once a near-undefeated hero of the beast realm.",
+   "group": "legends"
+  },
+  {
+   "name": "Niharo",
+   "realName": "Niharo",
+   "codename": "Hell Walker",
+   "bloodline": "Vethara prophecy child",
+   "desc": "Omni-Ergon: absorbs, stores, converts and releases any energy, as the vessel of all elements.",
+   "group": "villains"
+  },
+  {
+   "name": "Alt Ethan",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Alternate timeline",
+   "desc": "The alternate Ethan, the most moral man turned threat.",
+   "group": "alt"
+  },
+  {
+   "name": "Alt Rowan",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Alternate timeline",
+   "desc": "The alternate Rowan, killed by Rowan and Samuel.",
+   "group": "alt"
+  },
+  {
+   "name": "Alt Weston",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Alternate timeline",
+   "desc": "The alternate Weston, a Covenant prisoner who dies of extreme aging.",
+   "group": "alt"
+  },
+  {
+   "name": "Alt Zayn",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Alternate timeline",
+   "desc": "The alternate Zayn, manipulated by Asetra.",
+   "group": "alt"
+  },
+  {
+   "name": "Alt Xinea",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Alternate timeline",
+   "desc": "The alternate Xinea.",
+   "group": "alt"
+  },
+  {
+   "name": "Alt David",
+   "realName": "",
+   "codename": "Leader of the Covenant",
+   "bloodline": "Alternate timeline",
+   "desc": "Architect of the Covenant, using Ethereal Splicing and the Aether siphon stone. He wants the Architect Cube to rewrite everyone’s memories into his own world’s versions.",
+   "group": "alt"
+  },
+  {
+   "name": "Evan Grant",
+   "realName": "Mubasshir",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Not recorded in the files.",
+   "group": "others"
+  },
+  {
+   "name": "Tedmond Duskmoor",
+   "realName": "Tedmond",
+   "codename": "Dragon Slayer",
+   "bloodline": "Duskmoor",
+   "desc": "The Blue Flame and raw skill. Spirit and dragon blood let him outlive normal humans.",
+   "group": "legends"
+  },
+  {
+   "name": "Mashiho Kurohana",
+   "realName": "Mashiho",
+   "codename": "",
+   "bloodline": "Kara, Kurohana clan (son of Pride)",
+   "desc": "Trained in exile by Arashi. Learns Kara curse-binding.",
+   "group": "kara"
+  },
+  {
+   "name": "Khalid",
+   "realName": "",
+   "codename": "Kelvan",
+   "bloodline": "Demon (through a Mephisto contract)",
+   "desc": "Abyssal Blood Dominion, living, corrupting blood, and Umbrakinesis, demonic shadow control.",
+   "group": "villains"
+  },
+  {
+   "name": "Asetra",
+   "realName": "",
+   "codename": "Formerly Jessy",
+   "bloodline": "Balance host",
+   "desc": "Atomokinesis, omniscience, oneirokinesis and psychological dominion. The most powerful being in the SCU.",
+   "group": "villains"
+  },
+  {
+   "name": "Isaac Ezekiel",
+   "realName": "",
+   "codename": "Leader of The Unwritten",
+   "bloodline": "None (human)",
+   "desc": "Genius intellect, technology and magic learned through sleep time jumps. Opens the void and jumps through time.",
+   "group": "villains"
+  },
+  {
+   "name": "Isaac’s father",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Weakened the realm seals.",
+   "group": "others"
+  },
+  {
+   "name": "Isaac’s mother",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Witch",
+   "desc": "Never taught her son witchcraft. Sold her soul to Mephisto to preserve his body.",
+   "group": "others"
+  },
+  {
+   "name": "Mira",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Isaac’s love in the HWKS era.",
+   "group": "others"
+  },
+  {
+   "name": "Mephisto",
+   "realName": "",
+   "codename": "The Deal-Maker",
+   "bloodline": "Demon",
+   "desc": "Contracts. He never lies, only chooses which truths to tell.",
+   "group": "villains"
+  },
+  {
+   "name": "Diablo",
+   "realName": "",
+   "codename": "Demon King",
+   "bloodline": "Demon",
+   "desc": "Led the Diablo Wars.",
+   "group": "villains"
+  },
+  {
+   "name": "Malachar",
+   "realName": "",
+   "codename": "Right Hand of the Devil",
+   "bloodline": "Demon",
+   "desc": "Strategy and calculation.",
+   "group": "villains"
+  },
+  {
+   "name": "Iqaris",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Demon",
+   "desc": "Witch arts, one of the few demons to master them.",
+   "group": "legends"
+  },
+  {
+   "name": "Zaan al-Murad",
+   "realName": "",
+   "codename": "The Cursed Prodigy",
+   "bloodline": "None",
+   "desc": "Revival science, blood regeneration, berserk strength and speed. Eldrich entrusted the Architect Cube to him.",
+   "group": "legends"
+  },
+  {
+   "name": "Shina Nasrin",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Zaan’s love.",
+   "group": "legends"
+  },
+  {
+   "name": "Ayesha Khatoon",
+   "realName": "",
+   "codename": "Grandma Ayesha",
+   "bloodline": "None",
+   "desc": "Sheltered Zaan and Shina.",
+   "group": "legends"
+  },
+  {
+   "name": "Raisa bint Khalid",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Time-based revival research.",
+   "group": "legends"
+  },
+  {
+   "name": "Rahim Ibn Suleiman",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Raisa’s husband.",
+   "group": "legends"
+  },
+  {
+   "name": "Mara Duskmoor",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Duskmoor (daughter of Tedmond)",
+   "desc": "Separates corruption from a person and burns only the corruption.",
+   "group": "legends"
+  },
+  {
+   "name": "Aeric Valenheart",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Kara",
+   "desc": "Cursed weapon crafting. Forged Kara Yazgı.",
+   "group": "kara"
+  },
+  {
+   "name": "Kael Agharri",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Vethara, Agharri fire clan",
+   "desc": "One of his bloodline’s most powerful warriors. Raised Niharo.",
+   "group": "legends"
+  },
+  {
+   "name": "Seren Kara",
+   "realName": "",
+   "codename": "Curse-Binder",
+   "bloodline": "Kara",
+   "desc": "Binds protective curses into buildings and objects.",
+   "group": "kara"
+  },
+  {
+   "name": "Francisco",
+   "realName": "",
+   "codename": "Nasab ibn Khalil",
+   "bloodline": "None",
+   "desc": "Nullborn operative, Khalid’s father.",
+   "group": "legends"
+  },
+  {
+   "name": "Mateo Cruz",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Regeneration through cancer fused with Ichor. His body learns from every death.",
+   "group": "redline"
+  },
+  {
+   "name": "Alistair Quinn",
+   "realName": "",
+   "codename": "The Joker",
+   "bloodline": "None",
+   "desc": "Genius strategist bound by a Mephisto smile clause.",
+   "group": "redline"
+  },
+  {
+   "name": "Eveline",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Alistair’s sister.",
+   "group": "others"
+  },
+  {
+   "name": "Raya",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Married into Aldercrest",
+   "desc": "Alistair’s love.",
+   "group": "others"
+  },
+  {
+   "name": "Arvin",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Peak human: para-commando, NSI training and master-level strategy.",
+   "group": "redline"
+  },
+  {
+   "name": "Sean Stone",
+   "realName": "",
+   "codename": "Maverick #1",
+   "bloodline": "None",
+   "desc": "Peak human. HWKS founder and the most dangerous man of his era.",
+   "group": "others"
+  },
+  {
+   "name": "Adrian Kessler",
+   "realName": "",
+   "codename": "Maverick #2",
+   "bloodline": "None",
+   "desc": "Peak human. Son of a corrupt chairperson; the man Stitch could never catch.",
+   "group": "others"
+  },
+  {
+   "name": "Maverick #3",
+   "realName": "",
+   "codename": "Maverick #3",
+   "bloodline": "None",
+   "desc": "Young, voiceless peak human who speaks through a device.",
+   "group": "redline"
+  },
+  {
+   "name": "Jada",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Not recorded in the files.",
+   "group": "sentinels"
+  },
+  {
+   "name": "Pride",
+   "realName": "",
+   "codename": "Sin of Pride",
+   "bloodline": "Kara, Kurohana clan",
+   "desc": "Eldest and strongest of the seven siblings.",
+   "group": "kara"
+  },
+  {
+   "name": "Greed",
+   "realName": "",
+   "codename": "Sin of Greed",
+   "bloodline": "Kara, Kurohana clan",
+   "desc": "Raised Kazumi on lies.",
+   "group": "kara"
+  },
+  {
+   "name": "Lust",
+   "realName": "",
+   "codename": "Sin of Lust",
+   "bloodline": "Kara, Kurohana clan",
+   "desc": "Defeated by Arashi.",
+   "group": "kara"
+  },
+  {
+   "name": "Sloth",
+   "realName": "",
+   "codename": "Sin of Sloth",
+   "bloodline": "Kara, Kurohana clan",
+   "desc": "Not recorded in the files.",
+   "group": "kara"
+  },
+  {
+   "name": "Envy",
+   "realName": "",
+   "codename": "Sin of Envy",
+   "bloodline": "Kara, Kurohana clan",
+   "desc": "Not recorded in the files.",
+   "group": "kara"
+  },
+  {
+   "name": "Gluttony",
+   "realName": "",
+   "codename": "Sin of Gluttony",
+   "bloodline": "Kara, Kurohana clan",
+   "desc": "Not recorded in the files.",
+   "group": "kara"
+  },
+  {
+   "name": "Kaizen",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Kara, Kurohana clan (son of Pride)",
+   "desc": "Not recorded yet.",
+   "group": "kara"
+  },
+  {
+   "name": "Isagi",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Kara, Kurohana clan (son of Pride)",
+   "desc": "Not recorded yet.",
+   "group": "kara"
+  },
+  {
+   "name": "Azwar",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Not recorded",
+   "desc": "Not recorded yet.",
+   "group": "beasts"
+  },
+  {
+   "name": "Azwain",
+   "realName": "",
+   "codename": "Prince of the Beast Realm",
+   "bloodline": "Beast Clan",
+   "desc": "Not recorded yet.",
+   "group": "beasts"
+  },
+  {
+   "name": "The Beast King",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Beast Clan",
+   "desc": "Not recorded yet.",
+   "group": "beasts"
+  },
+  {
+   "name": "Orion",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Not recorded",
+   "desc": "Not recorded yet.",
+   "group": "beasts"
+  },
+  {
+   "name": "Saya (Divine Beasts)",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Not recorded",
+   "desc": "Not recorded yet.",
+   "group": "beasts"
+  },
+  {
+   "name": "Maya",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Not recorded",
+   "desc": "Not recorded yet.",
+   "group": "beasts"
+  },
+  {
+   "name": "Graye",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Not recorded",
+   "desc": "Not recorded yet.",
+   "group": "beasts"
+  },
+  {
+   "name": "Ayesha (Khalid’s mother)",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Killed by her son in 1461 for the pendant fragment.",
+   "group": "legends"
+  },
+  {
+   "name": "Marco",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Core member of the Nullborn Rome cell. Killed by Khalid in 1461.",
+   "group": "legends"
+  },
+  {
+   "name": "Mehnaz",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Core member of the Nullborn Rome cell. Did not survive its collapse.",
+   "group": "legends"
+  },
+  {
+   "name": "Abdul",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Core member of the Nullborn Rome cell. Did not survive its collapse.",
+   "group": "legends"
+  },
+  {
+   "name": "Hassan",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A Nullborn keeper of knowledge about the seal, who chose death rather than give it to Khalid.",
+   "group": "legends"
+  },
+  {
+   "name": "Piedro",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A beggar turned renegade who stole Anna’s sword and was corrupted by it. Killed by Khalid.",
+   "group": "legends"
+  },
+  {
+   "name": "The Borgia (Rodrigo and Cesare)",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Took control of the Nullborn through a puppet leader until Anthony rebuilt it.",
+   "group": "legends"
+  },
+  {
+   "name": "Steven Aldercrest",
+   "realName": "",
+   "codename": "The Guardian",
+   "bloodline": "Aldercrest",
+   "desc": "Eldrich’s father and a Cube guardian, who passed the Architect Cube to Dorian: “Destiny needs rebellion, not perfection.”",
+   "group": "legends"
+  },
+  {
+   "name": "Abbas",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "One-legged leader of the Forgotten Ones who betrayed Zaan’s location for gold.",
+   "group": "legends"
+  },
+  {
+   "name": "Dirham",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Half-blind leader of the Forgotten Ones.",
+   "group": "legends"
+  },
+  {
+   "name": "Hisam",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A lonely village boy Zaan befriended with his last piece of bread.",
+   "group": "legends"
+  },
+  {
+   "name": "Mizan",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A young villager who admired Zaan, who meant to buy him new shoes.",
+   "group": "legends"
+  },
+  {
+   "name": "Raijan",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A young villager who admired Zaan.",
+   "group": "legends"
+  },
+  {
+   "name": "Shahdat",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A young villager who admired Zaan.",
+   "group": "legends"
+  },
+  {
+   "name": "Rahmat",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A young villager who admired Zaan.",
+   "group": "legends"
+  },
+  {
+   "name": "Arashi’s wife",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Assaulted by Lust and threatened into silence by the brothers; mother of Yoshiko and Kazumi.",
+   "group": "kara"
+  },
+  {
+   "name": "The former Wind Guardian",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Guardian",
+   "desc": "An arrogant Wind Guardian whom Ethan defeated at Yasnaya, the place Ethan was meant to rule.",
+   "group": "legends"
+  },
+  {
+   "name": "The Water Guardian",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Guardian",
+   "desc": "The guardian destined to mentor Nilanjona.",
+   "group": "legends"
+  },
+  {
+   "name": "The Sky Guardian",
+   "realName": "",
+   "codename": "",
+   "bloodline": "Guardian",
+   "desc": "Destroyed in Season 5 by the integrated Ethan and Elizah.",
+   "group": "villains"
+  },
+  {
+   "name": "Lucen Vale",
+   "realName": "",
+   "codename": "The Godspeed Anomaly",
+   "bloodline": "None",
+   "desc": "Product of DEW’s Velocity Genome Program, tied to Alt Weston’s cloning.",
+   "group": "villains"
+  },
+  {
+   "name": "Riven Creed",
+   "realName": "",
+   "codename": "Silent Node",
+   "bloodline": "None",
+   "desc": "Wears DEW’s Silent Node exosuit.",
+   "group": "villains"
+  },
+  {
+   "name": "Midory",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A later member of the Redline team. Little else is recorded.",
+   "group": "redline"
+  },
+  {
+   "name": "The HWKS vice captain",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Sean’s closest friend, bought by the network. Arranged Sean’s murder; executed by Maverick #2.",
+   "group": "others"
+  },
+  {
+   "name": "Adrian’s father",
+   "realName": "",
+   "codename": "The chairperson",
+   "bloodline": "None",
+   "desc": "A corrupt chairperson behind HWKS who sacrificed his favorite son.",
+   "group": "villains"
+  },
+  {
+   "name": "The third leader",
+   "realName": "",
+   "codename": "",
+   "bloodline": "The seven families",
+   "desc": "The seven families leader Corvani spared because of the child in his car, who later killed him.",
+   "group": "villains"
+  },
+  {
+   "name": "Corvani’s wife",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "Secretly guarded by Redline and Valeria after his death.",
+   "group": "redline"
+  },
+  {
+   "name": "Corvani’s son",
+   "realName": "",
+   "codename": "",
+   "bloodline": "None",
+   "desc": "A primary-school boy, secretly guarded by Redline and Valeria after his father’s death.",
+   "group": "redline"
+  },
+  {
+   "name": "Kaelor Ashvane",
+   "realName": "",
+   "codename": "The Oath-Warden",
+   "bloodline": "Cobra Houses (Indian Cobra)",
+   "desc": "Neurotoxic venom that paralyzes rather than destroys. He telegraphs every strike with a glowing hood-pulse around his arm: the warning means negotiation is over. The last ambassador to the Dragon Court.",
+   "group": "beasts"
+  },
+  {
+   "name": "Velmora Ishtaan",
+   "realName": "",
+   "codename": "The Veiled Regent",
+   "bloodline": "Cobra Houses (Monocled Cobra)",
+   "desc": "Dual neurotoxic and cytotoxic venom, but she almost never fights. Her intelligence network, the Watching Eye, dismantles threats before they arrive. The Beast Realm’s de facto highest civil authority.",
+   "group": "beasts"
+  },
+  {
+   "name": "Ophirion Drakhar",
+   "realName": "",
+   "codename": "The Hollow Crown",
+   "bloodline": "King Cobra (belongs to no house)",
+   "desc": "A towering apex snake-eater with a venom payload that could kill an elephant, who fights at full height. Offered the crown because the houses couldn’t safely oppose him.",
+   "group": "beasts"
+  },
+  {
+   "name": "Sethan Vael",
+   "realName": "",
+   "codename": "The Banded Judge",
+   "bloodline": "Krait Blood (Banded Krait)",
+   "desc": "Passive until he switches, then controlled neurotoxic sequences that disable motor functions in order. A Dragon Order-trained judge whose own law was exploited to destroy Hollowreed.",
+   "group": "beasts"
+  },
+  {
+   "name": "Viresh Kothar",
+   "realName": "",
+   "codename": "The Silent Bite",
+   "bloodline": "Krait Blood (Wall’s Krait)",
+   "desc": "Venom no one can predict a treatment for, and preparation so thorough the fight is the last step. The first to document the Viper Covenant, now working outside the system.",
+   "group": "beasts"
+  },
+  {
+   "name": "Sulhan Nightveil",
+   "realName": "",
+   "codename": "The Painless Death",
+   "bloodline": "Krait Blood (Common Krait)",
+   "desc": "A painless, progressively paralyzing venom. A former healer of the krait medical order who could make dying feel like release.",
+   "group": "beasts"
+  },
+  {
+   "name": "Ravek Stillfang",
+   "realName": "",
+   "codename": "The Patient Blade",
+   "bloodline": "Viper Covenant (Russell’s Viper)",
+   "desc": "Hemotoxic venom that turns the victim’s own blood against them, a figure-eight striking stance, and a viper’s heat sense that reads what every being desires.",
+   "group": "beasts"
+  }
+ ],
+ "groups": [
+  {
+   "name": "Aether Dominion",
+   "branch": "Aether",
+   "tier": "Godly",
+   "desc": "Control of the layer between matter and soul. The strongest ability in the SCU. Overuse brings numbness and detachment from reality.",
+   "holders": [
+    "Xinea"
+   ],
+   "leaves": [
+    "Phase Through Anything",
+    "Ignore Durability",
+    "Touch the Soul Directly",
+    "Aether Blades and Grips",
+    "Aether Step",
+    "Veilphase",
+    "Soul-Edge Touch",
+    "Void-Lace Bind",
+    "Aether Bloom",
+    "Stone Draw",
+    "Balance Requiem",
+    "Aether Sovereignty",
+    "Phase Erasure",
+    "Absolute Bypass",
+    "Void Manifest"
+   ]
+  },
+  {
+   "name": "Force Field",
+   "branch": "Aether",
+   "tier": "Godly",
+   "desc": "The suppressed form of her power while the siphon stone drained her. Shields in many shapes.",
+   "holders": [
+    "Xinea"
+   ],
+   "leaves": [
+    "Aegis Shell",
+    "Barrier Weave",
+    "Repulse Bloom",
+    "Pinpoint Guard",
+    "Silence Screen",
+    "Aegis Mantle",
+    "Vector Ramp",
+    "Prism Wall",
+    "Safehouse Dome"
+   ]
+  },
+  {
+   "name": "Early Leaks",
+   "branch": "Aether",
+   "tier": "Godly",
+   "desc": "Aether leaking under trauma before she understood it. To the world it looked like fire and healing.",
+   "holders": [
+    "Xinea"
+   ],
+   "leaves": [
+    "Redflare Surge",
+    "Ash Spiral",
+    "Scorch Veil",
+    "Ember Mend",
+    "Cinder Recovery"
+   ]
+  },
+  {
+   "name": "Athena’s Judgement",
+   "branch": "Judgement",
+   "tier": "Godly",
+   "desc": "The Golden Eye: it judges absolute moral weight, not the story anyone tells. It costs its bearer empathy, sleep and identity.",
+   "holders": [
+    "Grace"
+   ],
+   "leaves": [
+    "Judicium Aureum",
+    "Lex Ultima",
+    "Scales of Ruin",
+    "Absolution Light",
+    "Judgement Wave",
+    "Custodia Aetheris"
+   ]
+  },
+  {
+   "name": "Aegis of Mercy",
+   "branch": "Judgement",
+   "tier": "Godly",
+   "desc": "Divine healing for physical trauma, cellular collapse and limited spiritual fractures, at a heavy mental cost.",
+   "holders": [
+    "Grace"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Light Core",
+   "branch": "Sun",
+   "tier": "Exceptional",
+   "desc": "The sun-side core. It reveals, judges and burns what hides.",
+   "holders": [
+    "Grace"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Dark Core",
+   "branch": "Moon",
+   "tier": "Exceptional",
+   "desc": "The moon-side core: quiet, protective darkness that hides and balances. Its godly expression is Aether.",
+   "holders": [
+    "Xinea"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Balance Host",
+   "branch": "Balance",
+   "tier": "Exceptional",
+   "desc": "The seat held first by Asetra, then Xinea. A host keeps the cosmic scales, and must not take sides.",
+   "holders": [
+    "Asetra",
+    "Xinea"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Temporal Drift",
+   "branch": "Time",
+   "tier": "Exceptional",
+   "desc": "Involuntary jumps through time that happen while he sleeps. He never learned why.",
+   "holders": [
+    "Isaac Ezekiel"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Time Perception Magic",
+   "branch": "Time",
+   "tier": "Exceptional",
+   "desc": "Slows the caster’s awareness, not time itself.",
+   "holders": [
+    "Damian Brown"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Qahr al-Wujud",
+   "branch": "Order",
+   "tier": "Laws",
+   "desc": "Command over existence: reality treats his will as the highest priority. Blunt authority with no fine control.",
+   "holders": [
+    "Agnus El-Mansur"
+   ],
+   "leaves": [
+    "Command Radius",
+    "Vectorless Manipulation",
+    "Multi-Layer Control",
+    "Edict: Stillness",
+    "Edict: Collapse",
+    "Judgment Field"
+   ]
+  },
+  {
+   "name": "Call of Sharpness: Authority",
+   "branch": "Order",
+   "tier": "Laws",
+   "desc": "Blades as judges: floating formations that wait in rigid symmetry for a verdict.",
+   "holders": [
+    "Agnus El-Mansur"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Susume (Forward)",
+   "branch": "Order",
+   "tier": "Laws",
+   "desc": "An Order command that improves technique efficiency and cuts wasted energy, on herself, allies or controlled units.",
+   "holders": [
+    "Yoshiko Arashi"
+   ],
+   "leaves": [
+    "Forward Cut"
+   ]
+  },
+  {
+   "name": "Call of Sharpness: Chaos",
+   "branch": "Chaos",
+   "tier": "Laws",
+   "desc": "Blades born from a mind that rejects hesitation: swarming, unpredictable and enjoying itself.",
+   "holders": [
+    "David (Dawood)"
+   ],
+   "leaves": [
+    "Wolf Scatter",
+    "Feral Recall",
+    "Rain of Teeth",
+    "Guardian Spiral",
+    "Last Howl"
+   ]
+  },
+  {
+   "name": "Chaos Mind",
+   "branch": "Chaos",
+   "tier": "Laws",
+   "desc": "His power grows with madness and enjoyment, and turns cleaner but weaker when he is calm.",
+   "holders": [
+    "David (Dawood)"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Kuzuse (Break)",
+   "branch": "Chaos",
+   "tier": "Laws",
+   "desc": "A Chaos command that injects instability into a target’s rhythm. Deadliest against overconfident fighters and mid-cast mages.",
+   "holders": [
+    "Yoshiko Arashi"
+   ],
+   "leaves": [
+    "Chaos Break",
+    "Shadow Thread"
+   ]
+  },
+  {
+   "name": "Oneirokinesis",
+   "branch": "Mind and Dream",
+   "tier": "Laws",
+   "desc": "Dream dominion: she enters dreams while awake and kills the will without touching the body.",
+   "holders": [
+    "Asetra"
+   ],
+   "leaves": [
+    "Lucid Prison",
+    "Dream Collapse",
+    "Waking Mirage"
+   ]
+  },
+  {
+   "name": "Psychological Dominion",
+   "branch": "Mind and Dream",
+   "tier": "Laws",
+   "desc": "Her cruelest power: she amplifies the fear, guilt or desire already inside you. It works on any species.",
+   "holders": [
+    "Asetra"
+   ],
+   "leaves": [
+    "Fear Bloom",
+    "Jealous Crown",
+    "Possession Thread",
+    "Ego Fracture"
+   ]
+  },
+  {
+   "name": "Omniscience",
+   "branch": "Mind and Dream",
+   "tier": "Laws",
+   "desc": "She sees every possible future, not just one. Surprise does not work on her.",
+   "holders": [
+    "Asetra"
+   ],
+   "leaves": [
+    "Total Sight",
+    "Causal Read",
+    "Outcome Lock"
+   ]
+  },
+  {
+   "name": "Nightmare Dominion",
+   "branch": "Mind and Dream",
+   "tier": "Laws",
+   "desc": "Fear-based hallucinations: victims see themselves failing, not monsters.",
+   "holders": [
+    "Norman"
+   ],
+   "leaves": [
+    "Pale Whisper",
+    "Nightfall Choir"
+   ]
+  },
+  {
+   "name": "Nightmare Induction",
+   "branch": "Mind and Dream",
+   "tier": "Laws",
+   "desc": "Selective fear and regret projected through eye contact.",
+   "holders": [
+    "Arzuna"
+   ],
+   "leaves": [
+    "Blue Mirror",
+    "Silent Howl",
+    "Lament Trace"
+   ]
+  },
+  {
+   "name": "Memory Manipulation",
+   "branch": "Mind and Dream",
+   "tier": "Laws",
+   "desc": "Claw-triggered: implant false memories, extract trauma or twist events. Used sparingly.",
+   "holders": [
+    "Norman"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Dagger Portals",
+   "branch": "Space",
+   "tier": "Laws",
+   "desc": "Short-range spatial tears opened by thrown daggers.",
+   "holders": [
+    "David (Dawood)"
+   ],
+   "leaves": [
+    "Laughing Cut",
+    "Silent Step Fang"
+   ]
+  },
+  {
+   "name": "Cross-Dimensional Spatial Access",
+   "branch": "Space",
+   "tier": "Laws",
+   "desc": "An unstable evolution under the Cube’s influence: portals reach beyond local space.",
+   "holders": [
+    "David (Dawood)"
+   ],
+   "leaves": [
+    "World Scar"
+   ]
+  },
+  {
+   "name": "Dimensional Run",
+   "branch": "Space",
+   "tier": "Laws",
+   "desc": "Speed beyond physical space that skims dimensions and distorts time. Every use ages him.",
+   "holders": [
+    "Weston Hale"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Dimension Magic",
+   "branch": "Space",
+   "tier": "Laws",
+   "desc": "Rift, fold and anchor magic.",
+   "holders": [
+    "Damian Brown"
+   ],
+   "leaves": [
+    "Dimensional Threading",
+    "Teleportation Magic",
+    "Dimensional Anchor",
+    "Dimension Awareness"
+   ]
+  },
+  {
+   "name": "Voidcall",
+   "branch": "Space",
+   "tier": "Laws",
+   "desc": "His void first opened by instinct to survive Tedmond. It sends people out of reach.",
+   "holders": [
+    "Isaac Ezekiel"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Curse Techniques",
+   "branch": "Curse",
+   "tier": "Laws",
+   "desc": "Curses are intent made permanent. His are planted through blood and spread through bloodlines.",
+   "holders": [
+    "Khalid"
+   ],
+   "leaves": [
+    "Blood Oath Ruin",
+    "Abyss Mark",
+    "Inheritance Curse",
+    "Crimson Genesis"
+   ]
+  },
+  {
+   "name": "Pyrokinesis",
+   "branch": "Fire",
+   "tier": "Primary",
+   "desc": "Fire as an element: heat, fire and combustion under the user’s will. Niharo carries it beside his flame.",
+   "holders": [
+    "Niharo"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Rowan’s Flame",
+   "branch": "Fire",
+   "tier": "Primary",
+   "desc": "His base fire: flame as punches, bursts and grabs.",
+   "holders": [
+    "Rowan Colloway"
+   ],
+   "leaves": [
+    "Flame Fist",
+    "Ignis Knuckle",
+    "Cinder Rush",
+    "Ember Shot",
+    "Scorch Grab"
+   ]
+  },
+  {
+   "name": "Red Flame Magic",
+   "branch": "Fire",
+   "tier": "Primary",
+   "desc": "Rage-fed arcane combustion, not elemental fire. Power spikes violently and the body strains.",
+   "holders": [
+    "Rowan Colloway"
+   ],
+   "leaves": [
+    "Crimson Wrath",
+    "Ravage Arc",
+    "Infernal Howl",
+    "Pyrochain Lash",
+    "Scorch Bind",
+    "Cinder Snare"
+   ]
+  },
+  {
+   "name": "Duskmoor Flame",
+   "branch": "Fire",
+   "tier": "Primary",
+   "desc": "The Blue Flame. It is not elemental fire: it burns souls, curses and corruption, and only corrupted souls. It erases instead of exploding.",
+   "holders": [
+    "Rowan Colloway",
+    "Silas Duskmoor",
+    "Tedmond Duskmoor"
+   ],
+   "leaves": [
+    "Blue Silence",
+    "Duskmoor Edge",
+    "Last Chain of Duskmoor"
+   ]
+  },
+  {
+   "name": "Corruption Separation",
+   "branch": "Fire",
+   "tier": "Primary",
+   "desc": "She never received the flame. She separates corruption from a person and burns only that, if they truly want to be free.",
+   "holders": [
+    "Mara Duskmoor"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Molten Flame",
+   "branch": "Fire",
+   "tier": "Primary",
+   "desc": "Flame born of lava, rage and dragon heat, not the element itself. Niharo carries it alongside his fire.",
+   "holders": [
+    "Niharo"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Hydrokinesis",
+   "branch": "Water",
+   "tier": "Primary",
+   "desc": "Controls water’s flow, pressure and state wherever water exists. Stronger near water and with a calm mind.",
+   "holders": [
+    "Nilanjona"
+   ],
+   "leaves": [
+    "Flow Command",
+    "Tide Bind",
+    "Aqua Construct",
+    "Mist Veil",
+    "Current Step",
+    "Hydroport",
+    "Dehydration Grip"
+   ]
+  },
+  {
+   "name": "Hydro Regeneration",
+   "branch": "Water",
+   "tier": "Primary",
+   "desc": "Water accelerates healing, cleans wounds and gradually restores stamina.",
+   "holders": [
+    "Nilanjona"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Cryokinesis",
+   "branch": "Water",
+   "tier": "Primary",
+   "desc": "Unlocked as the Water Guardian: instant freezing, ice armor and permanent ice.",
+   "holders": [
+    "Nilanjona"
+   ],
+   "leaves": [
+    "Frost Dominion",
+    "White Silence",
+    "Icebound Construct"
+   ]
+  },
+  {
+   "name": "Tide",
+   "branch": "Water",
+   "tier": "Primary",
+   "desc": "The moon’s pull on water.",
+   "holders": [],
+   "leaves": []
+  },
+  {
+   "name": "Earth Awakening",
+   "branch": "Earth",
+   "tier": "Primary",
+   "desc": "Rowan’s second awakening: earth reinforces his body and reshapes the battlefield.",
+   "holders": [
+    "Rowan Colloway"
+   ],
+   "leaves": [
+    "Stonebound Stand",
+    "Grave Uplift",
+    "Tectonic Guard",
+    "Obsidian Path",
+    "Earthfire Convergence"
+   ]
+  },
+  {
+   "name": "Atomokinesis",
+   "branch": "Earth",
+   "tier": "Primary",
+   "desc": "Control of atoms: reshape, disintegrate and rebuild matter.",
+   "holders": [
+    "Asetra"
+   ],
+   "leaves": [
+    "Atomic Sever",
+    "Matter Rewrite",
+    "Null Core"
+   ]
+  },
+  {
+   "name": "Aerokinesis",
+   "branch": "Air",
+   "tier": "Primary",
+   "desc": "Control of air, wind and pressure. The wind responds to calm and spikes with emotion.",
+   "holders": [
+    "Ethan Thorne"
+   ],
+   "leaves": [
+    "Windstep",
+    "Gale Guard",
+    "Pressure Break",
+    "Sky Rend",
+    "Storm Pull",
+    "Eye of Calm",
+    "Tempest Drive",
+    "Pressure Sense"
+   ]
+  },
+  {
+   "name": "Wind Guardian Mode",
+   "branch": "Air",
+   "tier": "Primary",
+   "desc": "Manifests for the first time in the final fight against Isaac.",
+   "holders": [
+    "Ethan Thorne"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Wind and Blood Hybrids",
+   "branch": "Air",
+   "tier": "Primary",
+   "desc": "Combination executions that merge his wind with Elizah’s blood, not new abilities.",
+   "holders": [
+    "Ethan Thorne",
+    "Elizah"
+   ],
+   "leaves": [
+    "Crimson Windstep",
+    "Sanguine Weave",
+    "Hematic Pulse",
+    "Crimson Tempest"
+   ]
+  },
+  {
+   "name": "Weather Influence",
+   "branch": "Air",
+   "tier": "Primary",
+   "desc": "Localized, controlled weather.",
+   "holders": [
+    "Damian Brown"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Astrapo-Electrokinesis",
+   "branch": "Lightning",
+   "tier": "Primary",
+   "desc": "Control of the whole electrical phenomenon: charge, discharge, sound and motion.",
+   "holders": [
+    "Zayn Hayes"
+   ],
+   "leaves": [
+    "Volt Bind",
+    "Astrapo Bolt",
+    "Thunderclap Drive",
+    "Ion Step",
+    "Static Absorption",
+    "Activation and Deactivation"
+   ]
+  },
+  {
+   "name": "Red Lightning",
+   "branch": "Lightning",
+   "tier": "Primary",
+   "desc": "The bloodline’s overcharged lightning: faster than normal lightning, unstable, harder to absorb or redirect. It disrupts blood art. Dorian’s origin.",
+   "holders": [
+    "Dorian Cross",
+    "Zayn Hayes"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Crimson Astrapo",
+   "branch": "Lightning",
+   "tier": "Primary",
+   "desc": "Zayn’s refined prime ability, built on red lightning. Similar, but not the same thing.",
+   "holders": [
+    "Zayn Hayes"
+   ],
+   "leaves": [
+    "Crimson Strike",
+    "Red Tempest"
+   ]
+  },
+  {
+   "name": "White Lightning Drive",
+   "branch": "Lightning",
+   "tier": "Primary",
+   "desc": "Not elemental: bio-electric kinetic speed that stacks momentum. It exists only while he moves.",
+   "holders": [
+    "Weston Hale"
+   ],
+   "leaves": [
+    "Flashstep",
+    "Velocity Strike",
+    "Overdrive Burst",
+    "Kinetic Absorption"
+   ]
+  },
+  {
+   "name": "Divine Constructs",
+   "branch": "Light",
+   "tier": "Primary",
+   "desc": "Golden weapons, barriers and sigils.",
+   "holders": [
+    "Grace"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Sanctified Mobility",
+   "branch": "Light",
+   "tier": "Primary",
+   "desc": "Short-range divine movement, like light folding.",
+   "holders": [
+    "Grace"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Umbrakinesis",
+   "branch": "Shadow",
+   "tier": "Primary",
+   "desc": "Demonic control of darkness: animate shadows, absorb light and become darkness.",
+   "holders": [
+    "Khalid"
+   ],
+   "leaves": [
+    "Black Throne",
+    "Shadow Maw",
+    "Umbral Merge"
+   ]
+  },
+  {
+   "name": "Revenant Shadow",
+   "branch": "Shadow",
+   "tier": "Primary",
+   "desc": "Shadow-fluid manipulation tied to her emotional bonds.",
+   "holders": [
+    "Arzuna"
+   ],
+   "leaves": [
+    "Nocturne Veil",
+    "Gloom Step",
+    "Black Wake"
+   ]
+  },
+  {
+   "name": "Dark Arcana",
+   "branch": "Shadow",
+   "tier": "Primary",
+   "desc": "Bound shadow: seals and suppression fields.",
+   "holders": [
+    "Damian Brown"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Concealment Magic",
+   "branch": "Shadow",
+   "tier": "Primary",
+   "desc": "Invisibility and presence erasure.",
+   "holders": [
+    "Damian Brown"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Restoration",
+   "branch": "Life",
+   "tier": "Primary",
+   "desc": "General healing paired with close combat.",
+   "holders": [
+    "Maliha"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Nature Dominion",
+   "branch": "Life",
+   "tier": "Primary",
+   "desc": "The Nature Guardian’s command over plants and living nature.",
+   "holders": [
+    "Nytheris"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Bestiakinesis",
+   "branch": "Beast",
+   "tier": "Primary",
+   "desc": "Communicate with animals, control their instincts and transform into them.",
+   "holders": [
+    "Aariz Maddox"
+   ],
+   "leaves": [
+    "Wildshape",
+    "Beast Communion",
+    "Mimic Form",
+    "Conquest Form",
+    "Alpha Break"
+   ]
+  },
+  {
+   "name": "Hyperkinesis",
+   "branch": "Beast",
+   "tier": "Primary",
+   "desc": "Always-on heightened senses and awareness.",
+   "holders": [
+    "Aariz Maddox"
+   ],
+   "leaves": [
+    "Predator Sense"
+   ]
+  },
+  {
+   "name": "Dragon Physiology",
+   "branch": "Beast",
+   "tier": "Primary",
+   "desc": "A pure dragon body: monstrous strength, scale durability and fast regeneration.",
+   "holders": [
+    "Arthur",
+    "Freya",
+    "Gabriel"
+   ],
+   "leaves": [
+    "Dragon Blood Energy",
+    "Dragonskin Armor",
+    "Predatory Phase",
+    "Wrath Surge",
+    "Draconic Cataclysm Form"
+   ]
+  },
+  {
+   "name": "Prismorph",
+   "branch": "Beast",
+   "tier": "Primary",
+   "desc": "Real-time adaptive shapeshifting from demon and dragon blood. Speed over force.",
+   "holders": [
+    "Pristine"
+   ],
+   "leaves": [
+    "Razor Waltz",
+    "Bloodstep Mirage",
+    "Drakeshred",
+    "Infernal Veil",
+    "Cataclysm Pirouette",
+    "Sovereign’s Howl"
+   ]
+  },
+  {
+   "name": "Vampiric Shapeshifting",
+   "branch": "Beast",
+   "tier": "Primary",
+   "desc": "Partial transformations of hands, eyes and fangs. Eye color shows his state.",
+   "holders": [
+    "Norman"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Partial Beast Manifestation",
+   "branch": "Beast",
+   "tier": "Primary",
+   "desc": "An early awakening side effect, before the suit stabilized his power.",
+   "holders": [
+    "Weston Hale"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Acidic Poison Manipulation",
+   "branch": "Venom",
+   "tier": "Primary",
+   "desc": "Generate, shape and control acidic poison in several states. Calculated and intentional.",
+   "holders": [
+    "Amaya"
+   ],
+   "leaves": [
+    "Corrosive Mist",
+    "Liquid Poison Streams",
+    "Toxic Vapor",
+    "Controlled Acidity",
+    "Verdant Sphere",
+    "Nature-Bound Manifestation"
+   ]
+  },
+  {
+   "name": "Winged Flight",
+   "branch": "Venom",
+   "tier": "Primary",
+   "desc": "Natural biological wings. The only winged character in the SCU.",
+   "holders": [
+    "Amaya"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Snake Venoms",
+   "branch": "Venom",
+   "tier": "Primary",
+   "desc": "The snake houses’ venom families.",
+   "holders": [
+    "Kaelor Ashvane",
+    "Velmora Ishtaan",
+    "Sethan Vael",
+    "Sulhan Nightveil",
+    "Viresh Kothar",
+    "Ravek Stillfang",
+    "Ophirion Drakhar"
+   ],
+   "leaves": [
+    "Neurotoxic Venom",
+    "Cytotoxic Venom",
+    "Hemotoxic Venom",
+    "Viper Sense"
+   ]
+  },
+  {
+   "name": "Hemokinesis",
+   "branch": "Blood",
+   "tier": "Primary",
+   "desc": "Complete control of blood as fuel, weapon, armor and memory. More lethal than wind, less absolute than Aether.",
+   "holders": [
+    "Elizah"
+   ],
+   "leaves": [
+    "Crimson Forge",
+    "Blood Pressure Lock",
+    "Hemokinetic Combat",
+    "Red Regeneration",
+    "Blood Cloning",
+    "Sanguine Step",
+    "Blood Mimicry",
+    "Pain Ignorance",
+    "Crimson Dominion"
+   ]
+  },
+  {
+   "name": "Sanguine Shift",
+   "branch": "Blood",
+   "tier": "Primary",
+   "desc": "Teleportation through his own blood anchors; he breaks down into blood and reforms. Zaan’s version was more like fleeing through blood.",
+   "holders": [
+    "Elizah",
+    "Zaan al-Murad"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Abyssal Blood Dominion",
+   "branch": "Blood",
+   "tier": "Primary",
+   "desc": "Living, hungry blood that corrupts everything it touches. It overwhelms instead of calculating.",
+   "holders": [
+    "Khalid"
+   ],
+   "leaves": [
+    "Crimson Desecration",
+    "Blood Maw",
+    "Abyss Veins",
+    "Abyssal Sovereign State"
+   ]
+  },
+  {
+   "name": "Blood Magic",
+   "branch": "Blood",
+   "tier": "Primary",
+   "desc": "Blood fuels spells and boosts output, and can bind and extend life. Only partly revealed; the user refuses to use it.",
+   "holders": [
+    "Nur"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Blood Resonance Assimilation",
+   "branch": "Blood",
+   "tier": "Primary",
+   "desc": "Her vampirism keeps echoes of the gifts of people she bonds with, and preserves memory instead of eroding it.",
+   "holders": [
+    "Arzuna"
+   ],
+   "leaves": [
+    "Azure Impact",
+    "Bloodbound Resolve",
+    "Lament Bite",
+    "Azure Revenant State"
+   ]
+  },
+  {
+   "name": "Blood Regeneration",
+   "branch": "Blood",
+   "tier": "Primary",
+   "desc": "Regeneration through blood and revival through science.",
+   "holders": [
+    "Zaan al-Murad"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Vampirism",
+   "branch": "Blood",
+   "tier": "Primary",
+   "desc": "The Paleborn curse: strength, speed, regeneration and predator senses.",
+   "holders": [
+    "Norman"
+   ],
+   "leaves": [
+    "Crimson Marionette",
+    "Eternal Hunger"
+   ]
+  },
+  {
+   "name": "Aldercrest Core Magic",
+   "branch": "Arcane",
+   "tier": "Primary",
+   "desc": "The learned foundation: four magics that come instinctively.",
+   "holders": [
+    "Damian Brown",
+    "Eldrich Aldercrest"
+   ],
+   "leaves": [
+    "Elemental Magic",
+    "Manipulation Magic",
+    "Illusion Magic",
+    "Dark Magic Controlled"
+   ]
+  },
+  {
+   "name": "Aldercrest Precision Magic",
+   "branch": "Arcane",
+   "tier": "Primary",
+   "desc": "Precision and control disciplines.",
+   "holders": [
+    "Damian Brown"
+   ],
+   "leaves": [
+    "Elemental Convergence",
+    "Geometrical Magic",
+    "Analytical Magic",
+    "Alchemical Transmutation",
+    "Dream Manipulation Defensive",
+    "Memory Magic",
+    "Assembly Magic"
+   ]
+  },
+  {
+   "name": "Aldercrest Signature Spells",
+   "branch": "Arcane",
+   "tier": "Primary",
+   "desc": "Named signature spells.",
+   "holders": [
+    "Damian Brown"
+   ],
+   "leaves": [
+    "Zero Field",
+    "Critical Path Invocation",
+    "Still Mind Doctrine"
+   ]
+  },
+  {
+   "name": "Witch Arts",
+   "branch": "Arcane",
+   "tier": "Primary",
+   "desc": "Witch magic. Iqaris was one of the few demons to master it.",
+   "holders": [
+    "Iqaris"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Contract Binding",
+   "branch": "Arcane",
+   "tier": "Primary",
+   "desc": "Deals that bind. He never lies; he chooses which truths to tell.",
+   "holders": [
+    "Mephisto"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Black Magic",
+   "branch": "Arcane",
+   "tier": "Primary",
+   "desc": "The Old Order’s pacts and sacrifice. Not the same as darkness.",
+   "holders": [],
+   "leaves": []
+  },
+  {
+   "name": "Omni-Ergon",
+   "branch": "Energy",
+   "tier": "Primary",
+   "desc": "Total energy command: absorb, store, convert and release any energy. He survives energy; he does not rule it.",
+   "holders": [
+    "Niharo"
+   ],
+   "leaves": [
+    "Absorb",
+    "Store",
+    "Convert",
+    "Release"
+   ]
+  },
+  {
+   "name": "Raven Arts",
+   "branch": "Assassin Arts",
+   "tier": "Skills",
+   "desc": "Ravenblade’s core assassination skills: perfect timing and movement, no superpowers.",
+   "holders": [
+    "Valeria"
+   ],
+   "leaves": [
+    "Shadow Step",
+    "Silent Veil",
+    "Raven Strike",
+    "Ghost Entry",
+    "Bloodline Cut",
+    "Dark Flow",
+    "Stealth Kill Protocol"
+   ]
+  },
+  {
+   "name": "Hidden Ones Training",
+   "branch": "Assassin Arts",
+   "tier": "Skills",
+   "desc": "Skills gained from the Hidden Ones and Arashi’s refinement.",
+   "holders": [
+    "Valeria"
+   ],
+   "leaves": [
+    "Death Pattern Analysis",
+    "Blackout Chain",
+    "Execution Calm"
+   ]
+  },
+  {
+   "name": "Long Shadow",
+   "branch": "Assassin Arts",
+   "tier": "Skills",
+   "desc": "DEW-trained long-range killing, with Shadow Step learned from Ravenblade.",
+   "holders": [
+    "Saya"
+   ],
+   "leaves": [
+    "Dead Horizon",
+    "Ghost Angle",
+    "Glass Silence"
+   ]
+  },
+  {
+   "name": "Combat Cognition",
+   "branch": "Soldier Arts",
+   "tier": "Skills",
+   "desc": "A maxed-out human mind in a fight.",
+   "holders": [
+    "Samuel Sterling"
+   ],
+   "leaves": [
+    "Ghost Sense",
+    "Threat Threading",
+    "Pain Override"
+   ]
+  },
+  {
+   "name": "Martial Mastery",
+   "branch": "Soldier Arts",
+   "tier": "Skills",
+   "desc": "A mixed fighting system with an unbreakable mindset.",
+   "holders": [
+    "Samuel Sterling"
+   ],
+   "leaves": [
+    "Adaptive Martial Arts",
+    "Close-Quarters Dominance",
+    "Counter-Fighter Instinct",
+    "Iron Resolve"
+   ]
+  },
+  {
+   "name": "Environmental Weaponization",
+   "branch": "Soldier Arts",
+   "tier": "Skills",
+   "desc": "Turn anything into a weapon.",
+   "holders": [
+    "Samuel Sterling"
+   ],
+   "leaves": [
+    "Battlefield Alchemy",
+    "Improvised Kill Techniques"
+   ]
+  },
+  {
+   "name": "Softcore Armament",
+   "branch": "Soldier Arts",
+   "tier": "Skills",
+   "desc": "His tie: soft and harmless-looking until it hardens beyond any known metal.",
+   "holders": [
+    "Samuel Sterling"
+   ],
+   "leaves": [
+    "Ghost Bind",
+    "Phantom Lash",
+    "Deadlock Coil",
+    "Silent Guillotine",
+    "Last Stand Weave",
+    "Ghost-01"
+   ]
+  },
+  {
+   "name": "Vanguard Doctrine",
+   "branch": "Soldier Arts",
+   "tier": "Skills",
+   "desc": "Derek’s brute-force soldier style: a peak-human with a heavy pistol.",
+   "holders": [
+    "Derek Miles"
+   ],
+   "leaves": [
+    "Iron Line Shot",
+    "Shield Advance",
+    "Vanguard Break",
+    "Close-Quarters Reversal"
+   ]
+  },
+  {
+   "name": "Blind Blade",
+   "branch": "Blade Arts",
+   "tier": "Skills",
+   "desc": "Arashi’s swordsmanship: he fights without sight and keeps improving. His sword philosophy shaped Valeria.",
+   "holders": [
+    "Kensho Arashi"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Weapon Mastery",
+   "branch": "Blade Arts",
+   "tier": "Skills",
+   "desc": "Yoshiko chooses her weapon by mission.",
+   "holders": [
+    "Yoshiko Arashi"
+   ],
+   "leaves": [
+    "Katana",
+    "Tanto",
+    "Kusarigama",
+    "Shuriken and Kunai",
+    "Yumi (Bow)",
+    "Poison Darts",
+    "Grenades"
+   ]
+  },
+  {
+   "name": "Shadow Blade Arts",
+   "branch": "Blade Arts",
+   "tier": "Skills",
+   "desc": "Yoshiko’s signature moves that need no power.",
+   "holders": [
+    "Yoshiko Arashi"
+   ],
+   "leaves": [
+    "Silent Bloom"
+   ]
+  },
+  {
+   "name": "Fate Draw",
+   "branch": "Blade Arts",
+   "tier": "Skills",
+   "desc": "Saya’s close-range sword execution with Kara Yazgı: no flourish, one decisive cut.",
+   "holders": [
+    "Saya"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Shishōjutsu",
+   "branch": "Seal Arts",
+   "tier": "Skills",
+   "desc": "Controlled, precision corpse manipulation: an ofuda amulet on the corpse and one with the user, activated together. The magic lives in the talisman, so she stays human.",
+   "holders": [
+    "Yoshiko Arashi"
+   ],
+   "leaves": [
+    "Energy Transfer",
+    "Command Encoding",
+    "Puppet Ward"
+   ]
+  },
+  {
+   "name": "Kara Curse-Binding",
+   "branch": "Seal Arts",
+   "tier": "Skills",
+   "desc": "The Kara bloodline’s art of sealing curses into weapons and objects.",
+   "holders": [
+    "Mashiho Kurohana",
+    "Seren Kara",
+    "Aeric Valenheart"
+   ],
+   "leaves": [
+    "Cursed Weapon Crafting",
+    "Protective Curse Binding",
+    "Kara Yazgı"
+   ]
+  },
+  {
+   "name": "Ichor Program",
+   "branch": "Tech and Serum",
+   "tier": "Skills",
+   "desc": "DEW’s enhancement serums. A-IV is Victor’s formula mixed with Aethel blood; Ichor adds Alt David’s technology and needs exceptional minds.",
+   "holders": [
+    "Derek Miles",
+    "Mateo Cruz"
+   ],
+   "leaves": [
+    "A-IV",
+    "Ichor",
+    "Ichor Acceleration",
+    "Ichor Strength",
+    "Accelerated Recovery",
+    "Cancer Regeneration"
+   ]
+  },
+  {
+   "name": "Anthony Chip",
+   "branch": "Tech and Serum",
+   "tier": "Skills",
+   "desc": "The chip that gave Derek his peak and his moral fracture.",
+   "holders": [
+    "Derek Miles"
+   ],
+   "leaves": [
+    "Cognitive Overclock",
+    "Zero Mercy Protocol",
+    "Hybrid Termination Drill",
+    "Command Override Mode"
+   ]
+  },
+  {
+   "name": "Ayaan’s Suit",
+   "branch": "Tech and Serum",
+   "tier": "Skills",
+   "desc": "A tech hero’s armor: it makes him functional under fear.",
+   "holders": [
+    "Ayaan Siddique"
+   ],
+   "leaves": [
+    "Exo-Strength Amplification",
+    "Repulsor Bracers",
+    "Kinetic Dampening Layer",
+    "Combat HUD",
+    "Emergency Auto-Stabilization",
+    "Adaptive Nano-Weave Plating",
+    "Energy Recycling Core",
+    "Multi-Role Deployment Nodes",
+    "Sentinel Drive",
+    "Aegis Pulse",
+    "Precision Barrage",
+    "Overclock Veil",
+    "Fallback Architect"
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "a": "Agnus El-Mansur",
+   "b": "Zayn Hayes",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Agnus El-Mansur",
+   "b": "David (Dawood)",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Zayn Hayes",
+   "b": "David (Dawood)",
+   "type": "blood",
+   "label": "Brothers"
+  },
+  {
+   "a": "Tedmond Duskmoor",
+   "b": "Silas Duskmoor",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Tedmond Duskmoor",
+   "b": "Mara Duskmoor",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Silas Duskmoor",
+   "b": "Mara Duskmoor",
+   "type": "blood",
+   "label": "Siblings"
+  },
+  {
+   "a": "Ramiz Al-Ahd",
+   "b": "Anna",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Ramiz Al-Ahd",
+   "b": "Issabela",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Pride",
+   "b": "Mashiho Kurohana",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Pride",
+   "b": "Kaizen",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Pride",
+   "b": "Isagi",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Pride",
+   "b": "Kensho Arashi",
+   "type": "blood",
+   "label": "Siblings"
+  },
+  {
+   "a": "Pride",
+   "b": "Greed",
+   "type": "blood",
+   "label": "Siblings"
+  },
+  {
+   "a": "Pride",
+   "b": "Lust",
+   "type": "blood",
+   "label": "Siblings"
+  },
+  {
+   "a": "Pride",
+   "b": "Sloth",
+   "type": "blood",
+   "label": "Siblings"
+  },
+  {
+   "a": "Kensho Arashi",
+   "b": "Kazumi",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Kensho Arashi",
+   "b": "Yoshiko Arashi",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Yoshiko Arashi",
+   "b": "Kazumi",
+   "type": "blood",
+   "label": "Twins"
+  },
+  {
+   "a": "Freya",
+   "b": "Arthur",
+   "type": "blood",
+   "label": "Mother"
+  },
+  {
+   "a": "Gabriel",
+   "b": "Arthur",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Freya",
+   "b": "Pristine",
+   "type": "blood",
+   "label": "Mother"
+  },
+  {
+   "a": "Khalid",
+   "b": "Pristine",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Khalid",
+   "b": "Ethan Thorne",
+   "type": "blood",
+   "label": "Paternal ancestor"
+  },
+  {
+   "a": "Zaan al-Murad",
+   "b": "Ethan Thorne",
+   "type": "blood",
+   "label": "Maternal ancestor"
+  },
+  {
+   "a": "Isaac’s mother",
+   "b": "Isaac Ezekiel",
+   "type": "blood",
+   "label": "Mother"
+  },
+  {
+   "a": "Isaac’s father",
+   "b": "Isaac Ezekiel",
+   "type": "blood",
+   "label": "Father"
+  },
+  {
+   "a": "Alistair Quinn",
+   "b": "Eveline",
+   "type": "blood",
+   "label": "Siblings"
+  },
+  {
+   "a": "Freya",
+   "b": "Gabriel",
+   "type": "bond",
+   "label": "Married"
+  },
+  {
+   "a": "Isaac’s father",
+   "b": "Isaac’s mother",
+   "type": "bond",
+   "label": "Fell in love"
+  },
+  {
+   "a": "Alistair Quinn",
+   "b": "Raya",
+   "type": "bond",
+   "label": "Loved her"
+  },
+  {
+   "a": "Greed",
+   "b": "Kazumi",
+   "type": "conflict",
+   "label": "Raised her on lies"
+  },
+  {
+   "a": "Silas Duskmoor",
+   "b": "Agnus El-Mansur",
+   "type": "bond",
+   "label": "The only one Agnus talks freely to"
+  },
+  {
+   "a": "Ethan Thorne",
+   "b": "Zayn Hayes",
+   "type": "bond",
+   "label": "Oldest friends"
+  },
+  {
+   "a": "Ethan Thorne",
+   "b": "Nur",
+   "type": "bond",
+   "label": "Mentor"
+  },
+  {
+   "a": "Ethan Thorne",
+   "b": "Mateo Cruz",
+   "type": "bond",
+   "label": "Called him brave"
+  },
+  {
+   "a": "Nur",
+   "b": "Mateo Cruz",
+   "type": "bond",
+   "label": "Saved him from Mephisto’s deal"
+  },
+  {
+   "a": "Dorian Cross",
+   "b": "Zayn Hayes",
+   "type": "bond",
+   "label": "Red lightning legacy"
+  },
+  {
+   "a": "Dorian Cross",
+   "b": "Eldrich Aldercrest",
+   "type": "bond",
+   "label": "Lost an arm protecting him"
+  },
+  {
+   "a": "Grace",
+   "b": "Tedmond Duskmoor",
+   "type": "bond",
+   "label": "Rescued him from the void"
+  },
+  {
+   "a": "Valeria",
+   "b": "Xinea",
+   "type": "bond",
+   "label": "Staged her death"
+  },
+  {
+   "a": "Alistair Quinn",
+   "b": "Damian Brown",
+   "type": "bond",
+   "label": "Chose and warned him"
+  },
+  {
+   "a": "Isaac Ezekiel",
+   "b": "Mateo Cruz",
+   "type": "bond",
+   "label": "Hired him"
+  },
+  {
+   "a": "Mashiho Kurohana",
+   "b": "Kazumi",
+   "type": "bond",
+   "label": "Rebuilt Kara together"
+  },
+  {
+   "a": "Aeric Valenheart",
+   "b": "Valeria",
+   "type": "bond",
+   "label": "Forged the blade she wields"
+  },
+  {
+   "a": "Diablo",
+   "b": "Malachar",
+   "type": "bond",
+   "label": "His right hand"
+  },
+  {
+   "a": "Mephisto",
+   "b": "Khalid",
+   "type": "contract",
+   "label": "Made his contract"
+  },
+  {
+   "a": "Mephisto",
+   "b": "Alistair Quinn",
+   "type": "contract",
+   "label": "The smile curse"
+  },
+  {
+   "a": "Mephisto",
+   "b": "Isaac’s mother",
+   "type": "contract",
+   "label": "Her soul for his body"
+  },
+  {
+   "a": "Mephisto",
+   "b": "Nur",
+   "type": "contract",
+   "label": "The deal behind his birth"
+  },
+  {
+   "a": "Mephisto",
+   "b": "Iqaris",
+   "type": "contract",
+   "label": "Stored his soul essence"
+  },
+  {
+   "a": "Iqaris",
+   "b": "Nur",
+   "type": "contract",
+   "label": "Essence embedded in him"
+  },
+  {
+   "a": "Mephisto",
+   "b": "Mateo Cruz",
+   "type": "contract",
+   "label": "Offered his father back; refused"
+  },
+  {
+   "a": "Zayn Hayes",
+   "b": "Agnus El-Mansur",
+   "type": "conflict",
+   "label": "Defeated his father"
+  },
+  {
+   "a": "Zayn Hayes",
+   "b": "Norman",
+   "type": "conflict",
+   "label": "Executed him"
+  },
+  {
+   "a": "Norman",
+   "b": "David (Dawood)",
+   "type": "conflict",
+   "label": "Killed him"
+  },
+  {
+   "a": "Khalid",
+   "b": "Norman",
+   "type": "conflict",
+   "label": "Turned him"
+  },
+  {
+   "a": "Khalid",
+   "b": "Dorian Cross",
+   "type": "conflict",
+   "label": "Killed him, but carries his wound"
+  },
+  {
+   "a": "Khalid",
+   "b": "Freya",
+   "type": "conflict",
+   "label": "Killed her"
+  },
+  {
+   "a": "Valeria",
+   "b": "Khalid",
+   "type": "conflict",
+   "label": "Killed him"
+  },
+  {
+   "a": "Damian Brown",
+   "b": "Arthur",
+   "type": "conflict",
+   "label": "Ended him together"
+  },
+  {
+   "a": "Tedmond Duskmoor",
+   "b": "Diablo",
+   "type": "conflict",
+   "label": "Diablo fled from him"
+  },
+  {
+   "a": "Tedmond Duskmoor",
+   "b": "Isaac’s father",
+   "type": "conflict",
+   "label": "Killed him"
+  },
+  {
+   "a": "Tedmond Duskmoor",
+   "b": "Isaac Ezekiel",
+   "type": "conflict",
+   "label": "Killed him twice; voided by him"
+  },
+  {
+   "a": "Isaac Ezekiel",
+   "b": "Grace",
+   "type": "conflict",
+   "label": "Sent her to the void"
+  },
+  {
+   "a": "Isaac Ezekiel",
+   "b": "Damian Brown",
+   "type": "conflict",
+   "label": "Killed him"
+  },
+  {
+   "a": "Khalid",
+   "b": "Isaac Ezekiel",
+   "type": "conflict",
+   "label": "Wiped his memory"
+  },
+  {
+   "a": "Ethan Thorne",
+   "b": "Isaac Ezekiel",
+   "type": "conflict",
+   "label": "Ends him"
+  },
+  {
+   "a": "Mashiho Kurohana",
+   "b": "Pride",
+   "type": "conflict",
+   "label": "Killed his father"
+  },
+  {
+   "a": "Kensho Arashi",
+   "b": "Lust",
+   "type": "conflict",
+   "label": "Defeated him"
+  },
+  {
+   "a": "Aeric Valenheart",
+   "b": "Diablo",
+   "type": "conflict",
+   "label": "Trapped him"
+  },
+  {
+   "a": "Gabriel",
+   "b": "Pristine",
+   "type": "conflict",
+   "label": "Threw her from a mountain"
+  },
+  {
+   "a": "Rowan Colloway",
+   "b": "Silas Duskmoor",
+   "type": "conflict",
+   "label": "Beat him in a duel"
+  },
+  {
+   "a": "Arthur",
+   "b": "Silas Duskmoor",
+   "type": "conflict",
+   "label": "Killed him"
+  },
+  {
+   "a": "Rowan Colloway",
+   "b": "Arthur",
+   "type": "conflict",
+   "label": "Defeated him alone"
+  },
+  {
+   "a": "Khalid",
+   "b": "Eldrich Aldercrest",
+   "type": "conflict",
+   "label": "Cursed him, then killed him"
+  }
+ ]
+}
