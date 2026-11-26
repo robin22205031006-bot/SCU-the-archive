@@ -4,7 +4,13 @@ import { describe, expect, it } from "vitest";
 import { resolveVisualUiMode, uiModeCssVars, VISUAL_UI_MODES } from "@/hooks/use-ui-mode";
 import { isClassicBackedMode } from "@/lib/ui-style";
 import { resolveUIMode, UI_MODE_OPTIONS } from "@/context/UIStateContext";
-import { buildCodexFeed, codexSeasonsFor, codexTabForPath, safeCodexPath } from "@/lib/codex-feed";
+import {
+  buildCodexFeed,
+  codexSeasonsFor,
+  codexTabForPath,
+  safeCodexPath,
+  safePortrait,
+} from "@/lib/codex-feed";
 
 describe("Codex UI mode", () => {
   it("replaces Cinematic in every mode list and sits next to Nexus", () => {
@@ -93,6 +99,84 @@ describe("Codex feed", () => {
     expect(feed.abilities.map((a) => a.name)).toEqual(["Described", "Windstep"]);
     expect(feed.abilities[1]?.holders).toEqual(["Ethan Thorne"]);
     expect(Object.keys(feed.dossiers)).toEqual(["Ethan Thorne"]);
+  });
+});
+
+describe("Codex feed: spoiler mask, portraits and family", () => {
+  const series = [{ id: "s1", title: "Sentinels", season_count: 1, season_names: [] }];
+  const ents = [
+    {
+      id: "1",
+      name: "Ethan Thorne",
+      kind: "character",
+      role: "Main Lead",
+      abilities: ["Windstep"],
+      image_url: "data:image/png;base64,AAAA",
+      stats: { dossier: { "s1:1": { status: "Alive", stats: { power: 50 } } } },
+    },
+    { id: "2", name: "Issabela", kind: "character", image_url: "javascript:alert(1)" },
+  ];
+  const relations = [
+    { source_id: "2", target_id: "1", rel: "parent" },
+    { source_id: "1", target_id: "2", rel: "rival" },
+  ];
+  const base = {
+    entities: ents,
+    series,
+    abilities: [],
+    relations,
+    staff: false,
+    mode: "codex",
+    modes: [],
+  };
+
+  it("passes portraits and only family relations when nothing is masked", () => {
+    const feed = buildCodexFeed(base);
+    expect(feed.characters[0]?.image).toContain("data:image/png");
+    expect(feed.characters[1]?.image).toBeUndefined();
+    expect(feed.relations).toEqual([{ a: "Issabela", b: "Ethan Thorne", rel: "parent" }]);
+    expect(Object.keys(feed.dossiers)).toEqual(["Ethan Thorne"]);
+  });
+
+  it("removes masked data from the feed itself, not just from view", () => {
+    const feed = buildCodexFeed({
+      ...base,
+      masked: { characters: true, abilities: false, archive: false, series: false },
+    });
+    expect(feed.characters[0]?.desc).toBeUndefined();
+    expect(feed.dossiers).toEqual({});
+    expect(feed.relations).toEqual([]);
+    expect(feed.abilities).toEqual([]);
+  });
+
+  it("hides ability holders when the abilities mask is on", () => {
+    const on = buildCodexFeed({
+      ...base,
+      abilities: [{ label: "Windstep", description: "Fast." }],
+      masked: { characters: false, abilities: true, archive: false, series: false },
+    });
+    expect(on.abilities[0]?.holders).toEqual([]);
+    const off = buildCodexFeed({
+      ...base,
+      abilities: [{ label: "Windstep", description: "Fast." }],
+    });
+    expect(off.abilities[0]?.holders).toEqual(["Ethan Thorne"]);
+  });
+
+  it("holds back season data when the series mask is on", () => {
+    const feed = buildCodexFeed({
+      ...base,
+      masked: { characters: false, abilities: false, archive: false, series: true },
+    });
+    expect(feed.dossiers).toEqual({});
+  });
+
+  it("accepts only real image URLs", () => {
+    expect(safePortrait("data:image/png;base64,AAAA")).toBeTruthy();
+    expect(safePortrait("https://example.com/a.png")).toBeTruthy();
+    expect(safePortrait("javascript:alert(1)")).toBeUndefined();
+    expect(safePortrait("data:text/html;base64,AAAA")).toBeUndefined();
+    expect(safePortrait("http://example.com/a.png")).toBeUndefined();
   });
 });
 

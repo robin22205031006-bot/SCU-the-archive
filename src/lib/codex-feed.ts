@@ -1,3 +1,4 @@
+import { isFamilyRel } from "@/lib/family";
 import {
   buildSeasonCompareOptions,
   readDossier,
@@ -17,6 +18,20 @@ export interface CodexFeedCharacter {
   realName?: string | undefined;
   bloodline?: string | undefined;
   desc?: string | undefined;
+  /** Portrait (resized data URL or https URL) from entities.image_url. */
+  image?: string | undefined;
+}
+export interface CodexFeedRelation {
+  /** "source is <rel> of target"; names are the archive's. */
+  a: string;
+  b: string;
+  rel: "parent" | "sibling" | "spouse" | "ancestor";
+}
+export interface CodexFeedMask {
+  characters: boolean;
+  abilities: boolean;
+  archive: boolean;
+  series: boolean;
 }
 export interface CodexFeedAbility {
   name: string;
@@ -57,10 +72,15 @@ export interface CodexFeed {
   characters: CodexFeedCharacter[];
   abilities: CodexFeedAbility[];
   dossiers: Record<string, { seasons: CodexFeedSeason[] }>;
+  relations: CodexFeedRelation[];
+  /** Shared spoiler mask. Masked scopes are removed from the feed itself, not just hidden. */
+  masked: CodexFeedMask;
 }
 
 export interface CodexEntityInput {
+  id?: string;
   name: string;
+  image_url?: string | null;
   kind?: string | undefined;
   alias?: string | null;
   role?: string | null;
@@ -74,6 +94,11 @@ export interface CodexSeriesInput {
   season_count?: number | null;
   season_names?: string[] | null;
 }
+export interface CodexRelationInput {
+  source_id: string;
+  target_id: string;
+  rel: string;
+}
 export interface CodexAbilityInput {
   label: string;
   description?: string | undefined;
@@ -83,6 +108,15 @@ const clip = (s: unknown, n: number) => {
   const t = typeof s === "string" ? s.trim() : "";
   return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
 };
+/** Only real images may reach the Codex frame: resized data URLs or https links. */
+export function safePortrait(v: unknown): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const t = v.trim();
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(t) && t.length < 400_000)
+    return t;
+  if (/^https:\/\/[^\s"'<>]+$/.test(t) && t.length < 2000) return t;
+  return undefined;
+}
 const list = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()) : [];
 
@@ -147,10 +181,14 @@ export function buildCodexFeed({
   staff,
   mode,
   modes,
+  relations = [],
+  masked = { characters: false, abilities: false, archive: false, series: false },
 }: {
   entities: ReadonlyArray<CodexEntityInput>;
   series: ReadonlyArray<CodexSeriesInput>;
   abilities: ReadonlyArray<CodexAbilityInput>;
+  relations?: ReadonlyArray<CodexRelationInput>;
+  masked?: CodexFeedMask;
   staff: boolean;
   mode: string;
   modes: CodexFeedMode[];
@@ -158,25 +196,30 @@ export function buildCodexFeed({
   const characters: CodexFeedCharacter[] = [];
   const dossiers: CodexFeed["dossiers"] = {};
   const holders = new Map<string, string[]>();
+  const nameById = new Map<string, string>();
   for (const e of entities) {
     if (e.kind && e.kind !== "character") continue;
     const name = e.name?.trim();
     if (!name) continue;
+    if (e.id) nameById.set(e.id, name);
+    // The shared "characters" mask hides status, role, abilities and skills: none of it is sent.
     characters.push({
       name,
       aliases: (e.alias ?? "")
         .split(/[,/]/)
         .map((a) => a.trim())
         .filter(Boolean),
-      desc: clip(e.role || e.category, 280) || undefined,
+      desc: masked.characters ? undefined : clip(e.role || e.category, 280) || undefined,
+      image: safePortrait(e.image_url),
     });
+    if (masked.characters) continue;
     for (const ab of list(e.abilities)) {
       const k = ab.trim();
       const h = holders.get(k.toLowerCase()) ?? [];
       h.push(name);
       holders.set(k.toLowerCase(), h);
     }
-    const seasons = codexSeasonsFor(e.stats, series);
+    const seasons = masked.series ? [] : codexSeasonsFor(e.stats, series);
     if (seasons.length) dossiers[name] = { seasons };
   }
   const seen = new Set<string>();
@@ -185,13 +228,33 @@ export function buildCodexFeed({
     const k = name.trim().toLowerCase();
     if (!k || seen.has(k)) return;
     seen.add(k);
-    const h = holders.get(k) ?? [];
+    // The "abilities" mask hides who holds what.
+    const h = masked.abilities ? [] : (holders.get(k) ?? []);
     if (!h.length && !desc) return;
     abilityOut.push({ name: name.trim(), desc: clip(desc, 400) || undefined, holders: h });
   };
   for (const a of abilities) push(a.label, a.description);
-  for (const e of entities) for (const ab of list(e.abilities)) push(ab);
-  return { version: 1, staff, mode, modes, characters, abilities: abilityOut, dossiers };
+  if (!masked.characters) for (const e of entities) for (const ab of list(e.abilities)) push(ab);
+  const rels: CodexFeedRelation[] = [];
+  if (!masked.characters) {
+    for (const r of relations) {
+      const a = nameById.get(r.source_id);
+      const b = nameById.get(r.target_id);
+      if (!a || !b || a === b || !isFamilyRel(r.rel)) continue;
+      rels.push({ a, b, rel: r.rel });
+    }
+  }
+  return {
+    version: 1,
+    staff,
+    mode,
+    modes,
+    characters,
+    abilities: abilityOut,
+    dossiers,
+    relations: rels,
+    masked,
+  };
 }
 
 /** App path <-> Codex dock tab. Only these paths render the Codex itself. */

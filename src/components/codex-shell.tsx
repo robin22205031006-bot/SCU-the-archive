@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { entitiesQuery } from "@/lib/entities";
+import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
+import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { seriesQuery } from "@/lib/series";
 import { allAbilityDefs } from "@/lib/abilities";
 import { useIsStaff } from "@/hooks/use-admin";
@@ -46,6 +47,11 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
   const { mode } = useUiMode();
   const ents = useQuery({ ...entitiesQuery(["character"]), enabled });
   const ser = useQuery({ ...seriesQuery, enabled });
+  const rel = useQuery({ ...entityRelationsQuery, enabled });
+  const maskChars = useSpoilerMask("characters");
+  const maskAbil = useSpoilerMask("abilities");
+  const maskArch = useSpoilerMask("archive");
+  const maskSeries = useSpoilerMask("series");
   const feed = useMemo(() => {
     if (!enabled) return null;
     let abilities: { label: string; description?: string | undefined }[] = [];
@@ -57,6 +63,13 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
     return buildCodexFeed({
       entities: ents.data ?? [],
       series: ser.data ?? [],
+      relations: rel.data ?? [],
+      masked: {
+        characters: maskChars,
+        abilities: maskAbil,
+        archive: maskArch,
+        series: maskSeries,
+      },
       abilities,
       staff,
       mode,
@@ -67,7 +80,18 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
         signature: !!m.signature,
       })),
     });
-  }, [enabled, ents.data, ser.data, staff, mode]);
+  }, [
+    enabled,
+    ents.data,
+    ser.data,
+    rel.data,
+    maskChars,
+    maskAbil,
+    maskArch,
+    maskSeries,
+    staff,
+    mode,
+  ]);
   const settled =
     !enabled || ((!ents.isPending || ents.isError) && (!ser.isPending || ser.isError));
   return { feed, settled };

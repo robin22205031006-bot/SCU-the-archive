@@ -140,3 +140,12 @@ html[data-motion="off"] .cxd-panel,html[data-motion="off"] .cx-ui-card{animation
 .cxw.solo .cxc-t{justify-content:center;mask-image:none}
 @media (prefers-reduced-motion:reduce){.cxw-spin{animation:none}}
 html[data-motion="off"] .cxw-spin{animation:none}
+
+/* ---- portraits, family, mask notice ---- */
+.tile.has-pt{overflow:hidden;background:var(--panel2)}
+.tile.has-pt .cx-pt{display:block;width:100%;height:100%;object-fit:cover;animation:cxFade 420ms var(--cx-soft) both}
+.sh-top .tile.has-pt{box-shadow:0 0 0 2px color-mix(in srgb,var(--c1) 60%,transparent)}
+.cxrel{margin-top:16px}
+.cxrel-g{margin-top:8px}
+.cxrel-g small{display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.cxmask{margin-top:12px;padding:8px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel2)}

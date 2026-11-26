@@ -39,6 +39,8 @@
   var nameMap = {};
   window.__codexNameMap = nameMap;
   window.__codexAdded = { cast: [], abilities: [] };
+  /** Codex cast name -> portrait URL (already validated by the app). */
+  window.__codexPortrait = {};
 
   /** Extra dock destinations that open the app's own pages. */
   var extra = [
@@ -89,6 +91,7 @@
       var hit = findCast(CAST, keys, cands);
       if (hit) {
         nameMap[ch.name] = hit;
+        if (ch.image) window.__codexPortrait[hit] = ch.image;
         // Fill blanks only: the Codex text always wins when it has its own.
         var row = CAST.find(function (r) {
           return r[0] === hit;
@@ -105,6 +108,7 @@
         "others",
       ];
       CAST.push(row2);
+      if (ch.image) window.__codexPortrait[ch.name] = ch.image;
       keys.set(norm(ch.name), ch.name);
       nameMap[ch.name] = ch.name;
       window.__codexAdded.cast.push(ch.name);

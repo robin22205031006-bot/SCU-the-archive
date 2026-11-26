@@ -903,6 +903,139 @@
     var slide = $id("slide");
     if (slide && !slide.hidden) patchSettings(slide);
   };
+
+  /* ---------- 5. portraits, family relations, spoiler-mask notice ---------- */
+  var REL_GROUPS = [
+    ["Parents", "parent", "in"],
+    ["Children", "parent", "out"],
+    ["Siblings", "sibling", "both"],
+    ["Spouse", "spouse", "both"],
+    ["Ancestors", "ancestor", "in"],
+    ["Descendants", "ancestor", "out"],
+  ];
+  function codexNameOf(appName) {
+    var map = window.__codexNameMap || {};
+    return map[appName] || null;
+  }
+  function relationsFor(n) {
+    var f = feed();
+    if (!f || !f.relations || !f.relations.length) return [];
+    var out = [];
+    REL_GROUPS.forEach(function (g) {
+      var seen = {};
+      var names = [];
+      f.relations.forEach(function (r) {
+        if (r.rel !== g[1]) return;
+        var a = codexNameOf(r.a);
+        var b = codexNameOf(r.b);
+        var other = null;
+        if (g[2] === "in" && b === n) other = a;
+        else if (g[2] === "out" && a === n) other = b;
+        else if (g[2] === "both") other = a === n ? b : b === n ? a : null;
+        if (other && other !== n && !seen[other]) {
+          seen[other] = 1;
+          names.push(other);
+        }
+      });
+      if (names.length) out.push({ label: g[0], names: names });
+    });
+    return out;
+  }
+  function paintSheetExtras(name) {
+    var sheet = $id("sheet");
+    if (!sheet || sheet.querySelector(".sealedbox") || sheet.querySelector(".cxrel")) return;
+    var f = feed();
+    var anchor = sheet.querySelector(".cxd") || sheet.querySelector(".desc");
+    if (!anchor) return;
+    var html = "";
+    var groups = relationsFor(name);
+    if (groups.length) {
+      html +=
+        '<section class="sec cxrel" aria-label="Family"><h4>Family</h4>' +
+        groups
+          .map(function (g) {
+            return (
+              '<div class="cxrel-g"><small>' +
+              escH(g.label) +
+              '</small><div class="chips">' +
+              g.names
+                .map(function (o) {
+                  return (
+                    '<button type="button" class="chip" data-cxch="' +
+                    escH(o) +
+                    '">' +
+                    escH(o) +
+                    "</button>"
+                  );
+                })
+                .join("") +
+              "</div></div>"
+            );
+          })
+          .join("") +
+        "</section>";
+    }
+    if (f && f.masked && (f.masked.characters || f.masked.series) && !sheet.querySelector(".cxmask")) {
+      html +=
+        '<p class="note cxmask" role="status">Some archive details (status, role, abilities, seasons and family) are hidden by the spoiler mask.</p>';
+    }
+    if (html) anchor.insertAdjacentHTML("afterend", html);
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest ? e.target.closest("[data-cxch]") : null;
+    if (!b) return;
+    var n = b.dataset.cxch;
+    if (typeof openCharacter === "function") openCharacter(n);
+  });
+  /** Swap the glyph for the portrait in cast tiles and the sheet header (HTML only, never inside SVG graphs). */
+  function swapPortrait(tile, name) {
+    var url = window.__codexPortrait && window.__codexPortrait[name];
+    if (!url || !tile || tile.dataset.pt === name) return;
+    var svg = tile.querySelector("svg.em");
+    if (!svg) return;
+    var img = document.createElement("img");
+    img.className = "cx-pt";
+    img.alt = "";
+    img.decoding = "async";
+    img.loading = "lazy";
+    img.src = url;
+    svg.replaceWith(img);
+    tile.classList.add("has-pt");
+    tile.dataset.pt = name;
+  }
+  function paintPortraits(root) {
+    if (!window.__codexPortrait) return;
+    root.querySelectorAll("[data-xchar] .tile").forEach(function (t) {
+      var host = t.closest("[data-xchar]");
+      if (host) swapPortrait(t, host.dataset.xchar);
+    });
+    var top = root.querySelector("#sheet .sh-top");
+    if (top) {
+      var h = top.querySelector("h3");
+      var t2 = top.querySelector(".tile");
+      if (h && t2) swapPortrait(t2, h.textContent.trim());
+    }
+  }
+  if (typeof renderChar === "function") {
+    var _rcx2 = renderChar;
+    // eslint-disable-next-line no-global-assign
+    renderChar = function (n) {
+      _rcx2.apply(this, arguments);
+      try {
+        paintSheetExtras(n);
+        paintPortraits(document);
+      } catch (e) {
+        if (window.console) console.warn("[codex] extras skipped", e);
+      }
+    };
+  }
+  var _deco0 = deco;
+  deco = function (root) {
+    _deco0(root);
+    try {
+      paintPortraits(root || document);
+    } catch (e) {}
+  };
   var decoT = 0;
   new MutationObserver(function () {
     cancelAnimationFrame(decoT);
