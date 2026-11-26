@@ -110,3 +110,67 @@ export function mergeAbilitiesWithCodex(
 }
 
 export const codexCanon: CodexCanon = CANON;
+
+export interface RelationRow {
+  id: string;
+  source_id: string;
+  target_id: string;
+  rel: string;
+  label: string | null;
+  created_at: string;
+}
+
+/** Codex edge -> the archive's relation vocabulary (direction: a is <rel> of b). */
+function codexRel(type: string, label: string): string {
+  if (type === "blood") {
+    if (/^(father|mother)$/i.test(label)) return "parent";
+    if (/ancestor/i.test(label)) return "ancestor";
+    if (/^(brothers|sisters|siblings|twins)$/i.test(label)) return "sibling";
+    return "kin";
+  }
+  if (type === "conflict") return "rival";
+  if (type === "contract") return "contract";
+  if (/^married$/i.test(label)) return "spouse";
+  if (/^mentor$/i.test(label)) return "mentor";
+  if (/right hand|hired/i.test(label)) return "commands";
+  return "ally";
+}
+
+/** True for relation rows that come from the Codex canon (not editable database rows). */
+export function isCodexRelation(row: { id: string }): boolean {
+  return row.id.startsWith("codex:");
+}
+
+/**
+ * Relations every style shows: the Codex's ties win for any pair of characters it covers
+ * (database rows for that pair are replaced), and database-only pairs stay as they are.
+ */
+export function mergeRelationsWithCodex<T extends RelationRow>(
+  rows: readonly T[],
+  characters: ReadonlyArray<{ id: string; name: string; alias?: string | null }>,
+): Array<T | RelationRow> {
+  const idByCast = new Map<string, string>();
+  for (const c of characters) {
+    const cast = codexCastName(c.name, c.alias ?? null);
+    if (cast && !idByCast.has(cast)) idByCast.set(cast, c.id);
+  }
+  const pair = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  const codexRows: RelationRow[] = [];
+  const covered = new Set<string>();
+  CANON.bonds.forEach((e, i) => {
+    const s = idByCast.get(e.a);
+    const t = idByCast.get(e.b);
+    if (!s || !t || s === t) return;
+    covered.add(pair(s, t));
+    codexRows.push({
+      id: `codex:${i}`,
+      source_id: s,
+      target_id: t,
+      rel: codexRel(e.type, e.label),
+      label: e.label || null,
+      created_at: "1970-01-01T00:00:00.000Z",
+    });
+  });
+  const kept = rows.filter((r) => !covered.has(pair(r.source_id, r.target_id)));
+  return [...codexRows, ...kept];
+}

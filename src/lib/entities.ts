@@ -73,7 +73,7 @@ import {
 } from "./character-card-merge";
 import { canonicalCharacterName } from "./adminLoreSync";
 import { CANON_CHARACTER_ABILITIES } from "./abilities";
-import { mergeAbilitiesWithCodex } from "./codex-canon";
+import { mergeAbilitiesWithCodex, mergeRelationsWithCodex } from "./codex-canon";
 
 export { mergeCharacterCards, resolveEntityId, getMergedSecondaryIds };
 
@@ -213,16 +213,23 @@ export const entityRelationsQuery = queryOptions({
   staleTime: CACHE_STALE_MS,
   refetchOnWindowFocus: false,
   queryFn: async () => {
-    const { data, error } = await supabase.from("entity_relations").select("*");
+    const [{ data, error }, chars] = await Promise.all([
+      supabase.from("entity_relations").select("*"),
+      supabase.from("entities").select("id,name,alias,kind").eq("kind", "character"),
+    ]);
+    let rows: EntityRelation[] = [];
     if (error) {
-      if (
+      if (!(
         (error as { code?: string }).code === "PGRST205" ||
         /entity_relations|schema cache|does not exist/i.test(error.message)
-      )
-        return [] as EntityRelation[];
-      throw error;
-    }
-    return data;
+      ))
+        throw error;
+    } else rows = data ?? [];
+    // Codex ties win for every pair it covers, in every style (see src/lib/codex-canon.ts).
+    const people = mergeCharacterCards(
+      (chars.data ?? []) as Array<Pick<Entity, "id" | "name" | "alias" | "kind">>,
+    );
+    return mergeRelationsWithCodex(rows, people) as EntityRelation[];
   },
 });
 

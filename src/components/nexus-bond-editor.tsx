@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isCodexRelation } from "@/lib/codex-canon";
 import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
@@ -172,7 +173,9 @@ export function NexusBondEditor() {
               maxLength={240}
               aria-label="Edit bond description"
               className="h-7 rounded-md border border-input bg-background px-2 text-xs"
+              readOnly={isCodexRelation(r)}
               onBlur={(e) => {
+                if (isCodexRelation(r)) return;
                 const v = e.target.value.trim() || null;
                 if (v !== (r.label ?? null))
                   void run(
@@ -200,6 +203,11 @@ export function NexusBondEditor() {
         busy={busy}
         onConfirm={async () => {
           if (!canDelete || !deletingBond || busy) return;
+          if (isCodexRelation(deletingBond)) {
+            toast.info("This tie comes from the Codex canon, so it is read-only here.");
+            setDeletingBond(null);
+            return;
+          }
           const ok = await run(
             supabase.from("entity_relations").delete().eq("id", deletingBond.id),
             "Bond removed.",

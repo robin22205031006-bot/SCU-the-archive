@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { isCodexRelation } from "@/lib/codex-canon";
 import { supabase } from "@/integrations/supabase/client";
 import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
 import { FAMILY_LABEL, FAMILY_RELS, generations, isFamilyRel, type FamilyRel } from "@/lib/family";
@@ -240,6 +241,11 @@ export function FamilyEditor({
   };
   const remove = async () => {
     if (!isAdmin || !deletingLink || deletingBusy) return;
+    if (isCodexRelation(deletingLink)) {
+      toast.info("This tie comes from the Codex canon, so it is read-only here.");
+      setDeletingLink(null);
+      return;
+    }
     setDeletingBusy(true);
     try {
       const { error } = await supabase.from("entity_relations").delete().eq("id", deletingLink.id);

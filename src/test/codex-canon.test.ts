@@ -3,7 +3,9 @@ import {
   codexAbilitiesFor,
   codexCanon,
   codexCastName,
+  isCodexRelation,
   mergeAbilitiesWithCodex,
+  mergeRelationsWithCodex,
 } from "@/lib/codex-canon";
 
 describe("Codex canon shared by every UI style", () => {
@@ -32,5 +34,34 @@ describe("Codex canon shared by every UI style", () => {
 
   it("leaves characters the Codex does not cover unchanged", () => {
     expect(mergeAbilitiesWithCodex("Totally Unknown Person", null, ["X", "Y"])).toEqual(["X", "Y"]);
+  });
+
+  it("replaces archive ties with the Codex's for pairs it covers, keeps the rest", () => {
+    const people = [
+      { id: "z", name: "Zayn Hayes" },
+      { id: "a", name: "Agnus El-Mansur" },
+      { id: "x", name: "Archive Only Person" },
+    ];
+    const row = (id: string, s: string, t: string, rel: string) => ({
+      id,
+      source_id: s,
+      target_id: t,
+      rel,
+      label: null,
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    const out = mergeRelationsWithCodex(
+      [row("db1", "z", "a", "ally"), row("db2", "z", "x", "ally")],
+      people,
+    );
+    expect(out.find((r) => r.id === "db1")).toBeUndefined();
+    expect(out.find((r) => r.id === "db2")).toBeTruthy();
+    const za = out.filter(
+      (r) => isCodexRelation(r) && [r.source_id, r.target_id].sort().join() === "a,z",
+    );
+    expect(za.map((r) => `${r.source_id} ${r.rel} ${r.target_id}: ${r.label}`).sort()).toEqual([
+      "a parent z: Father",
+      "z rival a: Defeated his father",
+    ]);
   });
 });
