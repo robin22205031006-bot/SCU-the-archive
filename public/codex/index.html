@@ -2664,6 +2664,50 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
 #sheet .sh-top h3{font-size:clamp(1.7rem,4vw,2.4rem)}
 @media (min-width:900px){#sheet .cxw-svg{width:min(100%,360px)}}
 
+/* ---- premium Codex navigation ---- */
+.dock{isolation:isolate;border:1px solid color-mix(in srgb,var(--c1) 30%,var(--line))!important;background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 92%,transparent),color-mix(in srgb,var(--panel2) 96%,transparent))!important;
+ clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,16px 100%,0 calc(100% - 16px),0 16px)}
+@media (min-width:768px){.dock{clip-path:none;border-width:0 1px 0 0!important}}
+.dk{transform:none;transition:transform 260ms var(--cx-spring),color 160ms ease-out!important;overflow:hidden;z-index:1}
+.dk .em{transition:transform 420ms var(--cx-spring)}
+.dk[aria-current="true"] .em{transform:translateY(-2px) scale(1.12)}
+.dk[aria-current="true"]::after{display:none}
+.cx-navgem{position:fixed;left:0;top:0;width:100px;height:100px;z-index:27;pointer-events:none;transform-origin:0 0;opacity:0;will-change:transform,opacity;
+ clip-path:polygon(14% 0,86% 0,100% 14%,100% 86%,86% 100%,14% 100%,0 86%,0 14%);
+ background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 30%,transparent),color-mix(in srgb,var(--c2) 14%,transparent));box-shadow:inset 0 0 0 1px var(--c1);transition:opacity 200ms ease-out}
+.dock .dk{position:relative}
+.dk.sig{overflow:visible}
+.cx-sigrings{position:absolute;left:50%;top:6px;width:58px;height:58px;margin-left:-29px;pointer-events:none;z-index:-1}
+.cx-sigrings svg{width:100%;height:100%;overflow:visible}
+.cx-sigrings .r1{fill:none;stroke:var(--c1);stroke-width:1.6;stroke-dasharray:3 7;transform-origin:50% 50%;animation:cxSpin 18s linear infinite}
+.cx-sigrings .r2{fill:none;stroke:var(--c2);stroke-width:1;opacity:.7;stroke-dasharray:14 8;transform-origin:50% 50%;animation:cxSpin 26s linear infinite reverse}
+.cx-sigrings .tk{fill:var(--c1);transform-origin:50% 50%;animation:cxSpin 40s linear infinite}
+.dk.sig .em{animation:cxBreath 3.6s ease-in-out infinite}
+@keyframes cxBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.dk.sig.cx-burst .cx-sigrings{animation:cxBurst 620ms var(--cx-spring)}
+@keyframes cxBurst{0%{transform:rotate(0) scale(1)}40%{transform:rotate(120deg) scale(1.25)}100%{transform:rotate(180deg) scale(1)}}
+.cx-ripple{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c1) 70%,transparent),transparent 70%);pointer-events:none;animation:cxRipple 650ms ease-out forwards;z-index:0}
+@keyframes cxRipple{from{transform:scale(1);opacity:.9}to{transform:scale(9);opacity:0}}
+.rib{border:1px solid color-mix(in srgb,var(--c1) 35%,var(--line))!important;background:color-mix(in srgb,var(--panel) 94%,transparent)!important;overflow:visible!important}
+.rib.cx-fan::before{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--c1),transparent);transform-origin:50% 50%;animation:cxDraw 520ms var(--cx-soft) both}
+@media (min-width:768px){.rib.cx-fan::before{left:-1px;right:auto;top:12px;bottom:12px;width:2px;height:auto;background:linear-gradient(180deg,transparent,var(--c1),transparent);transform-origin:50% 0}}
+.rib.cx-fan .rb{animation:cxFan 560ms var(--cx-spring) both;animation-delay:calc(var(--i,0) * 45ms);transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}
+@keyframes cxFan{from{opacity:0;transform:translate(var(--fx,0),calc(var(--fy,0px) + 22px)) rotate(var(--fr,0deg)) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),var(--fy,0)) rotate(var(--fr,0deg))}}
+@media (min-width:768px){@keyframes cxFan{from{opacity:0;transform:translate(calc(var(--fx,0px) - 22px),0) scale(.82)}to{opacity:1;transform:translate(var(--fx,0),0)}}}
+.rb{position:relative;overflow:hidden}
+.rb[aria-current="true"]{box-shadow:inset 0 0 0 1px var(--c1)}
+#view.cx-flow-r{animation:cxFlowR 560ms var(--cx-soft) both}
+#view.cx-flow-l{animation:cxFlowL 560ms var(--cx-soft) both}
+@keyframes cxFlowR{from{opacity:0;transform:translateX(42px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes cxFlowL{from{opacity:0;transform:translateX(-42px) scale(.985)}to{opacity:1;transform:none}}
+.cx-sweep{position:fixed;top:0;bottom:0;left:0;width:60vw;z-index:24;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c1) 26%,transparent),color-mix(in srgb,var(--c2) 18%,transparent),transparent);transform:translateX(-70vw)}
+.cx-sweep.go-r{animation:cxSweepR 640ms cubic-bezier(.3,.7,.2,1)}
+.cx-sweep.go-l{animation:cxSweepL 640ms cubic-bezier(.3,.7,.2,1)}
+@keyframes cxSweepR{0%{opacity:0;transform:translateX(-70vw)}30%{opacity:1}100%{opacity:0;transform:translateX(110vw)}}
+@keyframes cxSweepL{0%{opacity:0;transform:translateX(110vw)}30%{opacity:1}100%{opacity:0;transform:translateX(-70vw)}}
+@media (prefers-reduced-motion:reduce){.cx-sigrings *,.dk.sig .em,.rib.cx-fan .rb,.rib.cx-fan::before,#view.cx-flow-r,#view.cx-flow-l,.cx-sweep,.cx-ripple{animation:none!important}.cx-navgem{transition:none}}
+html[data-motion="off"] .cx-sigrings *,html[data-motion="off"] .dk.sig .em,html[data-motion="off"] .rib.cx-fan .rb,html[data-motion="off"] .cx-sweep{animation:none!important}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -4518,6 +4562,158 @@ html[data-motion="off"] .cx-rk,html[data-motion="off"] .cx-rk.rk5::after{animati
       paintClose();
     } catch (e) {}
   };
+
+  /* ---------- 9. premium Codex navigation: gliding gem, magnetic dock, sigil, fan, flow ---------- */
+  (function navFx() {
+    var dock = $id("dock");
+    if (!dock) return;
+    var gem = document.createElement("span");
+    gem.className = "cx-navgem";
+    gem.setAttribute("aria-hidden", "true");
+    document.body.appendChild(gem);
+    var gx = 0, gy = 0, gw = 0, gh = 0, gshow = 0;
+    var put = function () {
+      gem.style.transform =
+        "translate(" + gx.toFixed(1) + "px," + gy.toFixed(1) + "px) scale(" + (gw / 100).toFixed(4) + "," + (gh / 100).toFixed(4) + ")";
+      gem.style.opacity = String(gshow);
+    };
+    var sx = new Spring(0, function (v) { gx = v; put(); }, { k: 230, c: 22 });
+    var sy = new Spring(0, function (v) { gy = v; put(); }, { k: 230, c: 22 });
+    var sw = new Spring(0, function (v) { gw = v; put(); }, { k: 260, c: 24 });
+    var sh = new Spring(0, function (v) { gh = v; put(); }, { k: 260, c: 24 });
+    var first = true;
+    function placeGem() {
+      var on = dock.querySelector('.dk[aria-current="true"]') || dock.querySelector(".dk.sig");
+      if (!on || !dock.getClientRects().length || getComputedStyle(dock).display === "none") {
+        gshow = 0;
+        put();
+        return;
+      }
+      var r = on.getBoundingClientRect();
+      var pad = 4;
+      var tx = r.left - pad, ty = r.top - pad, tw = r.width + pad * 2, th = r.height + pad * 2;
+      gshow = 1;
+      if (first || reduced()) {
+        first = false;
+        sx.x = gx = tx; sy.x = gy = ty; sw.x = gw = tw; sh.x = gh = th;
+        sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+        put();
+        return;
+      }
+      sx.to(tx); sy.to(ty); sw.to(tw); sh.to(th);
+    }
+    function decorateDock() {
+      var sig = dock.querySelector(".dk.sig");
+      if (sig && !sig.querySelector(".cx-sigrings")) {
+        sig.insertAdjacentHTML(
+          "afterbegin",
+          '<span class="cx-sigrings" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="r1" cx="50" cy="50" r="44"/><circle class="r2" cx="50" cy="50" r="36"/><path class="tk" d="M50 2 L53 9 L47 9Z M50 98 L53 91 L47 91Z M2 50 L9 47 L9 53Z M98 50 L91 47 L91 53Z"/></svg></span>',
+        );
+      }
+      placeGem();
+    }
+    function fanRibbon() {
+      var rib = $id("rib");
+      if (!rib || rib.hidden || rib.dataset.cxFan === rib.innerHTML.length + "") return;
+      rib.dataset.cxFan = rib.innerHTML.length + "";
+      var items = rib.querySelectorAll(".rb");
+      var n = items.length;
+      var vertical = window.matchMedia("(min-width:768px)").matches;
+      items.forEach(function (it, i) {
+        var o = i - (n - 1) / 2;
+        it.style.setProperty("--i", String(i));
+        it.style.setProperty("--fx", vertical ? (o * o * 2.2).toFixed(1) + "px" : "0px");
+        it.style.setProperty("--fy", vertical ? "0px" : (o * o * 1.6).toFixed(1) + "px");
+        it.style.setProperty("--fr", vertical ? "0deg" : (o * 1.2).toFixed(2) + "deg");
+      });
+      rib.classList.remove("cx-fan");
+      void rib.offsetWidth;
+      rib.classList.add("cx-fan");
+    }
+    new MutationObserver(function () {
+      requestAnimationFrame(function () {
+        decorateDock();
+        fanRibbon();
+      });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-current"] });
+    window.addEventListener("resize", function () {
+      first = true;
+      placeGem();
+    });
+    decorateDock();
+
+    // magnetic lean toward the pointer (mouse/pen only, never on touch)
+    var hoverable = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+    if (hoverable) {
+      dock.addEventListener("pointermove", function (e) {
+        if (reduced()) return;
+        dock.querySelectorAll(".dk").forEach(function (b) {
+          var r = b.getBoundingClientRect();
+          var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          var dx = e.clientX - cx, dy = e.clientY - cy;
+          var d = Math.hypot(dx, dy);
+          var t = Math.max(0, 1 - d / 140);
+          b.style.transform = "translate(" + (dx * 0.08 * t).toFixed(2) + "px," + (dy * 0.08 * t).toFixed(2) + "px) scale(" + (1 + 0.22 * t).toFixed(3) + ")";
+        });
+      });
+      dock.addEventListener("pointerleave", function () {
+        dock.querySelectorAll(".dk").forEach(function (b) {
+          b.style.transform = "";
+        });
+      });
+    }
+
+    // tap ripple on dock and ribbon buttons
+    document.addEventListener("pointerdown", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest(".dk,.rb") : null;
+      if (!b || reduced()) return;
+      var r = b.getBoundingClientRect();
+      var rp = document.createElement("span");
+      rp.className = "cx-ripple";
+      rp.style.left = e.clientX - r.left + "px";
+      rp.style.top = e.clientY - r.top + "px";
+      b.appendChild(rp);
+      setTimeout(function () {
+        rp.remove();
+      }, 700);
+      if (b.classList.contains("sig")) {
+        b.classList.remove("cx-burst");
+        void b.offsetWidth;
+        b.classList.add("cx-burst");
+      }
+    });
+
+    // flow transition: the page slides the way you travelled, with an ink sweep
+    var sweep = document.createElement("span");
+    sweep.className = "cx-sweep";
+    sweep.setAttribute("aria-hidden", "true");
+    document.body.appendChild(sweep);
+    var order = function (id) {
+      return API ? API.NT.findIndex(function (m) { return m[5] === id || m[0] === id; }) : 0;
+    };
+    var lastTab = typeof tab !== "undefined" ? tab : "";
+    if (typeof render === "function") {
+      var _rflow = render;
+      // eslint-disable-next-line no-global-assign
+      render = function () {
+        var prev = lastTab;
+        _rflow.apply(this, arguments);
+        if (typeof tab === "undefined" || tab === prev) return;
+        lastTab = tab;
+        if (reduced()) return;
+        var dir = order(tab) >= order(prev) ? "r" : "l";
+        var view = $id("view");
+        if (view) {
+          view.classList.remove("cx-flow-r", "cx-flow-l", "iris");
+          void view.offsetWidth;
+          view.classList.add("cx-flow-" + dir);
+        }
+        sweep.classList.remove("go-r", "go-l");
+        void sweep.offsetWidth;
+        sweep.classList.add("go-" + dir);
+      };
+    }
+  })();
   // One pass per frame at most, and never postponed by spring counters ticking.
   var decoPending = false;
   var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";
