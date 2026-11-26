@@ -2739,6 +2739,10 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
 .cx-refresh-x{width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--muted);font-size:1.2rem}
 @keyframes cxRefreshIn{from{opacity:0;transform:translateX(-50%) translateY(-12px) scale(.94)}to{opacity:1;transform:translateX(-50%)}}
 
+.cx-toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(520px,calc(100vw - 24px));padding:10px 16px;border-radius:14px;border:1px solid var(--c1);background:var(--panel);color:var(--ink);font-size:.86rem;box-shadow:0 12px 32px rgba(0,0,0,.35);transform:translateX(-50%);animation:cxRefreshIn 480ms var(--cx-spring) both}
+.cx-toast.bad{border-color:#F05A66}
+@media (min-width:768px){.cx-toast{bottom:24px}}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -4841,6 +4845,83 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
       if (el) el.remove();
     };
   };
+
+  /* ---------- 12. staff edits made in the Codex reach the archive (and so every style) ---------- */
+  function cxToast(msg, bad) {
+    var old = $id("cxToast");
+    if (old) old.remove();
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="cx-toast' + (bad ? " bad" : "") + '" id="cxToast" role="status">' + escH(msg) + "</div>",
+    );
+    setTimeout(function () {
+      var t = $id("cxToast");
+      if (t) t.remove();
+    }, 5200);
+  }
+  (function syncOut() {
+    if (!H || typeof S === "undefined") return;
+    var SKEY = "scu-codex-v1";
+    var snap = function () {
+      try {
+        var ed = S.ed || {};
+        var rest = {};
+        Object.keys(ed).forEach(function (k) {
+          if (k !== "cast" && k !== "series") rest[k] = ed[k];
+        });
+        return JSON.parse(JSON.stringify({ cast: ed.cast || {}, series: ed.series || null, rest: rest }));
+      } catch (e) {
+        return { cast: {}, series: null, rest: {} };
+      }
+    };
+    var prev = snap();
+    var t = 0;
+    var orig = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k) {
+      orig.apply(this, arguments);
+      if (k !== SKEY) return;
+      clearTimeout(t);
+      t = setTimeout(flush, 250);
+    };
+    function flush() {
+      var f = feed();
+      var next = snap();
+      var before = prev;
+      prev = next;
+      if (!f || !f.staff || !H.saveCharacter || !H.saveSeasonTitles) return;
+      var jobs = [];
+      Object.keys(next.cast).forEach(function (n) {
+        if (JSON.stringify(next.cast[n]) === JSON.stringify(before.cast[n])) return;
+        jobs.push(H.saveCharacter(n, { title: next.cast[n].title, abil: next.cast[n].abil }));
+      });
+      if (next.series && JSON.stringify(next.series) !== JSON.stringify(before.series)) {
+        next.series.forEach(function (sr) {
+          var ps = (before.series || []).find(function (x) {
+            return x.id === sr.id;
+          });
+          if (ps && JSON.stringify(ps.seasons) === JSON.stringify(sr.seasons)) return;
+          jobs.push(H.saveSeasonTitles(sr.name, sr.seasons || []));
+        });
+      }
+      var localOnly = JSON.stringify(next.rest) !== JSON.stringify(before.rest);
+      if (!jobs.length) {
+        if (localOnly)
+          cxToast("Saved in the Codex. The archive has no field for this edit yet, so other styles keep their version.");
+        return;
+      }
+      Promise.all(jobs).then(function (res) {
+        var bad = res.filter(function (r) {
+          return r && !r.ok;
+        });
+        var done = res.filter(function (r) {
+          return r && r.changed;
+        });
+        if (bad.length) cxToast(bad[0].message || "Could not save to the archive.", true);
+        else if (done.length) cxToast(done.length === 1 ? done[0].message : done.length + " changes saved to the archive for every style.");
+        else if (localOnly) cxToast("Saved in the Codex. The archive has no field for this edit yet.");
+      });
+    }
+  })();
   // One pass per frame at most, and never postponed by spring counters ticking.
   var decoPending = false;
   var TICKERS = ".cxg-v,.cxw-avg,[data-pi]";
