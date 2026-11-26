@@ -95,12 +95,36 @@ export default function AdminWelcome({
           )}
           {flavor === "manga" && <span className="awel-speedlines" />}
           {flavor === "codex" && (
-            <>
-              <span className="awel-bar awel-bar-top" />
-              <span className="awel-bar awel-bar-bottom" />
-              <span className="awel-flare" />
-            </>
+            <span className="awel-astro">
+              <svg viewBox="0 0 240 240">
+                <circle className="a3" cx="120" cy="120" r="112" />
+                <circle className="a2" cx="120" cy="120" r="92" />
+                <circle className="a1" cx="120" cy="120" r="70" />
+              </svg>
+            </span>
           )}
+          {/* shared magic: a turning rune sigil and a burst of light around the name */}
+          <span className="awel-sigil">
+            <svg viewBox="0 0 200 200">
+              <circle cx="100" cy="100" r="92" />
+              <circle cx="100" cy="100" r="80" />
+              <path d="M100 6 L106 18 L94 18Z M100 194 L106 182 L94 182Z M6 100 L18 94 L18 106Z M194 100 L182 94 L182 106Z M33 33 L44 40 L40 44Z M167 167 L156 160 L160 156Z M167 33 L160 44 L156 40Z M33 167 L40 156 L44 160Z" />
+            </svg>
+          </span>
+          <span className="awel-sparks">
+            {Array.from({ length: 28 }, (_, i) => (
+              <i
+                key={i}
+                style={
+                  {
+                    "--a": `${(i * 360) / 28}deg`,
+                    "--r": `${140 + (i % 5) * 34}px`,
+                    "--dl": `${600 + (i % 7) * 45}ms`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </span>
         </div>
       )}
       <div className="awel-card">
@@ -114,16 +138,17 @@ export default function AdminWelcome({
         <p className="awel-name" aria-hidden="true">
           {flavor === "nexus"
             ? decrypted
-            : animated && (flavor === "classic" || flavor === "codex")
+            : animated && flavor !== "manga" && flavor !== "minimal"
               ? letters.map((ch, i) => (
                   <span key={i} className="awel-letter" style={{ "--i": i } as CSSProperties}>
                     {ch === " " ? " " : ch}
                   </span>
                 ))
               : name}
+          {animated && flavor !== "manga" && <span className="awel-shine" aria-hidden="true" />}
         </p>
         <p className="awel-role" aria-hidden="true">
-          {flavor === "manga" ? "★ " + role + " ★" : role} · Welcome back to the archive
+          {flavor === "manga" ? "★ " + role + " ★" : role} · The archive welcomes you
         </p>
         {flavor === "manga" && animated && (
           <span className="awel-sfx" aria-hidden="true">

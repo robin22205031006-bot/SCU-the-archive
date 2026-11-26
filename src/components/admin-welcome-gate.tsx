@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 import { useOptionalAuth } from "@/context/AuthContext";
-import { useAdminPermissions } from "@/hooks/use-admin";
+import { useRealRoles } from "@/hooks/use-admin";
+import { STAFF_RETURN_EVENT } from "@/components/role-view-switch";
 import { useOptionalUiMode } from "@/hooks/use-ui-mode";
 import { supabase } from "@/integrations/supabase/client";
 import { useAnimationsEnabled } from "@/lib/animations";
@@ -32,7 +33,7 @@ interface Ready {
 /**
  * Decides whether to play the admin welcome: only after a real, recent sign-in
  * (token session id + auth time, not Supabase's repeated SIGNED_IN event), only once
- * that sign-in is confirmed as an admin, never on /auth, only in a visible tab and
+ * that sign-in is confirmed as staff (admin, superadmin or moderator), never on /auth, only in a visible tab and
  * once per sign-in. The animation itself is a lazy chunk, so this costs nothing at
  * startup for everyone else.
  */
@@ -40,7 +41,13 @@ export function AdminWelcomeGate() {
   const auth = useOptionalAuth();
   const session = auth?.session ?? null;
   const user = auth?.user ?? null;
-  const { isAdmin, isSuperadmin } = useAdminPermissions();
+  // Real roles: admins, superadmins and moderators are all greeted, even if they last left
+  // the app in "view as reader".
+  const realRoles = useRealRoles();
+  const isSuperadmin = realRoles.includes("superadmin");
+  const isAdmin = isSuperadmin || realRoles.includes("admin");
+  const isStaff = isAdmin || realRoles.includes("moderator");
+  const roleLabel = isSuperadmin ? "Superadmin" : isAdmin ? "Admin" : "Moderator";
   const { pathname } = useLocation();
   const uiMode = useOptionalUiMode();
   const animationsEnabled = useAnimationsEnabled();
@@ -49,7 +56,7 @@ export function AdminWelcomeGate() {
   // Same key and shape as SiteNav's profile query, so it is shared, not refetched.
   const { data: profile, isFetched: profileFetched } = useQuery({
     queryKey: ["profile", user?.id],
-    enabled: !!user?.id && isAdmin,
+    enabled: !!user?.id && isStaff,
     staleTime: 1000 * 60 * 15,
     refetchOnWindowFocus: false,
     queryFn: async () => {
@@ -63,7 +70,7 @@ export function AdminWelcomeGate() {
   });
 
   useEffect(() => {
-    if (ready || !session || !user || !isAdmin || !profileFetched) return;
+    if (ready || !session || !user || !isStaff || !profileFetched) return;
     if (pathname === "/auth" || pathname.startsWith("/auth/")) return;
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
     const stamp = readSignInStamp(session);
@@ -83,7 +90,7 @@ export function AdminWelcomeGate() {
       !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     setReady({
       name: resolveWelcomeName(profile, user),
-      role: isSuperadmin ? "Superadmin" : "Admin",
+      role: roleLabel,
       greeting: welcomeGreeting(),
       flavor: (["classic", "nexus", "manga", "codex", "minimal"].includes(mode)
         ? mode
@@ -94,14 +101,36 @@ export function AdminWelcomeGate() {
     ready,
     session,
     user,
-    isAdmin,
-    isSuperadmin,
+    isStaff,
+    roleLabel,
     profile,
     profileFetched,
     pathname,
     uiMode?.mode,
     animationsEnabled,
   ]);
+
+  // Switching back from "view as reader" greets the staff member again.
+  useEffect(() => {
+    const onReturn = () => {
+      if (!user || !isStaff) return;
+      const mode = uiMode?.mode ?? "classic";
+      const reducedMotion =
+        typeof window !== "undefined" &&
+        !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      setReady({
+        name: resolveWelcomeName(profile, user),
+        role: roleLabel,
+        greeting: "Welcome back",
+        flavor: (["classic", "nexus", "manga", "codex", "minimal"].includes(mode)
+          ? mode
+          : "classic") as WelcomeFlavor,
+        motion: resolveWelcomeMotion({ mode, animationsEnabled, reducedMotion }),
+      });
+    };
+    window.addEventListener(STAFF_RETURN_EVENT, onReturn);
+    return () => window.removeEventListener(STAFF_RETURN_EVENT, onReturn);
+  }, [user, isStaff, profile, roleLabel, uiMode?.mode, animationsEnabled]);
 
   if (!ready) return null;
   return (

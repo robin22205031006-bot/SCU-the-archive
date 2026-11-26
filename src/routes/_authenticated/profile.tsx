@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RoleViewToggle } from "@/components/role-view-switch";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, Loader2, Trash2 } from "lucide-react";
@@ -108,6 +109,7 @@ function ProfilePage() {
       <MotionSection as="header">
         <h1 className="text-4xl font-medium">Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">{user?.email ?? "Not signed in."}</p>
+        <RoleViewToggle className="mt-3" />
       </MotionSection>
 
       <MotionSection as="section" delay={0.04} className="glass mt-8 rounded-2xl p-5">

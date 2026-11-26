@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureSuperadminAccess } from "@/lib/roles.functions";
 import { isVerifiedSuperadmin } from "@/lib/roles";
+import { effectiveRoles, useReaderView } from "@/lib/role-view";
 
 const SESSION_TIMEOUT_MS = 5_000;
 
@@ -42,7 +43,8 @@ export function useSession() {
   });
 }
 
-export function useRoles() {
+/** Roles actually held (from user_roles), ignoring "view as reader". */
+export function useRealRoles() {
   const { data: user } = useSession();
   const q = useQuery({
     queryKey: ["roles", user?.id],
@@ -76,6 +78,22 @@ export function useRoles() {
     },
   });
   return user ? (q.data ?? []) : [];
+}
+
+/**
+ * Roles the UI acts on. While a staff member has switched to "view as reader" this is empty,
+ * so every style hides staff controls; writes stay checked server-side either way.
+ */
+export function useRoles() {
+  const real = useRealRoles();
+  const readerView = useReaderView();
+  return effectiveRoles(real, readerView);
+}
+
+/** True for admins, superadmins and moderators by their real roles (even in reader view). */
+export function useIsRealStaff() {
+  const roles = useRealRoles();
+  return roles.includes("admin") || roles.includes("superadmin") || roles.includes("moderator");
 }
 
 export function useIsSuperadmin() {

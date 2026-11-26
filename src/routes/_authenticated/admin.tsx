@@ -9,6 +9,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin, useIsStaff } from "@/hooks/use-admin";
+import { RoleViewToggle } from "@/components/role-view-switch";
 import { isSuperadminEmail } from "@/lib/roles";
 import { listUserRoles, setUserRole } from "@/lib/roles.functions";
 import { syncLoreExport } from "@/lib/ingest.functions";
@@ -236,6 +237,7 @@ function Admin() {
           <p className="text-[11px] uppercase tracking-[0.25em] text-accent">Control room</p>
           <h1 className="mt-2 text-5xl font-medium glow-text">Admin</h1>
         </div>
+        <RoleViewToggle />
         {isAdmin && (
           <div className="flex flex-wrap gap-2">
             <Button asChild size="sm" variant="secondary">
