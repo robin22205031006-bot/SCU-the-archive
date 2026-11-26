@@ -2487,6 +2487,30 @@ html[data-motion="off"] .cxst-step,html[data-motion="off"] .cxst-link,html[data-
 @media (prefers-reduced-motion:reduce){.cxo-ring,.cxo-links i{animation:none!important}.cxo-n{transition:none!important}}
 html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation:none!important}
 
+/* ---- compare-against picker + ascension line ---- */
+.cxd-vsr{display:flex;align-items:center;gap:8px;margin-top:10px;min-width:0}
+.cxd-vsr>span{font-size:.75rem;color:var(--muted);flex:none}
+.cxd-vs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;min-width:0}
+.cxd-vs::-webkit-scrollbar{display:none}
+.cxd-vs button{flex:none;white-space:nowrap;min-height:36px!important}
+.cxtr{margin-top:16px}
+.cxtr-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.cxtr-h h4{margin:0}
+.cxtr-h span{font-size:.75rem;color:var(--muted)}
+.cxtr-svg{display:block;width:100%;height:auto;margin-top:6px;overflow:visible}
+.cxtr-base{stroke:var(--line);stroke-width:1}
+.cxtr-area{fill:color-mix(in srgb,var(--c1) 16%,transparent);animation:cxFade 600ms var(--cx-soft) both}
+.cxtr-line{fill:none;stroke:var(--c1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.cxtr-pt{cursor:pointer;outline:none}
+.cxtr-hit{fill:transparent}
+.cxtr-dot{fill:var(--panel2);stroke:var(--c1);stroke-width:2;transform-box:fill-box;transform-origin:50% 50%;transition:transform 360ms var(--cx-spring)}
+.cxtr-pt:hover .cxtr-dot,.cxtr-pt:focus-visible .cxtr-dot{transform:scale(1.5)}
+.cxtr-pt.vs .cxtr-dot{stroke-dasharray:2 2;stroke:var(--ink)}
+.cxtr-v{font-size:9px;font-weight:600;fill:var(--ink);font-variant-numeric:tabular-nums}
+.cxtr-l{font-size:8.5px;fill:var(--muted)}
+.cxtr-cur{pointer-events:none;will-change:transform}
+.cxtr-cur rect{fill:var(--c2);stroke:var(--panel2);stroke-width:2}
+
 </style>
 <script id="codex-host-bridge">
 /* Codex host bridge (body): runs after every Codex script.
@@ -2938,9 +2962,74 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
       '<div class="cxc-cap" aria-live="polite"><b>' + escH(items[0].name) + "</b><small>" + escH(items[0].sub) + "</small></div></div>"
     );
   }
+  /** Which season the ghost marks compare against: the chosen one, else the previous, else the next. */
+  function cmpIndex(d, i, st) {
+    if (d.seasons.length < 2) return null;
+    if (st && st.cmpTo != null && st.cmpTo !== i && d.seasons[st.cmpTo]) return st.cmpTo;
+    return i > 0 ? i - 1 : 1;
+  }
+  function avgOf(stats) {
+    if (!stats || !stats.length) return null;
+    var t = 0;
+    stats.forEach(function (x) {
+      t += x.value;
+    });
+    return Math.round(t / stats.length);
+  }
+  /** Ascension line: power index across seasons. Codex-only. */
+  function trendHTML(d, i, ci) {
+    var pts = d.seasons.map(function (x) {
+      return avgOf(x.stats);
+    });
+    var have = pts.filter(function (v) {
+      return v != null;
+    }).length;
+    if (have < 2) return "";
+    var n = d.seasons.length;
+    var W = 300;
+    var H = 96;
+    var px = function (j) {
+      return n === 1 ? W / 2 : 18 + (j * (W - 36)) / (n - 1);
+    };
+    var py = function (v) {
+      return H - 18 - (v / 100) * (H - 34);
+    };
+    var line = [];
+    pts.forEach(function (v, j) {
+      if (v != null) line.push(px(j).toFixed(1) + "," + py(v).toFixed(1));
+    });
+    var area = "M" + line[0] + " L" + line.join(" L") + " L" + line[line.length - 1].split(",")[0] + "," + (H - 18) + " L" + line[0].split(",")[0] + "," + (H - 18) + " Z";
+    var cur = pts[i] == null ? null : { x: px(i), y: py(pts[i]) };
+    return (
+      '<div class="cxtr"><div class="cxtr-h"><h4>Ascension line</h4><span>Power index by season</span></div>' +
+      '<svg class="cxtr-svg" viewBox="0 0 ' + W + " " + H + '" role="group" aria-label="Power index across seasons">' +
+      '<line class="cxtr-base" x1="12" x2="' + (W - 12) + '" y1="' + (H - 18) + '" y2="' + (H - 18) + '"/>' +
+      '<path class="cxtr-area" d="' + area + '"/>' +
+      '<polyline class="cxtr-line" points="' + line.join(" ") + '"/>' +
+      pts
+        .map(function (v, j) {
+          if (v == null) return "";
+          var cls = "cxtr-pt" + (j === ci ? " vs" : "");
+          return (
+            '<g class="' + cls + '" data-cxtrend="' + j + '" role="button" tabindex="0" aria-label="' +
+            escH(d.seasons[j].label) + ", index " + v + '"><circle class="cxtr-hit" cx="' + px(j).toFixed(1) + '" cy="' + py(v).toFixed(1) +
+            '" r="14"/><circle class="cxtr-dot" cx="' + px(j).toFixed(1) + '" cy="' + py(v).toFixed(1) + '" r="4"/>' +
+            '<text class="cxtr-v" x="' + px(j).toFixed(1) + '" y="' + (py(v) - 9).toFixed(1) + '" text-anchor="middle">' + v + "</text>" +
+            '<text class="cxtr-l" x="' + px(j).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + escH(d.seasons[j].label.replace(/^Season\s*/i, "S")) + "</text></g>"
+          );
+        })
+        .join("") +
+      (cur
+        ? '<g class="cxtr-cur" data-x="' + cur.x.toFixed(1) + '" data-y="' + cur.y.toFixed(1) + '"><rect x="-7" y="-7" width="14" height="14" rx="2" transform="rotate(45)"/></g>'
+        : "") +
+      "</svg></div>"
+    );
+  }
   function panelHTML(d, i, cmp) {
     var s = d.seasons[i];
-    var prev = i > 0 ? d.seasons[i - 1] : null;
+    var stt = dState[curChar] || {};
+    var ci = cmpIndex(d, i, stt);
+    var prev = ci == null ? null : d.seasons[ci];
     var st = String(s.status || "").toLowerCase();
     var sc = STATUS_COL[st] || "var(--c1)";
     var avg = s.stats.length
@@ -3005,13 +3094,34 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
           '">' +
           gauges +
           "</div>" +
+          (prev && cmp
+            ? '<div class="cxd-vsr"><span>Against</span><div class="xseg cxd-vs" role="group" aria-label="Compare against">' +
+              d.seasons
+                .map(function (x, j) {
+                  if (j === i) return "";
+                  return (
+                    '<button type="button" data-cxvs="' +
+                    j +
+                    '" class="' +
+                    (j === ci ? "on" : "") +
+                    '" aria-pressed="' +
+                    (j === ci) +
+                    '">' +
+                    escH(x.label) +
+                    "</button>"
+                  );
+                })
+                .join("") +
+              "</div></div>"
+            : "") +
           (prev
             ? '<p class="note cxd-cmpn">' +
               (cmp
-                ? "Ghost marks show " + escH(prev.label) + "."
-                : "Turn on compare to see the change from " + escH(prev.label) + ".")
-              + "</p>"
-            : "")
+                ? "Ghost marks show " + escH(prev.series) + " · " + escH(prev.label) + "."
+                : "Turn on compare to measure this season against any other.") +
+              "</p>"
+            : "") +
+          trendHTML(d, i, ci)
         : '<p class="note">No stat profile recorded for this season yet.</p>') +
       (function () {
         var sp = splitAbilities(s.abilities);
@@ -3245,11 +3355,37 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
     if (top && top.getAttribute("style")) root.setAttribute("style", top.getAttribute("style"));
     var rail = root.querySelector(".cxr");
     var panel = root.querySelector(".cxd-panel");
-    var paint = function (dir) {
+    var paint = function (dir, quiet) {
+      var y0 = window.scrollY;
       panel.innerHTML = panelHTML(d, st.i, st.cmp);
       panel.classList.remove("in-l", "in-r", "in");
-      void panel.offsetWidth;
-      panel.classList.add(dir > 0 ? "in-r" : dir < 0 ? "in-l" : "in");
+      if (!quiet) {
+        void panel.offsetWidth;
+        panel.classList.add(dir > 0 ? "in-r" : dir < 0 ? "in-l" : "in");
+      }
+      var cur = panel.querySelector(".cxtr-cur");
+      if (cur) {
+        var tx = +cur.dataset.x;
+        var ty = +cur.dataset.y;
+        var fx = st.trX != null ? st.trX : tx;
+        var fy = st.trY != null ? st.trY : ty;
+        var ox = fx;
+        var oy = fy;
+        var put = function () {
+          cur.style.transform = "translate(" + ox.toFixed(2) + "px," + oy.toFixed(2) + "px)";
+        };
+        new Spring(fx, function (v) {
+          ox = v;
+          put();
+        }, { k: 190, c: 20 }).to(tx);
+        new Spring(fy, function (v) {
+          oy = v;
+          put();
+        }, { k: 190, c: 20 }).to(ty);
+        st.trX = tx;
+        st.trY = ty;
+      }
+      if (quiet) window.scrollTo(window.scrollX, y0);
       animateGauges(panel, st);
       wireWheel(panel, d.seasons[st.i], st);
     };
@@ -3283,15 +3419,25 @@ html[data-motion="off"] .cxo-ring,html[data-motion="off"] .cxo-links i{animation
       cmpBtn.onclick = function () {
         st.cmp = !st.cmp;
         cmpBtn.setAttribute("aria-pressed", String(st.cmp));
-        var box = panel.querySelector(".cxd-stats");
-        if (box) box.classList.toggle("cmp", st.cmp && st.i > 0);
-        var note = panel.querySelector(".cxd-cmpn");
-        var prev = d.seasons[st.i - 1];
-        if (note && prev)
-          note.textContent = st.cmp
-            ? "Ghost marks show " + prev.label + "."
-            : "Turn on compare to see the change from " + prev.label + ".";
+        paint(0, true);
       };
+    root.addEventListener("click", function (e) {
+      var vs = e.target.closest("[data-cxvs]");
+      if (vs) {
+        st.cmpTo = +vs.dataset.cxvs;
+        paint(0, true);
+        return;
+      }
+      var tp = e.target.closest("[data-cxtrend]");
+      if (tp) select(+tp.dataset.cxtrend, false);
+    });
+    root.addEventListener("keydown", function (e) {
+      var tp = e.target.closest && e.target.closest("[data-cxtrend]");
+      if (tp && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault();
+        select(+tp.dataset.cxtrend, false);
+      }
+    });
     placeLens(rail, st, true);
     paint(0);
     requestAnimationFrame(function () {
