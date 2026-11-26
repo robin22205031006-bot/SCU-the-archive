@@ -267,6 +267,21 @@ describe("Codex feed: spoiler mask, portraits and family", () => {
     expect(masked.ranks).toEqual({});
   });
 
+  it("sends the series catalogue with positional season titles, and masks it", () => {
+    const feed = buildCodexFeed({
+      ...base,
+      series: [{ id: "s1", title: "Sentinels", season_count: 3, season_names: ["Awakening"] }],
+    });
+    expect(feed.series).toEqual([
+      { title: "Sentinels", desc: undefined, seasons: ["Awakening", "", ""] },
+    ]);
+    const masked = buildCodexFeed({
+      ...base,
+      masked: { characters: false, abilities: false, archive: false, series: true },
+    });
+    expect(masked.series).toEqual([]);
+  });
+
   it("accepts only real image URLs", () => {
     expect(safePortrait("data:image/png;base64,AAAA")).toBeTruthy();
     expect(safePortrait("https://example.com/a.png")).toBeTruthy();

@@ -61,6 +61,12 @@ export interface CodexFeedRanks {
   /** dossier season key -> ability name -> rank as of that season */
   seasons: Record<string, Record<string, number>>;
 }
+export interface CodexFeedSeries {
+  title: string;
+  desc?: string | undefined;
+  /** Positional season titles ("" where unnamed), same as the shared Series page. */
+  seasons: string[];
+}
 export interface CodexFeedMask {
   characters: boolean;
   abilities: boolean;
@@ -113,6 +119,8 @@ export interface CodexFeed {
   groups: CodexFeedGroup[];
   /** Status history per character, from the same resolver the Nexus timeline uses. */
   status: Record<string, { current: string; steps: CodexFeedStatusStep[] }>;
+  /** Series catalogue from the archive (Codex fills blanks and adds missing series only). */
+  series: CodexFeedSeries[];
   /** Ability ranks per character, resolved like the Nexus rank map. */
   ranks: Record<string, CodexFeedRanks>;
   /** Rank names and colours shared with Nexus (index 0 = rank I). */
@@ -136,6 +144,7 @@ export interface CodexEntityInput {
 export interface CodexSeriesInput {
   id: string;
   title: string;
+  description?: string | null;
   season_count?: number | null;
   season_names?: string[] | null;
 }
@@ -397,6 +406,17 @@ export function buildCodexFeed({
     bonds,
     groups: groupOut,
     status: statusOut,
+    series: masked.series
+      ? []
+      : series.slice(0, 60).map((sr) => {
+          const names = sr.season_names ?? [];
+          const count = Math.min(60, Math.max(sr.season_count ?? 0, names.length));
+          return {
+            title: clip(sr.title, 80),
+            desc: clip(sr.description, 400) || undefined,
+            seasons: Array.from({ length: count }, (_, i) => clip(names[i], 80)),
+          };
+        }),
     ranks: ranksOut,
     rankMeta: ([1, 2, 3, 4, 5] as const).map((r) => ({
       roman: ABILITY_RANK_META[r].roman,

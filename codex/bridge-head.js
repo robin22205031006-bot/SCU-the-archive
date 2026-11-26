@@ -162,11 +162,43 @@
     });
   }
 
+
+  function mergeSeries(SER0) {
+    var list = (feed && feed.series) || [];
+    list.forEach(function (sr) {
+      if (!sr || !sr.title) return;
+      var want = norm(sr.title).replace(/^the /, "");
+      var hit = SER0.find(function (x) {
+        return norm(x.name).replace(/^the /, "") === want;
+      });
+      var names = sr.seasons || [];
+      if (hit) {
+        // Codex titles win; the archive only fills blanks and adds seasons it lacks.
+        names.forEach(function (nm, i) {
+          var s = hit.seasons[i];
+          if (s) {
+            if (!s.name && nm) s.name = nm;
+          } else hit.seasons.push({ n: i + 1, name: nm || "" });
+        });
+        return;
+      }
+      SER0.push({
+        id: "app-" + want.replace(/ /g, "-"),
+        name: sr.title,
+        blurb: sr.desc || "A series recorded in the archive.",
+        seasons: names.map(function (nm, i) {
+          return { n: i + 1, name: nm || "" };
+        }),
+      });
+      window.__codexAdded.series = (window.__codexAdded.series || []).concat(sr.title);
+    });
+  }
   window.__codexHook = function (stage, ctx) {
     if (!feed) return;
     try {
       if (stage === "cast") mergeCast(ctx.CAST);
       else if (stage === "abilities") mergeAbilities(ctx);
+      else if (stage === "series") mergeSeries(ctx.SER0);
     } catch (e) {
       if (window.console) console.warn("[codex] merge skipped", e);
     }
