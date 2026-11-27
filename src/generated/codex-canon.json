@@ -6,7 +6,7 @@
    "realName": "Robin",
    "codename": "Gale Warden",
    "bloodline": "Zaan’s line (mother), Khalid’s line (father)",
-   "desc": "Aerokinesis: control of air, wind and pressure, fought through techniques like Windstep, Gale Guard, Pressure Break and Sky Rend. Wind Guardian mode manifests for the first time in the final fight against Isaac. In Season 1 he never used wind as a weapon: he saw it as a friend. From Season 5 he runs both engines at once, polite and savage together.",
+   "desc": "Aerokinesis: control of air, wind and pressure, fought through techniques like Windstep, Gale Guard, Pressure Break and Sky Rend. He holds the Wind Guardian title and its abilities after beating the Wind Guardian in Season 5, though he never ruled as one. After ending Isaac he becomes Sky Guardian, a higher guardianship with wind-and-sky abilities (thunder, storms, clouds and the like), whose duties mean he can no longer be the hero who goes to save people. In Season 1 he never used wind as a weapon: he saw it as a friend. From Season 5 he runs both engines at once, polite and savage together.",
    "group": "sentinels"
   },
   {
@@ -54,7 +54,7 @@
    "realName": "Ela",
    "codename": "Bearer of Athena’s Judgement",
    "bloodline": "None (chosen by the Aldercrest Pendant)",
-   "desc": "Divine Healing (Aegis of Mercy) and Athena’s Judgement, the Golden Eye: a court that weighs absolute moral weight. Holder of the light core.",
+   "desc": "Divine Healing (Aegis of Mercy) and Athena’s Judgement, the Golden Eye: a court that weighs absolute moral weight. Inside it nobody can use any ability, Grace included, and her only tool is a holy weapon. Holder of the light core.",
    "group": "sentinels"
   },
   {
@@ -142,7 +142,7 @@
    "realName": "Madhobi",
    "codename": "The Nature Guardian",
    "bloodline": "Elf Clan",
-   "desc": "The Nature Guardian, present across eras.",
+   "desc": "The Nature Guardian, an upper-level guardianship, present across eras.",
    "group": "legends"
   },
   {
@@ -174,7 +174,7 @@
    "realName": "John",
    "codename": "",
    "bloodline": "El-Mansur genes (rejected the name)",
-   "desc": "Red lightning, the last carrier of it, which disrupts blood art. Elite battle IQ.",
+   "desc": "Red lightning, the last carrier of it, which disrupts blood art. Elite battle IQ. The last to hold the Architect Cube properly before Agnus.",
    "group": "legends"
   },
   {
@@ -198,7 +198,7 @@
    "realName": "Agnus",
    "codename": "Dread Walker",
    "bloodline": "El-Mansur",
-   "desc": "Qahr al-Wujud, making existence obey his will, and the Call of Sharpness, blades as authority. Guarded the Architect Cube for a long time.",
+   "desc": "Qahr al-Wujud, making existence obey his will, and the Call of Sharpness, blades as authority. Had the Architect Cube from Eldrich for a bit of time. As a Cube guardian his body was enhanced and his mind slowly damaged.",
    "group": "legends"
   },
   {
@@ -286,7 +286,7 @@
    "realName": "Ramiz",
    "codename": "",
    "bloodline": "Al-Ahd",
-   "desc": "Nullborn spy and Architect Cube guardian. Father of Anna and Issabela.",
+   "desc": "Nullborn spy and assassin, and a guardian of Architect Cube fragments, which boosted his mind. He never held the Cube itself. Father of Anna and Issabela.",
    "group": "legends"
   },
   {
@@ -1117,7 +1117,7 @@
    "name": "Athena’s Judgement",
    "branch": "Judgement",
    "tier": "Godly",
-   "desc": "The Golden Eye: it judges absolute moral weight, not the story anyone tells. It costs its bearer empathy, sleep and identity.",
+   "desc": "The Golden Eye: it judges absolute moral weight, not the story anyone tells. It costs its bearer empathy, sleep and identity. Inside its court nobody can use any ability, the bearer included. Her only tool there is a holy weapon, used if the charged person tries to violate the court or is extremely guilty. A proven charge also strips the charged person’s abilities for a period.",
    "holders": [
     "Grace"
    ],
@@ -1587,7 +1587,7 @@
    "name": "Aerokinesis",
    "branch": "Air",
    "tier": "Primary",
-   "desc": "Control of air, wind and pressure. The wind responds to calm and spikes with emotion.",
+   "desc": "Control of air, wind and pressure. The wind responds to calm and spikes with emotion. Wind is very powerful, but Ethan did not know it: he saw it as a friend and never used it to hurt anyone. Across his Sentinels journey he learns how to use it, and so how strong it is.",
    "holders": [
     "Ethan Thorne"
    ],
@@ -1606,7 +1606,7 @@
    "name": "Wind Guardian Mode",
    "branch": "Air",
    "tier": "Primary",
-   "desc": "Manifests for the first time in the final fight against Isaac.",
+   "desc": "Ethan holds the Wind Guardian title and its abilities from the moment he beats the Wind Guardian at Yasnaya in Season 5. He never ruled as one. He returns from Redline already holding them, which is why it is called Wind Guardian mode.",
    "holders": [
     "Ethan Thorne"
    ],
@@ -1659,7 +1659,7 @@
    "name": "Red Lightning",
    "branch": "Lightning",
    "tier": "Primary",
-   "desc": "The bloodline’s overcharged lightning: faster than normal lightning, unstable, harder to absorb or redirect. It disrupts blood art. Dorian’s origin.",
+   "desc": "The bloodline’s overcharged lightning: faster than normal lightning, unstable, harder to absorb or redirect. It disrupts blood art. It is rare even inside El-Mansur and skips most members. It runs through the blood and takes its red from the iron in it. Dorian was the last known carrier before Zayn.",
    "holders": [
     "Dorian Cross",
     "Zayn Hayes"
@@ -2353,6 +2353,85 @@
     "Precision Barrage",
     "Overclock Veil",
     "Fallback Architect"
+   ]
+  },
+  {
+   "name": "Sky Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "Upper-level guardianship, above the element guardians, and not an element. Its abilities are wind and sky abilities: thunder, storms, clouds and the like. Ethan becomes the Sky Guardian after ending Isaac. The role carries bigger responsibilities, so he can no longer be the hero who goes to save people. Other heroes will do that.",
+   "holders": [
+    "Ethan Thorne"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Nature Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "Upper-level guardianship, and not an element. Nytheris is the Nature Guardian, present across eras. Her powers are in the Life branch.",
+   "holders": [
+    "Nytheris"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Wind Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "An element guardian. Ethan holds the title from beating the Wind Guardian at Yasnaya in Season 5, but never ruled as one. His Wind Guardian mode is in the Air branch. The Sky Guardian outranks it.",
+   "holders": [
+    "Ethan Thorne"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Water Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "An element guardian. Its powers, including Cryokinesis, are in the Water branch.",
+   "holders": [
+    "Nilanjona"
+   ],
+   "leaves": []
+  },
+  {
+   "name": "Fire Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "An element guardian, in the other upper guardians section. No holder has been named yet.",
+   "holders": [],
+   "leaves": []
+  },
+  {
+   "name": "Earth Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "An element guardian, in the other upper guardians section. No holder has been named yet.",
+   "holders": [],
+   "leaves": []
+  },
+  {
+   "name": "Lightning Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "An element guardian, in the other upper guardians section. No holder has been named yet.",
+   "holders": [],
+   "leaves": []
+  },
+  {
+   "name": "Cube Guardian",
+   "branch": "Guardians",
+   "tier": "Primary",
+   "desc": "A guardian of the Architect Cube or its fragments. The Cube enhances one side of the holder, physical or mental, depending on where they work most, and damages the other. It never gives an extra ability.",
+   "holders": [
+    "Agnus El-Mansur",
+    "Ramiz Al-Ahd",
+    "Dorian Cross"
+   ],
+   "leaves": [
+    "Physical enhancement",
+    "Mental enhancement"
    ]
   }
  ],
