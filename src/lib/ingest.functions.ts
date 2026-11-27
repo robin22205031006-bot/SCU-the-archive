@@ -9,12 +9,11 @@ import { isSuperadminEmail } from "./roles";
 import {
   ALIAS_MAP,
   aliasesForCanonical,
-  canonicalCharacterName,
   planLoreSync,
   type SyncInput,
   type SyncPlan,
 } from "./adminLoreSync";
-import { CANON_CHARACTER_ABILITIES } from "./abilities";
+import { executeSyncPlan } from "./lore-sync-exec";
 
 const kinds = ["character", "organization", "clan", "bloodline", "faction"] as const;
 
@@ -50,140 +49,6 @@ async function loadDynamicAliases(sb: SupabaseClient<Database>): Promise<Record<
   } catch {
     return {};
   }
-}
-
-/** Best-effort backfill of canonical character abilities where unlocked and empty. */
-async function backfillCanonAbilities(sb: SupabaseClient<Database>) {
-  try {
-    const { data: chars, error } = await sb
-      .from("entities")
-      .select("id, name, abilities, locked_fields")
-      .eq("kind", "character");
-    if (error || !chars) return;
-    for (const ch of chars) {
-      const locks = ch.locked_fields ?? [];
-      if (locks.includes("abilities")) continue;
-      if ((ch.abilities?.length ?? 0) > 0) continue;
-      const canonAbilities = CANON_CHARACTER_ABILITIES[canonicalCharacterName(ch.name)];
-      if (!canonAbilities?.length) continue;
-      await sb
-        .from("entities")
-        .update({ abilities: canonAbilities, updated_at: new Date().toISOString() })
-        .eq("id", ch.id);
-    }
-  } catch {
-    /* non-fatal best-effort ability hydration */
-  }
-}
-
-async function executeSyncPlan(sb: SupabaseClient<Database>, plan: SyncPlan, filename: string) {
-  const checked = <T>(result: { data: T; error: unknown }, label = "write") => {
-    if (result.error) {
-      const detail =
-        typeof result.error === "object" && result.error !== null && "message" in result.error
-          ? String((result.error as { message: unknown }).message)
-          : String(result.error);
-      console.error(`[loreSync] ${label} failed:`, result.error);
-      throw new Error(
-        `The sync could not finish (${label}): ${detail}. Some entries may have saved; review the archive before retrying.`,
-      );
-    }
-    return result.data;
-  };
-
-  for (const ins of plan.entityInserts) {
-    const inserted = checked(
-      await sb
-        .from("entities")
-        .insert({
-          kind: ins.kind,
-          name: ins.name,
-          alias: ins.alias,
-          role: ins.role,
-          status: ins.status ?? (ins.kind === "character" ? "Alive" : "Active"),
-          category: ins.category,
-          description: ins.description,
-          image_url: ins.image_url,
-        })
-        .select("id")
-        .single(),
-      `entity insert '${ins.name}'`,
-    );
-    if (!inserted) {
-      throw new Error(
-        `The sync could not finish (entity insert '${ins.name}'). Some entries may have saved; review the archive before retrying.`,
-      );
-    }
-    for (const note of ins.notes) {
-      checked(
-        await sb
-          .from("lore_notes")
-          .insert({ entity_id: inserted.id, text: note, source: ins.source }),
-        `conflict note for '${ins.name}'`,
-      );
-    }
-  }
-
-  // Skip notes an entity already has, so re-running a sync never duplicates lore.
-  const noteEntityIds = [...new Set(plan.loreNoteInserts.map((n) => n.entity_id))];
-  const existingNotes = new Set<string>();
-  if (noteEntityIds.length) {
-    const rows = checked(
-      await sb.from("lore_notes").select("entity_id, text").in("entity_id", noteEntityIds),
-      "existing lore notes",
-    );
-    for (const r of rows ?? []) existingNotes.add(`${r.entity_id}::${r.text.trim()}`);
-  }
-  let notesWritten = 0;
-  for (const note of plan.loreNoteInserts) {
-    const key = `${note.entity_id}::${note.text.trim()}`;
-    if (existingNotes.has(key)) continue;
-    existingNotes.add(key);
-    notesWritten += 1;
-    checked(await sb.from("lore_notes").insert(note), `lore note for entity ${note.entity_id}`);
-  }
-
-  for (const upd of plan.entityUpdates) {
-    checked(
-      await sb
-        .from("entities")
-        .update({ ...upd.patch, updated_at: new Date().toISOString() })
-        .eq("id", upd.id),
-      `entity update ${upd.id}`,
-    );
-  }
-
-  for (const ev of plan.timelineInserts) {
-    checked(
-      await sb.from("timeline_events").insert({
-        title: ev.title,
-        era: ev.era,
-        description: ev.description,
-        source: ev.source,
-        sort_order: ev.sort_order,
-      }),
-      `timeline event '${ev.title}'`,
-    );
-  }
-
-  await backfillCanonAbilities(sb);
-
-  const updatedIds = new Set<string>([
-    ...plan.entityUpdates.map((u) => u.id),
-    ...plan.loreNoteInserts.map((n) => n.entity_id),
-  ]);
-
-  const summary = {
-    created: plan.entityInserts.length,
-    notes: notesWritten,
-    updated: updatedIds.size,
-    events: plan.timelineInserts.length,
-    warnings: plan.warnings,
-  };
-
-  checked(await sb.from("ingest_jobs").insert({ filename, summary }), "ingest_jobs insert");
-
-  return summary;
 }
 
 export const analyzeLore = createServerFn({ method: "POST" })
