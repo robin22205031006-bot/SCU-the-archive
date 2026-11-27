@@ -47,7 +47,6 @@
     ["bonds", "Bonds", "people", "ring3", "local", "bonds"],
     ["fx", "Ability FX", "power", "bolt", "host", "fx"],
     ["action", "Ability in Action", "power", "blade", "host", "action"],
-    ["atlas", "Atlas", "time", "portal", "host", "atlas"],
     ["season", "Seasons", "time", "spiral", "host", "season"],
     ["reader", "Reader", "commons", "feather", "host", "reader"],
     ["profile", "Profile", "commons", "figure", "host", "profile"],
@@ -57,6 +56,8 @@
     extra.push(["ingest", "Ingest", "commons", "talisman", "host", "ingest"]);
   }
   window.__codexExtraTabs = host ? extra : [];
+  // The app supplies atlas data: Map becomes the Codex's own map instead of the Classic page.
+  window.__codexLocalMap = !!(host && feed && feed.atlas && feed.atlas.locations && feed.atlas.locations.length);
 
   function castIndex(CAST) {
     var keys = new Map();

@@ -12,8 +12,8 @@ const read = (p) => readFileSync(resolve(root, p), "utf8");
 
 let html = read("codex/codex.base.html");
 const head = read("codex/bridge-head.js");
-const body = read("codex/bridge.js");
-const css = read("codex/bridge.css");
+const body = read("codex/bridge.js") + "\n" + read("codex/bridge-atlas.js");
+const css = read("codex/bridge.css") + "\n" + read("codex/bridge-atlas.css");
 
 function patch(label, re, fn) {
   const next = html.replace(re, fn);
@@ -31,7 +31,7 @@ patch("abilities", /\nconst clean=n=>n\.replace/, (m) => `\ntry{window.__codexHo
 // 4a. series catalogue merge (fill blank season titles, add missing series)
 patch("series", /(\nconst SER0=\[.*\);)/, (m) => `${m}\ntry{window.__codexHook&&window.__codexHook("series",{SER0:SER0})}catch(e){}`);
 // 4. extra host destinations in the dock
-patch("tabs", /(\nconst NT=\[.*\];)/, (m) => `${m}\ntry{NT.push.apply(NT,window.__codexExtraTabs||[])}catch(e){}`);
+patch("tabs", /(\nconst NT=\[.*\];)/, (m) => `${m}\ntry{NT.push.apply(NT,window.__codexExtraTabs||[]);if(window.__codexLocalMap)NT.forEach(function(n){if(n[0]==="map")n[4]="local";});}catch(e){}`);
 // 5. expose the dock router to the bridge
 patch("api", /\nrender\(\);\n\}\)\(\);\n<\/script>\n<\/body>/, () => `\ntry{window.__codexApi={NT:NT,showTab:showTab,ntNow:ntNow,drawDock:drawDock,stAt:stAt}}catch(e){}\nrender();\n})();\n</script>\n<style id="codex-host-css">\n${css}\n</style>\n<script id="codex-host-bridge">\n${body}\n</script>\n</body>`);
 

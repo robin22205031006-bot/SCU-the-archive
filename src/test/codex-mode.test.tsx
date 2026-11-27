@@ -44,7 +44,10 @@ describe("Codex UI mode", () => {
   it("maps only Codex pages into the frame and rejects unsafe paths", () => {
     expect(codexTabForPath("/")).toBe("home");
     expect(codexTabForPath("/characters/")).toBe("characters");
-    expect(codexTabForPath("/map")).toBeNull();
+    // the Codex draws its own map now
+    expect(codexTabForPath("/map")).toBe("map");
+    expect(codexTabForPath("/atlas")).toBe("map");
+    expect(codexTabForPath("/profile")).toBeNull();
     expect(safeCodexPath("/ability-fx")).toBe("/ability-fx");
     expect(safeCodexPath("//evil.example")).toBeNull();
     expect(safeCodexPath("https://evil.example")).toBeNull();
@@ -331,6 +334,10 @@ describe("Codex page", () => {
     expect(html).toContain("function wireWheel");
     expect(html).toContain('class="cxc-t"');
     expect(html).toContain("function findKey");
+    // Codex Atlas: world/scenic/top/plan views and the blueprint plan
+    expect(html).toContain("function codexAtlas");
+    expect(html).toContain("TOP PLAN · ORTHOGRAPHIC · 2D");
+    expect(html).toContain("__codexLocalMap");
     // Bonds read the Codex Bloodlines web first and respect the reveal dial
     expect(html).toContain("stAt:stAt");
     expect(html).toContain("BL.E.forEach");

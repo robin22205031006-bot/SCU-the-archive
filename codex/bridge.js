@@ -88,6 +88,7 @@
     arsenal: "/arsenal",
     timeline: "/timeline",
     graph: "/graph",
+    map: "/map",
   };
   var HOSTP = {
     map: "/map",
