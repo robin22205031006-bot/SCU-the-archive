@@ -58,20 +58,29 @@
   };
 
   /** What the current view shows: image, size, landmarks, routes and weather. */
+  var CARTO = window.__codexCarto || null;
+  var MAP_W = 1100;
+  /** What the current view shows. World, Top and Plan are drawn in code by the Codex
+   *  cartographer from the same landmarks, so every pin sits exactly on the art. */
   function scene() {
     var L = loc();
     if (st.mode === "world") {
+      var wm = A.locations.map(function (l) {
+        return { id: l.id, name: l.name, x: l.worldX, y: l.worldY, note: l.epithet, place: true };
+      });
+      var wr = A.routes.map(function (r) {
+        return [r.from, r.to, r.label];
+      });
       return {
-        image: A.world.image,
+        image: CARTO
+          ? CARTO.paint({ key: "world", w: A.world.width, h: A.world.height, marks: wm, routes: wr, world: true, style: "atlas" }, MAP_W)
+          : A.world.image,
         w: A.world.width,
         h: A.world.height,
-        marks: A.locations.map(function (l) {
-          return { id: l.id, name: l.name, x: l.worldX, y: l.worldY, note: l.epithet, place: true };
-        }),
-        routes: A.routes.map(function (r) {
-          return [r.from, r.to, r.label];
-        }),
+        marks: wm,
+        routes: wr,
         fx: ["mist"],
+        drawn: !!CARTO,
       };
     }
     if (st.mode === "scenic") {
@@ -79,15 +88,33 @@
       return { image: E.image, w: E.width, h: E.height, marks: E.landmarks || [], routes: E.routes || [], fx: E.fx || [] };
     }
     var topMarks = (L.top && L.top.landmarks) || [];
-    var aligned = topMarks.length > 0;
+    var marks = topMarks.length ? topMarks : era().landmarks || [];
+    var routes = topMarks.length ? L.top.routes || [] : era().routes || [];
+    if (!CARTO) {
+      var aligned = topMarks.length > 0;
+      return { image: L.top.image, w: L.top.width, h: L.top.height, marks: aligned ? topMarks : [], routes: aligned ? routes : [], fx: [], aligned: aligned };
+    }
     return {
-      image: L.top.image,
+      image: CARTO.paint(
+        {
+          key: L.id + "|" + (topMarks.length ? "top" : "era" + st.era),
+          w: L.top.width,
+          h: L.top.height,
+          marks: marks,
+          routes: routes,
+          style: st.mode === "plan" ? "plan" : "atlas",
+          climate: CARTO.climateOf(L.name + " " + L.epithet + " " + marks.map(function (m) { return m.name; }).join(" ")),
+          coast: /coast|harbou?r|sea|bay|bosphorus/i.test(L.epithet + " " + marks.map(function (m) { return m.name; }).join(" ")),
+        },
+        MAP_W,
+      ),
       w: L.top.width,
       h: L.top.height,
-      marks: aligned ? topMarks : st.mode === "plan" ? era().landmarks || [] : [],
-      routes: aligned ? L.top.routes || [] : st.mode === "plan" ? era().routes || [] : [],
+      marks: marks,
+      routes: routes,
       fx: [],
-      aligned: aligned,
+      aligned: true,
+      drawn: true,
     };
   }
 
@@ -457,6 +484,7 @@
     var note = "";
     if (st.mode === "top" && !sc.marks.length) note = '<p class="note">No landmarks are plotted on this top view yet. Scenic view shows them on the era art.</p>';
     if (st.mode === "plan" && !sc.aligned) note = '<p class="note">This plan is drawn from the era landmarks as a diagram, because no landmarks are plotted on the top view yet.</p>';
+    if (sc.drawn && st.mode !== "scenic") note += '<p class="note">Drawn by the Codex cartographer from this place\'s landmarks: terrain, water, rivers, roads and settlements follow the archive data.</p>';
     var legend =
       st.mode === "plan"
         ? '<h4>Legend</h4><ul class="ca-legend"><li><i class="struct"></i>Structure</li><li><i class="water"></i>Water</li><li><i class="rise"></i>High ground</li><li><i class="point"></i>Point of interest</li><li><i class="dimk"></i>Route, length in grid units</li></ul>'
@@ -567,7 +595,10 @@
   function paintAll() {
     var sc = scene();
     var stg = $("caStage");
-    if (stg) stg.classList.toggle("ca-noghost", st.mode === "plan" && !sc.aligned);
+    if (stg) {
+      stg.classList.toggle("ca-noghost", st.mode === "plan" && !sc.aligned);
+      stg.classList.toggle("ca-drawn", !!sc.drawn);
+    }
     paintMarks(sc);
     paintRoutes(sc);
     paintPlan(sc);

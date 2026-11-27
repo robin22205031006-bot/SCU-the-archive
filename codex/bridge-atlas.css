@@ -64,6 +64,7 @@
 .ca-stage[data-mode="plan"] .ca-back,.ca-stage[data-mode="plan"] .ca-clouds,.ca-stage[data-mode="plan"] .ca-light{display:none}
 .ca-stage[data-mode="plan"] .ca-vig{background:radial-gradient(120% 90% at 50% 45%,transparent 60%,rgba(0,10,30,.45))}
 .ca-stage[data-mode="plan"] #caImgA{filter:grayscale(1) contrast(1.5) brightness(1.35) invert(1);mix-blend-mode:screen;opacity:.2;box-shadow:none;z-index:1}
+.ca-stage[data-mode="plan"].ca-drawn #caImgA{filter:none;mix-blend-mode:normal;opacity:.62}
 .ca-stage[data-mode="plan"].ca-noghost #caImgA{opacity:0}
 .ca-stage[data-mode="plan"] .ca-plan{z-index:0}
 .ca-plan .ca-paper{fill:#0b3b6e}

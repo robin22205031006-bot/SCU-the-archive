@@ -12,7 +12,7 @@ const read = (p) => readFileSync(resolve(root, p), "utf8");
 
 let html = read("codex/codex.base.html");
 const head = read("codex/bridge-head.js");
-const body = read("codex/bridge.js") + "\n" + read("codex/bridge-atlas.js");
+const body = read("codex/bridge.js") + "\n" + read("codex/bridge-carto.js") + "\n" + read("codex/bridge-atlas.js");
 const css = read("codex/bridge.css") + "\n" + read("codex/bridge-atlas.css");
 
 function patch(label, re, fn) {
