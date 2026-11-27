@@ -394,3 +394,10 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
 
 html.cx-nav .rib:not([hidden]){display:grid!important}
 html.cx-nav .rib[hidden],html.cx-nav .dscrim[hidden]{display:none!important}
+
+/* event landed from "Open in the Chronicle" */
+.cx-landed{position:relative;animation:cxLand 2.2s cubic-bezier(.2,.8,.2,1)}
+.cx-landed::after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px solid var(--c2,#fff);pointer-events:none;animation:cxLandRing 2.2s ease-out forwards}
+@keyframes cxLand{0%{transform:scale(.97)}18%{transform:scale(1.03)}40%,100%{transform:scale(1)}}
+@keyframes cxLandRing{0%{opacity:0;transform:scale(.94)}20%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.cx-landed,.cx-landed::after{animation:none}.cx-landed{outline:2px solid var(--c2,#fff);outline-offset:3px;border-radius:999px}}

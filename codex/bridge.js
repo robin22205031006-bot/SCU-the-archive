@@ -2145,3 +2145,31 @@
   }).observe(document.body, { childList: true, subtree: true });
   deco(document.body);
 })();
+
+// ----- "Open in the Chronicle": leave the full-screen sheet and land on the event
+// (the Codex reopened the same sheet on top of the Chronicle, so nothing seemed to happen)
+try {
+  goEvent = function (i) {
+    var api = window.__codexApi || {};
+    var era = evEra(i);
+    var chron = api.NT && api.NT.find(function (n) { return n[5] === "chron"; });
+    S.ce = era;
+    var modal = document.getElementById("modal");
+    if (modal) modal.hidden = true;
+    if (chron && api.showTab) api.showTab(chron[0]);
+    else { closeSheet(); tab = "chron"; render.keep = false; render(); }
+    S.ce = era;
+    if (tab === "chron") { render.keep = false; render(); }
+    var tries = 0;
+    (function land() {
+      var row = document.querySelector('[data-xev="' + i + '"]');
+      if (!row) { if (++tries < 20) setTimeout(land, 60); return; }
+      var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      row.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+      row.classList.remove("cx-landed");
+      void row.offsetWidth;
+      row.classList.add("cx-landed");
+      setTimeout(function () { row.classList.remove("cx-landed"); }, 2400);
+    })();
+  };
+} catch (e) {}

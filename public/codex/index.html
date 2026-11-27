@@ -2834,6 +2834,13 @@ html[data-motion="off"] .cx-in,html[data-motion="off"] #sheet .cx-sin{animation:
 html.cx-nav .rib:not([hidden]){display:grid!important}
 html.cx-nav .rib[hidden],html.cx-nav .dscrim[hidden]{display:none!important}
 
+/* event landed from "Open in the Chronicle" */
+.cx-landed{position:relative;animation:cxLand 2.2s cubic-bezier(.2,.8,.2,1)}
+.cx-landed::after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px solid var(--c2,#fff);pointer-events:none;animation:cxLandRing 2.2s ease-out forwards}
+@keyframes cxLand{0%{transform:scale(.97)}18%{transform:scale(1.03)}40%,100%{transform:scale(1)}}
+@keyframes cxLandRing{0%{opacity:0;transform:scale(.94)}20%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.cx-landed,.cx-landed::after{animation:none}.cx-landed{outline:2px solid var(--c2,#fff);outline-offset:3px;border-radius:999px}}
+
 /* ===== Codex Atlas ===== */
 .ca-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:6px 0 12px}
 .ca-title small{display:block;font-size:.7rem;letter-spacing:.24em;color:var(--c1);font-weight:600}
@@ -5120,6 +5127,34 @@ html[data-motion="off"] .ca-plan .ca-draw{stroke-dashoffset:0}
   }).observe(document.body, { childList: true, subtree: true });
   deco(document.body);
 })();
+
+// ----- "Open in the Chronicle": leave the full-screen sheet and land on the event
+// (the Codex reopened the same sheet on top of the Chronicle, so nothing seemed to happen)
+try {
+  goEvent = function (i) {
+    var api = window.__codexApi || {};
+    var era = evEra(i);
+    var chron = api.NT && api.NT.find(function (n) { return n[5] === "chron"; });
+    S.ce = era;
+    var modal = document.getElementById("modal");
+    if (modal) modal.hidden = true;
+    if (chron && api.showTab) api.showTab(chron[0]);
+    else { closeSheet(); tab = "chron"; render.keep = false; render(); }
+    S.ce = era;
+    if (tab === "chron") { render.keep = false; render(); }
+    var tries = 0;
+    (function land() {
+      var row = document.querySelector('[data-xev="' + i + '"]');
+      if (!row) { if (++tries < 20) setTimeout(land, 60); return; }
+      var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      row.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+      row.classList.remove("cx-landed");
+      void row.offsetWidth;
+      row.classList.add("cx-landed");
+      setTimeout(function () { row.classList.remove("cx-landed"); }, 2400);
+    })();
+  };
+} catch (e) {}
 
 /* Codex cartography: paints realistic atlas maps in code from the place data, so every
  * landmark sits exactly on the art. Terrain is shaped by the landmarks themselves:
