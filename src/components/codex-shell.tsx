@@ -5,8 +5,10 @@ import { entitiesQuery, entityRelationsQuery } from "@/lib/entities";
 import { useSpoilerMask } from "@/lib/spoiler-mask";
 import { supabase } from "@/integrations/supabase/client";
 import { seriesQuery } from "@/lib/series";
-import { allAbilityDefs } from "@/lib/abilities";
-import { useIsStaff } from "@/hooks/use-admin";
+import { abilityDef, allAbilityDefs } from "@/lib/abilities";
+import { clampDbAbilityLevel } from "@/lib/ability-rank";
+import { useIsAdmin, useIsStaff } from "@/hooks/use-admin";
+import { codexCardsQuery, saveCodexCards, type CodexCards } from "@/lib/codex-cards";
 import { useOptionalAuth } from "@/context/AuthContext";
 import { useOptionalThemeContext, type PrimarySystem } from "@/context/ThemeContext";
 import { useUiMode, VISUAL_UI_MODES, type VisualUiMode } from "@/hooks/use-ui-mode";
@@ -60,6 +62,13 @@ type CodexHost = {
     codexName: string,
     edit: { title?: string; abil?: string },
   ) => Promise<SyncResult>;
+  /** Admin card looks (codex_cards), read live by the Codex cards. */
+  cards?: CodexCards;
+  /** Real admin (not 'view as reader'): shows the pencil on cards. */
+  admin?: boolean;
+  saveCards?: (next: CodexCards) => Promise<SyncResult & { cards?: CodexCards }>;
+  /** Admin: change a character's base ability rank (1..5) on an existing archive row. */
+  saveAbilityRank?: (codexName: string, ability: string, rank: number) => Promise<SyncResult>;
 };
 type SyncResult = { ok: boolean; changed: boolean; message: string };
 
@@ -205,6 +214,9 @@ export function CodexStage() {
   const tab = codexTabForPath(pathname);
   const visible = enabled && tab !== null;
   const { feed, settled } = useCodexFeed(enabled);
+  const isAdmin = useIsAdmin();
+  const cardsQ = useQuery({ ...codexCardsQuery, enabled });
+  const cards = cardsQ.data;
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -329,6 +341,72 @@ export function CodexStage() {
     [qc],
   );
 
+  const saveCards = useCallback(
+    async (next: CodexCards): Promise<SyncResult & { cards?: CodexCards }> => {
+      if (!isAdmin)
+        return { ok: false, changed: false, message: "Only admins can change card looks." };
+      try {
+        const stored = await saveCodexCards(next);
+        qc.setQueryData(codexCardsQuery.queryKey, stored);
+        return { ok: true, changed: true, message: "Card look saved for everyone.", cards: stored };
+      } catch (e) {
+        return {
+          ok: false,
+          changed: false,
+          message: e instanceof Error ? e.message : "Could not save the card look.",
+        };
+      }
+    },
+    [isAdmin, qc],
+  );
+
+  const saveAbilityRank = useCallback(
+    async (codexName: string, ability: string, rank: number): Promise<SyncResult> => {
+      if (!isAdmin) return { ok: false, changed: false, message: "Only admins can change ranks." };
+      const people = qc.getQueryData<Entity[]>(entitiesQuery(["character"]).queryKey) ?? [];
+      const card = people.find(
+        (e) => e.name === codexName || codexCastName(e.name, e.alias ?? null) === codexName,
+      );
+      if (!card)
+        return { ok: false, changed: false, message: "This character is only in the Codex." };
+      const norm = (x: string) =>
+        x
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      const want = norm(ability);
+      const { data: rows, error: readError } = await supabase
+        .from("character_abilities")
+        .select("id, ability_key, level, series_id, season_number")
+        .eq("entity_id", card.id);
+      if (readError) return { ok: false, changed: false, message: "Could not read the ranks." };
+      // Base rank only (no season): season ranks stay in the season dossier editor.
+      const row = (rows ?? []).find(
+        (r) =>
+          !r.series_id &&
+          r.season_number == null &&
+          (norm(r.ability_key) === want || norm(abilityDef(r.ability_key).label) === want),
+      );
+      if (!row)
+        return {
+          ok: false,
+          changed: false,
+          message: `${ability} is not assigned to ${card.name} in the archive yet. Assign it in the admin panel first.`,
+        };
+      const level = clampDbAbilityLevel(rank);
+      if (level === clampDbAbilityLevel(row.level))
+        return { ok: true, changed: false, message: "" };
+      const { error } = await supabase
+        .from("character_abilities")
+        .update({ level })
+        .eq("id", row.id);
+      if (error) return { ok: false, changed: false, message: error.message };
+      await invalidateArchive(qc);
+      return { ok: true, changed: true, message: `${ability} rank saved for every style.` };
+    },
+    [isAdmin, qc],
+  );
+
   useEffect(() => {
     if (!enabled) return;
     window.__SCU_CODEX_HOST__ = {
@@ -348,12 +426,39 @@ export function CodexStage() {
       reload: () => reloadFrame(),
       saveSeasonTitles: syncSeasonTitles,
       saveCharacter: syncCharacter,
+      cards: cards ?? { chars: {}, abilities: {}, tiers: {} },
+      admin: isAdmin,
+      saveCards,
+      saveAbilityRank,
       // Lovable-hosted addresses overlay an "Edit with Lovable" badge at the bottom right.
       badge: /(^|\.)(lovable\.app|lovable\.dev|lovableproject\.com)$/.test(
         window.location.hostname,
       ),
     };
-  }, [enabled, motionActive, router, switchMode, reloadFrame, syncSeasonTitles, syncCharacter]);
+  }, [
+    enabled,
+    motionActive,
+    router,
+    switchMode,
+    reloadFrame,
+    syncSeasonTitles,
+    syncCharacter,
+    cards,
+    isAdmin,
+    saveCards,
+    saveAbilityRank,
+  ]);
+  // Tell the frame when card looks or admin rights change, so cards repaint in place.
+  useEffect(() => {
+    if (!enabled) return;
+    const win = frameRef.current?.contentWindow as
+      (Window & { __codexCardsUpdate?: () => void }) | null | undefined;
+    try {
+      win?.__codexCardsUpdate?.();
+    } catch {
+      /* frame not ready */
+    }
+  }, [enabled, cards, isAdmin]);
 
   useEffect(() => {
     if (!enabled) {

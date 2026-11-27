@@ -1,0 +1,212 @@
+/* ===== Codex cards: flowing banners, category frames, element bars, admin pencil ===== */
+
+/* ---- character banner (picture 1) ---- */
+.cxb > .in, .cxb.cxs-top { position: relative; isolation: isolate; }
+.cxb .cxb-bg {
+  position: absolute; inset: 0; z-index: 0; border-radius: inherit; overflow: hidden; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.30), rgba(255,255,255,0) 42%, rgba(0,0,0,.20)),
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--b1) 92%, #000) 0%,
+      color-mix(in srgb, var(--b1) 70%, #0b0a14) 45%,
+      color-mix(in srgb, var(--b1) 26%, #0b0a14) 76%,
+      #0d0b16 100%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--b2) 75%, transparent),
+    inset 0 -10px 18px -10px color-mix(in srgb, var(--b2) 50%, transparent);
+}
+.cxb > .in { border-radius: 999px; }
+.cxb > .in > :not(.cxb-bg) { position: relative; z-index: 1; }
+.cxb .gt b { color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.45); }
+.cxb .gt > i { color: rgba(255,255,255,.80); }
+.cxb .badge { background: color-mix(in srgb, var(--b2) 85%, #fff); color: #14121c; }
+.cxb { --cxbg: transparent; background: transparent !important; border-color: transparent !important; }
+.cxb-gloss {
+  position: absolute; top: 0; bottom: 0; left: -30%; width: 26%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.38), transparent);
+  transform: translateX(-120%) skewX(-18deg); opacity: 0;
+}
+.cx-live .cxb-gloss { animation: cxbGloss 6.5s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes cxbGloss { 0%, 62% { transform: translateX(-120%) skewX(-18deg); opacity: 0 } 66% { opacity: 1 } 100% { transform: translateX(560%) skewX(-18deg); opacity: 0 } }
+.cxb-decor { position: absolute; right: 0; top: 0; height: 100%; width: 52%; opacity: .9; }
+.cxb-fx { position: absolute; inset: 0; }
+.cxb-fx > span {
+  position: absolute; left: var(--x); top: var(--y);
+  width: calc(7px * var(--s)); height: calc(7px * var(--s));
+  border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #fff 0, color-mix(in srgb, var(--b2) 80%, #fff) 40%, transparent 72%);
+  will-change: transform, opacity;
+}
+.cx-live .cxb-fx > span { animation: cxbFlow var(--t) linear var(--d) infinite; }
+@keyframes cxbFlow {
+  0% { transform: translate3d(0, 0, 0) scale(.5); opacity: 0 }
+  18% { opacity: .95 }
+  100% { transform: translate3d(54px, -8px, 0) scale(1.05); opacity: 0 }
+}
+/* per style particles */
+.cxb[data-sty="verdant"] .cxb-fx > span { width: calc(16px * var(--s)); height: calc(16px * var(--s)); background: radial-gradient(circle, color-mix(in srgb, var(--b2) 70%, #fff) 0, color-mix(in srgb, var(--b1) 60%, transparent) 55%, transparent 72%); }
+.cxb[data-sty="prism"] .cxb-fx > span, .cxb[data-sty="regal"] .cxb-fx > span {
+  border-radius: 1px; width: calc(5px * var(--s)); height: calc(5px * var(--s));
+  background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+}
+.cxb[data-sty="regal"] .cxb-fx > span { background: #ffe9a8; width: calc(8px * var(--s)); height: calc(8px * var(--s)); }
+.cxb[data-sty="ember"] .cxb-fx > span {
+  border-radius: 0; width: calc(9px * var(--s)); height: calc(9px * var(--s)); background: color-mix(in srgb, var(--b2) 60%, #ff6b6b);
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.cxb[data-sty="tide"] .cxb-fx > span {
+  width: calc(11px * var(--s)); height: calc(11px * var(--s));
+  background: radial-gradient(circle at 32% 30%, rgba(255,255,255,.9) 0 14%, transparent 18%), radial-gradient(circle, transparent 58%, rgba(255,255,255,.75) 62%, transparent 72%);
+}
+.cxb[data-sty="tide"] .cxb-fx > span, .cxb[data-sty="umbra"] .cxb-fx > span { animation-name: cxbRise; }
+@keyframes cxbRise { 0% { transform: translate3d(0, 6px, 0) scale(.5); opacity: 0 } 20% { opacity: .9 } 100% { transform: translate3d(30px, -22px, 0) scale(1.1); opacity: 0 } }
+.cxb[data-sty="bloom"] .cxb-fx > span { border-radius: 70% 0 70% 0; width: calc(9px * var(--s)); height: calc(6px * var(--s)); background: linear-gradient(135deg, #ffd59a, color-mix(in srgb, var(--b2) 60%, #ff9a5c)); }
+.cxb[data-sty="fae"] .cxb-fx > span { width: calc(6px * var(--s)); height: calc(6px * var(--s)); background: radial-gradient(circle, #fff 0, #e9d5ff 40%, transparent 70%); }
+.cxb[data-sty="astral"] .cxb-fx > span { width: calc(4px * var(--s)); height: calc(4px * var(--s)); background: #fff; box-shadow: 0 0 6px #fff; }
+.cxb[data-sty="astral"] .cxb-fx > span { animation-name: cxbTwinkle; }
+@keyframes cxbTwinkle { 0%, 100% { transform: scale(.4); opacity: .1 } 50% { transform: scale(1.2); opacity: 1 } }
+.cxb[data-sty="gale"] .cxb-fx > span { border-radius: 4px; width: calc(22px * var(--s)); height: 1.6px; background: linear-gradient(90deg, transparent, #fff, transparent); }
+.cxb[data-sty="gale"] .cxb-fx > span { animation-name: cxbGale; animation-duration: calc(var(--t) * .55); }
+@keyframes cxbGale { 0% { transform: translate3d(-10px, 0, 0) scaleX(.4); opacity: 0 } 25% { opacity: .9 } 100% { transform: translate3d(70px, -4px, 0) scaleX(1.2); opacity: 0 } }
+.cxb[data-sty="storm"] .cxb-fx > span {
+  border-radius: 0; width: calc(6px * var(--s)); height: calc(12px * var(--s)); background: color-mix(in srgb, var(--b2) 50%, #fff);
+  clip-path: polygon(60% 0, 20% 55%, 50% 55%, 30% 100%, 85% 40%, 55% 40%, 75% 0);
+}
+.cxb[data-sty="storm"] .cxb-fx > span { animation-name: cxbFlick; }
+@keyframes cxbFlick { 0%, 100% { opacity: 0; transform: scale(.7) } 8% { opacity: 1; transform: scale(1) } 12% { opacity: .2 } 16% { opacity: .9 } 30% { opacity: 0; transform: translate3d(8px, 0, 0) } }
+.cxb[data-sty="umbra"] .cxb-fx > span { width: calc(18px * var(--s)); height: calc(18px * var(--s)); background: radial-gradient(circle, rgba(10,6,20,.75) 0, color-mix(in srgb, var(--b1) 40%, transparent) 50%, transparent 72%); }
+.cxb[data-sty="steel"] .cxb-fx > span { border-radius: 2px; width: calc(8px * var(--s)); height: 1.6px; background: linear-gradient(90deg, #fff, #ffb45c); }
+/* round socket around the emblem */
+.cxb .tile { position: relative; border-radius: 50% !important; background: radial-gradient(circle, #1b1828, #07060c) !important; overflow: visible; }
+.cxb-ring {
+  position: absolute; inset: -4px; border-radius: 50%; pointer-events: none;
+  border: 2.5px solid color-mix(in srgb, var(--b2) 80%, #fff);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--b1) 80%, transparent), inset 0 0 8px rgba(0,0,0,.5);
+}
+.cxb[data-sty="regal"] .cxb-ring, .cxb[data-sty="astral"] .cxb-ring { border-color: #ffd36b; box-shadow: 0 0 12px rgba(255,200,90,.65), inset 0 0 8px rgba(0,0,0,.5); }
+.cxb[data-sty="fae"] .cxb-ring { border-color: #ddd6fe; border-style: double; border-width: 3.5px; }
+.cxb-x { position: absolute; pointer-events: none; z-index: 2; }
+.cxb-x.top { width: 26px; left: 50%; top: -14px; transform: translateX(-50%); }
+.cxb-x.wing { width: 150%; left: -25%; top: 50%; transform: translateY(-50%); z-index: -1; }
+.cxb-x.bot { width: 26px; left: 50%; bottom: -8px; transform: translateX(-50%); }
+.cxb-x.side { width: 12px; left: -10px; top: 0; }
+/* big banner on the character sheet */
+.cxs-top.cxb { padding: 14px 18px; border-radius: 36px; margin: 2px 0 0; overflow: visible; }
+.cxs-top.cxb .cxb-bg { border-radius: 36px; }
+.cxs-top.cxb > :not(.cxb-bg) { position: relative; z-index: 1; }
+.cxs-top.cxb h3 { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+.cxs-top.cxb p { color: rgba(255,255,255,.86); }
+.cxs-top.cxb .pill { background: rgba(10,8,20,.35); }
+.cxs-top.cxb .tile { width: 66px; height: 66px; }
+
+/* ---- category frames (picture 2) ---- */
+.cxf-wrap { display: block; width: min(330px, 88%); margin: 8px auto 2px; line-height: 0; }
+.cxf { width: 100%; height: auto; overflow: visible; }
+.cxf-hero { width: min(260px, 70%); margin: 2px auto 6px; }
+.cxf-sheen { animation: cxfSheen 5s cubic-bezier(.45,0,.2,1) infinite; }
+@keyframes cxfSheen { 0%, 55% { transform: translateX(0) } 100% { transform: translateX(520px) } }
+.cxf-gem { transform-box: fill-box; transform-origin: center; animation: cxfGem 2.8s ease-in-out infinite; }
+@keyframes cxfGem { 0%, 100% { opacity: .78; transform: scale(1) } 50% { opacity: 1; transform: scale(1.14) } }
+.cxs-head { margin: 10px 0 4px; }
+
+/* ---- element ability bars (picture 3) ---- */
+.cxa-blade { display: flex; align-items: center; gap: 3px; width: min(230px, 100%); height: 16px; margin-top: 4px; position: relative; }
+.cxa-orn { flex: none; width: 17px; height: 18px; color: var(--a1); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--a1) 70%, transparent)); }
+.cxa-bar { position: relative; flex: 1; height: 3px; border-radius: 3px; overflow: hidden;
+  background: linear-gradient(90deg, var(--a1), var(--a2) 55%, color-mix(in srgb, var(--a2) 0%, transparent));
+  box-shadow: 0 0 7px color-mix(in srgb, var(--a1) 75%, transparent); }
+.cxa-bar::before { content: ""; position: absolute; left: 0; right: 30%; top: 1px; height: 1px; background: rgba(255,255,255,.75); }
+.cxa-flow { position: absolute; top: 0; bottom: 0; left: 0; width: 34%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent); transform: translateX(-110%); }
+.cx-live .cxa-flow, .cxe .cxa-flow { animation: cxaFlow 2.8s cubic-bezier(.45,0,.25,1) infinite; }
+@keyframes cxaFlow { 0% { transform: translateX(-110%) } 70%, 100% { transform: translateX(310%) } }
+.cxa-sp { position: absolute; right: 18%; top: 50%; width: 0; height: 0; }
+.cxa-sp > span { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--a2); box-shadow: 0 0 4px var(--a1); opacity: 0; }
+.cx-live .cxa-sp > span, .cxe .cxa-sp > span { animation: cxaSpark 2.4s ease-out infinite; }
+.cxa-sp > span:nth-child(2) { animation-delay: -.6s !important; }
+.cxa-sp > span:nth-child(3) { animation-delay: -1.2s !important; }
+.cxa-sp > span:nth-child(4) { animation-delay: -1.8s !important; }
+@keyframes cxaSpark { 0% { transform: translate3d(0, 0, 0) scale(.6); opacity: 0 } 20% { opacity: 1 } 100% { transform: translate3d(26px, -9px, 0) scale(.2); opacity: 0 } }
+.cxs-main { display: block; width: 100%; text-align: left; border: 0; cursor: pointer; margin: 8px 0 4px; padding: 10px 16px 12px; border-radius: 26px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--a1) 16%, transparent), transparent 85%); color: inherit; font: inherit;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+.cxs-main:active { transform: scale(.98); }
+.cxs-main small { display: block; font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.cxs-main b { display: block; font-family: "Cormorant Garamond", serif; font-size: 1.25rem; line-height: 1.1; }
+.cxs-main .cxa-blade { width: min(320px, 100%); }
+.cxs-ab { display: flex; flex-direction: column; align-items: center; margin-top: 4px; }
+.cxs-ab .cxa-blade { width: min(300px, 92%); }
+
+/* ---- admin pencil ---- */
+.cxe-pen { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; margin-left: 6px; border-radius: 50%;
+  background: rgba(10,8,20,.42); color: #fff; cursor: pointer; z-index: 3;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.35); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.cxe-pen svg { width: 15px; height: 15px; }
+.cxe-pen:hover { transform: scale(1.1) rotate(-8deg); }
+.cxe-pen:focus-visible { outline: 2px solid var(--c2, #fff); outline-offset: 2px; }
+.cxa:not(.cxb) .cxe-pen { background: color-mix(in srgb, var(--c1) 18%, transparent); color: var(--ink); box-shadow: 0 0 0 1px color-mix(in srgb, var(--c1) 45%, transparent); }
+.cxs-top > .cxe-pen { position: absolute; top: 10px; right: 12px; }
+.cxs-top { position: relative; }
+
+/* ---- editor ---- */
+.cxe { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; padding: 16px;
+  background: rgba(10,8,20,.55); backdrop-filter: blur(6px); opacity: 0; transition: opacity .25s ease; }
+.cxe[data-open="true"] { opacity: 1; }
+.cxe-card { position: relative; width: min(540px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 20px 18px 18px;
+  border-radius: 30px; background: var(--panel, #fff); color: var(--ink, #161923); border: 1px solid var(--line, #c9d0e2);
+  box-shadow: 0 30px 80px rgba(0,0,0,.45); transform: translateY(18px) scale(.97); transition: transform .45s cubic-bezier(.2,.9,.25,1.15); }
+.cxe[data-open="true"] .cxe-card { transform: none; }
+.cxe-card h3 { font-family: "Cormorant Garamond", serif; font-size: 1.45rem; margin: 0 40px 2px 0; line-height: 1.1; }
+.cxe-sub { margin: 0 0 10px; font-size: .78rem; color: var(--muted); }
+.cxe-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2, #f3f5fb); color: inherit; font-size: 1.2rem; cursor: pointer; }
+.cxe-prev { padding: 12px; border-radius: 26px; background: #0d0b16; margin-bottom: 12px; }
+.cxe-prev .xgh { width: 100%; pointer-events: none; }
+.cxe-prev .cxs-ab, .cxe-prev .cxe-an { color: #fff; }
+.cxe-an { font-family: "Cormorant Garamond", serif; font-size: 1.15rem; }
+.cxe-f { display: flex; flex-direction: column; gap: 5px; margin: 0 0 10px; font-size: .74rem; color: var(--muted); flex: 1; min-width: 0; }
+.cxe-f > span { font-weight: 600; letter-spacing: .04em; }
+.cxe-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.cxe-c input { width: 100%; height: 40px; border-radius: 999px; border: 1px solid var(--line); padding: 3px 6px; background: var(--panel2); cursor: pointer; }
+.cxe-rc { margin-bottom: 10px; }
+.cxe-sty { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; }
+.cxe-s { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--panel2); color: inherit; font: inherit; font-size: .74rem; cursor: pointer; text-align: left; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.cxe-s small { font-size: .64rem; color: var(--muted); }
+.cxe-s > i { display: inline-block; width: 26px; height: 6px; border-radius: 6px; margin-bottom: 2px; background: linear-gradient(90deg, #4ade80, #0d0b16); }
+.cxe-s[data-sty="prism"] > i { background: linear-gradient(90deg, #c4b5fd, #0d0b16); }
+.cxe-s[data-sty="ember"] > i { background: linear-gradient(90deg, #ef4444, #0d0b16); }
+.cxe-s[data-sty="tide"] > i { background: linear-gradient(90deg, #60a5fa, #0d0b16); }
+.cxe-s[data-sty="bloom"] > i { background: linear-gradient(90deg, #f59e0b, #0d0b16); }
+.cxe-s[data-sty="fae"] > i { background: linear-gradient(90deg, #ddd6fe, #0d0b16); }
+.cxe-s[data-sty="astral"] > i { background: linear-gradient(90deg, #8b5cf6, #ffd36b); }
+.cxe-s[data-sty="regal"] > i { background: linear-gradient(90deg, #ffd36b, #f59e0b); }
+.cxe-s[data-sty="gale"] > i { background: linear-gradient(90deg, #8ef0dc, #0d0b16); }
+.cxe-s[data-sty="storm"] > i { background: linear-gradient(90deg, #ffe14a, #0d0b16); }
+.cxe-s[data-sty="umbra"] > i { background: linear-gradient(90deg, #7a5cd8, #000); }
+.cxe-s[data-sty="steel"] > i { background: linear-gradient(90deg, #cbd5e3, #0d0b16); }
+.cxe-s[aria-pressed="true"] { border-color: var(--c1); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c1) 55%, transparent); transform: scale(1.03); }
+.cxe-msg { min-height: 1.1em; margin: 2px 0 8px; font-size: .78rem; color: var(--muted); }
+.cxe-msg.bad { color: #d23b4c; }
+.cxe-acts { flex-wrap: wrap; gap: 8px; }
+.cxe-toast { position: fixed; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom, 0px)); z-index: 9100; transform: translateX(-50%); max-width: calc(100vw - 32px);
+  padding: 10px 18px; border-radius: 999px; background: #161923; color: #fff; font-size: .8rem; box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: cxeToast .35s cubic-bezier(.2,.9,.25,1.2); }
+@keyframes cxeToast { from { opacity: 0; transform: translate(-50%, 10px) } to { opacity: 1; transform: translate(-50%, 0) } }
+
+/* ---- motion off / reduced motion: everything still, art stays ---- */
+html[data-motion="off"] .cxb-fx > span, html[data-motion="off"] .cxb-gloss, html[data-motion="off"] .cxa-flow,
+html[data-motion="off"] .cxa-sp > span, html[data-motion="off"] .cxf-sheen, html[data-motion="off"] .cxf-gem { animation: none !important; }
+html[data-motion="off"] .cxb-fx > span { opacity: .55; }
+@media (prefers-reduced-motion: reduce) {
+  .cxb-fx > span, .cxb-gloss, .cxa-flow, .cxa-sp > span, .cxf-sheen, .cxf-gem { animation: none !important; }
+  .cxb-fx > span { opacity: .55; }
+  .cxe, .cxe-card, .cxe-s, .cxe-pen { transition: none; }
+}
+
+/* fixes: ornaments keep their own size (the Codex sizes every tile svg), small pencil on cast rows */
+.cxb .tile > .cxb-x { height: auto !important; background: none !important; box-shadow: none !important; border: 0 !important; }
+.cxb .tile > .cxb-x.top, .cxb .tile > .cxb-x.bot { width: 26px !important; }
+.cxb .tile > .cxb-x.side { width: 12px !important; }
+.cxb .tile > .cxb-x.wing { width: 150% !important; }
+.cxs-top .tile > .cxb-x.top { width: 32px !important; top: -18px; }
+.xgh.cxb > .in > .cxe-pen { position: absolute; top: -7px; right: -4px; width: 26px; height: 26px; margin: 0;
+  background: rgba(16,12,28,.82); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--b2) 70%, #fff), 0 4px 10px rgba(0,0,0,.3); }
+.xgh.cxb > .in > .cxe-pen svg { width: 13px; height: 13px; }
+.cxs-top.cxb .pill { color: #fff !important; border-color: rgba(255,255,255,.45) !important; background: rgba(10,8,20,.42) !important; }
