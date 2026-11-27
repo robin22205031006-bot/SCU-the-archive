@@ -26,7 +26,8 @@ patch("head", /<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/d3/, (
 // 2. cast merge right after the cast table is declared
 patch("cast", /(\nconst CAST = \[.*\];\n)/, (m) => `${m}try{window.__codexHook&&window.__codexHook("cast",{CAST:CAST})}catch(e){}\n`);
 // 3. ability merge after every branch is declared
-patch("abilities", /\nconst TIERS=\[/, (m) => `\ntry{window.__codexHook&&window.__codexHook("abilities",{BR:BR,G:G,GLY:GLY,DEF:typeof DEF!=="undefined"?DEF:null})}catch(e){}${m}`);
+// (after the Codex's own guardian/canon additions, so its entries are known before ours)
+patch("abilities", /\nconst clean=n=>n\.replace/, (m) => `\ntry{window.__codexHook&&window.__codexHook("abilities",{BR:BR,G:G,GLY:GLY,DEF:typeof DEF!=="undefined"?DEF:null})}catch(e){}${m}`);
 // 4a. series catalogue merge (fill blank season titles, add missing series)
 patch("series", /(\nconst SER0=\[.*\);)/, (m) => `${m}\ntry{window.__codexHook&&window.__codexHook("series",{SER0:SER0})}catch(e){}`);
 // 4. extra host destinations in the dock

@@ -24,10 +24,17 @@ describe("Codex canon shared by every UI style", () => {
 
   it("puts the Codex's abilities first and drops ones the Codex gives to others", () => {
     const canon = codexAbilitiesFor("Ethan Thorne");
-    expect(canon).toEqual(["Aerokinesis", "Wind Guardian Mode", "Wind and Blood Hybrids"]);
+    // from the Codex page (updated canon adds his guardian crests)
+    expect(canon).toEqual([
+      "Aerokinesis",
+      "Wind Guardian Mode",
+      "Wind and Blood Hybrids",
+      "Sky Guardian",
+      "Wind Guardian",
+    ]);
     const merged = mergeAbilitiesWithCodex("Ethan Thorne", null, [
       "Aether Dominion", // Xinea's in the Codex
-      "Wind Guardian", // same power as Wind Guardian Mode
+      "Wind Guardian", // already in his Codex canon
       "Archive Only Power", // unknown to the Codex: kept
     ]);
     expect(merged).toEqual([...canon, "Archive Only Power"]);
