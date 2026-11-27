@@ -343,7 +343,8 @@ export function CodexStage() {
 
   const saveCards = useCallback(
     async (next: CodexCards): Promise<SyncResult & { cards?: CodexCards }> => {
-      if (!isAdmin) return { ok: false, changed: false, message: "Only admins can change card looks." };
+      if (!isAdmin)
+        return { ok: false, changed: false, message: "Only admins can change card looks." };
       try {
         const stored = await saveCodexCards(next);
         qc.setQueryData(codexCardsQuery.queryKey, stored);
@@ -368,7 +369,11 @@ export function CodexStage() {
       );
       if (!card)
         return { ok: false, changed: false, message: "This character is only in the Codex." };
-      const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      const norm = (x: string) =>
+        x
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
       const want = norm(ability);
       const { data: rows, error: readError } = await supabase
         .from("character_abilities")
@@ -389,7 +394,8 @@ export function CodexStage() {
           message: `${ability} is not assigned to ${card.name} in the archive yet. Assign it in the admin panel first.`,
         };
       const level = clampDbAbilityLevel(rank);
-      if (level === clampDbAbilityLevel(row.level)) return { ok: true, changed: false, message: "" };
+      if (level === clampDbAbilityLevel(row.level))
+        return { ok: true, changed: false, message: "" };
       const { error } = await supabase
         .from("character_abilities")
         .update({ level })
@@ -446,9 +452,7 @@ export function CodexStage() {
   useEffect(() => {
     if (!enabled) return;
     const win = frameRef.current?.contentWindow as
-      | (Window & { __codexCardsUpdate?: () => void })
-      | null
-      | undefined;
+      (Window & { __codexCardsUpdate?: () => void }) | null | undefined;
     try {
       win?.__codexCardsUpdate?.();
     } catch {

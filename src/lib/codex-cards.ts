@@ -96,8 +96,7 @@ function cleanLook(v: unknown, withStyle: boolean): CodexCardLook | null {
   if (CODEX_ELEMENTS.includes(o["element"] as CodexElement))
     out.element = o["element"] as CodexElement;
   const f = o["frame"];
-  if (typeof f === "number" && Number.isInteger(f) && f >= 0 && f <= CODEX_FRAME_MAX)
-    out.frame = f;
+  if (typeof f === "number" && Number.isInteger(f) && f >= 0 && f <= CODEX_FRAME_MAX) out.frame = f;
   return Object.keys(out).length ? out : null;
 }
 
