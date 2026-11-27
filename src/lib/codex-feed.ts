@@ -76,6 +76,11 @@ export interface CodexFeedSeries {
   /** Positional season titles ("" where unnamed), same as the shared Series page. */
   seasons: string[];
 }
+export interface CodexFeedAtlas {
+  world: { image: string; top: string; width: number; height: number };
+  routes: { from: string; to: string; label: string }[];
+  locations: unknown[];
+}
 export interface CodexFeedMask {
   characters: boolean;
   abilities: boolean;
@@ -138,6 +143,8 @@ export interface CodexFeed {
   ranks: Record<string, CodexFeedRanks>;
   /** Rank names and colours shared with Nexus (index 0 = rank I). */
   rankMeta: { roman: string; title: string; color: string }[];
+  /** Nexus atlas places, eras, landmarks and routes, redrawn by the Codex map. */
+  atlas?: CodexFeedAtlas | undefined;
   /** Shared spoiler mask. Masked scopes are removed from the feed itself, not just hidden. */
   masked: CodexFeedMask;
 }
@@ -509,6 +516,8 @@ export const CODEX_NATIVE_PATHS: Record<string, string> = {
   "/arsenal": "arsenal",
   "/timeline": "timeline",
   "/graph": "graph",
+  "/map": "map",
+  "/atlas": "map",
 };
 
 export function codexTabForPath(pathname: string): string | null {

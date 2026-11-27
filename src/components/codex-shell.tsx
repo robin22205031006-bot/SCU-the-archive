@@ -12,6 +12,21 @@ import { useOptionalThemeContext, type PrimarySystem } from "@/context/ThemeCont
 import { useUiMode, VISUAL_UI_MODES, type VisualUiMode } from "@/hooks/use-ui-mode";
 import { useAppMotion } from "@/hooks/use-app-motion";
 import { buildCodexFeed, codexTabForPath, safeCodexPath, type CodexFeed } from "@/lib/codex-feed";
+import {
+  ATLAS,
+  ATLAS_WORLD_ROUTES,
+  WORLD_IMAGE_HEIGHT,
+  WORLD_IMAGE_WIDTH,
+  WORLD_MAP,
+  WORLD_TOP,
+} from "@/lib/nexus-atlas";
+
+/** Static Nexus atlas data (places, eras, landmarks, routes) that the Codex map redraws. */
+const CODEX_ATLAS = {
+  world: { image: WORLD_MAP, top: WORLD_TOP, width: WORLD_IMAGE_WIDTH, height: WORLD_IMAGE_HEIGHT },
+  routes: ATLAS_WORLD_ROUTES,
+  locations: ATLAS,
+};
 import { codexCastName } from "@/lib/codex-canon";
 import { planCharacterPatch, planSeasonTitles } from "@/lib/codex-sync";
 import { saveSeasonTitles } from "@/lib/series-lore.functions";
@@ -135,7 +150,7 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
     } catch {
       abilities = [];
     }
-    return buildCodexFeed({
+    const built = buildCodexFeed({
       entities: ents.data ?? [],
       series: ser.data ?? [],
       relations: rel.data ?? [],
@@ -158,6 +173,7 @@ function useCodexFeed(enabled: boolean): { feed: CodexFeed | null; settled: bool
         signature: !!m.signature,
       })),
     });
+    return { ...built, atlas: CODEX_ATLAS };
   }, [
     enabled,
     ents.data,
